@@ -3,6 +3,7 @@
 #include <DxErr.h>
 #include <Windows.h>
 #include <stdexcept>
+#include "DX9GFApplication.h"
 
 namespace
 {
@@ -272,6 +273,77 @@ void DX9GF::Texture::LoadTexture(int resourceId, UINT width, UINT height)
 	} else {
 		this->height = height;
 	}
+}
+
+void DX9GF::Texture::CaptureCurrentBackBuffer()
+{
+	SafeRelease(texture);
+
+	auto gd = graphicsDevice->GetDevice();
+	if (gd == nullptr) {
+		throw std::runtime_error("Graphics device is null");
+	}
+
+	IDirect3DSurface9* backBuffer = nullptr;
+	HRESULT hr = gd->GetBackBuffer(0, 0, D3DBACKBUFFER_TYPE_MONO, &backBuffer);
+	if (FAILED(hr))
+	{
+		throw MakeDxError(hr);
+	}
+
+	D3DSURFACE_DESC desc;
+	hr = backBuffer->GetDesc(&desc);
+	if (FAILED(hr))
+	{
+		backBuffer->Release();
+		throw MakeDxError(hr);
+	}
+
+	hr = gd->CreateTexture(
+		desc.Width,
+		desc.Height,
+		1,
+		D3DUSAGE_RENDERTARGET,
+		desc.Format,
+		D3DPOOL_DEFAULT,
+		&texture,
+		nullptr
+	);
+
+	if (FAILED(hr))
+	{
+		backBuffer->Release();
+		throw MakeDxError(hr);
+	}
+
+	IDirect3DSurface9* textureSurface = nullptr;
+	hr = texture->GetSurfaceLevel(0, &textureSurface);
+	if (FAILED(hr))
+	{
+		backBuffer->Release();
+		SafeRelease(texture);
+		throw MakeDxError(hr);
+	}
+
+	hr = gd->StretchRect(
+		backBuffer,
+		nullptr,
+		textureSurface,
+		nullptr,
+		D3DTEXF_NONE
+	);
+
+	textureSurface->Release();
+	backBuffer->Release();
+
+	if (FAILED(hr))
+	{
+		SafeRelease(texture);
+		throw MakeDxError(hr);
+	}
+
+	this->width = desc.Width;
+	this->height = desc.Height;
 }
 
 IDirect3DTexture9* DX9GF::Texture::GetRawTexture()

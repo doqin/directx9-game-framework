@@ -94,7 +94,7 @@ void Demo::IEnemy::Draw(DX9GF::GraphicsDevice* graphicsDevice, DX9GF::Camera* ca
     for (size_t i = 0; i < damageIndicators.size(); ++i) {
         auto text = damageIndicators[i].text;
         fontSprite->SetColor(0xFFFF4444);
-        fontSprite->SetOutline(true, 0xFF000000);
+        fontSprite->SetOutline(true, 0xFF000000, 2.f);
         fontSprite->SetBold(true);
         fontSprite->SetScale(2.f);
         fontSprite->SetPosition(GetWorldX() + damageIndicators[i].offsetX, GetWorldY() - 30.f + damageIndicators[i].offsetY);
@@ -118,7 +118,7 @@ void Demo::IEnemy::Draw(DX9GF::GraphicsDevice* graphicsDevice, DX9GF::Camera* ca
         std::wstring statusText = statusName + L" (" + std::to_wstring(status.duration) + L")";
 
         fontSprite->SetColor(0xFFFFFF00);
-		fontSprite->SetOutline(true, 0xFF000000);
+		fontSprite->SetOutline(true, 0xFF000000, 2.f);
         fontSprite->SetPosition(GetWorldX() + statusOffsetX, GetWorldY() + statusOffsetY);
 
         fontSprite->SetText(std::move(statusText));

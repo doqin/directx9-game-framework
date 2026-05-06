@@ -1,27 +1,39 @@
 ﻿#include "pch.h"
 #include "TutorialWorldScene.h"
+#include "RandomEncounter.h"
+
 void Demo::TutorialWorldScene::Init()
 {
 	camera.SetZoom(2.0f);
 	transformManager = std::make_shared<DX9GF::TransformManager>();
 	colliderManager = std::make_shared<DX9GF::ColliderManager>();
-	player = std::make_shared<Player>(transformManager);
+	player = std::make_shared<Player>(transformManager, 248, 184);
+	camera.SetPosition(248, 184);
 	player->Init(game->GetGraphicsDevice(), colliderManager.get(), &camera);
+	drawBuffer = std::make_shared<DX9GF::CommandBuffer>();
+	commandBuffer = std::make_shared<DX9GF::CommandBuffer>();
 	map = std::make_shared<DX9GF::Map>(game->GetGraphicsDevice());
 	map->Create(transformManager, colliderManager, "./tutorial.tmx");
+	map->SetAreaUpdateHandler("triggers", GetRandomEncounterFunc(game, player, {
+		{"DemonEyeEnemy", 40},
+		{"VampireBatEnemy", 30},
+		{"MimicEnemy", 20},
+		{"WarlockEnemy", 10},
+		{"CupidEnemy", 5}
+		}, drawBuffer, commandBuffer, &isGamePaused));
 	font = std::make_shared<DX9GF::Font>(game->GetGraphicsDevice(), L"StatusPlz", 16);
-
-	npc1 = std::make_shared<NPC1>(transformManager, 250.0f, 120.0f);
-	npc1->Init(game->GetGraphicsDevice(), player, colliderManager, font);
-	npc1->AddLine(L"NPC", L"Hello! Welcome.");
-	npc1->AddLine(L"NPC", L"How to escape this world? I don't know.");
+	
+	npc1 = std::make_shared<DauDauNPC>(transformManager, 167.0f, -18.0f);
+	npc1->Init(game->GetGraphicsDevice(), player, colliderManager, font, drawBuffer);
+	npc1->AddLine(L"Dau Dau", L"Hello! Welcome.");
+	npc1->AddLine(L"Dau Dau", L"How to escape this world? I don't know.");
 
 	savePoint = std::make_shared<SavePoint>(transformManager, 200.0f, 150.0f);
-	savePoint->Init(game->GetGraphicsDevice(), &camera, player, colliderManager, saveManager, font);
+    savePoint->Init(game->GetGraphicsDevice(), &camera, player, colliderManager, saveManager, font, drawBuffer);
 	savePoint->SetVisible(true);
 
 	shopPoint_Card = std::make_shared<ShopPoint>(transformManager, 300.0f, 150.0f);
-	shopPoint_Card->Init(game, game->GetGraphicsDevice(), &camera, player, colliderManager, font,
+	shopPoint_Card->Init(game, game->GetGraphicsDevice(), &camera, player, colliderManager, font, drawBuffer,
 		[](Game* g, Player* p, int w, int h) {
 			return new CardShop(g, p, w, h);
 		}
@@ -29,7 +41,7 @@ void Demo::TutorialWorldScene::Init()
 	shopPoint_Card->SetVisible(true);
 
 	shopPoint_BSItem = std::make_shared<ShopPoint>(transformManager, 360.0f, 150.0f);
-	shopPoint_BSItem->Init(game, game->GetGraphicsDevice(), &camera, player, colliderManager, font,
+	shopPoint_BSItem->Init(game, game->GetGraphicsDevice(), &camera, player, colliderManager, font, drawBuffer,
 		[](Game* g, Player* p, int w, int h) {
 			return new ItemShop(g, p, w, h, ShopTier::BASIC);
 		}
@@ -37,7 +49,7 @@ void Demo::TutorialWorldScene::Init()
 	shopPoint_BSItem->SetVisible(true);
 
 	shopPoint_HBItem = std::make_shared<ShopPoint>(transformManager, 430.0f, 150.0f);
-	shopPoint_HBItem->Init(game, game->GetGraphicsDevice(), &camera, player, colliderManager, font,
+	shopPoint_HBItem->Init(game, game->GetGraphicsDevice(), &camera, player, colliderManager, font, drawBuffer,
 		[](Game* g, Player* p, int w, int h) {
 			return new ItemShop(g, p, w, h, ShopTier::HYBRID);
 		}
@@ -45,7 +57,7 @@ void Demo::TutorialWorldScene::Init()
 	shopPoint_HBItem->SetVisible(true);
 
 	shopPoint_PMItem = std::make_shared<ShopPoint>(transformManager, 500.0f, 150.0f);
-	shopPoint_PMItem->Init(game, game->GetGraphicsDevice(), &camera, player, colliderManager, font,
+	shopPoint_PMItem->Init(game, game->GetGraphicsDevice(), &camera, player, colliderManager, font, drawBuffer,
 		[](Game* g, Player* p, int w, int h) {
 			return new ItemShop(g, p, w, h, ShopTier::PREMIUM);
 		}
@@ -53,7 +65,7 @@ void Demo::TutorialWorldScene::Init()
 	shopPoint_PMItem->SetVisible(true);
 
 	healingPoint = std::make_shared<HealingPoint>(transformManager, 250.0f, 220.0f);
-	healingPoint->Init(game->GetGraphicsDevice(), &camera, player, colliderManager, font);
+	healingPoint->Init(game->GetGraphicsDevice(), &camera, player, colliderManager, font, drawBuffer);
 	healingPoint->SetVisible(true);
 
 	draggableManager = std::make_shared<Demo::DraggableManager>();
@@ -86,8 +98,9 @@ void Demo::TutorialWorldScene::Update(unsigned long long deltaTime)
 		escCooldown = 300.0f;
 	}
 
-	bool isGamePaused = false;
+	bool isGamePaused = this->isGamePaused;
 
+	if (!isGamePaused) map->UpdateAreas(player->GetWorldX(), player->GetWorldY());
 	if (npc1) {
 		npc1->Update(deltaTime);
 		if (!currentConversation && npc1->CanInteract() && inpMan->KeyPress(DIK_E)) {
@@ -134,13 +147,13 @@ void Demo::TutorialWorldScene::Update(unsigned long long deltaTime)
 		draggableManager->Update(deltaTime);
 	}
 
-
 	if (inventoryMenu && inventoryMenu->IsPendingLeave()) {
 		auto sceMan = game->GetSceneManager();
 		sceMan->PopScene();
 		sceMan->GoToPrevious();
 		return;
 	}
+	commandBuffer->Update(deltaTime);
 }
 
 void Demo::TutorialWorldScene::Draw(unsigned long long deltaTime)
@@ -150,7 +163,6 @@ void Demo::TutorialWorldScene::Draw(unsigned long long deltaTime)
 	if (SUCCEEDED(gd->BeginDraw())) {
 		map->Draw(camera);
 		if (npc1) npc1->Draw(camera, deltaTime);
-		if (currentConversation) currentConversation->Draw(gd, deltaTime);
 		if (savePoint) {
 			savePoint->Draw(camera, deltaTime);
 		}
@@ -160,10 +172,14 @@ void Demo::TutorialWorldScene::Draw(unsigned long long deltaTime)
 		if (shopPoint_PMItem) shopPoint_PMItem->Draw(camera, deltaTime);
 		if (healingPoint) healingPoint->Draw(camera, deltaTime);
 		player->Draw(deltaTime);
+		if (drawBuffer) {
+			drawBuffer->Update(deltaTime);
+		}
 		if (inventoryMenu) inventoryMenu->Draw(gd, deltaTime);
 		if (draggableManager && inventoryMenu && inventoryMenu->IsOpen() && inventoryMenu->GetCurrentTab() == Demo::InventoryMenu::Tab::DECK) {
 			draggableManager->Draw(deltaTime);
 		}
+		if (currentConversation) currentConversation->Draw(gd, deltaTime);
 		DX9GF::InputManager::GetInstance()->DrawCursor(&this->uiCamera, deltaTime);
 		gd->EndDraw();
 	}

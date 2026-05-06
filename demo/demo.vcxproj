@@ -207,7 +207,9 @@
     <ClCompile Include="BoomerangProjectile.cpp" />
     <ClCompile Include="CardShop.cpp" />
     <ClCompile Include="CupidEnemy.cpp" />
+    <ClCompile Include="CustomBattleScene.cpp" />
     <ClCompile Include="DamageTextManager.cpp" />
+    <ClCompile Include="DauDauNPC.cpp" />
     <ClCompile Include="DebugScene.cpp" />
     <ClCompile Include="DemonEyeEnemy.cpp" />
     <ClCompile Include="Game.cpp" />
@@ -220,6 +222,7 @@
     <ClCompile Include="IContainer.cpp" />
     <ClCompile Include="IConversation.cpp" />
     <ClCompile Include="IDraggable.cpp" />
+    <ClCompile Include="INPC.cpp" />
     <ClCompile Include="InventoryMenu.cpp" />
     <ClCompile Include="IStatementCard.cpp" />
     <ClCompile Include="ItemShop.cpp" />
@@ -234,6 +237,7 @@
       <PrecompiledHeader Condition="'$(Configuration)|$(Platform)'=='Release|x64'">Create</PrecompiledHeader>
     </ClCompile>
     <ClCompile Include="Player.cpp" />
+    <ClCompile Include="RandomEncounter.cpp" />
     <ClCompile Include="SavePoint.cpp" />
     <ClCompile Include="SettingsManager.cpp" />
     <ClCompile Include="SettingsScene.cpp" />
@@ -246,6 +250,7 @@
     <ClCompile Include="PopUpMessage.cpp" />
     <ClCompile Include="RoundProjectile.cpp" />
     <ClCompile Include="TestBattleScene.cpp" />
+    <ClCompile Include="TransitionCommand.cpp" />
     <ClCompile Include="TutorialWorldScene.cpp" />
     <ClCompile Include="VampireBatEnemy.cpp" />
     <ClCompile Include="WarlockEnemy.cpp" />
@@ -263,7 +268,9 @@
     <ClInclude Include="BoomerangProjectile.h" />
     <ClInclude Include="CardShop.h" />
     <ClInclude Include="CupidEnemy.h" />
+    <ClInclude Include="CustomBattleScene.h" />
     <ClInclude Include="DamageTextManager.h" />
+    <ClInclude Include="DauDauNPC.h" />
     <ClInclude Include="DebugScene.h" />
     <ClInclude Include="DemonEyeEnemy.h" />
     <ClInclude Include="DialogueLine.h" />
@@ -280,6 +287,7 @@
     <ClInclude Include="IContainer.h" />
     <ClInclude Include="IConversation.h" />
     <ClInclude Include="IDraggable.h" />
+    <ClInclude Include="INPC.h" />
     <ClInclude Include="InventoryMenu.h" />
     <ClInclude Include="ItemShop.h" />
     <ClInclude Include="MainMenu.h" />
@@ -293,6 +301,7 @@
     <ClInclude Include="NPC1.h" />
     <ClInclude Include="Player.h" />
     <ClInclude Include="PopUpMessage.h" />
+    <ClInclude Include="RandomEncounter.h" />
     <ClInclude Include="resource.h" />
     <ClInclude Include="SavePoint.h" />
     <ClInclude Include="SettingsManager.h" />
@@ -307,6 +316,7 @@
     <ClInclude Include="StrikeCard.h" />
     <ClInclude Include="TestBattleScene.h" />
     <ClInclude Include="TestEnemy.h" />
+    <ClInclude Include="TransitionCommand.h" />
     <ClInclude Include="TutorialWorldScene.h" />
     <ClInclude Include="VampireBatEnemy.h" />
     <ClInclude Include="WarlockEnemy.h" />
@@ -340,10 +350,19 @@
     <Image Include="cursor.png">
       <DeploymentContent>true</DeploymentContent>
     </Image>
+    <Image Include="daudau-Sheet.png">
+      <DeploymentContent>true</DeploymentContent>
+    </Image>
     <Image Include="grab.png">
       <DeploymentContent>true</DeploymentContent>
     </Image>
+    <Image Include="healingpoint-Sheet.png">
+      <DeploymentContent>true</DeploymentContent>
+    </Image>
     <Image Include="hitimpact-Sheet.png">
+      <DeploymentContent>true</DeploymentContent>
+    </Image>
+    <Image Include="items.png">
       <DeploymentContent>true</DeploymentContent>
     </Image>
     <Image Include="NPC1.png">
@@ -356,6 +375,9 @@
       <DeploymentContent>true</DeploymentContent>
     </Image>
     <Image Include="savepoint-Sheet.png">
+      <DeploymentContent>true</DeploymentContent>
+    </Image>
+    <Image Include="Shop-Sheet.png">
       <DeploymentContent>true</DeploymentContent>
     </Image>
     <Image Include="TempTex.png">

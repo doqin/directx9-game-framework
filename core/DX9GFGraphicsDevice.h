@@ -41,6 +41,8 @@ namespace DX9GF {
 		HRESULT Present();
 		HRESULT IsValid();
 
+		void SetAlphaBlending(bool enabled);
+
 		void DrawLine(float x1, float y1, float x2, float y2, D3DCOLOR color, float thickness = 1.0f);
 		void DrawLine(const DX9GF::Camera& camera, float x1, float y1, float x2, float y2, D3DCOLOR color, float thickness = 1.0f);
 		void DrawRectangle(float x, float y, float width, float height, D3DCOLOR color, bool isFilled);

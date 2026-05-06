@@ -3,7 +3,7 @@
         "height": 4300,
         "width": 2
     },
-    "activeFile": "C:/Users/Azalea/source/repos/doqin/dx9gf/example/Resources/Area2-B.tmx",
+    "activeFile": "tutorial.tmx",
     "expandedProjectPaths": [
         "."
     ],
@@ -19,55 +19,32 @@
         "C:/Users/Admin/source/repos/doqin/directx9-game-framework/example/Resources/test.tsx": {
             "scaleInDock": 1
         },
-        "C:/Users/Azalea/source/repos/doqin/dx9gf/example/Resources/Area2-A.tmx": {
-            "scale": 0.75,
-            "selectedLayer": 0,
-            "viewCenter": {
-                "x": 399.3333333333333,
-                "y": 319.33333333333326
-            }
-        },
-        "C:/Users/Azalea/source/repos/doqin/dx9gf/example/Resources/Area2-B.tmx": {
-            "scale": 1.080625,
-            "selectedLayer": 0,
-            "viewCenter": {
-                "x": 319.7223828802776,
-                "y": 240.13880855986116
-            }
-        },
-        "C:/Users/Azalea/source/repos/doqin/dx9gf/example/Resources/Area2.tmx": {
-            "scale": 0.9327272727272726,
-            "selectedLayer": 0,
-            "viewCenter": {
-                "x": 271.7836257309942,
-                "y": 440.10721247563356
-            }
-        },
         "C:/Users/Azalea/source/repos/doqin/dx9gf/example/Resources/First Asset pack.tsx": {
             "scaleInDock": 1
         },
-        "C:/Users/Azalea/source/repos/doqin/dx9gf/example/Resources/Main_map_Into_Arean_3.tmx": {
+        "C:/Users/Azalea/source/repos/doqin/dx9gf/example/Resources/XP.tsx": {
+            "scaleInDock": 1
+        },
+        "C:/Users/Azalea/source/repos/doqin/dx9gf/example/Resources/icon.tsx": {
+            "scaleInDock": 1
+        },
+        "C:/Users/Azalea/source/repos/doqin/dx9gf/example/Resources/map.tmx": {
             "scale": 0.75,
             "selectedLayer": 0,
             "viewCenter": {
-                "x": 399.3333333333333,
-                "y": 399.33333333333326
+                "x": -823.3333333333333,
+                "y": -92.66666666666674
             }
         },
-        "C:/Users/Azalea/source/repos/doqin/dx9gf/example/Resources/Main_map_into_The_End.tmx": {
-            "scale": 0.5,
-            "selectedLayer": 0,
-            "viewCenter": {
-                "x": 399,
-                "y": 399
-            }
+        "C:/Users/Azalea/source/repos/doqin/dx9gf/example/Resources/tutorial.tsx": {
+            "scaleInDock": 2
         },
         "tutorial.tmx": {
-            "scale": 3,
-            "selectedLayer": 0,
+            "scale": 4,
+            "selectedLayer": 1,
             "viewCenter": {
-                "x": 250.83333333333334,
-                "y": 160.16666666666666
+                "x": 256,
+                "y": -0.125
             }
         },
         "tutorial.tsx": {
@@ -81,22 +58,12 @@
     "map.tileWidth": 16,
     "openFiles": [
         "tutorial.tsx",
-        "tutorial.tmx",
-        "C:/Users/Azalea/source/repos/doqin/dx9gf/example/Resources/Main_map_into_The_End.tmx",
-        "C:/Users/Azalea/source/repos/doqin/dx9gf/example/Resources/Main_map_Into_Arean_3.tmx",
-        "C:/Users/Azalea/source/repos/doqin/dx9gf/example/Resources/Area2.tmx",
-        "C:/Users/Azalea/source/repos/doqin/dx9gf/example/Resources/Area2-A.tmx",
-        "C:/Users/Azalea/source/repos/doqin/dx9gf/example/Resources/Area2-B.tmx"
+        "tutorial.tmx"
     ],
     "project": "tutorial.tiled-project",
     "recentFiles": [
         "tutorial.tsx",
         "tutorial.tmx",
-        "C:/Users/Azalea/source/repos/doqin/dx9gf/example/Resources/Main_map_into_The_End.tmx",
-        "C:/Users/Azalea/source/repos/doqin/dx9gf/example/Resources/Main_map_Into_Arean_3.tmx",
-        "C:/Users/Azalea/source/repos/doqin/dx9gf/example/Resources/Area2.tmx",
-        "C:/Users/Azalea/source/repos/doqin/dx9gf/example/Resources/Area2-A.tmx",
-        "C:/Users/Azalea/source/repos/doqin/dx9gf/example/Resources/Area2-B.tmx",
         "C:/Users/Admin/source/repos/doqin/directx9-game-framework/example/Resources/example.tmx"
     ],
     "tileset.lastUsedFormat": "tsx",

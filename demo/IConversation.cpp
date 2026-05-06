@@ -97,18 +97,28 @@ void Demo::IConversation::Draw(DX9GF::GraphicsDevice* gd, unsigned long long del
 		fixedCamera,
 		boxX, boxY, boxWidth, boxHeight,
 		0.0f, 1.0f, 1.0f, 0.0f, 0.0f,
-		0xDD8B4513, true
+		0xFFE0E0E0, true
+	);
+	gd->DrawRectangle(
+		fixedCamera,
+		boxX, boxY, boxWidth, boxHeight,
+		0.0f, 1.0f, 1.0f, 0.0f, 0.0f,
+		0xFF000000, false
 	);
 
 	if (fontSprite) {
 		fontSprite->Begin();
-
+		fontSprite->SetScale(1.2f, 1.2f);
 		fontSprite->SetPosition(boxX + 20.0f, boxY + 10.0f);
-		fontSprite->SetColor(0xFFFFD700);
+		fontSprite->SetColor(0xFFFFFFFF);
+		fontSprite->SetOutline(true, 0xFF000000, 2.f);
 		fontSprite->SetText(std::wstring(currentLine.name));
 		fontSprite->Draw(fixedCamera, deltaTime);
+
+		fontSprite->SetOutline(false);
+		fontSprite->SetScale(1.f, 1.f);
 		fontSprite->SetPosition(boxX + 20.0f, boxY + 50.0f);
-		fontSprite->SetColor(0xFFFFFFFF);
+		fontSprite->SetColor(0xFF000000);
 		fontSprite->SetText(std::wstring(displayedContent));
 		fontSprite->Draw(fixedCamera, deltaTime);
 

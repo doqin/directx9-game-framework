@@ -105,6 +105,18 @@ HRESULT DX9GF::GraphicsDevice::IsValid()
 	return d3ddev->TestCooperativeLevel();
 }
 
+void DX9GF::GraphicsDevice::SetAlphaBlending(bool enabled)
+{
+	if (enabled) {
+		d3ddev->SetRenderState(D3DRS_ALPHABLENDENABLE, TRUE);
+		d3ddev->SetRenderState(D3DRS_SRCBLEND, D3DBLEND_SRCALPHA);
+		d3ddev->SetRenderState(D3DRS_DESTBLEND, D3DBLEND_INVSRCALPHA);
+	}
+	else {
+		d3ddev->SetRenderState(D3DRS_ALPHABLENDENABLE, FALSE);
+	}
+}
+
 void DX9GF::GraphicsDevice::DrawLine(float x1, float y1, float x2, float y2, D3DCOLOR color, float thickness)
 {
 	if (thickness <= 1.0f) {

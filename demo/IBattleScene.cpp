@@ -4,6 +4,8 @@
 #include <random>
 #include "DamageTextManager.h"
 #include "GameItems.h"
+#include "TransitionCommand.h"
+
 namespace {
 	constexpr float HiddenPileX = -10000.f;
 	constexpr float HiddenPileY = -10000.f;
@@ -263,7 +265,7 @@ void Demo::IBattleScene::RefreshItemMenu()
 		float baseX = startX + col * (ITEM_W + PADDING_X);
 		float baseY = startY + row * (ITEM_H + PADDING_Y);
 
-		auto btn = std::make_shared<IconButton>(transformManager, 0, 0, ITEM_W, ITEM_H, tempTex, 1);
+		auto btn = std::make_shared<IconButton>(transformManager, 0, 0, ITEM_W, ITEM_H, itemsTex, 1);
 		btn->Init(&camera);
 		btn->SetSpriteScale(MENU_SCALE, MENU_SCALE);
 		btn->SetLocalPosition(baseX, baseY);
@@ -311,17 +313,15 @@ void Demo::IBattleScene::PlayerStandByUpdate(unsigned long long deltaTime)
 	// Set position so that it's updated if screen is resized
 	const float buttonY = app->GetScreenHeight() / 2.f - 50 - attackButton->GetHeight();
 	const float spacing = 20.f;
-	const float totalButtonsWidth = attackButton->GetWidth() + actionButton->GetWidth() + itemsButton->GetWidth() + fleeButton->GetWidth() + 3 * spacing;
+	const float totalButtonsWidth = attackButton->GetWidth() + itemsButton->GetWidth() + fleeButton->GetWidth() + 2 * spacing;
 	const float leftX = -totalButtonsWidth / 2;
 
 	attackButton->SetLocalPosition(leftX, buttonY);
-	actionButton->SetLocalPosition(leftX + attackButton->GetWidth() + spacing, buttonY);
-	itemsButton->SetLocalPosition(leftX + attackButton->GetWidth() + spacing + actionButton->GetWidth() + spacing, buttonY);
-	fleeButton->SetLocalPosition(leftX + attackButton->GetWidth() + spacing + actionButton->GetWidth() + spacing + itemsButton->GetWidth() + spacing, buttonY);
+	itemsButton->SetLocalPosition(leftX + attackButton->GetWidth() + spacing, buttonY);
+	fleeButton->SetLocalPosition(leftX + attackButton->GetWidth() + spacing + itemsButton->GetWidth() + spacing, buttonY);
 
 	fleeButton->Update(deltaTime);
 	itemsButton->Update(deltaTime);
-	actionButton->Update(deltaTime);
 	attackButton->Update(deltaTime);
 	for (auto& enemy : enemies) {
 		enemy->Update(deltaTime);
@@ -442,8 +442,8 @@ void Demo::IBattleScene::PlayerAttackUpdate(unsigned long long deltaTime)
 void Demo::IBattleScene::PlayerOpenItemsUpdate(unsigned long long deltaTime)
 {
 
-	float closeX = HALF_BG_W - closeItemMenuButton->GetWidth();
-	float closeY = -HALF_BG_H;
+	float closeX = -BG_W + 50.f + closeItemMenuButton->GetWidth();
+	float closeY = BG_H - 50.f - closeItemMenuButton->GetHeight();
 
 	closeItemMenuButton->SetLocalPosition(closeX, closeY);
 	closeItemMenuButton->Update(deltaTime);
@@ -495,7 +495,6 @@ void Demo::IBattleScene::PlayerStandByDraw(unsigned long long deltaTime)
 {
 	fleeButton->Draw(game->GetGraphicsDevice(), deltaTime);
 	itemsButton->Draw(game->GetGraphicsDevice(), deltaTime);
-	actionButton->Draw(game->GetGraphicsDevice(), deltaTime);
 	attackButton->Draw(game->GetGraphicsDevice(), deltaTime);
 }
 
@@ -511,9 +510,11 @@ void Demo::IBattleScene::PlayerAttackDraw(unsigned long long deltaTime)
 		true
 	);
 	fontSprite->Begin();
+	fontSprite->SetColor(0xFFFFFFFF);
 	fontSprite->SetPosition(enemyCardRemoveAreaX + 8.f, enemyCardRemoveAreaY + 8.f);
 	fontSprite->SetText(L"Drop EnemyCard Here");
 	fontSprite->Draw(camera, deltaTime);
+	fontSprite->SetColor(0xFF000000);
 	fontSprite->SetPosition(backButton->GetWorldX() + 32.f, backButton->GetWorldY() - 30.f);
 	fontSprite->SetText(std::to_wstring(energy - usedEnergy) + L"/" + std::to_wstring(MAX_ENERGY));
 	fontSprite->Draw(camera, deltaTime);
@@ -562,6 +563,8 @@ void Demo::IBattleScene::PlayerOpenItemsDraw(unsigned long long deltaTime)
 		float textY = btn->GetWorldY() + ITEM_H + 5.0f;
 
 		fontSprite->SetPosition(textX, textY);
+		fontSprite->SetColor(0xFFFFFFFF);
+		fontSprite->SetOutline(true, 0xFF000000, 3.f);
 		fontSprite->SetText(L"x" + std::to_wstring(inventory[i].quantity));
 		fontSprite->Draw(camera, deltaTime);
 
@@ -588,6 +591,7 @@ void Demo::IBattleScene::PlayerOpenItemsDraw(unsigned long long deltaTime)
 		fontSprite->Draw(camera, deltaTime);
 		fontSprite->End();
 	}
+	fontSprite->SetOutline(false);
 }
 
 void Demo::IBattleScene::EnemyAttackDraw(unsigned long long deltaTime)
@@ -616,6 +620,7 @@ void Demo::IBattleScene::Init()
 	draggableManager = std::make_shared<DraggableManager>();
 	transformManager = std::make_shared<DX9GF::TransformManager>();
 	font = std::make_shared<DX9GF::Font>(game->GetGraphicsDevice(), L"StatusPlz", 16);
+	drawBuffer = std::make_shared<DX9GF::CommandBuffer>();
 	// Setup player
 	battlePlayer = std::make_shared<Player>(transformManager);
 	battlePlayer->Init(game->GetGraphicsDevice(), &colliderManager, &camera);
@@ -628,6 +633,8 @@ void Demo::IBattleScene::Init()
 	uiSheetTex->LoadTexture(L"ui.png");
 	tempTex = std::make_shared<DX9GF::Texture>(game->GetGraphicsDevice());
 	tempTex->LoadTexture(L"TempTex.png");
+	itemsTex = std::make_shared<DX9GF::Texture>(game->GetGraphicsDevice());
+	itemsTex->LoadTexture(L"items.png");
 	// Create buttons
 	const auto buttonWidth = 96;
 	const auto buttonHeight = 32;
@@ -663,30 +670,6 @@ void Demo::IBattleScene::Init()
 		}
 		});
 	attackButton->SetSpriteScale(2.f, 2.f);
-	actionButton = std::make_shared<IconButton>(transformManager, 0, 0, buttonWidth, buttonHeight, uiSheetTex);
-	actionButton->SetSpriteRects({
-		{
-			.left = 48,
-			.top = 48,
-			.right = 96,
-			.bottom = 64
-		},
-		{
-			.left = 48,
-			.top = 64,
-			.right = 96,
-			.bottom = 80
-		},
-		{
-			.left = 48,
-			.top = 80,
-			.right = 96,
-			.bottom = 96
-		}
-		});
-	actionButton->SetOnReleaseLeft([&](DX9GF::ITrigger* thisObj) {
-		});
-	actionButton->SetSpriteScale(2.f, 2.f);
 
 	itemsButton = std::make_shared<IconButton>(transformManager, 0, 0, buttonWidth, buttonHeight, uiSheetTex);
 	itemsButton->SetSpriteRects({
@@ -720,7 +703,12 @@ void Demo::IBattleScene::Init()
 	itemsButton->SetSpriteScale(2.f, 2.f);
 	fleeButton = std::make_shared<IconButton>(transformManager, 0, 0, buttonWidth, buttonHeight, uiSheetTex);
 	fleeButton->SetOnReleaseLeft([&](DX9GF::ITrigger* thisObj) {
-		commandBuffer.PushCommand(std::make_shared<DX9GF::CustomCommand>([this](std::function<void(void)> markFinished) {
+		auto transitionInCommand = std::make_shared<TransitionCommand>(game->GetGraphicsDevice(), 1.f, true);
+		drawBuffer->PushCommand(transitionInCommand);
+		commandBuffer.PushCommand(std::make_shared<DX9GF::CustomCommand>([this, transitionInCommand](std::function<void(void)> markFinished) {
+			if (!transitionInCommand->IsFinished()) {
+				return;
+			}
 			player->SetHealth(battlePlayer->GetHealth());
 			auto sceMan = game->GetSceneManager();
 			sceMan->PopScene();
@@ -844,7 +832,6 @@ void Demo::IBattleScene::Init()
 
 	// Init buttons
 	attackButton->Init(&camera);
-	actionButton->Init(&camera);
 	itemsButton->Init(&camera);
 	fleeButton->Init(&camera);
 	backButton->Init(&camera);
@@ -881,6 +868,15 @@ void Demo::IBattleScene::Init()
 	itemMenuBackground->SetOrigin(95.5f, 63.5f);
 	itemMenuBackground->SetScale(3.0f, 3.0f);
 
+	// Fetch Deck
+	const auto& deckCards = player->GetDeck();
+	for (const auto& cardId : deckCards) {
+		auto newCard = ICard::CreateCard(cardId, transformManager, draggableManager, game->GetGraphicsDevice(), &camera);
+		if (newCard) {
+			drawPile.push_back(newCard);
+		}
+	}
+
 	// Init draggables
 	mainBlockCard = std::make_shared<MainBlockCard>(transformManager, -100.f, -140.f);
 	mainBlockCard->Init(draggableManager, game->GetGraphicsDevice(), &camera);
@@ -893,6 +889,8 @@ void Demo::IBattleScene::Init()
 
 	transformManager->RebuildHierarchy();
 	DamageTextManager::GetInstance()->Init(this->game);
+	ItemData::GetInstance()->LoadData();
+	drawBuffer->PushCommand(std::make_shared<TransitionCommand>(game->GetGraphicsDevice(), 1.f, false));
 }
 
 void Demo::IBattleScene::Update(unsigned long long deltaTime)
@@ -958,6 +956,7 @@ void Demo::IBattleScene::Draw(unsigned long long deltaTime)
 		}
 		popUpMessage->Draw(deltaTime);
 		DamageTextManager::GetInstance()->Draw(this->camera, deltaTime);
+		drawBuffer->Update(deltaTime);
 		inpMan->DrawCursor(&camera, deltaTime);
 		gd->EndDraw();
 	}

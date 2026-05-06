@@ -108,5 +108,6 @@ namespace Demo {
 		float GetBuffStat(ItemBuffType targetType) const;
 		void UpdateBuffs();
 		void AddActiveBuff(const ActiveBuff& buff);
+		bool IsWalking() const { return isWalking; }
 	};
 }

@@ -3,12 +3,11 @@
 
 namespace Demo {
     NPC1::NPC1(std::weak_ptr<DX9GF::TransformManager> tm, float x, float y)
-        : IGameObject(tm, x, y), transformManager(tm) {
+        : INPC(tm, x, y) {
     }
 
-    void NPC1::Init(DX9GF::GraphicsDevice* gd, std::shared_ptr<Player> p, std::shared_ptr<DX9GF::ColliderManager> cm, std::shared_ptr<DX9GF::Font> font) {
-        player = p;
-        fontSprite = std::make_shared<DX9GF::FontSprite>(font.get());
+    void NPC1::Init(DX9GF::GraphicsDevice* gd, std::shared_ptr<Player> p, std::shared_ptr<DX9GF::ColliderManager> cm, std::shared_ptr<DX9GF::Font> font, std::shared_ptr<DX9GF::CommandBuffer> drawBuffer) {
+        INPC::Init(gd, p, cm, font, drawBuffer);
 
         collider = std::make_shared<DX9GF::RectangleCollider>(transformManager, 32.f, 32.f, this->GetWorldX(), this->GetWorldY());
         collider->SetOriginCenter();
@@ -21,41 +20,11 @@ namespace Demo {
         sprite->SetPosition(this->GetWorldX(), this->GetWorldY());
     }
 
-    void NPC1::Update(unsigned long long deltaTime) {
-        auto pLock = player.lock();
-        if (!pLock) return;
-
-        auto [px, py] = pLock->GetWorldPosition();
-        auto [sx, sy] = this->GetWorldPosition();
-
-        float distance = std::sqrt((px - sx) * (px - sx) + (py - sy) * (py - sy));
-        this->isPlayerNear = (distance <= this->INTERACTION_DISTANCE);
-    }
-
     void NPC1::Draw(const DX9GF::Camera& camera, unsigned long long deltaTime) {
-        auto [x, y] = GetWorldPosition();
-
         sprite->Begin();
         sprite->Draw(camera, deltaTime);
         sprite->End();
 
-        if (isPlayerNear && fontSprite) {
-            fontSprite->Begin();
-            fontSprite->SetText(L"E");
-            fontSprite->SetScale(1.0f);
-            fontSprite->SetColor(0xFFFFFFFF);
-            fontSprite->SetPosition(x - fontSprite->GetWidth() / 2.f, y - 40.f);
-            fontSprite->SetOutline(true, 0xFF000000);
-            fontSprite->Draw(camera, deltaTime);
-            fontSprite->End();
-        }
-    }
-
-
-    void NPC1::AddLine(std::wstring name, std::wstring content) {
-        DialogueLine line;
-        line.name = name;
-        line.content = content;
-        dialogueLines.push_back(line);
+        INPC::Draw(camera, deltaTime);
     }
 }

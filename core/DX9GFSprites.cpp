@@ -188,10 +188,11 @@ void DX9GF::FontSprite::SetBold(bool bold)
 	this->isBold = bold;
 }
 
-void DX9GF::FontSprite::SetOutline(bool outline, D3DCOLOR color)
+void DX9GF::FontSprite::SetOutline(bool outline, D3DCOLOR color, float thickness)
 {
 	this->isOutline = outline;
 	this->outlineColor = color;
+	this->outlineThickness = thickness;
 }
 
 LONG DX9GF::FontSprite::GetWidth() const
@@ -258,23 +259,24 @@ void DX9GF::FontSprite::Draw(const Camera& camera, unsigned long long deltaTime)
 	}
 
 	if (isOutline) {
-		const float offsets[8][2] = {
-			{-1.f, 0.f}, {1.f, 0.f}, {0.f, -1.f}, {0.f, 1.f},
-			{-1.f, -1.f}, {1.f, -1.f}, {-1.f, 1.f}, {1.f, 1.f}
-		};
-		for (int i = 0; i < 8; ++i) {
-			auto matOffsetWorld = matWorld;
-			matOffsetWorld._41 += offsets[i][0];
-			matOffsetWorld._42 += offsets[i][1];
-			auto matOffsetFinal = matOffsetWorld * matCamera;
-			p_sprite->SetTransform(&matOffsetFinal);
-			font->GetRawFont()->DrawText(p_sprite, text.c_str(), -1, &rect, format, outlineColor);
+		for (float x = -outlineThickness; x <= outlineThickness; x += 1.0f) {
+			for (float y = -outlineThickness; y <= outlineThickness; y += 1.0f) {
+				// Ignore points outside the circle radius for rounded outline
+				if (x * x + y * y > outlineThickness * outlineThickness) continue;
 
-			if (isBold) {
-				matOffsetWorld._41 += 1.0f;
-				matOffsetFinal = matOffsetWorld * matCamera;
+				auto matOffsetWorld = matWorld;
+				matOffsetWorld._41 += x;
+				matOffsetWorld._42 += y;
+				auto matOffsetFinal = matOffsetWorld * matCamera;
 				p_sprite->SetTransform(&matOffsetFinal);
 				font->GetRawFont()->DrawText(p_sprite, text.c_str(), -1, &rect, format, outlineColor);
+
+				if (isBold) {
+					matOffsetWorld._41 += 1.0f;
+					matOffsetFinal = matOffsetWorld * matCamera;
+					p_sprite->SetTransform(&matOffsetFinal);
+					font->GetRawFont()->DrawText(p_sprite, text.c_str(), -1, &rect, format, outlineColor);
+				}
 			}
 		}
 	}

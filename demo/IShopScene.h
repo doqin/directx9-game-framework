@@ -30,6 +30,9 @@ namespace Demo {
 		std::vector<ShopItem> itemsForSale;
 		std::vector<std::shared_ptr<Demo::IButton>> uiButtons;
 
+		std::shared_ptr<DX9GF::Texture> backBufferTexture;
+		std::shared_ptr<DX9GF::StaticSprite> backBufferSprite;
+
 		std::string statusMessage = "";
 		float messageTimer = 0.0f;
 		std::string shopTitle; 

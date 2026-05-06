@@ -7,10 +7,11 @@ namespace Demo {
         : IGameObject(tm, x, y), transformManager(tm) {
     }
 
-    void SavePoint::Init(DX9GF::GraphicsDevice* gd, DX9GF::Camera* camera, std::shared_ptr<Player> p, std::shared_ptr<DX9GF::ColliderManager> cm, std::shared_ptr<DX9GF::SaveManager> sm, std::shared_ptr<DX9GF::Font> font) {
+    void SavePoint::Init(DX9GF::GraphicsDevice* gd, DX9GF::Camera* camera, std::shared_ptr<Player> p, std::shared_ptr<DX9GF::ColliderManager> cm, std::shared_ptr<DX9GF::SaveManager> sm, std::shared_ptr<DX9GF::Font> font, std::shared_ptr<DX9GF::CommandBuffer> drawBuffer) {
         player = p;
         saveManager = sm;
         fontSprite = std::make_shared<DX9GF::FontSprite>(font.get());
+        this->drawBuffer = drawBuffer;
         this->gd = gd;
 		collider = std::make_shared<DX9GF::RectangleCollider>(transformManager, 32.f, 32.f, GetWorldX(), GetWorldY());
         collider->SetOriginCenter();
@@ -135,13 +136,20 @@ namespace Demo {
                 btnNo->Draw(gd, deltaTime);
             }
             else if (isPlayerNear) {
-                fontSprite->SetText(L"E");
-                fontSprite->SetScale(1.f);
-                fontSprite->SetColor(0xFFFFFFFF);
-                fontSprite->SetPosition(x - fontSprite->GetWidth() / 2.f, y - 30.f - fontSprite->GetHeight() / 2.f);
-                fontSprite->SetOutline(true, 0xFF000000);
-                fontSprite->Draw(camera, deltaTime);
                 fontSprite->End();
+                if (auto bufferLock = drawBuffer.lock()) {
+                    bufferLock->PushCommand(std::make_shared<DX9GF::CustomCommand>([this, x, y, &camera, deltaTime](std::function<void(void)> markFinished) {
+                        fontSprite->Begin();
+                        fontSprite->SetText(L"E");
+                        fontSprite->SetScale(1.f);
+                        fontSprite->SetColor(0xFFFFFFFF);
+                        fontSprite->SetPosition(x - fontSprite->GetWidth() / 2.f, y - 30.f - fontSprite->GetHeight() / 2.f);
+                        fontSprite->SetOutline(true, 0xFF000000);
+                        fontSprite->Draw(camera, deltaTime);
+                        fontSprite->End();
+                        markFinished();
+                    }));
+                }
             }
             else {
                 fontSprite->End();

@@ -4,7 +4,7 @@
 #include "MainBlockCard.h"
 
 Demo::CardShop::CardShop(Game* game, Player* player, int sw, int sh)
-	: IShopScene(game, player, sw, sh, "--- CARD SHOP ---")
+	: IShopScene(game, player, sw, sh, "CARD SHOP")
 {
 }
 

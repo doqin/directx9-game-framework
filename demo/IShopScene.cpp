@@ -12,7 +12,9 @@ void Demo::IShopScene::Init()
 	transformManager = std::make_shared<DX9GF::TransformManager>();
     myFont = std::make_shared<DX9GF::Font>(game->GetGraphicsDevice(), L"StatusPlz", 24);
 	myFontSprite = std::make_shared<DX9GF::FontSprite>(myFont.get());
-
+	backBufferTexture = std::make_shared<DX9GF::Texture>(game->GetGraphicsDevice());
+	backBufferTexture->CaptureCurrentBackBuffer();
+	backBufferSprite = std::make_shared<DX9GF::StaticSprite>(backBufferTexture.get());
 	LoadItems();
 
 	BuildUI();
@@ -22,7 +24,7 @@ void Demo::IShopScene::Init()
 
 void Demo::IShopScene::BuildUI()
 {
-  auto [sw, sh] = uiCamera.GetScreenResolution();
+	auto [sw, sh] = uiCamera.GetScreenResolution();
 	float leftPadding = sw * 0.12f;
 	float rightPadding = sw * 0.12f;
 	float listStartY = sh * 0.28f;
@@ -59,7 +61,7 @@ void Demo::IShopScene::BuildUI()
 
 	auto leaveBtn = std::make_shared<Demo::TextButton>(
 		transformManager,
-        leftPadding, sh * 0.12f, 100, 40,
+        leftPadding, sh * 0.15f, 100, 40,
 		"LEAVE",
 		myFont.get(),
 		[this](DX9GF::ITrigger* t) {
@@ -104,10 +106,23 @@ void Demo::IShopScene::Draw(unsigned long long deltaTime)
 	auto gd = game->GetGraphicsDevice();
 	gd->Clear();
 	auto [sw, sh] = uiCamera.GetScreenResolution();
+	float centerX = 0.0f;
+	float leftEdge = -sw / 2.0f;
+	float topEdge = -sh / 2.0f;
+	float bottomEdge = sh / 2.0f;
 
 	if (SUCCEEDED(gd->BeginDraw())) {
-       gd->DrawRectangle(uiCamera, 0.0f, 0.0f, static_cast<float>(sw), static_cast<float>(sh), 0, 1, 1, 0, 0, D3DXCOLOR(0.06f, 0.06f, 0.08f, 1.0f), true);
+		if (backBufferSprite) {
+			backBufferSprite->Begin();
+			backBufferSprite->SetPosition(0.0f, 0.0f);
+			backBufferSprite->Draw(uiCamera, deltaTime);
+			backBufferSprite->End();
+		}
+
+		gd->SetAlphaBlending(true);
+		gd->DrawRectangle(uiCamera, 0, 0, sw, sh, 0, 1, 1, 0, 0, D3DXCOLOR(0, 0, 0, 0.65f), true);
 		gd->DrawRectangle(uiCamera, sw * 0.08f, sh * 0.14f, sw * 0.84f, sh * 0.72f, 0, 1, 1, 0, 0, D3DXCOLOR(0.12f, 0.12f, 0.16f, 0.95f), true);
+		gd->SetAlphaBlending(false);
 
 		for (auto& btn : uiButtons) {
 			btn->Draw(gd, deltaTime);
@@ -115,18 +130,18 @@ void Demo::IShopScene::Draw(unsigned long long deltaTime)
 
 		if (myFontSprite) {
 			myFontSprite->Begin();
-
-           myFontSprite->SetPosition(sw - 170.0f, sh * 0.12f + 5.0f);
+			myFontSprite->SetPosition(sw - 170.0f, sh * 0.15f);
 			myFontSprite->SetColor(0xFFFFD700);
             myFontSprite->SetText(std::to_wstring(player->GetGold()) + L"G");
 			myFontSprite->Draw(uiCamera, deltaTime);
 
-           myFontSprite->SetPosition(sw * 0.5f - 130.0f, sh * 0.12f);
 			myFontSprite->SetColor(0xFFFFFFFF);
 			myFontSprite->SetText(std::wstring(shopTitle.begin(), shopTitle.end()));
+			auto width = myFontSprite->GetWidth();
+			myFontSprite->SetPosition(sw * 0.5f - width * 0.5f, sh * 0.15f);
 			myFontSprite->Draw(uiCamera, deltaTime);
 
-          myFontSprite->SetPosition(sw * 0.5f - 180.0f, sh * 0.82f);
+			myFontSprite->SetPosition(sw * 0.5f - 180.0f, sh * 0.82f);
 			myFontSprite->SetColor(0xFF00FFFF);
 			myFontSprite->SetText(std::wstring(statusMessage.begin(), statusMessage.end()));
 			myFontSprite->Draw(uiCamera, deltaTime);

@@ -23,11 +23,11 @@ namespace Demo {
 		Tab currentTab = Tab::ITEMS;
 
 		// UI Buttons
-		std::shared_ptr<TextButton> btnTabItems;
-		std::shared_ptr<TextButton> btnTabDeck;
-		std::shared_ptr<TextButton> btnResume;
-		std::shared_ptr<TextButton> btnOptions;
-		std::shared_ptr<TextButton> btnLeaveGame;
+		std::shared_ptr<IconButton> btnTabItems;
+		std::shared_ptr<IconButton> btnTabDeck;
+		std::shared_ptr<IconButton> btnResume;
+		std::shared_ptr<IconButton> btnOptions;
+		std::shared_ptr<IconButton> btnLeaveGame;
 
 		std::shared_ptr<DX9GF::FontSprite> fontSprite;
 
@@ -37,9 +37,13 @@ namespace Demo {
 
 		//Tab Items
 		std::shared_ptr<DX9GF::Texture> itemSheetTex;
+		std::shared_ptr<DX9GF::Texture> uiTex;
 		std::vector<std::shared_ptr<IconButton>> buffItems;
 		bool isItemsDirty = true;
 		std::wstring hoverDescription = L"";
+
+		std::shared_ptr<DX9GF::Texture> backBufferTexture;
+		std::shared_ptr<DX9GF::StaticSprite> backBufferSprite;
 
 		bool pendingLeave = false;
 

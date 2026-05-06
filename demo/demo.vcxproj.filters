@@ -1,445 +1,160 @@
 ﻿<?xml version="1.0" encoding="utf-8"?>
 <Project ToolsVersion="4.0" xmlns="http://schemas.microsoft.com/developer/msbuild/2003">
   <ItemGroup>
-    <Filter Include="Source Files">
-      <UniqueIdentifier>{4FC737F1-C7A5-4376-A066-2A32D752A2FF}</UniqueIdentifier>
-      <Extensions>cpp;c;cc;cxx;c++;cppm;ixx;def;odl;idl;hpj;bat;asm;asmx</Extensions>
-    </Filter>
-    <Filter Include="Header Files">
-      <UniqueIdentifier>{93995380-89BD-4b04-88EB-625FBE52EBFB}</UniqueIdentifier>
-      <Extensions>h;hh;hpp;hxx;h++;hm;inl;inc;ipp;xsd</Extensions>
-    </Filter>
-    <Filter Include="Resource Files">
-      <UniqueIdentifier>{67DA6AB6-F800-4c08-8B7A-83BB121AAD01}</UniqueIdentifier>
-      <Extensions>rc;ico;cur;bmp;dlg;rc2;rct;bin;rgs;gif;jpg;jpeg;jpe;resx;tiff;tif;png;wav;mfcribbon-ms</Extensions>
-    </Filter>
-    <Filter Include="Header Files\Components">
-      <UniqueIdentifier>{a4781c0e-441f-4c61-a635-a446e9dd7457}</UniqueIdentifier>
-    </Filter>
-    <Filter Include="Header Files\World1">
-      <UniqueIdentifier>{fffef1c3-8feb-466e-a01c-8efcbbd39f95}</UniqueIdentifier>
-    </Filter>
-    <Filter Include="Header Files\Debug">
-      <UniqueIdentifier>{99567bee-d7b8-40fc-b904-c6fa9e3b39dd}</UniqueIdentifier>
-    </Filter>
-    <Filter Include="Header Files\Interfaces">
-      <UniqueIdentifier>{e69e475f-eb35-4802-9d2d-d5c653483fba}</UniqueIdentifier>
-    </Filter>
-    <Filter Include="Header Files\Cards">
-      <UniqueIdentifier>{19e82f88-b9c9-49d7-a9f2-df60961c3582}</UniqueIdentifier>
-    </Filter>
-    <Filter Include="Header Files\Projectiles">
-      <UniqueIdentifier>{970c8ab7-c2dc-41a4-b4cc-833515485537}</UniqueIdentifier>
-    </Filter>
-    <Filter Include="Header Files\TutorialWorld">
-      <UniqueIdentifier>{64312bd6-53cf-4d03-9884-4ca4c5a86c83}</UniqueIdentifier>
-    </Filter>
+    <ClCompile Include="BoomerangProjectile.cpp" />
+    <ClCompile Include="CardShop.cpp" />
+    <ClCompile Include="CupidEnemy.cpp" />
+    <ClCompile Include="DamageTextManager.cpp" />
+    <ClCompile Include="DauDauNPC.cpp" />
+    <ClCompile Include="DebugScene.cpp" />
+    <ClCompile Include="DemonEyeEnemy.cpp" />
+    <ClCompile Include="Game.cpp" />
+    <ClCompile Include="GameItems.cpp" />
+    <ClCompile Include="HandContainer.cpp" />
+    <ClCompile Include="HealingPoint.cpp" />
+    <ClCompile Include="IBattleScene.cpp" />
+    <ClCompile Include="IButton.cpp" />
+    <ClCompile Include="IconButton.cpp" />
+    <ClCompile Include="IContainer.cpp" />
+    <ClCompile Include="IConversation.cpp" />
+    <ClCompile Include="IDraggable.cpp" />
+    <ClCompile Include="INPC.cpp" />
+    <ClCompile Include="InventoryMenu.cpp" />
+    <ClCompile Include="IStatementCard.cpp" />
+    <ClCompile Include="ItemShop.cpp" />
+    <ClCompile Include="main.cpp" />
+    <ClCompile Include="MainMenu.cpp" />
+    <ClCompile Include="MimicEnemy.cpp" />
+    <ClCompile Include="MultiTargetCard.cpp" />
+    <ClCompile Include="NPC1.cpp" />
+    <ClCompile Include="pch.cpp" />
+    <ClCompile Include="Player.cpp" />
+    <ClCompile Include="SavePoint.cpp" />
+    <ClCompile Include="SettingsManager.cpp" />
+    <ClCompile Include="SettingsScene.cpp" />
+    <ClCompile Include="IShopScene.cpp" />
+    <ClCompile Include="ShopPoint.cpp" />
+    <ClCompile Include="SineWaveProjectile.cpp" />
+    <ClCompile Include="SpiralProjectile.cpp" />
+    <ClCompile Include="TargetedProjectile.cpp" />
+    <ClCompile Include="TextInputManager.cpp" />
+    <ClCompile Include="PopUpMessage.cpp" />
+    <ClCompile Include="RoundProjectile.cpp" />
+    <ClCompile Include="TestBattleScene.cpp" />
+    <ClCompile Include="TutorialWorldScene.cpp" />
+    <ClCompile Include="VampireBatEnemy.cpp" />
+    <ClCompile Include="WarlockEnemy.cpp" />
+    <ClCompile Include="World1Scene.cpp" />
+    <ClCompile Include="TextButton.cpp" />
+    <ClCompile Include="EnemyCard.cpp" />
+    <ClCompile Include="IBlockCard.cpp" />
+    <ClCompile Include="IEnemy.cpp" />
+    <ClCompile Include="MainBlockCard.cpp" />
+    <ClCompile Include="StrikeCard.cpp" />
+    <ClCompile Include="TestEnemy.cpp" />
+    <ClCompile Include="RandomEncounter.cpp" />
+    <ClCompile Include="CustomBattleScene.cpp" />
+    <ClCompile Include="TransitionCommand.cpp" />
   </ItemGroup>
   <ItemGroup>
-    <ClCompile Include="main.cpp">
-      <Filter>Source Files</Filter>
-    </ClCompile>
-    <ClCompile Include="Game.cpp">
-      <Filter>Source Files</Filter>
-    </ClCompile>
-    <ClCompile Include="DebugScene.cpp">
-      <Filter>Source Files</Filter>
-    </ClCompile>
-    <ClCompile Include="IDraggable.cpp">
-      <Filter>Source Files</Filter>
-    </ClCompile>
-    <ClCompile Include="pch.cpp">
-      <Filter>Source Files</Filter>
-    </ClCompile>
-    <ClCompile Include="IContainer.cpp">
-      <Filter>Source Files</Filter>
-    </ClCompile>
-    <ClCompile Include="Player.cpp">
-      <Filter>Source Files</Filter>
-    </ClCompile>
-    <ClCompile Include="World1Scene.cpp">
-      <Filter>Source Files</Filter>
-    </ClCompile>
-    <ClCompile Include="TextButton.cpp">
-      <Filter>Source Files</Filter>
-    </ClCompile>
-    <ClCompile Include="IconButton.cpp">
-      <Filter>Source Files</Filter>
-    </ClCompile>
-    <ClCompile Include="IBattleScene.cpp">
-      <Filter>Source Files</Filter>
-    </ClCompile>
-    <ClCompile Include="TestBattleScene.cpp">
-      <Filter>Source Files</Filter>
-    </ClCompile>
-    <ClCompile Include="IButton.cpp">
-      <Filter>Source Files</Filter>
-    </ClCompile>
-    <ClCompile Include="EnemyCard.cpp">
-      <Filter>Source Files</Filter>
-    </ClCompile>
-    <ClCompile Include="IBlockCard.cpp">
-      <Filter>Source Files</Filter>
-    </ClCompile>
-    <ClCompile Include="IEnemy.cpp">
-      <Filter>Source Files</Filter>
-    </ClCompile>
-    <ClCompile Include="MainBlockCard.cpp">
-      <Filter>Source Files</Filter>
-    </ClCompile>
-    <ClCompile Include="StrikeCard.cpp">
-      <Filter>Source Files</Filter>
-    </ClCompile>
-    <ClCompile Include="TestEnemy.cpp">
-      <Filter>Source Files</Filter>
-    </ClCompile>
-    <ClCompile Include="RoundProjectile.cpp">
-      <Filter>Source Files</Filter>
-    </ClCompile>
-    <ClCompile Include="HandContainer.cpp">
-      <Filter>Source Files</Filter>
-    </ClCompile>
-    <ClCompile Include="PopUpMessage.cpp">
-      <Filter>Source Files</Filter>
-    </ClCompile>
-    <ClCompile Include="MainMenu.cpp">
-      <Filter>Source Files</Filter>
-    </ClCompile>
-    <ClCompile Include="IConversation.cpp">
-      <Filter>Source Files</Filter>
-    </ClCompile>
-    <ClCompile Include="TextInputManager.cpp">
-      <Filter>Source Files</Filter>
-    </ClCompile>
-    <ClCompile Include="SettingsManager.cpp">
-      <Filter>Source Files</Filter>
-    </ClCompile>
-    <ClCompile Include="SettingsScene.cpp">
-      <Filter>Source Files</Filter>
-    </ClCompile>
-    <ClCompile Include="IShopScene.cpp">
-      <Filter>Source Files</Filter>
-    </ClCompile>
-    <ClCompile Include="CardShop.cpp">
-      <Filter>Source Files</Filter>
-    </ClCompile>
-    <ClCompile Include="MultiTargetCard.cpp">
-      <Filter>Source Files</Filter>
-    </ClCompile>
-    <ClCompile Include="TutorialWorldScene.cpp">
-      <Filter>Source Files</Filter>
-    </ClCompile>
-    <ClCompile Include="SavePoint.cpp">
-      <Filter>Source Files</Filter>
-    </ClCompile>
-    <ClCompile Include="IStatementCard.cpp">
-      <Filter>Source Files</Filter>
-    </ClCompile>
-    <ClCompile Include="DamageTextManager.cpp">
-      <Filter>Source Files</Filter>
-    </ClCompile>
-    <ClCompile Include="InventoryMenu.cpp">
-      <Filter>Source Files</Filter>
-    </ClCompile>
-    <ClCompile Include="GameItems.cpp">
-      <Filter>Source Files</Filter>
-    </ClCompile>
-    <ClCompile Include="ShopPoint.cpp">
-      <Filter>Source Files</Filter>
-    </ClCompile>
-    <ClCompile Include="HealingPoint.cpp">
-      <Filter>Source Files</Filter>
-    </ClCompile>
-    <ClCompile Include="NPC1.cpp">
-      <Filter>Source Files</Filter>
-    </ClCompile>
-    <ClCompile Include="DemonEyeEnemy.cpp">
-      <Filter>Source Files</Filter>
-    </ClCompile>
-    <ClCompile Include="SineWaveProjectile.cpp">
-      <Filter>Source Files</Filter>
-    </ClCompile>
-    <ClCompile Include="TargetedProjectile.cpp">
-      <Filter>Source Files</Filter>
-    </ClCompile>
-    <ClCompile Include="CupidEnemy.cpp">
-      <Filter>Source Files</Filter>
-    </ClCompile>
-    <ClCompile Include="ItemShop.cpp">
-      <Filter>Source Files</Filter>
-    </ClCompile>
-    <ClCompile Include="BoomerangProjectile.cpp">
-      <Filter>Source Files</Filter>
-    </ClCompile>
-    <ClCompile Include="SpiralProjectile.cpp">
-      <Filter>Source Files</Filter>
-    </ClCompile>
-    <ClCompile Include="VampireBatEnemy.cpp">
-      <Filter>Source Files</Filter>
-    </ClCompile>
-    <ClCompile Include="MimicEnemy.cpp">
-      <Filter>Source Files</Filter>
-    </ClCompile>
-    <ClCompile Include="WarlockEnemy.cpp">
-      <Filter>Source Files</Filter>
-    </ClCompile>
+    <ClInclude Include="AdvancedCards.h" />
+    <ClInclude Include="BoomerangProjectile.h" />
+    <ClInclude Include="CardShop.h" />
+    <ClInclude Include="CupidEnemy.h" />
+    <ClInclude Include="DamageTextManager.h" />
+    <ClInclude Include="DauDauNPC.h" />
+    <ClInclude Include="DebugScene.h" />
+    <ClInclude Include="DemonEyeEnemy.h" />
+    <ClInclude Include="DialogueLine.h" />
+    <ClInclude Include="EnemyCard.h" />
+    <ClInclude Include="Game.h" />
+    <ClInclude Include="GameItems.h" />
+    <ClInclude Include="HandContainer.h" />
+    <ClInclude Include="HealingPoint.h" />
+    <ClInclude Include="IBattleScene.h" />
+    <ClInclude Include="IBlockCard.h" />
+    <ClInclude Include="IButton.h" />
+    <ClInclude Include="ICard.h" />
+    <ClInclude Include="IconButton.h" />
+    <ClInclude Include="IContainer.h" />
+    <ClInclude Include="IConversation.h" />
+    <ClInclude Include="IDraggable.h" />
+    <ClInclude Include="INPC.h" />
+    <ClInclude Include="InventoryMenu.h" />
+    <ClInclude Include="ItemShop.h" />
+    <ClInclude Include="MainMenu.h" />
+    <ClInclude Include="IEnemy.h" />
+    <ClInclude Include="IExpressionCard.h" />
+    <ClInclude Include="IProjectile.h" />
+    <ClInclude Include="IStatementCard.h" />
+    <ClInclude Include="MainBlockCard.h" />
+    <ClInclude Include="MimicEnemy.h" />
+    <ClInclude Include="MultiTargetCard.h" />
+    <ClInclude Include="NPC1.h" />
+    <ClInclude Include="Player.h" />
+    <ClInclude Include="PopUpMessage.h" />
+    <ClInclude Include="resource.h" />
+    <ClInclude Include="SavePoint.h" />
+    <ClInclude Include="SettingsManager.h" />
+    <ClInclude Include="SettingsScene.h" />
+    <ClInclude Include="IShopScene.h" />
+    <ClInclude Include="ShopPoint.h" />
+    <ClInclude Include="SineWaveProjectile.h" />
+    <ClInclude Include="SpiralProjectile.h" />
+    <ClInclude Include="TargetedProjectile.h" />
+    <ClInclude Include="TextInputManager.h" />
+    <ClInclude Include="RoundProjectile.h" />
+    <ClInclude Include="StrikeCard.h" />
+    <ClInclude Include="TestBattleScene.h" />
+    <ClInclude Include="TestEnemy.h" />
+    <ClInclude Include="TutorialWorldScene.h" />
+    <ClInclude Include="VampireBatEnemy.h" />
+    <ClInclude Include="WarlockEnemy.h" />
+    <ClInclude Include="World1Scene.h" />
+    <ClInclude Include="TextButton.h" />
+    <ClInclude Include="RandomEncounter.h" />
+    <ClInclude Include="CustomBattleScene.h" />
+    <ClInclude Include="TransitionCommand.h" />
   </ItemGroup>
   <ItemGroup>
-    <ClInclude Include="Game.h">
-      <Filter>Header Files</Filter>
-    </ClInclude>
-    <ClInclude Include="resource.h">
-      <Filter>Header Files</Filter>
-    </ClInclude>
-    <ClInclude Include="World1Scene.h">
-      <Filter>Header Files\World1</Filter>
-    </ClInclude>
-    <ClInclude Include="EnemyCard.h">
-      <Filter>Header Files</Filter>
-    </ClInclude>
-    <ClInclude Include="DebugScene.h">
-      <Filter>Header Files\Debug</Filter>
-    </ClInclude>
-    <ClInclude Include="TestBattleScene.h">
-      <Filter>Header Files\Debug</Filter>
-    </ClInclude>
-    <ClInclude Include="TestEnemy.h">
-      <Filter>Header Files\Debug</Filter>
-    </ClInclude>
-    <ClInclude Include="IBattleScene.h">
-      <Filter>Header Files\Interfaces</Filter>
-    </ClInclude>
-    <ClInclude Include="IBlockCard.h">
-      <Filter>Header Files\Interfaces</Filter>
-    </ClInclude>
-    <ClInclude Include="IButton.h">
-      <Filter>Header Files\Interfaces</Filter>
-    </ClInclude>
-    <ClInclude Include="IContainer.h">
-      <Filter>Header Files\Interfaces</Filter>
-    </ClInclude>
-    <ClInclude Include="IDraggable.h">
-      <Filter>Header Files\Interfaces</Filter>
-    </ClInclude>
-    <ClInclude Include="IEnemy.h">
-      <Filter>Header Files\Interfaces</Filter>
-    </ClInclude>
-    <ClInclude Include="IExpressionCard.h">
-      <Filter>Header Files\Interfaces</Filter>
-    </ClInclude>
-    <ClInclude Include="IStatementCard.h">
-      <Filter>Header Files\Interfaces</Filter>
-    </ClInclude>
-    <ClInclude Include="IconButton.h">
-      <Filter>Header Files\Components</Filter>
-    </ClInclude>
-    <ClInclude Include="TextButton.h">
-      <Filter>Header Files\Components</Filter>
-    </ClInclude>
-    <ClInclude Include="StrikeCard.h">
-      <Filter>Header Files\Cards</Filter>
-    </ClInclude>
-    <ClInclude Include="MainBlockCard.h">
-      <Filter>Header Files\Cards</Filter>
-    </ClInclude>
-    <ClInclude Include="IProjectile.h">
-      <Filter>Header Files\Interfaces</Filter>
-    </ClInclude>
-    <ClInclude Include="RoundProjectile.h">
-      <Filter>Header Files\Projectiles</Filter>
-    </ClInclude>
-    <ClInclude Include="HandContainer.h">
-      <Filter>Header Files</Filter>
-    </ClInclude>
-    <ClInclude Include="PopUpMessage.h">
-      <Filter>Header Files\Components</Filter>
-    </ClInclude>
-    <ClInclude Include="MainMenu.h">
-      <Filter>Header Files</Filter>
-    </ClInclude>
-    <ClInclude Include="DialogueLine.h">
-      <Filter>Header Files\Components</Filter>
-    </ClInclude>
-    <ClInclude Include="IConversation.h">
-      <Filter>Header Files\Components</Filter>
-    </ClInclude>
-    <ClInclude Include="TextInputManager.h">
-      <Filter>Header Files\Components</Filter>
-    </ClInclude>
-    <ClInclude Include="SettingsManager.h">
-      <Filter>Header Files</Filter>
-    </ClInclude>
-    <ClInclude Include="SettingsScene.h">
-      <Filter>Header Files</Filter>
-    </ClInclude>
-    <ClInclude Include="CardShop.h">
-      <Filter>Header Files</Filter>
-    </ClInclude>
-    <ClInclude Include="MultiTargetCard.h">
-      <Filter>Header Files\Cards</Filter>
-    </ClInclude>
-    <ClInclude Include="AdvancedCards.h">
-      <Filter>Header Files\Cards</Filter>
-    </ClInclude>
-    <ClInclude Include="TutorialWorldScene.h">
-      <Filter>Header Files\TutorialWorld</Filter>
-    </ClInclude>
-    <ClInclude Include="ICard.h">
-      <Filter>Header Files\Interfaces</Filter>
-    </ClInclude>
-    <ClInclude Include="IShopScene.h">
-      <Filter>Header Files\Interfaces</Filter>
-    </ClInclude>
-    <ClInclude Include="SavePoint.h">
-      <Filter>Header Files\Components</Filter>
-    </ClInclude>
-    <ClInclude Include="DamageTextManager.h">
-      <Filter>Header Files</Filter>
-    </ClInclude>
-    <ClInclude Include="InventoryMenu.h">
-      <Filter>Header Files</Filter>
-    </ClInclude>
-    <ClInclude Include="GameItems.h">
-      <Filter>Header Files</Filter>
-    </ClInclude>
-    <ClInclude Include="ShopPoint.h">
-      <Filter>Header Files\Components</Filter>
-    </ClInclude>
-    <ClInclude Include="HealingPoint.h">
-      <Filter>Header Files\Components</Filter>
-    </ClInclude>
-    <ClInclude Include="NPC1.h">
-      <Filter>Header Files</Filter>
-    </ClInclude>
-    <ClInclude Include="SineWaveProjectile.h">
-      <Filter>Header Files</Filter>
-    </ClInclude>
-    <ClInclude Include="TargetedProjectile.h">
-      <Filter>Header Files</Filter>
-    </ClInclude>
-    <ClInclude Include="DemonEyeEnemy.h">
-      <Filter>Header Files\Debug</Filter>
-    </ClInclude>
-    <ClInclude Include="CupidEnemy.h">
-      <Filter>Header Files\Debug</Filter>
-    </ClInclude>
-    <ClInclude Include="ItemShop.h">
-      <Filter>Header Files</Filter>
-    </ClInclude>
-    <ClInclude Include="Player.h">
-      <Filter>Source Files</Filter>
-    </ClInclude>
-    <ClInclude Include="BoomerangProjectile.h">
-      <Filter>Header Files\Projectiles</Filter>
-    </ClInclude>
-    <ClInclude Include="SpiralProjectile.h">
-      <Filter>Header Files\Projectiles</Filter>
-    </ClInclude>
-    <ClInclude Include="VampireBatEnemy.h">
-      <Filter>Header Files\Debug</Filter>
-    </ClInclude>
-    <ClInclude Include="MimicEnemy.h">
-      <Filter>Header Files\Debug</Filter>
-    </ClInclude>
-    <ClInclude Include="WarlockEnemy.h">
-      <Filter>Header Files\Debug</Filter>
-    </ClInclude>
+    <ResourceCompile Include="demo.rc" />
   </ItemGroup>
   <ItemGroup>
-    <None Include="uiter.aseprite">
-      <Filter>Resource Files</Filter>
-    </None>
-    <None Include="uiter-Sheet.aseprite">
-      <Filter>Resource Files</Filter>
-    </None>
-    <None Include="placeholder-round-projectile.aseprite">
-      <Filter>Resource Files</Filter>
-    </None>
-    <None Include="tutorial.tmx">
-      <Filter>Resource Files</Filter>
-    </None>
-    <None Include="tutorial.aseprite">
-      <Filter>Resource Files</Filter>
-    </None>
-    <None Include="tutorial.tsx">
-      <Filter>Resource Files</Filter>
-    </None>
+    <Image Include="arrow.png" />
+    <Image Include="click.png" />
+    <Image Include="cursor.png" />
+    <Image Include="daudau-Sheet.png" />
+    <Image Include="grab.png" />
+    <Image Include="healingpoint-Sheet.png" />
+    <Image Include="hitimpact-Sheet.png" />
+    <Image Include="items.png" />
+    <Image Include="NPC1.png" />
+    <Image Include="placeholder-healingpoint.png" />
+    <Image Include="pointer.png" />
+    <Image Include="savepoint-Sheet.png" />
+    <Image Include="Shop-Sheet.png" />
+    <Image Include="TempTex.png" />
+    <Image Include="placeholder-shop.png" />
+    <Image Include="test-background.png" />
+    <Image Include="test-title.png" />
+    <Image Include="placeholder-round-projectile.png" />
+    <Image Include="placeholder.png" />
+    <Image Include="tutorial.png" />
+    <Image Include="ui.png" />
+    <Image Include="text-select.png" />
+    <Image Include="uiter-Sheet.png" />
+    <Image Include="ui-pack.png" />
   </ItemGroup>
   <ItemGroup>
-    <Image Include="uiter-Sheet.png">
-      <Filter>Resource Files</Filter>
-    </Image>
-    <Image Include="test-background.png">
-      <Filter>Resource Files</Filter>
-    </Image>
-    <Image Include="test-title.png">
-      <Filter>Resource Files</Filter>
-    </Image>
-    <Image Include="placeholder.png">
-      <Filter>Resource Files</Filter>
-    </Image>
-    <Image Include="placeholder-round-projectile.png">
-      <Filter>Resource Files</Filter>
-    </Image>
-    <Image Include="pointer.png">
-      <Filter>Resource Files</Filter>
-    </Image>
-    <Image Include="text-select.png">
-      <Filter>Resource Files</Filter>
-    </Image>
-    <Image Include="click.png">
-      <Filter>Resource Files</Filter>
-    </Image>
-    <Image Include="cursor.png">
-      <Filter>Resource Files</Filter>
-    </Image>
-    <Image Include="grab.png">
-      <Filter>Resource Files</Filter>
-    </Image>
-    <Image Include="tutorial.png">
-      <Filter>Resource Files</Filter>
-    </Image>
-    <Image Include="ui.png">
-      <Filter>Resource Files</Filter>
-    </Image>
-    <Image Include="hitimpact-Sheet.png">
-      <Filter>Resource Files</Filter>
-    </Image>
-    <Image Include="savepoint-Sheet.png">
-      <Filter>Resource Files</Filter>
-    </Image>
-    <Image Include="arrow.png">
-      <Filter>Resource Files</Filter>
-    </Image>
-    <Image Include="TempTex.png">
-      <Filter>Resource Files</Filter>
-    </Image>
-    <Image Include="placeholder-healingpoint.png">
-      <Filter>Resource Files</Filter>
-    </Image>
-    <Image Include="placeholder-shop.png">
-      <Filter>Resource Files</Filter>
-    </Image>
-    <Image Include="NPC1.png">
-      <Filter>Resource Files</Filter>
-    </Image>
+    <Font Include="arcade-among-2-r46pv.ttf" />
+    <Font Include="statusplz.ttf" />
   </ItemGroup>
   <ItemGroup>
-    <ResourceCompile Include="demo.rc">
-      <Filter>Resource Files</Filter>
-    </ResourceCompile>
-  </ItemGroup>
-  <ItemGroup>
-    <Image Include="ui-pack.png">
-      <Filter>Resource Files</Filter>
-    </Image>
-  </ItemGroup>
-  <ItemGroup>
-    <Font Include="arcade-among-2-r46pv.ttf">
-      <Filter>Resource Files</Filter>
-    </Font>
-    <Font Include="statusplz.ttf">
-      <Filter>Resource Files</Filter>
-    </Font>
+    <None Include="placeholder-round-projectile.aseprite" />
+    <None Include="tutorial.aseprite" />
+    <None Include="tutorial.tmx" />
+    <None Include="tutorial.tsx" />
+    <None Include="uiter-Sheet.aseprite" />
+    <None Include="uiter.aseprite" />
   </ItemGroup>
 </Project>

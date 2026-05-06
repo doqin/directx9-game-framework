@@ -52,13 +52,14 @@ namespace DX9GF {
 		bool isBold = false;
 		bool isOutline = false;
 		D3DCOLOR outlineColor = 0xFF000000;
+		float outlineThickness = 1.0f;
 	public:
 		FontSprite(Font* font);
 		~FontSprite();
 		void SetText(std::wstring&& text);
 		void SetColor(D3DCOLOR color);
 		void SetBold(bool bold);
-		void SetOutline(bool outline, D3DCOLOR color = 0xFF000000);
+		void SetOutline(bool outline, D3DCOLOR color = 0xFF000000, float thickness = 1.0f);
 	  LONG GetWidth() const;
 		LONG GetHeight() const;
 		void Begin() override;
