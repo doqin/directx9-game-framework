@@ -23,7 +23,7 @@ namespace Demo {
         if (isPlayerNear && fontSprite) {
             auto [x, y] = GetWorldPosition();
             if (auto bufferLock = drawBuffer.lock()) {
-                bufferLock->PushCommand(std::make_shared<DX9GF::CustomCommand>([this, x, y, &camera, deltaTime](std::function<void(void)> markFinished) {
+                bufferLock->StackCommand(std::make_shared<DX9GF::CustomCommand>([this, x, y, &camera, deltaTime](std::function<void(void)> markFinished) {
                     fontSprite->Begin();
                     fontSprite->SetText(L"E");
                     fontSprite->SetScale(1.0f);

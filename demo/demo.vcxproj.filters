@@ -55,6 +55,7 @@
     <ClCompile Include="RandomEncounter.cpp" />
     <ClCompile Include="CustomBattleScene.cpp" />
     <ClCompile Include="TransitionCommand.cpp" />
+    <ClCompile Include="AdvancedCards.cpp" />
   </ItemGroup>
   <ItemGroup>
     <ClInclude Include="AdvancedCards.h" />

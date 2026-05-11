@@ -22,7 +22,7 @@ namespace Demo {
 
 		bool isPlayerNear = false;
 		const float INTERACTION_DISTANCE = 50.0f;
-		bool isVisible = false;
+		bool isVisible = true;
 
 	public:
 		ShopPoint(std::weak_ptr<DX9GF::TransformManager> tm, float x = 0, float y = 0);

@@ -190,7 +190,7 @@ void Demo::IEnemy::SetState(bool isOnStandby)
 
 bool Demo::IEnemy::IsDoneAttacking()
 {
-    return !commandBuffer.IsBusy() && projectiles.empty();
+    return !commandBuffer.IsBusy() && !animationBuffer.IsBusy() && projectiles.empty() && hitImpactSprites.empty();
 }
 
 void Demo::IEnemy::ApplyStatus(StatusType type, int duration, float value) {
@@ -214,7 +214,8 @@ bool Demo::IEnemy::HasStatus(StatusType type) const {
 void Demo::IEnemy::TickStatuses() {
     for (auto it = activeStatuses.begin(); it != activeStatuses.end(); ) {
         if (it->type == StatusType::POISON && it->duration > 0) {
-			this->TakeDamage(it->value);
+            const float poisonDamage = (it->value > 0.f) ? it->value : static_cast<float>(it->duration);
+            this->TakeDamage(poisonDamage);
         }
 
         it->duration--;

@@ -19,6 +19,7 @@ namespace Demo {
 	private:
 		const float maxHealth;
 	protected:
+     int goldReward = 0;
 	   struct DamageIndicator {
 			std::wstring text;
 			float offsetX = 0.f;
@@ -41,6 +42,7 @@ namespace Demo {
 		std::vector<std::shared_ptr<DX9GF::AnimatedSprite>> hitImpactSprites;
 		std::vector<StatusEffect> activeStatuses;
 		DX9GF::GraphicsDevice* graphicsDevice = nullptr;
+     void SetGoldReward(int reward) { goldReward = reward; }
 	public:
 		IEnemy(std::weak_ptr<DX9GF::TransformManager> tm, float maxHealth) : IGameObject(tm), maxHealth(maxHealth), health(maxHealth) {}
 		IEnemy(std::weak_ptr<DX9GF::TransformManager> tm, float maxHealth, float x, float y, float rotation = 0, float scaleX = 1, float scaleY = 1) : IGameObject(tm, x, y, rotation, scaleX, scaleY), maxHealth(maxHealth), health(maxHealth) {}
@@ -54,6 +56,8 @@ namespace Demo {
 		virtual void StartAttack(std::shared_ptr<Player> player) = 0;
 		void SetState(bool isOnStandby);
 		bool IsDoneAttacking();
+		int GetGoldReward() const { return goldReward; }
+		float GetMaxHealth() const { return maxHealth; }
 
 		virtual void ApplyStatus(StatusType type, int duration, float value = 0.0f);
 		virtual void TickStatuses();

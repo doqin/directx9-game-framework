@@ -8,6 +8,7 @@
 #include <string>
 #include <vector>
 #include <functional>
+#include "IconButton.h"
 
 namespace Demo {
 	struct ShopItem {
@@ -37,6 +38,7 @@ namespace Demo {
 		float messageTimer = 0.0f;
 		std::string shopTitle; 
 		bool shouldLeave = false;
+        std::shared_ptr<DX9GF::Texture> uiSheetTex;
 
 		void BuildUI();
 

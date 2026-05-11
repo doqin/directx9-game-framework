@@ -1,7 +1,7 @@
 ﻿#include "pch.h"
 #include "CardShop.h"
 #include "StrikeCard.h"
-#include "MainBlockCard.h"
+#include "AdvancedCards.h"
 
 Demo::CardShop::CardShop(Game* game, Player* player, int sw, int sh)
 	: IShopScene(game, player, sw, sh, "CARD SHOP")
@@ -20,11 +20,20 @@ void Demo::CardShop::LoadItems()
 		});
 
 	itemsForSale.push_back({
-		"Main Block Card",
-		75,
+		"Heavy Strike Card",
+		100,
 		[this]() {
-			auto newCard = std::make_shared<MainBlockCard>(this->transformManager);
+			auto newCard = std::make_shared<HeavyStrikeCard>(this->transformManager);
 			this->player->AddCardToDeck(newCard->GetSaveID());
 		}
-		});
+	});
+
+	itemsForSale.push_back({
+		"Poison Card",
+		75,
+		[this]() {
+			auto newCard = std::make_shared<PoisonCard>(this->transformManager);
+			this->player->AddCardToDeck(newCard->GetSaveID());
+		}
+	});
 }

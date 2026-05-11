@@ -99,6 +99,7 @@ namespace Demo {
 	{
 		isOpen = !isOpen;
 		if (isOpen) {
+			RefreshItemsUI();
 			backBufferTexture = std::make_shared<DX9GF::Texture>(game->GetGraphicsDevice());
 			backBufferTexture->CaptureCurrentBackBuffer();
 			backBufferSprite = std::make_shared<DX9GF::StaticSprite>(backBufferTexture.get());

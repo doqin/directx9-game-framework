@@ -2,8 +2,8 @@
 #include "MultiTargetCard.h"
 
 namespace Demo {
-	MultiTargetCard::MultiTargetCard(std::weak_ptr<DX9GF::TransformManager> tm, size_t maxTargets, std::wstring name, float x, float y)
-		: IGameObject(tm, x, y), IStatementCard(tm, 140, 40, x, y), maxTargets(maxTargets), cardName(name) {
+	MultiTargetCard::MultiTargetCard(std::weak_ptr<DX9GF::TransformManager> tm, size_t maxTargets, std::wstring name, float x, float y, size_t dragAreaWidth, size_t dragAreaHeight)
+		: IGameObject(tm, x, y), IStatementCard(tm, dragAreaWidth, dragAreaHeight, x, y), maxTargets(maxTargets), cardName(name) {
 	}
 
 	bool MultiTargetCard::OnDrop(std::shared_ptr<IDraggable> other) {
@@ -14,6 +14,7 @@ namespace Demo {
 
 		auto [thisX, thisY] = this->GetWorldPosition();
 		auto [otherX, otherY] = other->GetWorldPosition();
+		otherY += other->GetTrigger().lock()->GetHeight() / 2.0f;
 
 		if (otherX > thisX && otherX < thisX + dragAreaWidth &&
 			otherY > thisY && otherY < thisY + dragAreaHeight) {

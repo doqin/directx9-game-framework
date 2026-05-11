@@ -278,10 +278,10 @@ bool Demo::IDraggable::OnDrop(std::shared_ptr<IDraggable> other)
 {
 	auto thisX = trigger->GetWorldX() - trigger->GetOriginX();
 	auto thisY = trigger->GetWorldY() - trigger->GetOriginY();
-	auto otherX = other->trigger->GetWorldX() - other->trigger->GetOriginX();
-	auto otherY = other->trigger->GetWorldY() - other->trigger->GetOriginY();
+	auto otherX = other->trigger->GetWorldX() - other->trigger->GetOriginX() + other->trigger->GetWidth() / 2.0f;
+	auto otherY = other->trigger->GetWorldY() - other->trigger->GetOriginY() + other->trigger->GetHeight() / 2.0f;
 	if (otherX > thisX
-       && otherX < thisX + trigger->GetWidth()
+	   && otherX < thisX + trigger->GetWidth()
 		&& otherY > thisY
        && otherY < thisY + trigger->GetHeight()) {
 		other->SetParent(shared_from_this());
@@ -294,10 +294,10 @@ bool Demo::IDraggable::OnHover(std::shared_ptr<IDraggable> other)
 {
 	auto thisX = trigger->GetWorldX() - trigger->GetOriginX();
 	auto thisY = trigger->GetWorldY() - trigger->GetOriginY();
-	auto otherX = other->trigger->GetWorldX() - other->trigger->GetOriginX();
-	auto otherY = other->trigger->GetWorldY() - other->trigger->GetOriginY();
+	auto otherX = other->trigger->GetWorldX() - other->trigger->GetOriginX() + other->trigger->GetWidth() / 2.0f;
+	auto otherY = other->trigger->GetWorldY() - other->trigger->GetOriginY() + other->trigger->GetHeight() / 2.0f;
 	if (otherX > thisX
-       && otherX < thisX + trigger->GetWidth()
+	   && otherX < thisX + trigger->GetWidth()
 		&& otherY > thisY
        && otherY < thisY + trigger->GetHeight()) {
 		return true;
@@ -323,6 +323,11 @@ size_t Demo::IDraggable::GetHeight() const
 std::weak_ptr<Demo::DraggableManager> Demo::IDraggable::GetDraggableManager()
 {
 	return draggableManager;
+}
+
+std::weak_ptr<DX9GF::RectangleTrigger> Demo::IDraggable::GetTrigger()
+{
+	return trigger;
 }
 
 bool Demo::IDraggable::IsDragging() const

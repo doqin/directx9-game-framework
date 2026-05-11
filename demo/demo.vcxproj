@@ -204,6 +204,7 @@
     </ProjectReference>
   </ItemGroup>
   <ItemGroup>
+    <ClCompile Include="AdvancedCards.cpp" />
     <ClCompile Include="BoomerangProjectile.cpp" />
     <ClCompile Include="CardShop.cpp" />
     <ClCompile Include="CupidEnemy.cpp" />

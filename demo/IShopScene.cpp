@@ -1,5 +1,6 @@
 #include "pch.h"
 #include "IShopScene.h"
+#include "IconButton.h"
 
 Demo::IShopScene::IShopScene(Game* game, Player* player, int sw, int sh, std::string title)
 	: IScene(sw, sh), game(game), player(player), uiCamera(sw, sh), shopTitle(title)
@@ -15,6 +16,8 @@ void Demo::IShopScene::Init()
 	backBufferTexture = std::make_shared<DX9GF::Texture>(game->GetGraphicsDevice());
 	backBufferTexture->CaptureCurrentBackBuffer();
 	backBufferSprite = std::make_shared<DX9GF::StaticSprite>(backBufferTexture.get());
+	uiSheetTex = std::make_shared<DX9GF::Texture>(game->GetGraphicsDevice()); 
+    uiSheetTex->LoadTexture(L"ui.png"); // load here
 	LoadItems();
 
 	BuildUI();
@@ -29,45 +32,47 @@ void Demo::IShopScene::BuildUI()
 	float rightPadding = sw * 0.12f;
 	float listStartY = sh * 0.28f;
 	float rowHeight = 70.0f;
-	float buyButtonW = 110.0f;
+	float buyButtonW = 64.0f; 
 	float buyButtonX = sw - rightPadding - buyButtonW;
 
 	for (size_t i = 0; i < itemsForSale.size(); ++i) {
 		auto item = itemsForSale[i];
 
-		auto buyBtn = std::make_shared<Demo::TextButton>(
+		auto buyBtn = std::make_shared<Demo::IconButton>(
 			transformManager,
-            buyButtonX, listStartY + (i * rowHeight), buyButtonW, 40,
-			"BUY",
-			myFont.get(),
-			[this, item](DX9GF::ITrigger* t) {
-				if (this->player->GetGold() >= item.cost) {
-					this->player->AddGold(-item.cost);
-
-					if (item.onBuyAction) {
-						item.onBuyAction();
-					}
-
-					this->ShowMessage("Bought " + item.name + "!");
-				}
-				else {
-					this->ShowMessage("Not enough gold!");
-				}
-			}
+            buyButtonX, listStartY + (i * rowHeight), 64, 64,
+			uiSheetTex, 3
 		);
+        buyBtn->SetSpriteCoords(0, 240, 32, 32, 0, false);
+		buyBtn->SetSpriteScale(2, 2);
+        buyBtn->SetOnReleaseLeft([this, item](DX9GF::ITrigger* t) {
+            if (this->player->GetGold() >= item.cost) {
+                this->player->AddGold(-item.cost);
+
+                if (item.onBuyAction) {
+                    item.onBuyAction();
+                }
+
+                this->ShowMessage("Bought " + item.name + "!");
+            }
+            else {
+                this->ShowMessage("Not enough gold!");
+            }
+        });
 		buyBtn->Init(&uiCamera);
 		uiButtons.push_back(buyBtn);
 	}
 
-	auto leaveBtn = std::make_shared<Demo::TextButton>(
+	auto leaveBtn = std::make_shared<Demo::IconButton>(
 		transformManager,
-        leftPadding, sh * 0.15f, 100, 40,
-		"LEAVE",
-		myFont.get(),
-		[this](DX9GF::ITrigger* t) {
-			this->shouldLeave = true;
-		}
+        leftPadding, sh * 0.15f, 96, 64,
+		uiSheetTex, 3
 	);
+    leaveBtn->SetSpriteCoords(144, 240, 48, 32, 0, false);
+    leaveBtn->SetSpriteScale(2, 2);
+    leaveBtn->SetOnReleaseLeft([this](DX9GF::ITrigger* t) {
+        this->shouldLeave = true;
+    });
 	leaveBtn->Init(&uiCamera);
 	uiButtons.push_back(leaveBtn);
 }
@@ -132,8 +137,10 @@ void Demo::IShopScene::Draw(unsigned long long deltaTime)
 			myFontSprite->Begin();
 			myFontSprite->SetPosition(sw - 170.0f, sh * 0.15f);
 			myFontSprite->SetColor(0xFFFFD700);
+			myFontSprite->SetScale(1.5f, 1.5f);
             myFontSprite->SetText(std::to_wstring(player->GetGold()) + L"G");
 			myFontSprite->Draw(uiCamera, deltaTime);
+			myFontSprite->SetScale(1.0f, 1.0f);
 
 			myFontSprite->SetColor(0xFFFFFFFF);
 			myFontSprite->SetText(std::wstring(shopTitle.begin(), shopTitle.end()));

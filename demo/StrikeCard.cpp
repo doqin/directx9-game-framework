@@ -9,6 +9,7 @@ bool Demo::StrikeCard::OnDrop(std::shared_ptr<IDraggable> other)
 	}
 	auto [thisX, thisY] = this->GetWorldPosition();
 	auto [otherX, otherY] = other->GetWorldPosition();
+	otherY += other->GetTrigger().lock()->GetHeight() / 2.0f;
 	if (otherX > thisX
 		&& otherX < thisX + dragAreaWidth
 		&& otherY > thisY
@@ -57,21 +58,30 @@ void Demo::StrikeCard::Update(unsigned long long deltaTime)
 
 void Demo::StrikeCard::Draw(unsigned long long deltaTime)
 {
-	if (graphicsDevice && camera && dragAreaWidth > 0) {
-		graphicsDevice->DrawRectangle(*camera, GetWorldX(), GetWorldY(), dragAreaWidth, dragAreaHeight, 0xFFEEEEEE, true);
-		graphicsDevice->DrawRectangle(*camera, GetWorldX(), GetWorldY(), dragAreaWidth, dragAreaHeight, 0xFF000000, false);
-	}
 	IStatementCard::Draw(deltaTime);
-	if (!nameFont) {
-		nameFont = std::make_shared<DX9GF::Font>(graphicsDevice, L"StatusPlz", 16);
-		nameFontSprite = std::make_shared<DX9GF::FontSprite>(nameFont.get());
-		nameFontSprite->SetColor(0xFF000000);
+	if (!strikeTexture) {
+		strikeTexture = std::make_shared<DX9GF::Texture>(graphicsDevice);
+		strikeTexture->LoadTexture(L"ui.png");
+		strikeSprite = std::make_shared<DX9GF::StaticSprite>(strikeTexture.get());
+		strikeSprite->SetSrcRect({ .left = 0, .top = 288, .right = 80, .bottom = 304 });
 	}
-	nameFontSprite->Begin();
-	nameFontSprite->SetPosition(GetWorldX() + 8.f, GetWorldY() + 8.f);
-	nameFontSprite->SetText(L"StrikeCard");
-	nameFontSprite->Draw(*camera, deltaTime);
-	nameFontSprite->End();
+	if (strikeSprite) {
+		strikeSprite->Begin();
+		strikeSprite->SetPosition(GetWorldX(), GetWorldY());
+		strikeSprite->SetScale(2.f, 2.f);
+		strikeSprite->Draw(*camera, deltaTime);
+		strikeSprite->End();
+	}
+	//if (!nameFont) {
+	//	nameFont = std::make_shared<DX9GF::Font>(graphicsDevice, L"StatusPlz", 16);
+	//	nameFontSprite = std::make_shared<DX9GF::FontSprite>(nameFont.get());
+	//	nameFontSprite->SetColor(0xFF000000);
+	//}
+	//nameFontSprite->Begin();
+	//nameFontSprite->SetPosition(GetWorldX() + 8.f, GetWorldY() + 8.f);
+	//nameFontSprite->SetText(L"StrikeCard");
+	//nameFontSprite->Draw(*camera, deltaTime);
+	//nameFontSprite->End();
 }
 
 size_t Demo::StrikeCard::GetCost() const

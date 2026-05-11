@@ -12,7 +12,8 @@ namespace Demo {
 	public:
 		PopUpMessage(std::weak_ptr<DX9GF::TransformManager> tm) : IGameObject(tm) {}
 		void Init(DX9GF::GraphicsDevice* graphicsDevice, DX9GF::Camera* camera);
-		void QueueMessage(DX9GF::CommandBuffer* commandBuffer, std::wstring message);
+		void QueueMessage(DX9GF::CommandBuffer* commandBuffer, std::wstring message, float duration = 1.0f);
 		void Draw(unsigned long long deltaTime);
+		void Reset();
 	};
 }

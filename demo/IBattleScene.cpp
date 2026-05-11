@@ -46,11 +46,58 @@ void Demo::IBattleScene::StartBattle()
 	for (auto& card : drawPile) {
 		HidePileCard(card);
 	}
+  initialEnemyCount = enemies.size();
+  battleGoldReward = 0;
+  isBattleEnding = false;
+  isDefeatSequence = false;
+	defeatElapsedMs = 0.f;
+	defeatFadeAlpha = 0.f;
 	std::random_device rd;
 	std::mt19937 gen(rd());
 	std::shuffle(drawPile.begin(), drawPile.end(), gen);
 	currentTurn = 1;
 	DrawCards(5);
+}
+
+void Demo::IBattleScene::CollectDeadEnemies()
+{
+	for (size_t i = 0; i < enemies.size(); ++i) {
+		if (enemies[i]->IsDead() && enemies[i]->IsDoneAttacking()) {
+			battleGoldReward += enemies[i]->GetGoldReward();
+			enemies.erase(enemies.begin() + i);
+			--i;
+		}
+	}
+}
+
+void Demo::IBattleScene::OnAllEnemiesDefeated()
+{
+	if (isBattleEnding) {
+		return;
+	}
+	isBattleEnding = true;
+	int finalGold = battleGoldReward;
+	if (initialEnemyCount > 1) {
+		const float multiplier = 1.25f * static_cast<float>(initialEnemyCount - 1);
+       finalGold = static_cast<int>(std::round(finalGold * multiplier));
+	}
+
+	player->AddGold(finalGold);
+	popUpMessage->QueueMessage(&commandBuffer, L"You earned " + std::to_wstring(finalGold) + L" gold!", 1.5f);
+
+	auto transitionInCommand = std::make_shared<TransitionCommand>(game->GetGraphicsDevice(), 1.f, true);
+	drawBuffer->PushCommand(std::make_shared<DX9GF::DelayCommand>(2.5f));
+	drawBuffer->PushCommand(transitionInCommand);
+	commandBuffer.PushCommand(std::make_shared<DX9GF::CustomCommand>([this, transitionInCommand](std::function<void(void)> markFinished) {
+		if (!transitionInCommand->IsFinished()) {
+			return;
+		}
+		player->SetHealth(battlePlayer->GetHealth());
+		auto sceMan = game->GetSceneManager();
+		sceMan->PopScene();
+		sceMan->GoToPrevious();
+		markFinished();
+	}));
 }
 
 void Demo::IBattleScene::DrawCards(size_t count)
@@ -168,6 +215,9 @@ void Demo::IBattleScene::QueueEnemyLayoutTransition(State targetState)
 	if (enemies.empty()) {
 		return;
 	}
+	if (targetState == lastEnemyLayoutState) {
+		return;
+	}
 
 	const auto app = DX9GF::Application::GetInstance();
 	const float centerLineY = -120.f;
@@ -199,7 +249,7 @@ void Demo::IBattleScene::QueueEnemyLayoutTransition(State targetState)
 
 		auto command = std::make_shared<DX9GF::GoToCommand>(enemies[i], targetX, targetY, 0.4f, DX9GF::TimeTag{}, DX9GF::EaseInOutTag{});
 		if (!hasQueued) {
-			commandBuffer.PushCommand(command);
+			commandBuffer.StackCommand(command);
 			hasQueued = true;
 		}
 		else {
@@ -293,7 +343,7 @@ void Demo::IBattleScene::RefreshItemMenu()
 					this->RefreshItemMenu();
 					this->MoveHandCardsToDiscardPile();
 					this->QueueEnemyLayoutTransition(State::EnemyAttack);
-                 this->enemyAttackStartPending = true;
+					this->enemyAttackStartPending = true;
 					this->state = State::EnemyAttack;
 				}
 				markFinished();
@@ -359,9 +409,18 @@ void Demo::IBattleScene::PlayerAttackUpdate(unsigned long long deltaTime)
 		if (isExecutingAttacks) {
 			isTransitioning = true;
 			isExecutingAttacks = false;
+			// Use shared_ptr to share state between multiple commands in the MultiCommand
+			auto attackingEnemies = std::make_shared<std::vector<std::shared_ptr<IEnemy>>>();
 			std::vector<std::shared_ptr<DX9GF::ICommand>> commands = {
 				std::make_shared<DX9GF::DelayCommand>(1.0f),
-				std::make_shared<DX9GF::CustomCommand>([this, deltaTime](std::function<void(void)> markFinished) {
+				std::make_shared<DX9GF::CustomCommand>([this, deltaTime, attackingEnemies](std::function<void(void)> markFinished) {
+					// Wait for dead enemies to finish animations before collecting them
+					for (auto& enemy : this->enemies) {
+						if (enemy->IsDead() && !enemy->IsDoneAttacking()) {
+							return; // wait
+						}
+					}
+
 					this->MoveExecutedHandCardsToPlayedPile();
 					this->MoveHandCardsToDiscardPile();
 					// Remove unused enemy cards or enemy cards of dead enemies
@@ -376,19 +435,14 @@ void Demo::IBattleScene::PlayerAttackUpdate(unsigned long long deltaTime)
 						}
 					}
 					// Remove dead enemies
-					for (size_t i = 0; i < this->enemies.size(); ++i) {
-						if (this->enemies[i]->IsDead()) {
-							this->enemies.erase(this->enemies.begin() + i);
-							--i;
-						}
-					}
-					this->state = State::EnemyAttack;
-					this->QueueEnemyLayoutTransition(State::EnemyAttack);
-					for (auto& enemy : this->enemies) {
-						enemy->SetState(true);
+					if (this->enemies.empty()) {
+						this->OnAllEnemiesDefeated();
+						this->isTransitioning = false;
+						markFinished();
+						return;
 					}
 
-					for (auto& enemy : this->enemies) {
+					for (auto enemy : this->enemies) {
 						bool isStunned = enemy->HasStatus(StatusType::STUN);
 						enemy->TickStatuses();
 						if (enemy->IsDead()) {
@@ -397,9 +451,10 @@ void Demo::IBattleScene::PlayerAttackUpdate(unsigned long long deltaTime)
 						if (isStunned) {
 							continue;
 						}
-						enemy->StartAttack(this->battlePlayer);
+						attackingEnemies->push_back(enemy);
 					}
 
+					// Remove enemy cards of dead enemies again in case they died from statuses
 					for (size_t i = 0; i < this->enemyCards.size(); ++i) {
 						auto& enemyCard = this->enemyCards[i];
 						if (!enemyCard->GetParent().has_value() || enemyCard->GetValue()->IsDead()) {
@@ -410,11 +465,31 @@ void Demo::IBattleScene::PlayerAttackUpdate(unsigned long long deltaTime)
 							--i;
 						}
 					}
-					for (size_t i = 0; i < this->enemies.size(); ++i) {
-						if (this->enemies[i]->IsDead()) {
-							this->enemies.erase(this->enemies.begin() + i);
-							--i;
+					markFinished();
+				}),
+				std::make_shared<DX9GF::DelayCommand>(1.0f),
+				std::make_shared<DX9GF::CustomCommand>([this, deltaTime, attackingEnemies](std::function<void(void)> markFinished) {
+					// Wait for enemies that died from statuses to finish animations
+					for (auto& enemy : this->enemies) {
+						if (enemy->IsDead() && !enemy->IsDoneAttacking()) {
+							return; // wait
 						}
+					}
+
+					this->state = State::EnemyAttack;
+					this->QueueEnemyLayoutTransition(State::EnemyAttack);
+					for (auto& enemy : this->enemies) {
+						enemy->SetState(true);
+					}
+					for (auto& enemy : *attackingEnemies) {
+						enemy->StartAttack(this->battlePlayer);
+					}
+					this->CollectDeadEnemies();
+					if (this->enemies.empty()) {
+						this->OnAllEnemiesDefeated();
+						this->isTransitioning = false;
+						markFinished();
+						return;
 					}
 					this->battlePlayer->SetLocalPosition(0, 0);
 					this->EnemyAttackUpdate(deltaTime);
@@ -453,12 +528,35 @@ void Demo::IBattleScene::PlayerOpenItemsUpdate(unsigned long long deltaTime)
 	}
 }
 
-void Demo::IBattleScene::EnemyAttackUpdate(unsigned long long deltaTime)
+bool Demo::IBattleScene::EnemyAttackUpdate(unsigned long long deltaTime)
 {
+    if (isDefeatSequence) {
+		defeatElapsedMs += static_cast<float>(deltaTime);
+		if (defeatElapsedMs >= 1000.f) {
+			const float fadeDurationMs = 1000.f;
+			defeatFadeAlpha = (std::min)(1.0f, (defeatElapsedMs - 1000.f) / fadeDurationMs);
+		}
+		if (defeatElapsedMs >= 2500.f) {
+			auto sceMan = game->GetSceneManager();
+			while (sceMan->GetSceneCount() > 1) {
+				sceMan->PopScene();
+			}
+			sceMan->GoToScene(0); // Go to main menu
+			return true;
+		}
+		return false;
+	}
 	battlePlayer->Update(deltaTime);
+	if (battlePlayer->IsDead()) {
+		isDefeatSequence = true;
+		defeatElapsedMs = 0.f;
+		defeatFadeAlpha = 0.f;
+		popUpMessage->QueueMessage(&commandBuffer, L"You were defeated", 1.5f);
+		return false;
+	}
     if (enemyAttackStartPending) {
 		if (commandBuffer.IsBusy()) {
-			return;
+			return false;
 		}
 		for (auto& enemy : enemies) {
 			enemy->SetState(true);
@@ -482,13 +580,19 @@ void Demo::IBattleScene::EnemyAttackUpdate(unsigned long long deltaTime)
 		isDoneAttacking &= enemy->IsDoneAttacking();
 	}
 	if (isDoneAttacking) {
+        CollectDeadEnemies();
+		if (enemies.empty()) {
+			OnAllEnemiesDefeated();
+			return false;
+		}
 		BeginNextTurn();
 		state = State::PlayerStandBy;
-     QueueEnemyLayoutTransition(State::PlayerStandBy);
+		QueueEnemyLayoutTransition(State::PlayerStandBy);
 		lastEnemyLayoutState = State::PlayerStandBy;
 		enemyLayoutInitialized = true;
 		PlayerStandByUpdate(deltaTime);
 	}
+	return false;
 }
 
 void Demo::IBattleScene::PlayerStandByDraw(unsigned long long deltaTime)
@@ -512,7 +616,7 @@ void Demo::IBattleScene::PlayerAttackDraw(unsigned long long deltaTime)
 	fontSprite->Begin();
 	fontSprite->SetColor(0xFFFFFFFF);
 	fontSprite->SetPosition(enemyCardRemoveAreaX + 8.f, enemyCardRemoveAreaY + 8.f);
-	fontSprite->SetText(L"Drop EnemyCard Here");
+	fontSprite->SetText(L"Discard Enemy Card Here");
 	fontSprite->Draw(camera, deltaTime);
 	fontSprite->SetColor(0xFF000000);
 	fontSprite->SetPosition(backButton->GetWorldX() + 32.f, backButton->GetWorldY() - 30.f);
@@ -596,21 +700,44 @@ void Demo::IBattleScene::PlayerOpenItemsDraw(unsigned long long deltaTime)
 
 void Demo::IBattleScene::EnemyAttackDraw(unsigned long long deltaTime)
 {
-	battlePlayer->Draw(deltaTime);
 	auto app = DX9GF::Application::GetInstance();
 	auto gd = game->GetGraphicsDevice();
+	const float battleHalfSize = battleBoxSize * 0.5f;
+	gd->SetAlphaBlending(true);
+	gd->DrawRectangle(camera, -battleHalfSize, -battleHalfSize, battleBoxSize, battleBoxSize, 0x40000000, true);
+	gd->DrawRectangle(camera, -battleHalfSize, -battleHalfSize, battleBoxSize, battleBoxSize, 0xFF000000, false);
+	const int outlineThickness = 4;
+	for (int i = 1; i < outlineThickness; ++i) {
+		gd->DrawRectangle(camera, -battleHalfSize - i, -battleHalfSize - i, battleBoxSize + 2 * i, battleBoxSize + 2 * i, 0xFFFFFFFF, false);
+	}
+	gd->DrawRectangle(camera, -battleHalfSize - outlineThickness, -battleHalfSize - outlineThickness, battleBoxSize + 2 * outlineThickness, battleBoxSize + 2 * outlineThickness, 0xFF000000, false);
+	gd->SetAlphaBlending(false);
+	battlePlayer->Draw(deltaTime);
 	const float spacing = 5.f;
 	const float w = battlePlayer->GetMaxHealth() * spacing;
-   const float defenseW = (std::max)(0.f, battlePlayer->GetTemporaryDefense()) * spacing;
+	const float defenseW = (std::max)(0.f, battlePlayer->GetTemporaryDefense()) * spacing;
 	const float w_ = battlePlayer->GetHealth() * spacing;
 	const float x = -w / 2;
 	const float y = app->GetScreenHeight() / 2.f - 40;
-   const float defenseY = y - 24.f;
+	const float defenseY = y - 24.f;
+	// Defense bar
 	gd->DrawRectangle(camera, x, defenseY, w, 16, 0xFF808080, true);
 	gd->DrawRectangle(camera, x, defenseY, defenseW, 16, 0xFFD0D0D0, true);
+	// Black border
 	gd->DrawRectangle(camera, x, defenseY, w, 16, 0xFF000000, false);
-	gd->DrawRectangle(camera, x, y, w, 20, 0xFFFF0000, true);
-	gd->DrawRectangle(camera, x, y, w_, 20, 0xFF00FF00, true);
+
+	// Health bar
+	// Red background
+	gd->DrawRectangle(camera, x, y, w, 20, 0xFFb4202a, true);
+	// Red highlight
+	gd->DrawRectangle(camera, x, y, w, 10, 0xFFdf3e23, true);
+
+	// Green foreground
+	gd->DrawRectangle(camera, x, y, w_, 20, 0xFF59c135, true);
+	// Green highlight
+	gd->DrawRectangle(camera, x, y, w_, 10, 0xFF9cdb43, true);
+
+	// Black border
 	gd->DrawRectangle(camera, x, y, w, 20, 0xFF000000, false);
 }
 
@@ -645,6 +772,9 @@ void Demo::IBattleScene::Init()
 			for (auto& enemy : enemies) {
 				enemy->SetState(false);
 			}
+			QueueEnemyLayoutTransition(State::PlayerAttack);
+			lastEnemyLayoutState = State::PlayerAttack;
+			popUpMessage->QueueMessage(&commandBuffer, L"Click on the enemy sprite to create an Enemy Card and drag it to your attacking card to target it!", 2.5f);
 			markFinished();
 			}));
 		isExecutingAttacks = false;
@@ -703,16 +833,37 @@ void Demo::IBattleScene::Init()
 	itemsButton->SetSpriteScale(2.f, 2.f);
 	fleeButton = std::make_shared<IconButton>(transformManager, 0, 0, buttonWidth, buttonHeight, uiSheetTex);
 	fleeButton->SetOnReleaseLeft([&](DX9GF::ITrigger* thisObj) {
-		auto transitionInCommand = std::make_shared<TransitionCommand>(game->GetGraphicsDevice(), 1.f, true);
-		drawBuffer->PushCommand(transitionInCommand);
-		commandBuffer.PushCommand(std::make_shared<DX9GF::CustomCommand>([this, transitionInCommand](std::function<void(void)> markFinished) {
-			if (!transitionInCommand->IsFinished()) {
-				return;
+		popUpMessage->QueueMessage(&commandBuffer, L"You tried to flee...");
+		commandBuffer.PushCommand(std::make_shared<DX9GF::CustomCommand>([this](std::function<void(void)> markFinished) {
+			std::random_device rd;
+			std::mt19937 gen(rd());
+			std::uniform_int_distribution<> dis(0, 1);
+			if (dis(gen) == 0) {
+				popUpMessage->QueueMessage(&commandBuffer, L"You successfully fled!");
+				auto transitionInCommand = std::make_shared<TransitionCommand>(game->GetGraphicsDevice(), 1.f, true);
+				drawBuffer->PushCommand(std::make_shared<DX9GF::DelayCommand>(1.5f));
+				drawBuffer->PushCommand(transitionInCommand);
+				commandBuffer.PushCommand(std::make_shared<DX9GF::CustomCommand>([this, transitionInCommand](std::function<void(void)> markFinished2) {
+					if (!transitionInCommand->IsFinished()) {
+						return;
+					}
+					player->SetHealth(battlePlayer->GetHealth());
+					auto sceMan = game->GetSceneManager();
+					sceMan->PopScene();
+					sceMan->GoToPrevious();
+					markFinished2();
+					}));
 			}
-			player->SetHealth(battlePlayer->GetHealth());
-			auto sceMan = game->GetSceneManager();
-			sceMan->PopScene();
-			sceMan->GoToPrevious();
+			else {
+				popUpMessage->QueueMessage(&commandBuffer, L"You failed to flee!");
+				commandBuffer.PushCommand(std::make_shared<DX9GF::CustomCommand>([this](std::function<void(void)> markFinished) {
+					this->MoveHandCardsToDiscardPile();
+					this->QueueEnemyLayoutTransition(State::EnemyAttack);
+					this->enemyAttackStartPending = true;
+					this->state = State::EnemyAttack;
+					markFinished();
+				}));
+			}
 			markFinished();
 			}));
 		});
@@ -739,7 +890,9 @@ void Demo::IBattleScene::Init()
 	fleeButton->SetSpriteScale(2.f, 2.f);
 	backButton = std::make_shared<IconButton>(transformManager, 0, 0, buttonWidth, buttonHeight, uiSheetTex);
 	backButton->SetOnReleaseLeft([&](DX9GF::ITrigger* thisObj) {
-		commandBuffer.PushCommand(std::make_shared<DX9GF::CustomCommand>([&](std::function<void(void)> markFinished) {
+		commandBuffer.Clear();
+		popUpMessage->Reset(); // Really bad hack, please never do this in a production game lol
+		commandBuffer.StackCommand(std::make_shared<DX9GF::CustomCommand>([&](std::function<void(void)> markFinished) {
 			this->state = State::PlayerStandBy;
 			for (auto& enemy : enemies) {
 				enemy->SetState(true);
@@ -883,6 +1036,28 @@ void Demo::IBattleScene::Init()
 	handContainer = std::make_shared<HandContainer>(transformManager, 180, 40, -250.f, -200.f);
 	handContainer->Init(draggableManager, game->GetGraphicsDevice(), &camera, &playedPile);
 
+  const float battleHalfSize = battleBoxSize * 0.5f;
+	const float battleBorder = 8.f;
+	const float battleLeft = -battleHalfSize - battleBorder;
+	const float battleTop = -battleHalfSize - battleBorder;
+	const float battleRight = battleHalfSize;
+	const float battleBottom = battleHalfSize;
+	const float battleWidth = battleBoxSize + battleBorder * 2.f;
+	const float battleHeight = battleBoxSize + battleBorder * 2.f;
+
+	std::array<std::shared_ptr<DX9GF::RectangleCollider>, 4> bounds = {
+		std::make_shared<DX9GF::RectangleCollider>(transformManager, battleWidth, battleBorder, battleLeft, battleTop),
+		std::make_shared<DX9GF::RectangleCollider>(transformManager, battleWidth, battleBorder, battleLeft, battleBottom),
+		std::make_shared<DX9GF::RectangleCollider>(transformManager, battleBorder, battleHeight, battleLeft, battleTop),
+		std::make_shared<DX9GF::RectangleCollider>(transformManager, battleBorder, battleHeight, battleRight, battleTop)
+	};
+
+	for (auto& bound : bounds) {
+		bound->SetOrigin(0.f, 0.f);
+		colliderManager.Add(bound);
+		battleBounds.push_back(bound);
+	}
+
 	// Init pop up message
 	popUpMessage = std::make_shared<PopUpMessage>(transformManager);
 	popUpMessage->Init(game->GetGraphicsDevice(), &camera);
@@ -898,6 +1073,15 @@ void Demo::IBattleScene::Update(unsigned long long deltaTime)
 	auto inpMan = DX9GF::InputManager::GetInstance();
 	inpMan->ReadMouse(deltaTime);
 	inpMan->ReadKeyboard(deltaTime);
+	if (isDefeatSequence) {
+		if (!EnemyAttackUpdate(deltaTime)) {
+			DamageTextManager::GetInstance()->Update(deltaTime);
+			transformManager->UpdateAll();
+			commandBuffer.Update(deltaTime);
+			return;
+		}
+		return;
+	}
 	if (!enemyLayoutInitialized || lastEnemyLayoutState != state) {
 		if (state == State::PlayerStandBy || state == State::PlayerAttack) {
 			QueueEnemyLayoutTransition(state);
@@ -932,21 +1116,30 @@ void Demo::IBattleScene::Draw(unsigned long long deltaTime)
 	auto inpMan = DX9GF::InputManager::GetInstance();
 	gd->Clear(0xFFFFFFFF);
 	if (SUCCEEDED(gd->BeginDraw())) {
-		for (auto& enemy : enemies) {
-			enemy->Draw(game->GetGraphicsDevice(), &camera, deltaTime);
-		}
 		switch (state) {
 		case State::PlayerStandBy:
+			for (auto& enemy : enemies) {
+				enemy->Draw(game->GetGraphicsDevice(), &camera, deltaTime);
+			}
 			PlayerStandByDraw(deltaTime);
 			break;
 		case State::PlayerAttack:
+			for (auto& enemy : enemies) {
+				enemy->Draw(game->GetGraphicsDevice(), &camera, deltaTime);
+			}
 			PlayerAttackDraw(deltaTime);
 			break;
 		case State::PlayerOpenItems:
+			for (auto& enemy : enemies) {
+				enemy->Draw(game->GetGraphicsDevice(), &camera, deltaTime);
+			}
 			PlayerOpenItemsDraw(deltaTime);
 			break;
 		case State::EnemyAttack:
 			EnemyAttackDraw(deltaTime);
+			for (auto& enemy : enemies) {
+				enemy->Draw(game->GetGraphicsDevice(), &camera, deltaTime);
+			}
 			break;
 		default:
 			throw std::runtime_error("Unexpected state");
@@ -955,6 +1148,15 @@ void Demo::IBattleScene::Draw(unsigned long long deltaTime)
 			dynamic_pointer_cast<IDraggable>(card)->Draw(deltaTime);
 		}
 		popUpMessage->Draw(deltaTime);
+        if (isDefeatSequence && defeatElapsedMs >= 1000.f) {
+			const auto app = DX9GF::Application::GetInstance();
+			const float screenWidth = static_cast<float>(app->GetScreenWidth());
+			const float screenHeight = static_cast<float>(app->GetScreenHeight());
+			const int alpha = static_cast<int>((std::min)(1.0f, defeatFadeAlpha) * 255.f);
+			gd->SetAlphaBlending(true);
+			gd->DrawRectangle(camera, -screenWidth / 2.f, -screenHeight / 2.f, screenWidth, screenHeight, D3DCOLOR_ARGB(alpha, 0, 0, 0), true);
+			gd->SetAlphaBlending(false);
+		}
 		DamageTextManager::GetInstance()->Draw(this->camera, deltaTime);
 		drawBuffer->Update(deltaTime);
 		inpMan->DrawCursor(&camera, deltaTime);

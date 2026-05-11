@@ -26,7 +26,9 @@ size_t Demo::IContainer::GetHeightOfChildren()
 bool Demo::IContainer::OnHover(std::shared_ptr<IDraggable> other)
 {
 	auto [thisX, thisY] = this->GetWorldPosition();
-	auto [otherX, otherY] = other->GetWorldPosition();
+	auto [otherWorldX, otherWorldY] = other->GetWorldPosition();
+	auto otherX = otherWorldX + other->GetWidth() / 2.0f;
+	auto otherY = otherWorldY + other->GetHeight() / 2.0f;
 	if (otherX > thisX
 		&& otherX < thisX + (std::max)(dragAreaWidth, GetMaxWidthOfChildren())
 		&& otherY > thisY + dragAreaHeight
@@ -41,7 +43,9 @@ bool Demo::IContainer::OnHover(std::shared_ptr<IDraggable> other)
 bool Demo::IContainer::OnDrop(std::shared_ptr<IDraggable> other)
 {
 	auto [thisX, thisY] = this->GetWorldPosition();
-	auto [otherX, otherY] = other->GetWorldPosition();
+	auto [otherWorldX, otherWorldY] = other->GetWorldPosition();
+	auto otherX = otherWorldX + other->GetTrigger().lock()->GetWidth() / 2.0f;
+	auto otherY = otherWorldY + other->GetHeight() / 2.0f;
 	if (otherX > thisX
 		&& otherX < thisX + (std::max)(dragAreaWidth, GetMaxWidthOfChildren())
 		&& otherY > thisY + dragAreaHeight
@@ -80,15 +84,26 @@ void Demo::IContainer::Update(unsigned long long deltaTime)
 void Demo::IContainer::Draw(unsigned long long deltaTime)
 {
 	IDraggable::Draw(deltaTime);
+	graphicsDevice->SetAlphaBlending(true);
 	graphicsDevice->DrawRectangle(
 		*camera,
 		GetWorldX(), 
 		GetWorldY() + dragAreaHeight, 
 		(std::max)(dragAreaWidth, GetMaxWidthOfChildren()), 
 		isHovered ? 2 * dragAreaHeight + GetHeightOfChildren() : dragAreaHeight + GetHeightOfChildren(),
-		0xFF888888, 
+		0xAAE0E0E0,
 		true
 	);
+	graphicsDevice->DrawRectangle(
+		*camera,
+		GetWorldX(),
+		GetWorldY() + dragAreaHeight,
+		(std::max)(dragAreaWidth, GetMaxWidthOfChildren()),
+		isHovered ? 2 * dragAreaHeight + GetHeightOfChildren() : dragAreaHeight + GetHeightOfChildren(),
+		0xAA000000,
+		false
+	);
+	graphicsDevice->SetAlphaBlending(false);
 }
 
 void Demo::IContainer::AddChildProgrammatically(std::shared_ptr<IDraggable> child)

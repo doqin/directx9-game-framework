@@ -49,6 +49,11 @@ void Demo::Player::GenerateSaveData(nlohmann::json& outData) {
 	for (auto& card : inventoryCards) {
 		outData["inventoryCards"].push_back(card);
 	}
+	auto inventorySlots = inventoryItems.GetSlots();
+	for (size_t i = 0; i < inventorySlots.size(); i++) {
+		outData["inventoryItems"][i]["id"] = inventorySlots[i].itemID;
+		outData["inventoryItems"][i]["quantity"] = inventorySlots[i].quantity;
+	}
 }
 
 void Demo::Player::RestoreSaveData(const nlohmann::json& inData) {
@@ -74,6 +79,14 @@ void Demo::Player::RestoreSaveData(const nlohmann::json& inData) {
 	}
 
 	SetLocalPosition(savedX, savedY);
+	if (inData.contains("inventoryItems")) {
+		inventoryItems.Clear();
+		for (auto& item : inData["inventoryItems"]) {
+			int id = item["id"];
+			int quantity = item["quantity"];
+			inventoryItems.AddItem(id, quantity);
+		}
+	}
 }
 
 Demo::Player::~Player() {
@@ -118,8 +131,9 @@ void Demo::Player::Init(DX9GF::GraphicsDevice* graphicsDevice, DX9GF::ColliderMa
 	// Create collider
 	collider = std::make_shared<DX9GF::RectangleCollider>(transformManager, shared_from_this(), 8, 4, 0, 14);
 	collider->SetOriginCenter();
-	inventoryCards = { "StrikeCard", "StrikeCard", "StrikeCard" };
+	deck = { "StrikeCard", "StrikeCard", "StrikeCard" };
 	this->colliderManager->Add(collider);
+	inventoryItems.InitFixedInventory(10);
 }
 
 void Demo::Player::Update(unsigned long long deltaTime) {
@@ -284,7 +298,7 @@ void Demo::Player::Draw(unsigned long long deltaTime) {
 				idleLeft->End();
 			}
 		}
-						break;
+			break;
 		default:
 			break;
 		}

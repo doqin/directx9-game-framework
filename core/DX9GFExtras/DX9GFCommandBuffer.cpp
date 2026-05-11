@@ -52,6 +52,12 @@ void DX9GF::CommandBuffer::Update(unsigned long long deltaTime)
 	currentCommand->Execute(deltaTime);
 }
 
+void DX9GF::CommandBuffer::Clear()
+{
+	queue.clear();
+	currentCommand.reset();
+}
+
 bool DX9GF::CommandBuffer::IsBusy()
 {
 	std::scoped_lock<std::mutex> lock{ mutex };

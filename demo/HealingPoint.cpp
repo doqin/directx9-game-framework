@@ -69,7 +69,7 @@ namespace Demo {
             if (!statusMessage.empty()) {
                 if (auto bufferLock = drawBuffer.lock()) {
                     const auto statusText = statusMessage;
-                    bufferLock->PushCommand(std::make_shared<DX9GF::CustomCommand>([this, statusText, x, y, &camera, deltaTime](std::function<void(void)> markFinished) {
+                    bufferLock->StackCommand(std::make_shared<DX9GF::CustomCommand>([this, statusText, x, y, &camera, deltaTime](std::function<void(void)> markFinished) {
                         fontSprite->Begin();
                         fontSprite->SetText(std::wstring(statusText.begin(), statusText.end()));
                         fontSprite->SetScale(0.8f);
@@ -84,7 +84,7 @@ namespace Demo {
             }
             else if (isPlayerNear) {
                 if (auto bufferLock = drawBuffer.lock()) {
-                    bufferLock->PushCommand(std::make_shared<DX9GF::CustomCommand>([this, x, y, &camera, deltaTime](std::function<void(void)> markFinished) {
+                    bufferLock->StackCommand(std::make_shared<DX9GF::CustomCommand>([this, x, y, &camera, deltaTime](std::function<void(void)> markFinished) {
                         fontSprite->Begin();
                         fontSprite->SetText(L"E");
                         fontSprite->SetScale(1.f);

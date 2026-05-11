@@ -63,6 +63,7 @@ namespace Demo {
 		virtual size_t GetWidth() const;
 		virtual size_t GetHeight() const;
 		std::weak_ptr<DraggableManager> GetDraggableManager();
+		std::weak_ptr<DX9GF::RectangleTrigger> GetTrigger();
 		bool IsDragging() const;
 	};
 

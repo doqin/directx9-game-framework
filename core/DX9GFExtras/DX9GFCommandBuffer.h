@@ -17,6 +17,7 @@ namespace DX9GF {
 		void PushCommand(std::shared_ptr<ICommand> command);
 		void StackCommand(std::shared_ptr<ICommand> command);
 		void Update(unsigned long long deltaTime);
+		void Clear();
 		bool IsBusy();
 	};
 }

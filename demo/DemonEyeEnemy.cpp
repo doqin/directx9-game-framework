@@ -16,6 +16,7 @@ void Demo::DemonEyeEnemy::Init(DX9GF::GraphicsDevice* graphicsDevice, DX9GF::Cam
 	tearProjectileSprite = std::make_shared<DX9GF::StaticSprite>(tearProjectileTexture.get());
 	tearProjectileSprite->SetOrigin(8, 8);
 
+   SetGoldReward(static_cast<int>(std::round(GetMaxHealth())));
 	InitCardSpawnTrigger(camera, 64.f, 64.f);
 }
 

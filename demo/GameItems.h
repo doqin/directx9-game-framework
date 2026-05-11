@@ -69,6 +69,7 @@ namespace Demo
 		void InitFixedInventory(int maxItemTypes);
 		void AddItem(int id, int amount);
 		bool ConsumeItem(int id);
+		void Clear() { for (auto& slot : slots) slot.quantity = 0; }
 	};
 }
 

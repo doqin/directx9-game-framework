@@ -13,6 +13,7 @@ void Demo::TestEnemy::Init(DX9GF::GraphicsDevice* graphicsDevice, DX9GF::Camera*
     roundProjectileTexture->LoadTexture(IDB_PNG5);
     roundProjectileSprite = std::make_shared<DX9GF::StaticSprite>(roundProjectileTexture.get());
     roundProjectileSprite->SetOrigin(8, 8);
+    SetGoldReward(static_cast<int>(std::round(GetMaxHealth())));
     InitCardSpawnTrigger(camera, 64.f, 64.f);
 }
 

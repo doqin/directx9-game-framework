@@ -16,6 +16,7 @@ void Demo::VampireBatEnemy::Init(DX9GF::GraphicsDevice* graphicsDevice, DX9GF::C
 	projSprite = std::make_shared<DX9GF::StaticSprite>(projTexture.get());
 	projSprite->SetOrigin(8, 8);
 
+   SetGoldReward(static_cast<int>(std::round(GetMaxHealth())));
 	InitCardSpawnTrigger(camera, 64.f, 64.f);
 }
 
@@ -55,7 +56,7 @@ void Demo::VampireBatEnemy::PatternEcholocation(float projDamage) {
 				projectiles.push_back(
 					SineWaveProjectile::Builder(transformManager, lock, projSprite, 16, 16, GetWorldX(), startY)
 					.SetTrajectory(D3DXVECTOR2(-1, 0))
-					.SetWave(50.f, 8.f)
+					.SetWave(50.f, 4.f)
 					.SetDelay(0.f)
 					.SetDecayTime(4.f)
 					.SetVelocity(160.f)

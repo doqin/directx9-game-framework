@@ -9,9 +9,11 @@ namespace Demo {
 		bool isDone = false;
 		std::shared_ptr<DX9GF::Font> nameFont;
 		std::shared_ptr<DX9GF::FontSprite> nameFontSprite;
+		std::shared_ptr<DX9GF::Texture> strikeTexture;
+		std::shared_ptr<DX9GF::StaticSprite> strikeSprite;
 	public:
 		StrikeCard(std::weak_ptr<DX9GF::TransformManager> tm, float x = 0, float y = 0)
-			: IGameObject(tm, x, y), IStatementCard(tm, 140, 40, x, y) {}
+			: IGameObject(tm, x, y), IStatementCard(tm, 160, 32, x, y) {}
 		bool OnDrop(std::shared_ptr<IDraggable> other) override;
 		bool Execute() override;
 		void ResetExecution() override;

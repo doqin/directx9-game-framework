@@ -16,6 +16,7 @@ void Demo::MimicEnemy::Init(DX9GF::GraphicsDevice* graphicsDevice, DX9GF::Camera
 	projSprite = std::make_shared<DX9GF::StaticSprite>(projTexture.get());
 	projSprite->SetOrigin(8, 8);
 
+   SetGoldReward(static_cast<int>(std::round(GetMaxHealth())));
 	InitCardSpawnTrigger(camera, 64.f, 64.f);
 }
 
