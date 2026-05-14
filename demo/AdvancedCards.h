@@ -100,7 +100,7 @@ namespace Demo {
 		}
 
 		size_t GetCost() const override { return 1; }
-		std::wstring GetDescription() const override { return L"Apply Vulnerable 2 to an enemy."; }
+		std::wstring GetDescription() const override { return L"Apply Vulnerable 1 to an enemy."; }
 
 		bool Execute() override;
 

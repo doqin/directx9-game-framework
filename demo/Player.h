@@ -15,7 +15,7 @@ namespace Demo {
 			Down
 		};
 		// Constants
-		const float MAX_HEALTH = 25;
+        const float MAX_HEALTH = 50;
 		float VELOCITY = 75;
 		const float SPRINT_MULTIPLIER = 1.5f;
 		const float CAMERA_VELOCITY = 25;
@@ -104,6 +104,8 @@ namespace Demo {
 		virtual std::string GetSaveID() const override;
 		virtual void GenerateSaveData(nlohmann::json& outData) override;
 		virtual void RestoreSaveData(const nlohmann::json& inData) override;
+		void GenerateSaveGlobalData(nlohmann::json& outData) const;
+		void RestoreSaveGlobalData(const nlohmann::json& inData);
 
 		float GetBuffStat(ItemBuffType targetType) const;
 		void UpdateBuffs();

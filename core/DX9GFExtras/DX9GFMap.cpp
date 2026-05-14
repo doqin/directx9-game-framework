@@ -54,12 +54,12 @@ void DX9GF::Map::Create(std::weak_ptr<TransformManager> transformManager, std::w
 			for (auto& object : objects) {
 				if (object.getShape() == tmx::Object::Shape::Rectangle) {
 					auto rect = object.getAABB();
-                  if (isCollisionLayer) {
+					if (isCollisionLayer) {
 						std::shared_ptr<RectangleCollider> collider = std::make_shared<RectangleCollider>(transformManager, rect.width, rect.height, rect.left, rect.top);
 						colliders.push_back(collider);
 						colliderManager.lock()->Add(collider);
 					}
-                  else {
+					else {
 						objectAreasByLayer[layerName].push_back({ rect.left, rect.top, rect.width, rect.height });
 					}
 				}

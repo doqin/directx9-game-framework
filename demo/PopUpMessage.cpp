@@ -39,6 +39,8 @@ void Demo::PopUpMessage::Draw(unsigned long long deltaTime)
 		auto height = fontSprite->GetHeight();
 		fontSprite->SetPosition(GetWorldX() - width / 2.f, GetWorldY() - height / 2.f);
 		fontSprite->Begin();
+		fontSprite->SetOutline(true, 0xFF000000, 2.f);
+		fontSprite->SetColor(0xFFfffc40);
 		fontSprite->Draw(*camera, deltaTime);
 		fontSprite->End();
 	}

@@ -117,6 +117,16 @@ void DX9GF::GraphicsDevice::SetAlphaBlending(bool enabled)
 	}
 }
 
+void DX9GF::GraphicsDevice::SetScissorTest(bool enabled)
+{
+	d3ddev->SetRenderState(D3DRS_SCISSORTESTENABLE, enabled);
+}
+
+void DX9GF::GraphicsDevice::SetScissorRect(const RECT& rect)
+{
+	d3ddev->SetScissorRect(&rect);
+}
+
 void DX9GF::GraphicsDevice::DrawLine(float x1, float y1, float x2, float y2, D3DCOLOR color, float thickness)
 {
 	if (thickness <= 1.0f) {

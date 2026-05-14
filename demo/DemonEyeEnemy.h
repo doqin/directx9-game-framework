@@ -5,9 +5,9 @@ namespace Demo {
 	class DemonEyeEnemy : public IEnemy {
 	private:
 		std::shared_ptr<DX9GF::Texture> texture;
-		std::shared_ptr<DX9GF::StaticSprite> sprite;
+		std::shared_ptr<DX9GF::AnimatedSprite> sprite;
 		std::shared_ptr<DX9GF::Texture> tearProjectileTexture;
-		std::shared_ptr<DX9GF::StaticSprite> tearProjectileSprite;
+		std::shared_ptr<DX9GF::AnimatedSprite> tearProjectileSprite;
 		std::weak_ptr<Player> player;
 
 		int GetRandomPattern();

@@ -239,6 +239,7 @@
     </ClCompile>
     <ClCompile Include="Player.cpp" />
     <ClCompile Include="RandomEncounter.cpp" />
+    <ClCompile Include="SaveGameState.cpp" />
     <ClCompile Include="SavePoint.cpp" />
     <ClCompile Include="SettingsManager.cpp" />
     <ClCompile Include="SettingsScene.cpp" />
@@ -251,6 +252,7 @@
     <ClCompile Include="PopUpMessage.cpp" />
     <ClCompile Include="RoundProjectile.cpp" />
     <ClCompile Include="TestBattleScene.cpp" />
+    <ClCompile Include="ThreadAlleyScene.cpp" />
     <ClCompile Include="TransitionCommand.cpp" />
     <ClCompile Include="TutorialWorldScene.cpp" />
     <ClCompile Include="VampireBatEnemy.cpp" />
@@ -304,6 +306,7 @@
     <ClInclude Include="PopUpMessage.h" />
     <ClInclude Include="RandomEncounter.h" />
     <ClInclude Include="resource.h" />
+    <ClInclude Include="SaveGameState.h" />
     <ClInclude Include="SavePoint.h" />
     <ClInclude Include="SettingsManager.h" />
     <ClInclude Include="SettingsScene.h" />
@@ -317,6 +320,7 @@
     <ClInclude Include="StrikeCard.h" />
     <ClInclude Include="TestBattleScene.h" />
     <ClInclude Include="TestEnemy.h" />
+    <ClInclude Include="ThreadAlleyScene.h" />
     <ClInclude Include="TransitionCommand.h" />
     <ClInclude Include="TutorialWorldScene.h" />
     <ClInclude Include="VampireBatEnemy.h" />
@@ -325,6 +329,12 @@
   </ItemGroup>
   <ItemGroup>
     <None Include="placeholder-round-projectile.aseprite" />
+    <None Include="ThreadAlley.tmx">
+      <DeploymentContent>true</DeploymentContent>
+    </None>
+    <None Include="threadalley.tsx">
+      <DeploymentContent>true</DeploymentContent>
+    </None>
     <None Include="tutorial.aseprite">
       <DeploymentContent>true</DeploymentContent>
     </None>
@@ -345,7 +355,13 @@
     <Image Include="arrow.png">
       <DeploymentContent>true</DeploymentContent>
     </Image>
+    <Image Include="bugprojectile-Sheet.png">
+      <DeploymentContent>true</DeploymentContent>
+    </Image>
     <Image Include="click.png">
+      <DeploymentContent>true</DeploymentContent>
+    </Image>
+    <Image Include="computerbug-Sheet.png">
       <DeploymentContent>true</DeploymentContent>
     </Image>
     <Image Include="cursor.png">
@@ -366,6 +382,9 @@
     <Image Include="items.png">
       <DeploymentContent>true</DeploymentContent>
     </Image>
+    <Image Include="notresponding-Sheet.png">
+      <DeploymentContent>true</DeploymentContent>
+    </Image>
     <Image Include="NPC1.png">
       <DeploymentContent>true</DeploymentContent>
     </Image>
@@ -379,6 +398,12 @@
       <DeploymentContent>true</DeploymentContent>
     </Image>
     <Image Include="Shop-Sheet.png">
+      <DeploymentContent>true</DeploymentContent>
+    </Image>
+    <Image Include="shrimp-Sheet.png">
+      <DeploymentContent>true</DeploymentContent>
+    </Image>
+    <Image Include="spearprojectile.png">
       <DeploymentContent>true</DeploymentContent>
     </Image>
     <Image Include="TempTex.png">
@@ -399,6 +424,9 @@
     <Image Include="placeholder.png">
       <DeploymentContent>true</DeploymentContent>
     </Image>
+    <Image Include="threadalley.png">
+      <DeploymentContent>true</DeploymentContent>
+    </Image>
     <Image Include="tutorial.png">
       <DeploymentContent>true</DeploymentContent>
     </Image>
@@ -409,6 +437,9 @@
       <DeploymentContent>true</DeploymentContent>
     </Image>
     <Image Include="uiter-Sheet.png">
+      <DeploymentContent>true</DeploymentContent>
+    </Image>
+    <Image Include="xprojectile.png">
       <DeploymentContent>true</DeploymentContent>
     </Image>
   </ItemGroup>

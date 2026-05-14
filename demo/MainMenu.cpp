@@ -3,7 +3,9 @@
 #include "resource.h"
 #include "IconButton.h"
 #include "SettingsScene.h"
+#include "ThreadAlleyScene.h"
 #include "TutorialWorldScene.h"
+#include "SaveGameState.h"
 #include <fstream>
 #include <cstdio>
 
@@ -62,7 +64,8 @@ namespace Demo
 	{
 
 		transformManager = std::make_shared<DX9GF::TransformManager>();
-		saveManager = std::make_shared<DX9GF::SaveManager>();
+       saveManager = std::make_shared<DX9GF::SaveManager>();
+		gameSaveState = std::make_shared<SaveGameState>(game, saveManager);
 
 		auto app = DX9GF::Application::GetInstance();
 		lastScreenWidth = app->GetScreenWidth();
@@ -101,27 +104,16 @@ namespace Demo
 		}
 		f.close();
 
-		continueButton->SetOnReleaseLeft([this](DX9GF::ITrigger* t) {
-			auto app = DX9GF::Application::GetInstance();
-			auto world = new TutorialWorldScene(game, saveManager, app->GetScreenWidth(), app->GetScreenHeight());
-			saveManager->Clear();
-			saveManager->Register(world);
-			game->GetSceneManager()->PushScene(world);
-			saveManager->Load("savegame.json");
-			game->GetSceneManager()->GoToNext();
+        continueButton->SetOnReleaseLeft([this](DX9GF::ITrigger* t) {
+			gameSaveState = SaveGameState::LoadSavedGame(game, saveManager);
 		});
 
 		//New Game Button
 		newGameButton = std::make_shared<Demo::IconButton>(transformManager, 0, 0, 96, 32, buttonSheetTex, 3);
 		newGameButton->SetSpriteRects(DX9GF::Utils::CreateRectsVertical(144, 48, 48, 16, 3));
-		newGameButton->SetOnReleaseLeft([this](DX9GF::ITrigger* t) { 
+        newGameButton->SetOnReleaseLeft([this](DX9GF::ITrigger* t) { 
 			std::remove("savegame.json");
-			auto app = DX9GF::Application::GetInstance();
-			auto world = new TutorialWorldScene(game, saveManager, app->GetScreenWidth(), app->GetScreenHeight());
-			saveManager->Clear();
-			saveManager->Register(world);
-			game->GetSceneManager()->PushScene(world);
-			game->GetSceneManager()->GoToNext();
+          gameSaveState = SaveGameState::StartNewGame(game, saveManager);
 		});
 		newGameButton->SetSpriteScale(2.f, 2.f);
 

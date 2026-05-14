@@ -7,17 +7,18 @@
 void Demo::DemonEyeEnemy::Init(DX9GF::GraphicsDevice* graphicsDevice, DX9GF::Camera* camera)
 {
 	texture = std::make_shared<DX9GF::Texture>(graphicsDevice);
-	texture->LoadTexture(IDB_PNG4); // TODO: enemy img
-	sprite = std::make_shared<DX9GF::StaticSprite>(texture.get());
+	texture->LoadTexture(L"computerbug-Sheet.png"); // TODO: enemy img
+	sprite = std::make_shared<DX9GF::AnimatedSprite>(texture.get(), DX9GF::Utils::CreateRectsHorizontal(0, 0, 64, 64, 12), 12);
 	sprite->SetOrigin(32, 32);
+	sprite->SetScale(2.f);
 
 	tearProjectileTexture = std::make_shared<DX9GF::Texture>(graphicsDevice);
-	tearProjectileTexture->LoadTexture(IDB_PNG5); // TODO: blood drop img
-	tearProjectileSprite = std::make_shared<DX9GF::StaticSprite>(tearProjectileTexture.get());
+	tearProjectileTexture->LoadTexture(L"bugprojectile-Sheet.png"); // TODO: blood drop img
+	tearProjectileSprite = std::make_shared<DX9GF::AnimatedSprite>(tearProjectileTexture.get(), DX9GF::Utils::CreateRectsHorizontal(0, 0, 16, 16, 4), 12);
 	tearProjectileSprite->SetOrigin(8, 8);
 
-   SetGoldReward(static_cast<int>(std::round(GetMaxHealth())));
-	InitCardSpawnTrigger(camera, 64.f, 64.f);
+	SetGoldReward(static_cast<int>(std::round(GetMaxHealth())));
+	InitCardSpawnTrigger(camera, 128.f, 128.f);
 }
 
 void Demo::DemonEyeEnemy::Draw(DX9GF::GraphicsDevice* graphicsDevice, DX9GF::Camera* camera, unsigned long long deltaTime)

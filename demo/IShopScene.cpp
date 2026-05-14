@@ -60,7 +60,8 @@ void Demo::IShopScene::BuildUI()
             }
         });
 		buyBtn->Init(&uiCamera);
-		uiButtons.push_back(buyBtn);
+        uiButtons.push_back(buyBtn);
+		buyButtons.push_back(buyBtn);
 	}
 
 	auto leaveBtn = std::make_shared<Demo::IconButton>(
@@ -148,18 +149,33 @@ void Demo::IShopScene::Draw(unsigned long long deltaTime)
 			myFontSprite->SetPosition(sw * 0.5f - width * 0.5f, sh * 0.15f);
 			myFontSprite->Draw(uiCamera, deltaTime);
 
-			myFontSprite->SetPosition(sw * 0.5f - 180.0f, sh * 0.82f);
+          myFontSprite->SetPosition(sw * 0.5f - 180.0f, sh * 0.82f);
 			myFontSprite->SetColor(0xFF00FFFF);
 			myFontSprite->SetText(std::wstring(statusMessage.begin(), statusMessage.end()));
 			myFontSprite->Draw(uiCamera, deltaTime);
 
-          float startY = sh * 0.29f;
+			std::wstring hoverDescription;
+			float startY = sh * 0.29f;
 			for (size_t i = 0; i < itemsForSale.size(); ++i) {
-               myFontSprite->SetPosition(sw * 0.14f, startY + (i * 70.0f));
+				myFontSprite->SetPosition(sw * 0.14f, startY + (i * 70.0f));
 				myFontSprite->SetColor(0xFFFFFFFF);
 
-               std::string itemText = itemsForSale[i].name + "  " + std::to_string(itemsForSale[i].cost) + "G";
+				std::string itemText = itemsForSale[i].name + "  " + std::to_string(itemsForSale[i].cost) + "G";
 				myFontSprite->SetText(std::wstring(itemText.begin(), itemText.end()));
+				myFontSprite->Draw(uiCamera, deltaTime);
+
+				if (i < buyButtons.size()) {
+					auto& btn = buyButtons[i];
+					if (btn && btn->GetTrigger() && btn->GetTrigger()->IsHovering(deltaTime)) {
+						hoverDescription = itemsForSale[i].description;
+					}
+				}
+			}
+
+			if (!hoverDescription.empty()) {
+				myFontSprite->SetPosition(sw * 0.08f + 32, sh * 0.78f);
+				myFontSprite->SetColor(0xFFFFFFFF);
+                myFontSprite->SetText(std::move(hoverDescription));
 				myFontSprite->Draw(uiCamera, deltaTime);
 			}
 

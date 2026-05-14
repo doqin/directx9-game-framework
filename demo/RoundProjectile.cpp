@@ -61,6 +61,8 @@ void Demo::RoundProjectile::Update(unsigned long long deltaTime)
     if (this->elapsed >= delay) {
         auto [currentX, currentY] = GetWorldPosition();
         SetLocalPosition(currentX + trajectory.x * velocity * deltaTime / 1000.f, currentY + trajectory.y * velocity * deltaTime / 1000.f);
+        float angle = atan2(trajectory.y, trajectory.x);
+        SetLocalRotation(angle);
     }
     if (collider->IsCollided(player->GetCollider())) {
         player->TakeDamage(damage);

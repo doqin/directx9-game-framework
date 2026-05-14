@@ -25,8 +25,8 @@ void Demo::CupidEnemy::Init(DX9GF::GraphicsDevice* graphicsDevice, DX9GF::Camera
 	arrowSprite = std::make_shared<DX9GF::StaticSprite>(arrowTexture.get());
 	arrowSprite->SetOrigin(8, 8);
 
-   SetGoldReward(static_cast<int>(std::round(GetMaxHealth())));
-	InitCardSpawnTrigger(camera, 64.f, 64.f);
+	SetGoldReward(static_cast<int>(std::round(GetMaxHealth())));
+	InitCardSpawnTrigger(camera, 128.f, 128.f);
 }
 
 void Demo::CupidEnemy::Draw(DX9GF::GraphicsDevice* graphicsDevice, DX9GF::Camera* camera, unsigned long long deltaTime)

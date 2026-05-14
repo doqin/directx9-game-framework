@@ -250,6 +250,14 @@ void Demo::IDraggable::Update(unsigned long long deltaTime)
 
 void Demo::IDraggable::Draw(unsigned long long deltaTime)
 {
+	if (isCropped) {
+		graphicsDevice->SetScissorRect(scissorRect);
+		graphicsDevice->SetScissorTest(true);
+	}
+	if (!parent.has_value()) {
+		isCropped = false;
+		graphicsDevice->SetScissorTest(false);
+	}
 	trigger->Draw(graphicsDevice, *camera);
 	auto thisX = trigger->GetWorldX() - trigger->GetOriginX();
 	auto thisY = trigger->GetWorldY() - trigger->GetOriginY();
@@ -271,6 +279,9 @@ void Demo::IDraggable::Draw(unsigned long long deltaTime)
 			}
 		}
 		debugFontSprite->End();
+	}
+	if (isCropped) {
+		graphicsDevice->SetScissorTest(false);
 	}
 }
 
@@ -303,6 +314,17 @@ bool Demo::IDraggable::OnHover(std::shared_ptr<IDraggable> other)
 		return true;
 	}
 	return false;
+}
+
+void Demo::IDraggable::SetScissorRect(const RECT& rect)
+{
+	scissorRect = rect;
+	isCropped = true;
+}
+
+void Demo::IDraggable::ClearScissorRect()
+{
+	isCropped = false;
 }
 
 std::string Demo::IDraggable::GetID() const

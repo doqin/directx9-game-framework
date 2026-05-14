@@ -59,6 +59,10 @@ void Demo::StrikeCard::Update(unsigned long long deltaTime)
 void Demo::StrikeCard::Draw(unsigned long long deltaTime)
 {
 	IStatementCard::Draw(deltaTime);
+	if (isCropped) {
+		graphicsDevice->SetScissorRect(scissorRect);
+		graphicsDevice->SetScissorTest(true);
+	}
 	if (!strikeTexture) {
 		strikeTexture = std::make_shared<DX9GF::Texture>(graphicsDevice);
 		strikeTexture->LoadTexture(L"ui.png");
@@ -71,6 +75,9 @@ void Demo::StrikeCard::Draw(unsigned long long deltaTime)
 		strikeSprite->SetScale(2.f, 2.f);
 		strikeSprite->Draw(*camera, deltaTime);
 		strikeSprite->End();
+	}
+	if (isCropped) {
+		graphicsDevice->SetScissorTest(false);
 	}
 	//if (!nameFont) {
 	//	nameFont = std::make_shared<DX9GF::Font>(graphicsDevice, L"StatusPlz", 16);

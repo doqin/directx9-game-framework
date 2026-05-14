@@ -20,7 +20,7 @@ void Demo::TutorialWorldScene::Init()
 		{"MimicEnemy", 20},
 		{"WarlockEnemy", 10},
 		{"CupidEnemy", 5}
-		}, drawBuffer, commandBuffer, &isGamePaused));
+		}, drawBuffer, commandBuffer, &isGamePaused, [this](DX9GF::GraphicsDevice* gd, unsigned long long deltaTime) { DrawBackground(gd, deltaTime); }));
 	font = std::make_shared<DX9GF::Font>(game->GetGraphicsDevice(), L"StatusPlz", 16);
 	
 	npcIntroduction = std::make_shared<DauDauNPC>(transformManager, 167.0f, -18.0f);
@@ -54,7 +54,7 @@ void Demo::TutorialWorldScene::Init()
 	shopPoint_Card = std::make_shared<ShopPoint>(transformManager, 183.0f, -460.0f);
 	shopPoint_Card->Init(game, game->GetGraphicsDevice(), &camera, player, colliderManager, font, drawBuffer,
 		[](Game* g, Player* p, int w, int h) {
-			return new CardShop(g, p, w, h);
+            return new CardShop(g, p, w, h, ShopTier::BASIC);
 		}
 	);
 	shopPoint_Card->SetVisible(true);
@@ -170,8 +170,7 @@ void Demo::TutorialWorldScene::Update(unsigned long long deltaTime)
 
 	if (inventoryMenu && inventoryMenu->IsPendingLeave()) {
 		auto sceMan = game->GetSceneManager();
-		sceMan->PopScene();
-		sceMan->GoToPrevious();
+		sceMan->GoToScene(0);
 		return;
 	}
 	commandBuffer->Update(deltaTime);
@@ -180,8 +179,12 @@ void Demo::TutorialWorldScene::Update(unsigned long long deltaTime)
 void Demo::TutorialWorldScene::Draw(unsigned long long deltaTime)
 {
 	auto gd = game->GetGraphicsDevice();
-	gd->Clear(0xFFFFFFFF);
+	gd->Clear(0xFF403353);
 	if (SUCCEEDED(gd->BeginDraw())) {
+		/* Cool wave grid effect */
+		DrawBackground(gd, deltaTime);
+		/* End of cool wave grid effect */
+
 		map->Draw(camera);
 		if (npcIntroduction) npcIntroduction->Draw(camera, deltaTime);
 		if (npcExplainingHealingPoint) npcExplainingHealingPoint->Draw(camera, deltaTime);
@@ -205,6 +208,37 @@ void Demo::TutorialWorldScene::Draw(unsigned long long deltaTime)
 		gd->EndDraw();
 	}
 	gd->Present();
+}
+
+void Demo::TutorialWorldScene::DrawBackground(DX9GF::GraphicsDevice* gd, unsigned long long deltaTime)
+{
+	auto [screenWidth, screenHeight] = camera.GetScreenResolution();
+	const int spacingX = 32;
+	const int spacingY = 32;
+	const float segmentLength = 16.0f;
+	const float amplitude = 12.0f;
+	const float frequency = 0.05f;
+	const D3DCOLOR gridColor = 0xFF9cdb43;
+	static float waveTime = 0.0f;
+	waveTime += static_cast<float>(deltaTime) * 0.002f;
+	while (waveTime > 6.2831853f) {
+		waveTime -= 6.2831853f;
+	}
+
+	for (int y = 0; y <= screenHeight; y += spacingY) {
+		gd->DrawLine(0.0f, static_cast<float>(y), static_cast<float>(screenWidth), static_cast<float>(y), gridColor);
+	}
+
+	for (int x = 0; x <= screenWidth; x += spacingX) {
+		float prevY = 0.0f;
+		float prevX = static_cast<float>(x) + std::sinf(waveTime) * amplitude;
+		for (float y = segmentLength; y <= static_cast<float>(screenHeight); y += segmentLength) {
+			float offsetX = static_cast<float>(x) + std::sinf((y * frequency) + waveTime) * amplitude;
+			gd->DrawLine(prevX, prevY, offsetX, y, gridColor);
+			prevX = offsetX;
+			prevY = y;
+		}
+	}
 }
 
 std::string Demo::TutorialWorldScene::GetSaveID() const

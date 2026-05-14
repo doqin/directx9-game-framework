@@ -11,9 +11,12 @@
 #include "IconButton.h"
 
 namespace Demo {
+   enum class ShopTier { BASIC, HYBRID, PREMIUM };
+
 	struct ShopItem {
 		std::string name;
 		int cost;
+      std::wstring description;
 		std::function<void()> onBuyAction;
 	};
 
@@ -30,6 +33,7 @@ namespace Demo {
 
 		std::vector<ShopItem> itemsForSale;
 		std::vector<std::shared_ptr<Demo::IButton>> uiButtons;
+		std::vector<std::shared_ptr<Demo::IconButton>> buyButtons;
 
 		std::shared_ptr<DX9GF::Texture> backBufferTexture;
 		std::shared_ptr<DX9GF::StaticSprite> backBufferSprite;

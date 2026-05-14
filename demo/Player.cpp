@@ -38,9 +38,22 @@ void Demo::Player::GenerateSaveData(nlohmann::json& outData) {
 
 	outData["x"] = x;
 	outData["y"] = y;
-	outData["health"] = health;
-	outData["gold"] = gold;
+ outData["health"] = health;
+}
 
+void Demo::Player::RestoreSaveData(const nlohmann::json& inData) {
+	auto [currentX, currentY] = GetLocalPosition();
+	float savedX = currentX, savedY = currentY;
+
+	if (inData.contains("x")) savedX = inData["x"];
+	if (inData.contains("y")) savedY = inData["y"];
+   if (inData.contains("health")) health = inData["health"];
+
+	SetLocalPosition(savedX, savedY);
+}
+
+void Demo::Player::GenerateSaveGlobalData(nlohmann::json& outData) const {
+	outData["gold"] = gold;
 	outData["deck"] = nlohmann::json::array();
 	for (auto& card : deck) {
 		outData["deck"].push_back(card);
@@ -56,15 +69,8 @@ void Demo::Player::GenerateSaveData(nlohmann::json& outData) {
 	}
 }
 
-void Demo::Player::RestoreSaveData(const nlohmann::json& inData) {
-	auto [currentX, currentY] = GetLocalPosition();
-	float savedX = currentX, savedY = currentY;
-
-	if (inData.contains("x")) savedX = inData["x"];
-	if (inData.contains("y")) savedY = inData["y"];
-	if (inData.contains("health")) health = inData["health"];
+void Demo::Player::RestoreSaveGlobalData(const nlohmann::json& inData) {
 	if (inData.contains("gold")) gold = inData["gold"];
-
 	if (inData.contains("deck")) {
 		deck.clear();
 		for (auto& item : inData["deck"]) {
@@ -77,8 +83,6 @@ void Demo::Player::RestoreSaveData(const nlohmann::json& inData) {
 			inventoryCards.push_back(item.get<std::string>());
 		}
 	}
-
-	SetLocalPosition(savedX, savedY);
 	if (inData.contains("inventoryItems")) {
 		inventoryItems.Clear();
 		for (auto& item : inData["inventoryItems"]) {

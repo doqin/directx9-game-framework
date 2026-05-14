@@ -15,6 +15,10 @@ bool Demo::HeavyStrikeCard::Execute() {
 
 void Demo::HeavyStrikeCard::Draw(unsigned long long deltaTime) {
 	MultiTargetCard::Draw(deltaTime);
+	if (isCropped) {
+		graphicsDevice->SetScissorRect(scissorRect);
+		graphicsDevice->SetScissorTest(true);
+	}
 	if (!strikeTexture) {
 		strikeTexture = std::make_shared<DX9GF::Texture>(graphicsDevice);
 		strikeTexture->LoadTexture(L"ui.png");
@@ -27,6 +31,9 @@ void Demo::HeavyStrikeCard::Draw(unsigned long long deltaTime) {
 		strikeSprite->SetScale(2.f, 2.f);
 		strikeSprite->Draw(*camera, deltaTime);
 		strikeSprite->End();
+	}
+	if (isCropped) {
+		graphicsDevice->SetScissorTest(false);
 	}
 }
 
@@ -48,6 +55,10 @@ bool Demo::TwinStrikeCard::Execute() {
 
 void Demo::TwinStrikeCard::Draw(unsigned long long deltaTime) {
 	MultiTargetCard::Draw(deltaTime);
+	if (isCropped) {
+		graphicsDevice->SetScissorRect(scissorRect);
+		graphicsDevice->SetScissorTest(true);
+	}
 	if (!strikeTexture) {
 		strikeTexture = std::make_shared<DX9GF::Texture>(graphicsDevice);
 		strikeTexture->LoadTexture(L"ui.png");
@@ -60,6 +71,9 @@ void Demo::TwinStrikeCard::Draw(unsigned long long deltaTime) {
 		strikeSprite->SetScale(2.f, 2.f);
 		strikeSprite->Draw(*camera, deltaTime);
 		strikeSprite->End();
+	}
+	if (isCropped) {
+		graphicsDevice->SetScissorTest(false);
 	}
 }
 
@@ -82,6 +96,10 @@ bool Demo::CleaveCard::Execute() {
 
 void Demo::CleaveCard::Draw(unsigned long long deltaTime) {
 	MultiTargetCard::Draw(deltaTime);
+	if (isCropped) {
+		graphicsDevice->SetScissorRect(scissorRect);
+		graphicsDevice->SetScissorTest(true);
+	}
 	if (!strikeTexture) {
 		strikeTexture = std::make_shared<DX9GF::Texture>(graphicsDevice);
 		strikeTexture->LoadTexture(L"ui.png");
@@ -94,6 +112,9 @@ void Demo::CleaveCard::Draw(unsigned long long deltaTime) {
 		strikeSprite->SetScale(2.f, 2.f);
 		strikeSprite->Draw(*camera, deltaTime);
 		strikeSprite->End();
+	}
+	if (isCropped) {
+		graphicsDevice->SetScissorTest(false);
 	}
 }
 
@@ -112,6 +133,10 @@ bool Demo::ChainLightningCard::Execute() {
 
 void Demo::ChainLightningCard::Draw(unsigned long long deltaTime) {
 	MultiTargetCard::Draw(deltaTime);
+	if (isCropped) {
+		graphicsDevice->SetScissorRect(scissorRect);
+		graphicsDevice->SetScissorTest(true);
+	}
 	if (!strikeTexture) {
 		strikeTexture = std::make_shared<DX9GF::Texture>(graphicsDevice);
 		strikeTexture->LoadTexture(L"ui.png");
@@ -124,6 +149,9 @@ void Demo::ChainLightningCard::Draw(unsigned long long deltaTime) {
 		strikeSprite->SetScale(2.f, 2.f);
 		strikeSprite->Draw(*camera, deltaTime);
 		strikeSprite->End();
+	}
+	if (isCropped) {
+		graphicsDevice->SetScissorTest(false);
 	}
 }
 
@@ -143,6 +171,10 @@ bool Demo::PoisonCard::Execute() {
 
 void Demo::PoisonCard::Draw(unsigned long long deltaTime) {
 	MultiTargetCard::Draw(deltaTime);
+	if (isCropped) {
+		graphicsDevice->SetScissorRect(scissorRect);
+		graphicsDevice->SetScissorTest(true);
+	}
 	if (!strikeTexture) {
 		strikeTexture = std::make_shared<DX9GF::Texture>(graphicsDevice);
 		strikeTexture->LoadTexture(L"ui.png");
@@ -156,13 +188,16 @@ void Demo::PoisonCard::Draw(unsigned long long deltaTime) {
 		strikeSprite->Draw(*camera, deltaTime);
 		strikeSprite->End();
 	}
+	if (isCropped) {
+		graphicsDevice->SetScissorTest(false);
+	}
 }
 
 bool Demo::VulnerableCard::Execute() {
 	if (isDone) return true;
 	if (!targets.empty()) {
 		if (auto enemy = targets[0].lock()) {
-			if (auto e = enemy->GetValue()) e->ApplyStatus(StatusType::VULNERABLE, 2);
+			if (auto e = enemy->GetValue()) e->ApplyStatus(StatusType::VULNERABLE, 1);
 		}
 	}
 	isDone = true;
@@ -171,6 +206,10 @@ bool Demo::VulnerableCard::Execute() {
 
 void Demo::VulnerableCard::Draw(unsigned long long deltaTime) {
 	MultiTargetCard::Draw(deltaTime);
+	if (isCropped) {
+		graphicsDevice->SetScissorRect(scissorRect);
+		graphicsDevice->SetScissorTest(true);
+	}
 	if (!strikeTexture) {
 		strikeTexture = std::make_shared<DX9GF::Texture>(graphicsDevice);
 		strikeTexture->LoadTexture(L"ui.png");
@@ -183,6 +222,9 @@ void Demo::VulnerableCard::Draw(unsigned long long deltaTime) {
 		strikeSprite->SetScale(2.f, 2.f);
 		strikeSprite->Draw(*camera, deltaTime);
 		strikeSprite->End();
+	}
+	if (isCropped) {
+		graphicsDevice->SetScissorTest(false);
 	}
 }
 
@@ -199,6 +241,10 @@ bool Demo::WeaknessCard::Execute() {
 
 void Demo::WeaknessCard::Draw(unsigned long long deltaTime) {
 	MultiTargetCard::Draw(deltaTime);
+	if (isCropped) {
+		graphicsDevice->SetScissorRect(scissorRect);
+		graphicsDevice->SetScissorTest(true);
+	}
 	if (!strikeTexture) {
 		strikeTexture = std::make_shared<DX9GF::Texture>(graphicsDevice);
 		strikeTexture->LoadTexture(L"ui.png");
@@ -211,6 +257,9 @@ void Demo::WeaknessCard::Draw(unsigned long long deltaTime) {
 		strikeSprite->SetScale(2.f, 2.f);
 		strikeSprite->Draw(*camera, deltaTime);
 		strikeSprite->End();
+	}
+	if (isCropped) {
+		graphicsDevice->SetScissorTest(false);
 	}
 }
 
@@ -227,6 +276,10 @@ bool Demo::StunCard::Execute() {
 
 void Demo::StunCard::Draw(unsigned long long deltaTime) {
 	MultiTargetCard::Draw(deltaTime);
+	if (isCropped) {
+		graphicsDevice->SetScissorRect(scissorRect);
+		graphicsDevice->SetScissorTest(true);
+	}
 	if (!strikeTexture) {
 		strikeTexture = std::make_shared<DX9GF::Texture>(graphicsDevice);
 		strikeTexture->LoadTexture(L"ui.png");
@@ -239,5 +292,8 @@ void Demo::StunCard::Draw(unsigned long long deltaTime) {
 		strikeSprite->SetScale(2.f, 2.f);
 		strikeSprite->Draw(*camera, deltaTime);
 		strikeSprite->End();
+	}
+	if (isCropped) {
+		graphicsDevice->SetScissorTest(false);
 	}
 }

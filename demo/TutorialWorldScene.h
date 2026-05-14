@@ -45,11 +45,14 @@ namespace Demo {
 		void Update(unsigned long long deltaTime) override;
 		void Draw(unsigned long long deltaTime) override;
 
+		void DrawBackground(DX9GF::GraphicsDevice* gd, unsigned long long deltaTime);
+
 		// Inherited via ISaveable
 		std::string GetSaveID() const override;
 		void GenerateSaveData(nlohmann::json& outData) override;
 		void RestoreSaveData(const nlohmann::json& inData) override;
 
 		void GiveTestItems();
+      std::shared_ptr<Player> GetPlayer() const { return player; }
 	};
 }

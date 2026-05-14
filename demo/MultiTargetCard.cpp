@@ -75,18 +75,18 @@ namespace Demo {
 
 	void MultiTargetCard::Draw(unsigned long long deltaTime) {
 		IStatementCard::Draw(deltaTime);
-		if (!nameFont) {
-			nameFont = std::make_shared<DX9GF::Font>(graphicsDevice, L"StatusPlz", 16);
-			nameFontSprite = std::make_shared<DX9GF::FontSprite>(nameFont.get());
-			nameFontSprite->SetColor(0xFF000000);
-		}
-		nameFontSprite->Begin();
-		nameFontSprite->SetPosition(GetWorldX() + 8.f, GetWorldY() + 8.f);
+		//if (!nameFont) {
+		//	nameFont = std::make_shared<DX9GF::Font>(graphicsDevice, L"StatusPlz", 16);
+		//	nameFontSprite = std::make_shared<DX9GF::FontSprite>(nameFont.get());
+		//	nameFontSprite->SetColor(0xFF000000);
+		//}
+		//nameFontSprite->Begin();
+		//nameFontSprite->SetPosition(GetWorldX() + 8.f, GetWorldY() + 8.f);
 
-		std::wstring displayText = cardName + L" (" + std::to_wstring(targets.size()) + L"/" + std::to_wstring(maxTargets) + L")";
-		nameFontSprite->SetText(std::move(displayText));
-		nameFontSprite->Draw(*camera, deltaTime);
-		nameFontSprite->End();
+		//std::wstring displayText = cardName + L" (" + std::to_wstring(targets.size()) + L"/" + std::to_wstring(maxTargets) + L")";
+		//nameFontSprite->SetText(std::move(displayText));
+		//nameFontSprite->Draw(*camera, deltaTime);
+		//nameFontSprite->End();
 	}
 
 	void MultiTargetCard::ResetExecution() {

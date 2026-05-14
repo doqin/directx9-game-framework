@@ -42,6 +42,8 @@ namespace DX9GF {
 		HRESULT IsValid();
 
 		void SetAlphaBlending(bool enabled);
+		void SetScissorTest(bool enabled);
+		void SetScissorRect(const RECT& rect);
 
 		void DrawLine(float x1, float y1, float x2, float y2, D3DCOLOR color, float thickness = 1.0f);
 		void DrawLine(const DX9GF::Camera& camera, float x1, float y1, float x2, float y2, D3DCOLOR color, float thickness = 1.0f);

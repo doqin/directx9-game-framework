@@ -46,10 +46,10 @@ void Demo::IBattleScene::StartBattle()
 	for (auto& card : drawPile) {
 		HidePileCard(card);
 	}
-  initialEnemyCount = enemies.size();
-  battleGoldReward = 0;
-  isBattleEnding = false;
-  isDefeatSequence = false;
+	initialEnemyCount = enemies.size();
+	battleGoldReward = 0;
+	isBattleEnding = false;
+	isDefeatSequence = false;
 	defeatElapsedMs = 0.f;
 	defeatFadeAlpha = 0.f;
 	std::random_device rd;
@@ -94,7 +94,7 @@ void Demo::IBattleScene::OnAllEnemiesDefeated()
 		}
 		player->SetHealth(battlePlayer->GetHealth());
 		auto sceMan = game->GetSceneManager();
-		sceMan->PopScene();
+		sceMan->RemoveScene(sceMan->GetIndex());
 		sceMan->GoToPrevious();
 		markFinished();
 	}));
@@ -215,15 +215,15 @@ void Demo::IBattleScene::QueueEnemyLayoutTransition(State targetState)
 	if (enemies.empty()) {
 		return;
 	}
-	if (targetState == lastEnemyLayoutState) {
-		return;
-	}
+	//if (targetState == lastEnemyLayoutState) {
+	//	return;
+	//}
 
 	const auto app = DX9GF::Application::GetInstance();
 	const float centerLineY = -120.f;
 	const float horizontalSpacing = 120.f;
-	const float verticalSpacing = 100.f;
-	const float rightSideX = app->GetScreenWidth() / 2.f - 150.f;
+	const float verticalSpacing = 160.f;
+	const float rightSideX = app->GetScreenWidth() / 2.f - 186.f;
 
 	bool hasQueued = false;
 	const size_t enemyCount = enemies.size();
@@ -260,7 +260,7 @@ void Demo::IBattleScene::QueueEnemyLayoutTransition(State targetState)
 
 void Demo::IBattleScene::CreateEnemyCard(std::shared_ptr<IEnemy> enemy)
 {
-	auto card = std::make_shared<EnemyCard>(transformManager, enemy, enemy->GetWorldX(), enemy->GetWorldY());
+	auto card = std::make_shared<EnemyCard>(transformManager, enemy, enemy->GetWorldX() - enemy->GetCardSpawnTrigger().lock()->GetWidth() * 1.5f, enemy->GetWorldY() - 32);
 	card->Init(draggableManager, game->GetGraphicsDevice(), &camera);
 	enemyCards.push_back(card);
 }
@@ -370,7 +370,9 @@ void Demo::IBattleScene::PlayerStandByUpdate(unsigned long long deltaTime)
 	itemsButton->SetLocalPosition(leftX + attackButton->GetWidth() + spacing, buttonY);
 	fleeButton->SetLocalPosition(leftX + attackButton->GetWidth() + spacing + itemsButton->GetWidth() + spacing, buttonY);
 
-	fleeButton->Update(deltaTime);
+	if (!isFleeing) {
+		fleeButton->Update(deltaTime);
+	}
 	itemsButton->Update(deltaTime);
 	attackButton->Update(deltaTime);
 	for (auto& enemy : enemies) {
@@ -618,7 +620,7 @@ void Demo::IBattleScene::PlayerAttackDraw(unsigned long long deltaTime)
 	fontSprite->SetPosition(enemyCardRemoveAreaX + 8.f, enemyCardRemoveAreaY + 8.f);
 	fontSprite->SetText(L"Discard Enemy Card Here");
 	fontSprite->Draw(camera, deltaTime);
-	fontSprite->SetColor(0xFF000000);
+	fontSprite->SetOutline(true, 0xFF000000, 2.f);
 	fontSprite->SetPosition(backButton->GetWorldX() + 32.f, backButton->GetWorldY() - 30.f);
 	fontSprite->SetText(std::to_wstring(energy - usedEnergy) + L"/" + std::to_wstring(MAX_ENERGY));
 	fontSprite->Draw(camera, deltaTime);
@@ -704,11 +706,11 @@ void Demo::IBattleScene::EnemyAttackDraw(unsigned long long deltaTime)
 	auto gd = game->GetGraphicsDevice();
 	const float battleHalfSize = battleBoxSize * 0.5f;
 	gd->SetAlphaBlending(true);
-	gd->DrawRectangle(camera, -battleHalfSize, -battleHalfSize, battleBoxSize, battleBoxSize, 0x40000000, true);
+	gd->DrawRectangle(camera, -battleHalfSize, -battleHalfSize, battleBoxSize, battleBoxSize, 0xEE6d758d, true);
 	gd->DrawRectangle(camera, -battleHalfSize, -battleHalfSize, battleBoxSize, battleBoxSize, 0xFF000000, false);
 	const int outlineThickness = 4;
 	for (int i = 1; i < outlineThickness; ++i) {
-		gd->DrawRectangle(camera, -battleHalfSize - i, -battleHalfSize - i, battleBoxSize + 2 * i, battleBoxSize + 2 * i, 0xFFFFFFFF, false);
+		gd->DrawRectangle(camera, -battleHalfSize - i, -battleHalfSize - i, battleBoxSize + 2 * i, battleBoxSize + 2 * i, 0xFFdae0ea, false);
 	}
 	gd->DrawRectangle(camera, -battleHalfSize - outlineThickness, -battleHalfSize - outlineThickness, battleBoxSize + 2 * outlineThickness, battleBoxSize + 2 * outlineThickness, 0xFF000000, false);
 	gd->SetAlphaBlending(false);
@@ -834,6 +836,7 @@ void Demo::IBattleScene::Init()
 	fleeButton = std::make_shared<IconButton>(transformManager, 0, 0, buttonWidth, buttonHeight, uiSheetTex);
 	fleeButton->SetOnReleaseLeft([&](DX9GF::ITrigger* thisObj) {
 		popUpMessage->QueueMessage(&commandBuffer, L"You tried to flee...");
+		isFleeing = true;
 		commandBuffer.PushCommand(std::make_shared<DX9GF::CustomCommand>([this](std::function<void(void)> markFinished) {
 			std::random_device rd;
 			std::mt19937 gen(rd());
@@ -849,7 +852,7 @@ void Demo::IBattleScene::Init()
 					}
 					player->SetHealth(battlePlayer->GetHealth());
 					auto sceMan = game->GetSceneManager();
-					sceMan->PopScene();
+					sceMan->RemoveScene(sceMan->GetIndex());
 					sceMan->GoToPrevious();
 					markFinished2();
 					}));
@@ -861,6 +864,7 @@ void Demo::IBattleScene::Init()
 					this->QueueEnemyLayoutTransition(State::EnemyAttack);
 					this->enemyAttackStartPending = true;
 					this->state = State::EnemyAttack;
+					isFleeing = false;
 					markFinished();
 				}));
 			}
@@ -1114,8 +1118,41 @@ void Demo::IBattleScene::Draw(unsigned long long deltaTime)
 {
 	auto gd = game->GetGraphicsDevice();
 	auto inpMan = DX9GF::InputManager::GetInstance();
-	gd->Clear(0xFFFFFFFF);
+	gd->Clear(0xFF403353);
 	if (SUCCEEDED(gd->BeginDraw())) {
+		if (customBackgroundDraw) {
+			customBackgroundDraw(gd, deltaTime);
+		} else {
+			/* Cool wave grid effect */
+			auto [screenWidth, screenHeight] = camera.GetScreenResolution();
+			const int spacingX = 32;
+			const int spacingY = 32;
+			const float segmentLength = 16.0f;
+			const float amplitude = 12.0f;
+			const float frequency = 0.05f;
+			const D3DCOLOR gridColor = 0xFF9cdb43;
+			static float waveTime = 0.0f;
+			waveTime += static_cast<float>(deltaTime) * 0.002f;
+			while (waveTime > 6.2831853f) {
+				waveTime -= 6.2831853f;
+			}
+
+			for (int y = 0; y <= screenHeight; y += spacingY) {
+				gd->DrawLine(0.0f, static_cast<float>(y), static_cast<float>(screenWidth), static_cast<float>(y), gridColor);
+			}
+
+			for (int x = 0; x <= screenWidth; x += spacingX) {
+				float prevY = 0.0f;
+				float prevX = static_cast<float>(x) + std::sinf(waveTime) * amplitude;
+				for (float y = segmentLength; y <= static_cast<float>(screenHeight); y += segmentLength) {
+					float offsetX = static_cast<float>(x) + std::sinf((y * frequency) + waveTime) * amplitude;
+					gd->DrawLine(prevX, prevY, offsetX, y, gridColor);
+					prevX = offsetX;
+					prevY = y;
+				}
+			}
+			/* End of cool wave grid effect */
+		}
 		switch (state) {
 		case State::PlayerStandBy:
 			for (auto& enemy : enemies) {

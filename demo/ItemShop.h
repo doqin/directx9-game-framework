@@ -2,8 +2,6 @@
 #include "IShopScene.h"
 
 namespace Demo {
-    enum class ShopTier { BASIC, HYBRID, PREMIUM };
-
     class ItemShop : public IShopScene {
     private:
         ShopTier currentTier;

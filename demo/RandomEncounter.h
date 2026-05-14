@@ -11,6 +11,7 @@ namespace Demo {
 		std::vector<std::pair<std::string, int>> possibleEnemies,
 		std::shared_ptr<DX9GF::CommandBuffer> drawBuffer,
 		std::shared_ptr<DX9GF::CommandBuffer> commandBuffer,
-		bool* isGamePaused
+		bool* isGamePaused,
+		std::function<void(DX9GF::GraphicsDevice*, unsigned long long)> customBackgroundDraw = nullptr
 	);
 }

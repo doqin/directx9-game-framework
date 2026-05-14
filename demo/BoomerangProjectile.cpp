@@ -60,6 +60,12 @@ void Demo::BoomerangProjectile::Update(unsigned long long deltaTime) {
 		velocity -= returnAcceleration * dt;
 
 		auto [currentX, currentY] = GetWorldPosition();
+		D3DXVECTOR2 moveVector = trajectory * velocity;
+		if (D3DXVec2LengthSq(&moveVector) > 0.0001f) {
+			float angle = atan2(moveVector.y, moveVector.x);
+			SetLocalRotation(angle);
+		}
+
 		SetLocalPosition(currentX + trajectory.x * velocity * dt, currentY + trajectory.y * velocity * dt);
 	}
 	if (collider->IsCollided(player->GetCollider())) {

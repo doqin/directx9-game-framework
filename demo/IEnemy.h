@@ -42,7 +42,8 @@ namespace Demo {
 		std::vector<std::shared_ptr<DX9GF::AnimatedSprite>> hitImpactSprites;
 		std::vector<StatusEffect> activeStatuses;
 		DX9GF::GraphicsDevice* graphicsDevice = nullptr;
-     void SetGoldReward(int reward) { goldReward = reward; }
+		unsigned long long timeSinceStart = 0;
+		void SetGoldReward(int reward) { goldReward = reward; }
 	public:
 		IEnemy(std::weak_ptr<DX9GF::TransformManager> tm, float maxHealth) : IGameObject(tm), maxHealth(maxHealth), health(maxHealth) {}
 		IEnemy(std::weak_ptr<DX9GF::TransformManager> tm, float maxHealth, float x, float y, float rotation = 0, float scaleX = 1, float scaleY = 1) : IGameObject(tm, x, y, rotation, scaleX, scaleY), maxHealth(maxHealth), health(maxHealth) {}
@@ -63,5 +64,6 @@ namespace Demo {
 		virtual void TickStatuses();
 		bool HasStatus(StatusType type) const;
 		float GetOutgoingDamage(float baseDamage) const;
+		std::weak_ptr<DX9GF::RectangleTrigger> GetCardSpawnTrigger() const { return cardSpawnTrigger; }
 	};
 }

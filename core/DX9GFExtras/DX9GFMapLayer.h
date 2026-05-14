@@ -19,7 +19,14 @@ namespace DX9GF {
 		};
 
 		struct Subset {
-			std::vector<TileVertex> vertexData;
+         struct ChunkGeometry {
+				std::vector<TileVertex> vertexData;
+				float x;
+				float y;
+				float width;
+				float height;
+			};
+			std::vector<ChunkGeometry> chunks;
 			Texture* texture;
 		};
 		

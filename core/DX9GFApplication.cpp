@@ -28,7 +28,7 @@ LRESULT CALLBACK WinProc(HWND hwnd, UINT msg, WPARAM wParam, LPARAM lParam)
 	return DefWindowProc(hwnd, msg, wParam, lParam);
 }
 
-void DX9GF::Application::Init(HINSTANCE hInstance, std::wstring appTitle, UINT screenWidth, UINT screenHeight)
+void DX9GF::Application::Init(HINSTANCE hInstance, std::wstring appTitle, UINT screenWidth, UINT screenHeight, bool resizable)
 {
 	this->hInstance = hInstance;
 	this->appTitle = appTitle;
@@ -50,14 +50,19 @@ void DX9GF::Application::Init(HINSTANCE hInstance, std::wstring appTitle, UINT s
 	// Very important =)))
 	AppRegisterClass();
 
+    DWORD windowStyle = WS_VISIBLE | WS_OVERLAPPEDWINDOW;
+	if (!resizable) {
+		windowStyle &= ~(WS_THICKFRAME | WS_MAXIMIZEBOX);
+	}
+
 	RECT windowRect = { 0, 0, static_cast<LONG>(screenWidth), static_cast<LONG>(screenHeight) };
-	AdjustWindowRect(&windowRect, WS_VISIBLE | WS_OVERLAPPEDWINDOW, FALSE);
+	AdjustWindowRect(&windowRect, windowStyle, FALSE);
 
 	// T?o m?t c?a s?
-	hwnd = CreateWindow(
+    hwnd = CreateWindow(
 		appTitle.c_str(),
 		appTitle.c_str(),
-		WS_VISIBLE | WS_OVERLAPPEDWINDOW,
+       windowStyle,
 		CW_USEDEFAULT,
 		CW_USEDEFAULT,
 		windowRect.right - windowRect.left, // chi?u r?ng

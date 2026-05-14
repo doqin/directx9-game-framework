@@ -27,17 +27,17 @@ namespace Demo {
 					enemy->Init(game->GetGraphicsDevice(), &camera);
 					enemy->SetOnRequestEnemyCard([this](std::shared_ptr<IEnemy> enemyCardOwner) { CreateEnemyCard(enemyCardOwner); });
 					enemies.push_back(enemy);
-                } else if (enemyName == "DemonEyeEnemy") {
+                } else if (enemyName == "DemonEyeEnemy") { // bug
 					auto enemy = std::make_shared<DemonEyeEnemy>(transformManager, 35.0f);
 					enemy->Init(game->GetGraphicsDevice(), &camera);
 					enemy->SetOnRequestEnemyCard([this](std::shared_ptr<IEnemy> enemyCardOwner) { CreateEnemyCard(enemyCardOwner); });
 					enemies.push_back(enemy);
-                } else if (enemyName == "VampireBatEnemy") {
+                } else if (enemyName == "VampireBatEnemy") { // shrimp
 					auto enemy = std::make_shared<VampireBatEnemy>(transformManager, 45.0f);
 					enemy->Init(game->GetGraphicsDevice(), &camera);
 					enemy->SetOnRequestEnemyCard([this](std::shared_ptr<IEnemy> enemyCardOwner) { CreateEnemyCard(enemyCardOwner); });
 					enemies.push_back(enemy);
-                } else if (enemyName == "MimicEnemy") {
+                } else if (enemyName == "MimicEnemy") { // popup
 					auto enemy = std::make_shared<MimicEnemy>(transformManager, 70.0f);
 					enemy->Init(game->GetGraphicsDevice(), &camera);
 					enemy->SetOnRequestEnemyCard([this](std::shared_ptr<IEnemy> enemyCardOwner) { CreateEnemyCard(enemyCardOwner); });

@@ -90,9 +90,11 @@ namespace Demo {
 
 		deckContainer = std::make_shared<IContainer>(transformManager, containerW, 40.0f, leftContainerX, containerY);
 		deckContainer->Init(draggableManager, game->GetGraphicsDevice(), uiCamera);
+		deckContainer->SetMaxHeight(sh * 0.5f);
 
         inventoryContainer = std::make_shared<IContainer>(transformManager, containerW, 40.0f, rightContainerX, containerY);
 		inventoryContainer->Init(draggableManager, game->GetGraphicsDevice(), uiCamera);
+		inventoryContainer->SetMaxHeight(sh * 0.5f);
 	}
 
 	void InventoryMenu::Toggle()

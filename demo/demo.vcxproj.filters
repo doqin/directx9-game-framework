@@ -56,6 +56,8 @@
     <ClCompile Include="CustomBattleScene.cpp" />
     <ClCompile Include="TransitionCommand.cpp" />
     <ClCompile Include="AdvancedCards.cpp" />
+    <ClCompile Include="ThreadAlleyScene.cpp" />
+    <ClCompile Include="SaveGameState.cpp" />
   </ItemGroup>
   <ItemGroup>
     <ClInclude Include="AdvancedCards.h" />
@@ -116,6 +118,8 @@
     <ClInclude Include="RandomEncounter.h" />
     <ClInclude Include="CustomBattleScene.h" />
     <ClInclude Include="TransitionCommand.h" />
+    <ClInclude Include="ThreadAlleyScene.h" />
+    <ClInclude Include="SaveGameState.h" />
   </ItemGroup>
   <ItemGroup>
     <ResourceCompile Include="demo.rc" />
@@ -145,6 +149,13 @@
     <Image Include="text-select.png" />
     <Image Include="uiter-Sheet.png" />
     <Image Include="ui-pack.png" />
+    <Image Include="computerbug-Sheet.png" />
+    <Image Include="shrimp-Sheet.png" />
+    <Image Include="notresponding-Sheet.png" />
+    <Image Include="spearprojectile.png" />
+    <Image Include="bugprojectile-Sheet.png" />
+    <Image Include="xprojectile.png" />
+    <Image Include="threadalley.png" />
   </ItemGroup>
   <ItemGroup>
     <Font Include="arcade-among-2-r46pv.ttf" />
@@ -157,5 +168,7 @@
     <None Include="tutorial.tsx" />
     <None Include="uiter-Sheet.aseprite" />
     <None Include="uiter.aseprite" />
+    <None Include="ThreadAlley.tmx" />
+    <None Include="threadalley.tsx" />
   </ItemGroup>
 </Project>

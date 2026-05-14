@@ -30,6 +30,9 @@ void Demo::IEnemy::Update(unsigned long long deltaTime)
             cardSpawnTrigger->Update(deltaTime);
         }
     }
+    
+    timeSinceStart += deltaTime;
+
     for (auto& indicator : damageIndicators) {
         indicator.elapsed += deltaTime;
         indicator.vy += 800.f * deltaTime / 1000.f; // gravity
@@ -59,6 +62,27 @@ void Demo::IEnemy::Draw(DX9GF::GraphicsDevice* graphicsDevice, DX9GF::Camera* ca
         return;
     }
     this->graphicsDevice = graphicsDevice;
+
+    if (!isOnStandby && cardSpawnTrigger) {
+        bool isHovered = cardSpawnTrigger->IsHovering(deltaTime);
+        
+        // Blink logic
+        float blinkFreq = 1.0f; // blinks per second
+        float alphaMult = (sin(timeSinceStart * 0.001f * blinkFreq * 3.14159f) + 1.0f) * 0.5f; // 0 to 1
+        int alpha = isHovered ? 255 : (int)(64 * alphaMult); // 64 is ~25% of 255
+        
+        D3DCOLOR color = isHovered ? D3DCOLOR_ARGB(64, 255, 255, 255) : D3DCOLOR_ARGB(alpha, 128, 128, 128);
+        graphicsDevice->SetAlphaBlending(true);
+        graphicsDevice->DrawRectangle(
+            *camera, 
+            cardSpawnTrigger->GetWorldX() - cardSpawnTrigger->GetOriginX(), 
+            cardSpawnTrigger->GetWorldY() - cardSpawnTrigger->GetOriginY(), 
+            cardSpawnTrigger->GetWidth(), 
+            cardSpawnTrigger->GetHeight(), 
+            0, 1, 1, 0, 0, color, true);
+        graphicsDevice->SetAlphaBlending(false);
+    }
+
     if (!font) {
         font = std::make_shared<DX9GF::Font>(graphicsDevice, L"StatusPlz", 16);
         fontSprite = std::make_shared<DX9GF::FontSprite>(font.get());
@@ -72,9 +96,9 @@ void Demo::IEnemy::Draw(DX9GF::GraphicsDevice* graphicsDevice, DX9GF::Camera* ca
     auto healthText = std::to_wstring(currentHealth) + L"/" + std::to_wstring(totalHealth);
 
     fontSprite->Begin();
-	fontSprite->SetOutline(false);
-    fontSprite->SetColor(0xFF000000);
-    fontSprite->SetPosition(GetWorldX(), GetWorldY() - 48.f);
+	fontSprite->SetOutline(true, 0xFF000000, 2.f);
+    fontSprite->SetColor(0xFFFFFFFF);
+    fontSprite->SetPosition(GetWorldX(), GetWorldY() - 96.f);
     fontSprite->SetText(std::move(healthText));
     fontSprite->Draw(*camera, deltaTime);
 
@@ -105,26 +129,28 @@ void Demo::IEnemy::Draw(DX9GF::GraphicsDevice* graphicsDevice, DX9GF::Camera* ca
 	fontSprite->SetOutline(false);
 	fontSprite->SetScale(1.f);
 
-    float statusOffsetX = 30.f;
+    float statusOffsetX = 64.f;
     float statusOffsetY = -20.f;
 
-    for (const auto& status : activeStatuses) {
-        std::wstring statusName = L"Unknown";
-        if (status.type == StatusType::POISON) statusName = L"Poison";
-        else if (status.type == StatusType::VULNERABLE) statusName = L"Vulnerable";
-        else if (status.type == StatusType::WEAK) statusName = L"Weak";
-        else if (status.type == StatusType::STUN) statusName = L"Stun";
+    if (!isOnStandby) {
+        for (const auto& status : activeStatuses) {
+            std::wstring statusName = L"Unknown";
+            if (status.type == StatusType::POISON) statusName = L"Poison";
+            else if (status.type == StatusType::VULNERABLE) statusName = L"Vulnerable";
+            else if (status.type == StatusType::WEAK) statusName = L"Weak";
+            else if (status.type == StatusType::STUN) statusName = L"Stun";
 
-        std::wstring statusText = statusName + L" (" + std::to_wstring(status.duration) + L")";
+            std::wstring statusText = statusName + L" (" + std::to_wstring(status.duration) + L")";
 
-        fontSprite->SetColor(0xFFFFFF00);
-		fontSprite->SetOutline(true, 0xFF000000, 2.f);
-        fontSprite->SetPosition(GetWorldX() + statusOffsetX, GetWorldY() + statusOffsetY);
+            fontSprite->SetColor(0xFFfffc40);
+            fontSprite->SetOutline(true, 0xFF000000, 2.f);
+            fontSprite->SetPosition(GetWorldX() + statusOffsetX, GetWorldY() + statusOffsetY);
 
-        fontSprite->SetText(std::move(statusText));
-        fontSprite->Draw(*camera, deltaTime);
+            fontSprite->SetText(std::move(statusText));
+            fontSprite->Draw(*camera, deltaTime);
 
-        statusOffsetY += 16.f;
+            statusOffsetY += 16.f;
+        }
     }
 
     fontSprite->End();
@@ -231,7 +257,7 @@ void Demo::IEnemy::TickStatuses() {
 
 float Demo::IEnemy::GetOutgoingDamage(float baseDamage) const
 {
-    float finalDamage = baseDamage;
+ float finalDamage = baseDamage * 2.f;
 
     if (HasStatus(StatusType::WEAK)) {
         finalDamage *= 0.75f;

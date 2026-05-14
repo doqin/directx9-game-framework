@@ -13,6 +13,7 @@ void Demo::ItemShop::AddShopItem(int itemID, int price)
         itemsForSale.push_back({
             name,
             price,
+            blueprint->GetDescription(),
             [this, itemID]() {
                 this->player->GetInventoryItems().AddItem(itemID, 1);
             }

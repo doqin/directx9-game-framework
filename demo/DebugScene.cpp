@@ -61,7 +61,7 @@ void Demo::DebugScene::Init()
 		auto [sw, sh] = this->camera.GetScreenResolution();
 		auto sceMan = this->game->GetSceneManager();
 		this->game->GetSceneManager()->PushScene(
-			new Demo::CardShop(this->game, this->player.get(), sw, sh)
+          new Demo::CardShop(this->game, this->player.get(), sw, sh, ShopTier::BASIC)
 		);
 		sceMan->GoToNext();
 

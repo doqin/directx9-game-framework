@@ -33,11 +33,24 @@ void DX9GF::SceneManager::PushScene(IScene* scene)
 	scene->Init();
 }
 
+void DX9GF::SceneManager::InsertScene(size_t index, IScene* scene)
+{
+	scenes.insert(scenes.begin() + index, scene);
+	scene->Init();
+}
+
 void DX9GF::SceneManager::PopScene()
 {
 	auto scene = scenes.back();
 	delete scene;
 	scenes.pop_back();
+}
+
+void DX9GF::SceneManager::RemoveScene(size_t index)
+{
+	auto scene = scenes[index];
+	delete scene;
+	scenes.erase(scenes.begin() + index);
 }
 
 void DX9GF::SceneManager::Update(unsigned long long deltaTime)

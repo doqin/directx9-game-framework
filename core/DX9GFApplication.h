@@ -21,8 +21,9 @@ namespace DX9GF {
 		/// <param name="hInstance">The handle to the application instance provided by Windows.</param>
 		/// <param name="appTitle">The title to display in the application window's title bar.</param>
 		/// <param name="screenWidth">The width of the application window in pixels.</param>
-		/// <param name="screenHeight">The height of the application window in pixels.</param>
-		void Init(HINSTANCE hInstance, std::wstring appTitle, UINT screenWidth, UINT screenHeight);
+      /// <param name="screenHeight">The height of the application window in pixels.</param>
+		/// <param name="resizable">Whether the application window is resizable.</param>
+		void Init(HINSTANCE hInstance, std::wstring appTitle, UINT screenWidth, UINT screenHeight, bool resizable = true);
 		void AttachGame(IGame* game);
 		void Run();
 

@@ -3,6 +3,8 @@
 #include "DX9GFMap.h"
 #include "tmxlite/TileLayer.hpp"
 #include <ranges>
+#include <algorithm>
+#include "../DX9GFUtils.h"
 
 bool DX9GF::MapLayer::IsTileIDInTileSet(unsigned int idx, const std::vector<std::uint32_t>& tileIDs, const tmx::Tileset& tileSet)
 {
@@ -38,7 +40,7 @@ void DX9GF::MapLayer::Create(Map* map, std::uint32_t layerIndex)
 		chunks.push_back(chunk);
 	}
 
-	for (auto i = 0u; i < tileSets.size(); ++i) {
+   for (auto i = 0u; i < tileSets.size(); ++i) {
 		const auto& tileSet = tileSets[i];
 		const auto& [textureSizeX, textureSizeY] = textures[i]->GetSize();
 		const auto& tileSetTileSize = tileSet.getTileSize();
@@ -47,10 +49,12 @@ void DX9GF::MapLayer::Create(Map* map, std::uint32_t layerIndex)
 		const auto tileMargin = tileSet.getMargin();
 		const float uNorm = static_cast<float>(tileSetTileSize.x) / textureSizeX;
 		const float vNorm = static_cast<float>(tileSetTileSize.y) / textureSizeY;
-		std::vector<TileVertex> vertices;
+		Subset subset;
+		subset.texture = textures[i].get();
 		for (const auto& chunk : chunks) {
 			const auto tilesView = chunk.tiles | std::views::transform([](const tmx::TileLayer::Tile& tile) { return tile.ID; });
 			const std::vector<std::uint32_t> tileIDs(tilesView.begin(), tilesView.end());
+			std::vector<TileVertex> vertices;
 			for (int y = 0; y < chunk.size.y; ++y) {
 				for (int x = 0; x < chunk.size.x; ++x) { // Fixed: was ++y, should be ++x
 					const auto idx = y * chunk.size.x + x;
@@ -66,22 +70,31 @@ void DX9GF::MapLayer::Create(Map* map, std::uint32_t layerIndex)
 					const float tilePosY = (static_cast<float>(y + chunk.position.y) * gridSize.y);
 					// first triangle
 					// top left, top right, bottom left
-					vertices.push_back({ .x = tilePosX, .y = tilePosY, .z = .0f, .color = vertexColour, .u = u, .v = v }); 
-					vertices.push_back({ .x = tilePosX + tileSetTileSize.x, .y = tilePosY, .z = .0f, .color = vertexColour, .u = u + uNorm, .v = v }); 
+					vertices.push_back({ .x = tilePosX, .y = tilePosY, .z = .0f, .color = vertexColour, .u = u, .v = v });
+					vertices.push_back({ .x = tilePosX + tileSetTileSize.x, .y = tilePosY, .z = .0f, .color = vertexColour, .u = u + uNorm, .v = v });
 					vertices.push_back({ .x = tilePosX, .y = tilePosY + tileSetTileSize.y, .z = .0f, .color = vertexColour, .u = u, .v = v + vNorm });
 
 					// second triangle
 					// top right, bottom right, bottom left
-					vertices.push_back({ .x = tilePosX + tileSetTileSize.x, .y = tilePosY, .z = .0f, .color = vertexColour, .u = u + uNorm, .v = v }); 
-					vertices.push_back({ .x = tilePosX + tileSetTileSize.x, .y = tilePosY + tileSetTileSize.y, .z = .0f, .color = vertexColour, .u = u + uNorm, .v = v + vNorm }); 
+					vertices.push_back({ .x = tilePosX + tileSetTileSize.x, .y = tilePosY, .z = .0f, .color = vertexColour, .u = u + uNorm, .v = v });
+					vertices.push_back({ .x = tilePosX + tileSetTileSize.x, .y = tilePosY + tileSetTileSize.y, .z = .0f, .color = vertexColour, .u = u + uNorm, .v = v + vNorm });
 					vertices.push_back({ .x = tilePosX, .y = tilePosY + tileSetTileSize.y, .z = .0f, .color = vertexColour, .u = u, .v = v + vNorm });
 				}
 			}
+
+			if (!vertices.empty()) {
+				Subset::ChunkGeometry chunkGeometry;
+				chunkGeometry.vertexData.swap(vertices);
+				chunkGeometry.x = static_cast<float>(chunk.position.x) * gridSize.x;
+				chunkGeometry.y = static_cast<float>(chunk.position.y) * gridSize.y;
+				chunkGeometry.width = static_cast<float>(chunk.size.x) * gridSize.x;
+				chunkGeometry.height = static_cast<float>(chunk.size.y) * gridSize.y;
+				subset.chunks.emplace_back(std::move(chunkGeometry));
+			}
 		}
-		if (!vertices.empty()) {
-			subsets.emplace_back();
-			subsets.back().vertexData.swap(vertices);
-			subsets.back().texture = textures[i].get();
+
+		if (!subset.chunks.empty()) {
+			subsets.emplace_back(std::move(subset));
 		}
 	}
 }
@@ -139,7 +152,24 @@ void DX9GF::MapLayer::Draw(const Camera& camera)
 	device->GetSamplerState(0, D3DSAMP_ADDRESSU, &oldAddressU);
 	device->GetSamplerState(0, D3DSAMP_ADDRESSV, &oldAddressV);
 
-	const auto [screenWidth, screenHeight] = camera.GetScreenResolution();
+  const auto [screenWidth, screenHeight] = camera.GetScreenResolution();
+	const auto [corner00X, corner00Y] = Utils::WindowToWorldCoords(camera, 0.0f, 0.0f);
+	const auto [corner10X, corner10Y] = Utils::WindowToWorldCoords(camera, static_cast<float>(screenWidth), 0.0f);
+	const auto [corner01X, corner01Y] = Utils::WindowToWorldCoords(camera, 0.0f, static_cast<float>(screenHeight));
+	const auto [corner11X, corner11Y] = Utils::WindowToWorldCoords(camera, static_cast<float>(screenWidth), static_cast<float>(screenHeight));
+	const float viewMinX = std::min({ corner00X, corner10X, corner01X, corner11X });
+	const float viewMaxX = std::max({ corner00X, corner10X, corner01X, corner11X });
+	const float viewMinY = std::min({ corner00Y, corner10Y, corner01Y, corner11Y });
+	const float viewMaxY = std::max({ corner00Y, corner10Y, corner01Y, corner11Y });
+	const float overlapEpsilon = 0.01f;
+	const auto intersectsView = [&](float x, float y, float width, float height) {
+		const float rectMaxX = x + width;
+		const float rectMaxY = y + height;
+		return rectMaxX > viewMinX + overlapEpsilon
+			&& x < viewMaxX - overlapEpsilon
+			&& rectMaxY > viewMinY + overlapEpsilon
+			&& y < viewMaxY - overlapEpsilon;
+	};
 	D3DXMATRIX matView;
 	D3DXMatrixIdentity(&matView);
 	D3DXMATRIX matProj;
@@ -180,7 +210,7 @@ void DX9GF::MapLayer::Draw(const Camera& camera)
 
 	device->SetFVF(D3DFVF_TILEVERTEX);
 	for (const auto& subset : subsets) {
-		if (subset.vertexData.empty()) continue;
+        if (subset.chunks.empty()) continue;
 
 		if (auto texture = subset.texture; texture != nullptr) {
 			device->SetTexture(0, texture->GetRawTexture());
@@ -189,9 +219,13 @@ void DX9GF::MapLayer::Draw(const Camera& camera)
 			device->SetTexture(0, nullptr);
 		}
 
-		const UINT primitiveCount = static_cast<UINT>(subset.vertexData.size() / 3);
-		if (primitiveCount == 0) continue;
-		device->DrawPrimitiveUP(D3DPT_TRIANGLELIST, primitiveCount, subset.vertexData.data(), sizeof(TileVertex));
+       for (const auto& chunk : subset.chunks) {
+			if (chunk.vertexData.empty()) continue;
+          if (!intersectsView(chunk.x, chunk.y, chunk.width, chunk.height)) continue;
+			const UINT primitiveCount = static_cast<UINT>(chunk.vertexData.size() / 3);
+			if (primitiveCount == 0) continue;
+			device->DrawPrimitiveUP(D3DPT_TRIANGLELIST, primitiveCount, chunk.vertexData.data(), sizeof(TileVertex));
+		}
 	}
 
 	device->SetFVF(oldFVF);

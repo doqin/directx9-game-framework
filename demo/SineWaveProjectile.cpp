@@ -72,6 +72,14 @@ void Demo::SineWaveProjectile::Update(unsigned long long deltaTime)
         float finalX = this->basePosition.x + perpendicular.x * waveOffset;
         float finalY = this->basePosition.y + perpendicular.y * waveOffset;
 
+        float waveDerivative = std::cos(moveTime * frequency) * frequency * amplitude;
+        D3DXVECTOR2 instantaneousVelocity = trajectory * velocity + perpendicular * waveDerivative;
+
+        if (D3DXVec2LengthSq(&instantaneousVelocity) > 0.0001f) {
+            float angle = atan2(instantaneousVelocity.y, instantaneousVelocity.x);
+            SetLocalRotation(angle);
+        }
+
         SetLocalPosition(finalX, finalY);
     }
 

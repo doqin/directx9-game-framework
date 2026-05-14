@@ -18,6 +18,8 @@ namespace Demo {
 		static std::shared_ptr<DX9GF::Font> debugFont;
 		static std::shared_ptr<DX9GF::FontSprite> debugFontSprite;
 		bool isDragging = false;
+		RECT scissorRect;
+		bool isCropped = false;
 	public:
 		inline static bool debug = false;
 		inline IDraggable(std::weak_ptr<DX9GF::TransformManager> transformManager) : IGameObject(transformManager), dragAreaWidth(0), dragAreaHeight(0) { 
@@ -59,6 +61,8 @@ namespace Demo {
 		virtual void Draw(unsigned long long deltaTime);
 		virtual bool OnDrop(std::shared_ptr<IDraggable> other);
 		virtual bool OnHover(std::shared_ptr<IDraggable> other);
+		void SetScissorRect(const RECT& rect);
+		void ClearScissorRect();
 		std::string GetID() const;
 		virtual size_t GetWidth() const;
 		virtual size_t GetHeight() const;

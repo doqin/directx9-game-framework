@@ -35,6 +35,7 @@ namespace Demo {
 		int usedEnergy = 0;
 		bool isTransitioning = false;
         bool enemyAttackStartPending = false;
+		bool isFleeing = false;
         size_t initialEnemyCount = 0;
         int battleGoldReward = 0;
         bool isBattleEnding = false;
@@ -45,6 +46,8 @@ namespace Demo {
 		Game* game;
 		std::shared_ptr<Player> player;
 		std::shared_ptr<Player> battlePlayer;
+
+		std::function<void(DX9GF::GraphicsDevice*, unsigned long long)> customBackgroundDraw;
 		// Managers
 		DX9GF::CommandBuffer commandBuffer;
 		std::shared_ptr<DX9GF::CommandBuffer> drawBuffer;
@@ -96,7 +99,7 @@ namespace Demo {
 		void MoveHandCardsToDiscardPile();
 		void BeginNextTurn();
 		void RefreshItemMenu();
-      void CollectDeadEnemies();
+		void CollectDeadEnemies();
 		// Updates
 		void PlayerStandByUpdate(unsigned long long deltaTime);
 		void PlayerAttackUpdate(unsigned long long deltaTime);
@@ -114,5 +117,6 @@ namespace Demo {
 		virtual void Init() override;
 		void Update(unsigned long long deltaTime) override;
 		void Draw(unsigned long long deltaTime) override;
+		void SetCustomBackgroundDraw(std::function<void(DX9GF::GraphicsDevice*, unsigned long long)> drawFunc) { customBackgroundDraw = drawFunc; }
 	};
 }
