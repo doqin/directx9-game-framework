@@ -398,6 +398,15 @@
     <Image Include="items.png">
       <DeploymentContent>true</DeploymentContent>
     </Image>
+    <Image Include="Keye-Bullet.png">
+      <DeploymentContent>true</DeploymentContent>
+    </Image>
+    <Image Include="Keye-Sheet.png">
+      <DeploymentContent>true</DeploymentContent>
+    </Image>
+    <Image Include="Keyepro-Sheet.png">
+      <DeploymentContent>true</DeploymentContent>
+    </Image>
     <Image Include="notresponding-Sheet.png">
       <DeploymentContent>true</DeploymentContent>
     </Image>
@@ -426,6 +435,9 @@
       <DeploymentContent>true</DeploymentContent>
     </Image>
     <Image Include="placeholder-shop.png">
+      <DeploymentContent>true</DeploymentContent>
+    </Image>
+    <Image Include="terminals.png">
       <DeploymentContent>true</DeploymentContent>
     </Image>
     <Image Include="test-background.png">

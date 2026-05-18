@@ -22,12 +22,27 @@ namespace Demo {
         spritesheet = std::make_shared<DX9GF::Texture>(gd);
 
         //change this
-        spritesheet->LoadTexture(L"healingpoint-Sheet.png");
+        spritesheet->LoadTexture(L"terminals.png");
 
-        sprite = std::make_shared<DX9GF::AnimatedSprite>(spritesheet.get(), DX9GF::Utils::CreateRectsHorizontal(0, 0, 32, 32, 2), 12);
-        sprite->SetOrigin(16.f, 16.f);
+
+        sprite = std::make_shared<DX9GF::StaticSprite>(spritesheet.get());
+        if (terminalName == "M1") {
+			sprite->SetSrcRect({.left=0, .top=0, .right=16, .bottom=32});
+        }
+        else if (terminalName == "M2") {
+			sprite->SetSrcRect({ .left = 16, .top = 0, .right = 32, .bottom = 32 });
+        }
+        else if (terminalName == "M3") {
+            sprite->SetSrcRect({ .left = 32, .top = 0, .right = 48, .bottom = 32 });
+        }
+        else if (terminalName == "M4") {
+			sprite->SetSrcRect({ .left = 48, .top = 0, .right = 64, .bottom = 32 });
+        }
+        else {
+			sprite->SetSrcRect({ .left = 64, .top = 0, .right = 80, .bottom = 32 });
+        }
+        sprite->SetOrigin(8.f, 16.f);
         sprite->SetPosition(GetWorldX(), GetWorldY());
-        sprite->SetLooped(false);
     }
 
     void HackTerminal::Update(unsigned long long deltaTime) {
@@ -104,10 +119,7 @@ namespace Demo {
     void HackTerminal::SetHackedStatus(bool status) {
         isHacked = status;
         if (isHacked) {
-            sprite->SetFrame(1);
-        }
-        else {
-            sprite->SetFrame(0);
+			sprite->SetSrcRect({ .left = 80, .top = 0, .right = 96, .bottom = 32 });
         }
     }
 

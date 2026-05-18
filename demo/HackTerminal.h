@@ -11,7 +11,7 @@ namespace Demo {
 		DX9GF::GraphicsDevice* gd;
 		std::weak_ptr<DX9GF::TransformManager> transformManager;
 		std::shared_ptr<DX9GF::Texture> spritesheet;
-		std::shared_ptr<DX9GF::AnimatedSprite> sprite;
+		std::shared_ptr<DX9GF::StaticSprite> sprite;
 		std::weak_ptr<Player> player;
 		std::shared_ptr<DX9GF::FontSprite> fontSprite;
 		std::shared_ptr<DX9GF::RectangleCollider> collider;

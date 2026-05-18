@@ -33,7 +33,7 @@ void Demo::BossWorldScene::Init() {
 		{"WarlockEnemy", 10},
 		{"CupidEnemy", 5}
 		//i removed the mimic here
-		}, drawBuffer, commandBuffer, &isGamePaused, [this](DX9GF::GraphicsDevice* gd, unsigned long long deltaTime) {}));
+		}, drawBuffer, commandBuffer, &isGamePaused, [this](DX9GF::GraphicsDevice* gd, unsigned long long deltaTime) { DrawBackground(gd, deltaTime, currentIslandID); }));
 
 	//dialogue with NPC, rambles about lore regarding the optional battle to get the key, and hints at the correct color sequence for hacking the terminal
 	npcHint = std::make_shared<DauDauNPC>(transformManager, -950.0f, -220.0f);
@@ -58,23 +58,23 @@ void Demo::BossWorldScene::Init() {
 	//hack machines
 	auto hackCallback = std::bind(&BossWorldScene::OnTerminalHacked, this, std::placeholders::_1);
 
-	auto machine1 = std::make_shared<HackTerminal>(transformManager, 1500, -600, 1, "M1");
+	auto machine1 = std::make_shared<HackTerminal>(transformManager, 1500, -620, 1, "M1");
 	machine1->Init(game->GetGraphicsDevice(), &camera, player, colliderManager, font, drawBuffer, hackCallback);
 	hackMachines.push_back(machine1);
 
-	auto machine2 = std::make_shared<HackTerminal>(transformManager, -480, 90, 2, "M2");
+	auto machine2 = std::make_shared<HackTerminal>(transformManager, -480, 60, 2, "M2");
 	machine2->Init(game->GetGraphicsDevice(), &camera, player, colliderManager, font, drawBuffer, hackCallback);
 	hackMachines.push_back(machine2);
 
-	auto machine3 = std::make_shared<HackTerminal>(transformManager, -590, -185, 3, "M3");
+	auto machine3 = std::make_shared<HackTerminal>(transformManager, -590, -200, 3, "M3");
 	machine3->Init(game->GetGraphicsDevice(), &camera, player, colliderManager, font, drawBuffer, hackCallback);
 	hackMachines.push_back(machine3);
 
-	auto machine4 = std::make_shared<HackTerminal>(transformManager, 2420, 415, 4, "M4");
+	auto machine4 = std::make_shared<HackTerminal>(transformManager, 2440, 395, 4, "M4");
 	machine4->Init(game->GetGraphicsDevice(), &camera, player, colliderManager, font, drawBuffer, hackCallback);
 	hackMachines.push_back(machine4);
 
-	mainTerminal = std::make_shared<HackTerminal>(transformManager, 780, -180, 99, "Main");
+	mainTerminal = std::make_shared<HackTerminal>(transformManager, 780, -200, 99, "Main");
 	mainTerminal->Init(game->GetGraphicsDevice(), &camera, player, colliderManager, font, drawBuffer, hackCallback);
 
 	for (auto& m : hackMachines) m->SetVisible(true);
@@ -86,7 +86,7 @@ void Demo::BossWorldScene::Init() {
 	//create a obj class later and pass this collider to draw the gate sprite over it. It is currently invisible but blocks players.
 
 	//chest
-	rustyChest = std::make_shared<RustyChestNPC>(transformManager, 672.f, -208.f);
+	rustyChest = std::make_shared<RustyChestNPC>(transformManager, 690.f, -208.f);
 	rustyChest->Init(game->GetGraphicsDevice(), player, colliderManager, font, drawBuffer);
 
 	//heal
@@ -124,7 +124,7 @@ void Demo::BossWorldScene::Init() {
 	);
 	shopPoints.back()->SetVisible(true);
 
-	shopPoints.push_back(std::make_shared<ShopPoint>(transformManager, 608.f, -192.f));
+	shopPoints.push_back(std::make_shared<ShopPoint>(transformManager, 630.f, -192.f));
 	shopPoints.back()->Init(game, game->GetGraphicsDevice(), &camera, player, colliderManager, font, drawBuffer,
 		[](Game* g, Player* p, int w, int h) { return new ItemShop(g, p, w, h, ShopTier::PREMIUM); }
 	);
@@ -220,7 +220,7 @@ void Demo::BossWorldScene::Init() {
 
 		if (this->isBossDoorUnlocked && !this->isFinalBossDead) {
 
-			std::map<std::string, int> forcedEnemyMap = { {"DemonEyeEnemy", 100} }; //Remember to change this!!!!
+			std::map<std::string, int> forcedEnemyMap = { {"KeyeproEnemy", 100} };
 
 			auto demoGame = dynamic_cast<Demo::Game*>(this->game);
 			auto app = DX9GF::Application::GetInstance();
@@ -228,9 +228,9 @@ void Demo::BossWorldScene::Init() {
 
 			battleScene->SetOnVictoryCallback([this]() {
 				this->isFinalBossDead = true;
-				});
+			});
 
-			battleScene->SetCustomBackgroundDraw([](DX9GF::GraphicsDevice*, unsigned long long) {});
+			battleScene->SetCustomBackgroundDraw([this](DX9GF::GraphicsDevice* gd, unsigned long long delta) { DrawBackground(gd, delta, currentIslandID); });
 			auto sceMan = this->game->GetSceneManager();
 			sceMan->InsertScene(sceMan->GetIndex() + 1, battleScene);
 
@@ -487,7 +487,7 @@ void Demo::BossWorldScene::GenerateSaveData(nlohmann::json& outData) {
 	player->GenerateSaveData(outData["player"]);
 	auto pos = camera.GetPosition();
 	outData["camera"] = { {"x", pos.x}, {"y", pos.y}, {"zoom", camera.GetZoom()} };
-
+	outData["currentIslandID"] = currentIslandID;
 	outData["puzzle"] = {
 		{"currentHackStep", currentHackStep},
 		{"isBossDoorUnlocked", isBossDoorUnlocked},
@@ -502,6 +502,7 @@ void Demo::BossWorldScene::RestoreSaveData(const nlohmann::json& inData) {
 	player->RestoreSaveData(inData["player"]);
 	camera.SetPosition(inData["camera"]["x"], inData["camera"]["y"]);
 	camera.SetZoom(inData["camera"]["zoom"]);
+	currentIslandID = inData.value("currentIslandID", 1);
 
 	if (inData.contains("puzzle")) {
 		currentHackStep = inData["puzzle"]["currentHackStep"];
@@ -537,7 +538,7 @@ void Demo::BossWorldScene::DrawBackground(DX9GF::GraphicsDevice* gd, unsigned lo
 
 	switch (islandID) {
 		//quantum lattice
-	case 1: {
+	case 2: {
 		const D3DCOLOR waveColor = 0x3300E5FF;
 		const D3DCOLOR nodeColor = 0xAA00E5FF;
 
@@ -578,7 +579,7 @@ void Demo::BossWorldScene::DrawBackground(DX9GF::GraphicsDevice* gd, unsigned lo
 		break;
 	}
 		  //light rain
-	case 2: {
+	case 1: {
 		const D3DCOLOR rainColor = 0xFF00FF41;
 		const D3DCOLOR tailColor = 0x4400FF41;
 		for (int x = 0; x < screenWidth; x += 48) {

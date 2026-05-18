@@ -1,14 +1,13 @@
 <?xml version="1.0" encoding="UTF-8"?>
 <map version="1.10" tiledversion="1.12.1" orientation="orthogonal" renderorder="right-down" width="30" height="20" tilewidth="16" tileheight="16" infinite="1" nextlayerid="22" nextobjectid="1737">
  <tileset firstgid="1" source="tutorial.tsx"/>
- <tileset firstgid="169" source="threadalley.tsx"/>
- <layer id="1" name="background0" width="30" height="20" visible="0">
+ <layer id="1" name="background0" width="30" height="20">
   <data encoding="csv"/>
  </layer>
- <layer id="3" name="background1" width="30" height="20" visible="0">
+ <layer id="3" name="background1" width="30" height="20">
   <data encoding="csv"/>
  </layer>
- <layer id="5" name="walls" width="30" height="20" visible="0">
+ <layer id="5" name="walls" width="30" height="20">
   <data encoding="csv">
    <chunk x="-64" y="-48" width="16" height="16">
 0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,
@@ -552,7 +551,7 @@
 </chunk>
   </data>
  </layer>
- <layer id="4" name="floor" width="30" height="20" visible="0">
+ <layer id="4" name="floor" width="30" height="20">
   <data encoding="csv">
    <chunk x="-64" y="-48" width="16" height="16">
 0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,
@@ -2756,7 +2755,7 @@
 </chunk>
   </data>
  </layer>
- <layer id="7" name="objects" width="30" height="20" visible="0">
+ <layer id="7" name="objects" width="30" height="20">
   <data encoding="csv">
    <chunk x="80" y="-48" width="16" height="16">
 0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,
@@ -2801,11 +2800,11 @@
 0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,
 0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,
 0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,
-177,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,
-189,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,
+9,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,
+21,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,
 0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,
-0,0,177,0,0,0,0,220,221,0,0,0,0,0,0,0,
-0,0,189,0,0,0,0,232,233,0,0,0,0,0,0,0,
+0,0,9,0,0,0,0,52,53,0,0,0,0,0,0,0,
+0,0,21,0,0,0,0,64,65,0,0,0,0,0,0,0,
 0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,
 0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,
 0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,
@@ -3120,7 +3119,7 @@
 </chunk>
   </data>
  </layer>
- <objectgroup id="8" name="collision" visible="0">
+ <objectgroup id="8" name="collision">
   <object id="200" x="144" y="192" width="64"/>
   <object id="201" x="32" y="176" width="288" height="16"/>
   <object id="202" x="64" y="192" width="80" height="16"/>
@@ -3642,29 +3641,29 @@
   <object id="1510" x="2629.32" y="-657" width="26.6667" height="12"/>
   <object id="1511" x="2645.67" y="-644.33" width="8.66667" height="14.6667"/>
  </objectgroup>
- <objectgroup id="11" name="trigger_p_1_2" visible="0">
+ <objectgroup id="11" name="trigger_p_1_2">
   <object id="1512" x="16" y="224" width="16" height="16"/>
  </objectgroup>
- <objectgroup id="12" name="trigger_p_2_fake" visible="0">
+ <objectgroup id="12" name="trigger_p_2_fake">
   <object id="1513" x="-448" y="-240" width="32" height="32"/>
  </objectgroup>
- <objectgroup id="14" name="trigger_p_2_3" visible="0">
+ <objectgroup id="14" name="trigger_p_2_3">
   <object id="1514" x="-336" y="-448" width="32" height="32"/>
  </objectgroup>
- <objectgroup id="16" name="trigger_p_3_2" visible="0">
+ <objectgroup id="16" name="trigger_p_3_2">
   <object id="1516" x="2144" y="0" width="32" height="48"/>
   <object id="1517" x="2128" y="16" width="64" height="16"/>
  </objectgroup>
- <objectgroup id="15" name="trigger_p_3_4" visible="0">
+ <objectgroup id="15" name="trigger_p_3_4">
   <object id="1515" x="2656" y="-640" width="48" height="32"/>
  </objectgroup>
- <objectgroup id="18" name="trigger_p_4_3" visible="0">
+ <objectgroup id="18" name="trigger_p_4_3">
   <object id="1519" x="848" y="-176" width="48" height="32"/>
  </objectgroup>
- <objectgroup id="19" name="trigger_battle_boss" visible="0">
+ <objectgroup id="19" name="trigger_battle_boss">
   <object id="1522" x="688" y="-384" width="128" height="80"/>
  </objectgroup>
- <objectgroup id="20" name="trigger_spec_item" visible="0">
+ <objectgroup id="20" name="trigger_spec_item">
   <object id="1525" x="747.75" y="-642.75" width="16.5" height="26.75"/>
  </objectgroup>
  <objectgroup id="21" name="trigger_battle_rusty_key">
