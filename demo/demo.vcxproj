@@ -229,6 +229,8 @@
     <ClCompile Include="InventoryMenu.cpp" />
     <ClCompile Include="IStatementCard.cpp" />
     <ClCompile Include="ItemShop.cpp" />
+    <ClCompile Include="KeyeEnemy.cpp" />
+    <ClCompile Include="KeyeproEnemy.cpp" />
     <ClCompile Include="main.cpp" />
     <ClCompile Include="MainMenu.cpp" />
     <ClCompile Include="MimicEnemy.cpp" />
@@ -298,6 +300,8 @@
     <ClInclude Include="INPC.h" />
     <ClInclude Include="InventoryMenu.h" />
     <ClInclude Include="ItemShop.h" />
+    <ClInclude Include="KeyeEnemy.h" />
+    <ClInclude Include="KeyeproEnemy.h" />
     <ClInclude Include="MainMenu.h" />
     <ClInclude Include="IEnemy.h" />
     <ClInclude Include="IExpressionCard.h" />
@@ -371,6 +375,9 @@
       <DeploymentContent>true</DeploymentContent>
     </Image>
     <Image Include="computerbug-Sheet.png">
+      <DeploymentContent>true</DeploymentContent>
+    </Image>
+    <Image Include="crawler-Sheet.png">
       <DeploymentContent>true</DeploymentContent>
     </Image>
     <Image Include="cursor.png">

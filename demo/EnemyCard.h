@@ -18,5 +18,6 @@ namespace Demo {
 			: IGameObject(tm, x, y), IExpressionCard(tm, 96, 32, x, y), enemy(enemy) {}
 		std::shared_ptr<IEnemy> GetValue() override;
 		void Draw(unsigned long long deltaTime) override;
+		bool OnDrop(std::shared_ptr<IDraggable> draggable) override;
 	};
 }

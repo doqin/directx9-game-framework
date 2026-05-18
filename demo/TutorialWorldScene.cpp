@@ -19,7 +19,9 @@ void Demo::TutorialWorldScene::Init()
 		{"VampireBatEnemy", 30},
 		{"MimicEnemy", 20},
 		{"WarlockEnemy", 10},
-		{"CupidEnemy", 5}
+		{"CupidEnemy", 5},
+		{"KeyeEnemy", 50},
+		{"KeyeproEnemy", 20}
 		}, drawBuffer, commandBuffer, &isGamePaused, [this](DX9GF::GraphicsDevice* gd, unsigned long long deltaTime) { DrawBackground(gd, deltaTime); }));
 	font = std::make_shared<DX9GF::Font>(game->GetGraphicsDevice(), L"StatusPlz", 16);
 	

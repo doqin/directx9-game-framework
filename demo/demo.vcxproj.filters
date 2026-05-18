@@ -58,9 +58,14 @@
     <ClCompile Include="AdvancedCards.cpp" />
     <ClCompile Include="ThreadAlleyScene.cpp" />
     <ClCompile Include="SaveGameState.cpp" />
+
     <ClCompile Include="BossWorldScene.cpp" />
     <ClCompile Include="HackTerminal.cpp" />
     <ClCompile Include="RustyChestNPC.cpp" />
+
+    <ClCompile Include="KeyeEnemy.cpp" />
+    <ClCompile Include="KeyeproEnemy.cpp" />
+
   </ItemGroup>
   <ItemGroup>
     <ClInclude Include="AdvancedCards.h" />
@@ -123,9 +128,14 @@
     <ClInclude Include="TransitionCommand.h" />
     <ClInclude Include="ThreadAlleyScene.h" />
     <ClInclude Include="SaveGameState.h" />
+
     <ClInclude Include="BossWorldScene.h" />
     <ClInclude Include="HackTerminal.h" />
     <ClInclude Include="RustyChestNPC.h" />
+
+    <ClInclude Include="KeyeEnemy.h" />
+    <ClInclude Include="KeyeproEnemy.h" />
+
   </ItemGroup>
   <ItemGroup>
     <ResourceCompile Include="demo.rc" />
@@ -162,6 +172,7 @@
     <Image Include="bugprojectile-Sheet.png" />
     <Image Include="xprojectile.png" />
     <Image Include="threadalley.png" />
+    <Image Include="crawler-Sheet.png" />
   </ItemGroup>
   <ItemGroup>
     <Font Include="arcade-among-2-r46pv.ttf" />

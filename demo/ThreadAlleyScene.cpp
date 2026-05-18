@@ -26,8 +26,10 @@ void Demo::ThreadAlleyScene::Init()
 		{"DemonEyeEnemy", 40},
 		{"VampireBatEnemy", 30},
 		{"MimicEnemy", 20},
-		{"WarlockEnemy", 10},
-		{"CupidEnemy", 5}
+		{"WarlockEnemy", 35},
+		{"CupidEnemy", 5},
+		{"KeyeEnemy", 50},
+		{"KeyeproEnemy", 20}
 		}, drawBuffer, commandBuffer, &isGamePaused, [this](DX9GF::GraphicsDevice* gd, unsigned long long deltaTime) { DrawCheckerBackground(gd, deltaTime); }));
 
 	font = std::make_shared<DX9GF::Font>(game->GetGraphicsDevice(), L"StatusPlz", 16);

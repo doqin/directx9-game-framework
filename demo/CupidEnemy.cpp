@@ -52,7 +52,7 @@ int Demo::CupidEnemy::GetRandomPattern()
 void Demo::CupidEnemy::StartAttack(std::shared_ptr<Player> player)
 {
 	this->player = player;
-	float baseDamage = 7.f;
+	float baseDamage = 4.f;
 	float projDamage = GetOutgoingDamage(baseDamage);
 
 	int patternId = GetRandomPattern();
