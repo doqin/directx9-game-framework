@@ -67,6 +67,8 @@ namespace Demo
 	public:
 		const std::vector<ItemInventorySlot>& GetSlots() const { return slots; }
 		void InitFixedInventory(int maxItemTypes);
+		void EnsureCapacity(int requiredID);
+		bool HasItem(int id) const;
 		void AddItem(int id, int amount);
 		bool ConsumeItem(int id);
 		void Clear() { for (auto& slot : slots) slot.quantity = 0; }

@@ -137,7 +137,7 @@ void Demo::Player::Init(DX9GF::GraphicsDevice* graphicsDevice, DX9GF::ColliderMa
 	collider->SetOriginCenter();
 	deck = { "StrikeCard", "StrikeCard", "StrikeCard" };
 	this->colliderManager->Add(collider);
-	inventoryItems.InitFixedInventory(10);
+	inventoryItems.InitFixedInventory(12);
 }
 
 void Demo::Player::Update(unsigned long long deltaTime) {

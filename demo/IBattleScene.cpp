@@ -85,6 +85,10 @@ void Demo::IBattleScene::OnAllEnemiesDefeated()
 	player->AddGold(finalGold);
 	popUpMessage->QueueMessage(&commandBuffer, L"You earned " + std::to_wstring(finalGold) + L" gold!", 1.5f);
 
+	if (onVictoryCallback != nullptr) {
+		onVictoryCallback();
+	}
+
 	auto transitionInCommand = std::make_shared<TransitionCommand>(game->GetGraphicsDevice(), 1.f, true);
 	drawBuffer->PushCommand(std::make_shared<DX9GF::DelayCommand>(2.5f));
 	drawBuffer->PushCommand(transitionInCommand);

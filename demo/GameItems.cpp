@@ -1,4 +1,4 @@
-#include "pch.h"
+﻿#include "pch.h"
 #include "GameItems.h"
 namespace Demo
 {
@@ -67,6 +67,15 @@ namespace Demo
 			},
 			{ 96, 36, 119, 71 });
 
+		itemRegistry[10] = ConsumableItem(99, L"Rusty Key",
+			L"It looks very old and fragile. What does it open?",
+			{},//buff nothing
+			{ 0, 0, 23, 35 }); //i need another item sprite here
+
+		itemRegistry[11] = ConsumableItem(99, L"G(r)ayStone",
+			L"Has no practical use. Just a trophy for our winner.",
+			{},//buff nothing
+			{ 0, 0, 23, 35 }); // import a rainbow stone bruh
 	}
 
 	const ConsumableItem* ItemData::GetItemBlueprint(int id)
@@ -93,6 +102,7 @@ namespace Demo
 	{
 		if (id >= 0 && id < slots.size())
 		{
+			EnsureCapacity(id);
 			slots[id].quantity += amount;
 		}
 	}
@@ -103,6 +113,21 @@ namespace Demo
 		{
 			slots[id].quantity--;
 			return true;
+		}
+		return false;
+	}
+	void ItemInventory::EnsureCapacity(int requiredID) {
+		if (requiredID >= slots.size()) {
+			int oldSize = slots.size();
+			slots.resize(requiredID + 1);
+			for (int i = oldSize; i <= requiredID; ++i) {
+				slots[i] = { i, 0 };
+			}
+		}
+	}
+	bool ItemInventory::HasItem(int id) const {
+		if (id >= 0 && id < slots.size()) {
+			return slots[id].quantity > 0;
 		}
 		return false;
 	}

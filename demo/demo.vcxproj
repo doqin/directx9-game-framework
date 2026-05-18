@@ -206,6 +206,7 @@
   <ItemGroup>
     <ClCompile Include="AdvancedCards.cpp" />
     <ClCompile Include="BoomerangProjectile.cpp" />
+    <ClCompile Include="BossWorldScene.cpp" />
     <ClCompile Include="CardShop.cpp" />
     <ClCompile Include="CupidEnemy.cpp" />
     <ClCompile Include="CustomBattleScene.cpp" />
@@ -215,6 +216,7 @@
     <ClCompile Include="DemonEyeEnemy.cpp" />
     <ClCompile Include="Game.cpp" />
     <ClCompile Include="GameItems.cpp" />
+    <ClCompile Include="HackTerminal.cpp" />
     <ClCompile Include="HandContainer.cpp" />
     <ClCompile Include="HealingPoint.cpp" />
     <ClCompile Include="IBattleScene.cpp" />
@@ -239,6 +241,7 @@
     </ClCompile>
     <ClCompile Include="Player.cpp" />
     <ClCompile Include="RandomEncounter.cpp" />
+    <ClCompile Include="RustyChestNPC.cpp" />
     <ClCompile Include="SaveGameState.cpp" />
     <ClCompile Include="SavePoint.cpp" />
     <ClCompile Include="SettingsManager.cpp" />
@@ -269,6 +272,7 @@
   <ItemGroup>
     <ClInclude Include="AdvancedCards.h" />
     <ClInclude Include="BoomerangProjectile.h" />
+    <ClInclude Include="BossWorldScene.h" />
     <ClInclude Include="CardShop.h" />
     <ClInclude Include="CupidEnemy.h" />
     <ClInclude Include="CustomBattleScene.h" />
@@ -280,6 +284,7 @@
     <ClInclude Include="EnemyCard.h" />
     <ClInclude Include="Game.h" />
     <ClInclude Include="GameItems.h" />
+    <ClInclude Include="HackTerminal.h" />
     <ClInclude Include="HandContainer.h" />
     <ClInclude Include="HealingPoint.h" />
     <ClInclude Include="IBattleScene.h" />
@@ -306,6 +311,7 @@
     <ClInclude Include="PopUpMessage.h" />
     <ClInclude Include="RandomEncounter.h" />
     <ClInclude Include="resource.h" />
+    <ClInclude Include="RustyChestNPC.h" />
     <ClInclude Include="SaveGameState.h" />
     <ClInclude Include="SavePoint.h" />
     <ClInclude Include="SettingsManager.h" />
@@ -328,6 +334,9 @@
     <ClInclude Include="World1Scene.h" />
   </ItemGroup>
   <ItemGroup>
+    <None Include="BossMatrix.tmx">
+      <DeploymentContent>true</DeploymentContent>
+    </None>
     <None Include="placeholder-round-projectile.aseprite" />
     <None Include="ThreadAlley.tmx">
       <DeploymentContent>true</DeploymentContent>

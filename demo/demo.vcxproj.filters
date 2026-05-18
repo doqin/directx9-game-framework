@@ -58,6 +58,9 @@
     <ClCompile Include="AdvancedCards.cpp" />
     <ClCompile Include="ThreadAlleyScene.cpp" />
     <ClCompile Include="SaveGameState.cpp" />
+    <ClCompile Include="BossWorldScene.cpp" />
+    <ClCompile Include="HackTerminal.cpp" />
+    <ClCompile Include="RustyChestNPC.cpp" />
   </ItemGroup>
   <ItemGroup>
     <ClInclude Include="AdvancedCards.h" />
@@ -120,6 +123,9 @@
     <ClInclude Include="TransitionCommand.h" />
     <ClInclude Include="ThreadAlleyScene.h" />
     <ClInclude Include="SaveGameState.h" />
+    <ClInclude Include="BossWorldScene.h" />
+    <ClInclude Include="HackTerminal.h" />
+    <ClInclude Include="RustyChestNPC.h" />
   </ItemGroup>
   <ItemGroup>
     <ResourceCompile Include="demo.rc" />
@@ -170,5 +176,6 @@
     <None Include="uiter.aseprite" />
     <None Include="ThreadAlley.tmx" />
     <None Include="threadalley.tsx" />
+    <None Include="BossMatrix.tmx" />
   </ItemGroup>
 </Project>

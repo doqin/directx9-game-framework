@@ -27,19 +27,19 @@ namespace Demo {
 		const int MAX_ENERGY = 3;
 		// States
 		State state = State::PlayerStandBy;
-        State lastEnemyLayoutState = State::EnemyAttack;
+		State lastEnemyLayoutState = State::EnemyAttack;
 		bool enemyLayoutInitialized = false;
 		bool isExecutingAttacks = false;
 		size_t currentTurn = 0;
 		int energy = MAX_ENERGY;
 		int usedEnergy = 0;
 		bool isTransitioning = false;
-        bool enemyAttackStartPending = false;
+		bool enemyAttackStartPending = false;
 		bool isFleeing = false;
-        size_t initialEnemyCount = 0;
-        int battleGoldReward = 0;
-        bool isBattleEnding = false;
-        bool isDefeatSequence = false;
+		size_t initialEnemyCount = 0;
+		int battleGoldReward = 0;
+		bool isBattleEnding = false;
+		bool isDefeatSequence = false;
 		float defeatElapsedMs = 0.f;
 		float defeatFadeAlpha = 0.f;
 		// Externals
@@ -69,7 +69,7 @@ namespace Demo {
 		float enemyCardRemoveAreaWidth = 180.f;
 		float enemyCardRemoveAreaHeight = 80.f;
 		float battleBoxSize = 256.f;
-       std::vector<std::shared_ptr<DX9GF::RectangleCollider>> battleBounds;
+		std::vector<std::shared_ptr<DX9GF::RectangleCollider>> battleBounds;
 		// UI
 		std::shared_ptr<DX9GF::Font> font;
 		std::shared_ptr<DX9GF::FontSprite> fontSprite;
@@ -87,10 +87,13 @@ namespace Demo {
 		std::shared_ptr<DX9GF::StaticSprite> energyIcon;
 		std::shared_ptr<DX9GF::StaticSprite> hourglassIcon;
 		std::shared_ptr<DX9GF::StaticSprite> itemMenuBackground;
+		//
+		std::function<void()> onVictoryCallback = nullptr;
+		//
 		void CreateEnemyCard(std::shared_ptr<IEnemy> enemy);
 		void StartBattle();
 		void OnAllEnemiesDefeated();
-		
+
 	private:
 		void DrawCards(size_t count);
 		void ShuffleDiscardIntoDrawPile();
@@ -105,8 +108,8 @@ namespace Demo {
 		void PlayerAttackUpdate(unsigned long long deltaTime);
 		void PlayerOpenItemsUpdate(unsigned long long deltaTime);
 		bool EnemyAttackUpdate(unsigned long long deltaTime);
-        void QueueEnemyLayoutTransition(State targetState);
-        void RemoveEnemyCardsInRemoveArea();
+		void QueueEnemyLayoutTransition(State targetState);
+		void RemoveEnemyCardsInRemoveArea();
 		// Draws
 		void PlayerStandByDraw(unsigned long long deltaTime);
 		void PlayerAttackDraw(unsigned long long deltaTime);
@@ -118,5 +121,7 @@ namespace Demo {
 		void Update(unsigned long long deltaTime) override;
 		void Draw(unsigned long long deltaTime) override;
 		void SetCustomBackgroundDraw(std::function<void(DX9GF::GraphicsDevice*, unsigned long long)> drawFunc) { customBackgroundDraw = drawFunc; }
+		//
+		void SetOnVictoryCallback(std::function<void()> cb) { onVictoryCallback = cb; }
 	};
 }
