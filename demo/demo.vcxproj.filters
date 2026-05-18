@@ -58,6 +58,8 @@
     <ClCompile Include="AdvancedCards.cpp" />
     <ClCompile Include="ThreadAlleyScene.cpp" />
     <ClCompile Include="SaveGameState.cpp" />
+    <ClCompile Include="KeyeEnemy.cpp" />
+    <ClCompile Include="KeyeproEnemy.cpp" />
   </ItemGroup>
   <ItemGroup>
     <ClInclude Include="AdvancedCards.h" />
@@ -120,6 +122,8 @@
     <ClInclude Include="TransitionCommand.h" />
     <ClInclude Include="ThreadAlleyScene.h" />
     <ClInclude Include="SaveGameState.h" />
+    <ClInclude Include="KeyeEnemy.h" />
+    <ClInclude Include="KeyeproEnemy.h" />
   </ItemGroup>
   <ItemGroup>
     <ResourceCompile Include="demo.rc" />

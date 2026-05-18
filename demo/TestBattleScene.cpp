@@ -5,6 +5,8 @@
 #include "VampireBatEnemy.h"
 #include "MimicEnemy.h"
 #include "WarlockEnemy.h"
+#include "KeyeEnemy.h"
+#include "KeyeproEnemy.h"
 void Demo::TestBattleScene::Init()
 {
 	IBattleScene::Init();
