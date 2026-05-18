@@ -341,6 +341,9 @@
     <None Include="BossMatrix.tmx">
       <DeploymentContent>true</DeploymentContent>
     </None>
+    <None Include="bossmatrix.tsx">
+      <DeploymentContent>true</DeploymentContent>
+    </None>
     <None Include="placeholder-round-projectile.aseprite" />
     <None Include="ThreadAlley.tmx">
       <DeploymentContent>true</DeploymentContent>
@@ -366,6 +369,9 @@
   </ItemGroup>
   <ItemGroup>
     <Image Include="arrow.png">
+      <DeploymentContent>true</DeploymentContent>
+    </Image>
+    <Image Include="bossmatrix.png">
       <DeploymentContent>true</DeploymentContent>
     </Image>
     <Image Include="bugprojectile-Sheet.png">

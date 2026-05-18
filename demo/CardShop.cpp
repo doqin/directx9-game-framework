@@ -76,10 +76,10 @@ void Demo::CardShop::LoadItems()
 			auto newCard = std::make_shared<ChainLightningCard>(this->transformManager);
 			this->player->AddCardToDeck(newCard->GetSaveID());
 			});
-       AddShopCard("Stun Card", StunCardCost, StunCard(this->transformManager).GetDescription(), [this]() {
-			auto newCard = std::make_shared<StunCard>(this->transformManager);
-			this->player->AddCardToDeck(newCard->GetSaveID());
-			});
+   //    AddShopCard("Stun Card", StunCardCost, StunCard(this->transformManager).GetDescription(), [this]() {
+			//auto newCard = std::make_shared<StunCard>(this->transformManager);
+			//this->player->AddCardToDeck(newCard->GetSaveID());
+			//});
 		break;
 	}
 }

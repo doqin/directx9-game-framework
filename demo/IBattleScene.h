@@ -106,6 +106,7 @@ namespace Demo {
 		// Updates
 		void PlayerStandByUpdate(unsigned long long deltaTime);
 		void PlayerAttackUpdate(unsigned long long deltaTime);
+		void QueueToEnemyAttack(unsigned long long deltaTime);
 		void PlayerOpenItemsUpdate(unsigned long long deltaTime);
 		bool EnemyAttackUpdate(unsigned long long deltaTime);
 		void QueueEnemyLayoutTransition(State targetState);

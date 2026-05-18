@@ -120,7 +120,7 @@ void Demo::CleaveCard::Draw(unsigned long long deltaTime) {
 
 bool Demo::ChainLightningCard::Execute() {
 	if (isDone) return true;
-	float damages[] = { 6.f, 4.f, 2.f };
+	float damages[] = { 6.f, 6.f, 6.f };
 	for (size_t i = 0; i < targets.size() && i < 3; ++i) {
 		if (auto enemy = targets[i].lock()) {
 			if (auto e = enemy->GetValue())

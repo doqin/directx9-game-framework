@@ -120,7 +120,7 @@ void Demo::BossWorldScene::Init() {
 
 	shopPoints.push_back(std::make_shared<ShopPoint>(transformManager, -80, -256));
 	shopPoints.back()->Init(game, game->GetGraphicsDevice(), &camera, player, colliderManager, font, drawBuffer,
-		[](Game* g, Player* p, int w, int h) { return new CardShop(g, p, w, h, ShopTier::HYBRID); }
+		[](Game* g, Player* p, int w, int h) { return new CardShop(g, p, w, h, ShopTier::PREMIUM); }
 	);
 	shopPoints.back()->SetVisible(true);
 

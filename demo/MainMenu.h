@@ -48,7 +48,7 @@ namespace Demo
 		void Update(unsigned long long deltaTime) override;
 		void Draw(unsigned long long deltaTime) override;
 		void UpdateLayout(int width, int height);
-
+		void DrawBackground(unsigned long long deltaTime);
 	};
 }
 

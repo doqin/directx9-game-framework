@@ -171,6 +171,7 @@
     <Image Include="Keyepro-Sheet.png" />
     <Image Include="Keye-Sheet.png" />
     <Image Include="Keye-Bullet.png" />
+    <Image Include="bossmatrix.png" />
   </ItemGroup>
   <ItemGroup>
     <Font Include="arcade-among-2-r46pv.ttf" />
@@ -186,5 +187,6 @@
     <None Include="ThreadAlley.tmx" />
     <None Include="threadalley.tsx" />
     <None Include="BossMatrix.tmx" />
+    <None Include="bossmatrix.tsx" />
   </ItemGroup>
 </Project>

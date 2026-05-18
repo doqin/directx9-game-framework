@@ -4,7 +4,10 @@
 #include "SineWaveProjectile.h"
 #include "RoundProjectile.h"
 #include "TargetedProjectile.h"
+#include "KeyeEnemy.h"
+#include "PopUpMessage.h"
 #include <random>
+#include <algorithm>
 
 void Demo::KeyeproEnemy::Init(DX9GF::GraphicsDevice* graphicsDevice, DX9GF::Camera* camera) {
 
@@ -41,12 +44,54 @@ int Demo::KeyeproEnemy::GetRandomPattern() {
     return dist(gen);
 }
 
-void Demo::KeyeproEnemy::StartAttack(std::shared_ptr<Player> player) {
+void Demo::KeyeproEnemy::StartAttack(std::shared_ptr<Player> player, std::vector<std::shared_ptr<IEnemy>>* enemies, std::shared_ptr<PopUpMessage> popUpMessage, DX9GF::GraphicsDevice* graphicsDevice, DX9GF::Camera* camera) {
     this->player = player;
     float projDamage = 5.f; 
 
     std::random_device rd;
     std::mt19937 gen(rd());
+
+    if (enemies != nullptr && graphicsDevice != nullptr && camera != nullptr) {
+        std::uniform_real_distribution<float> spawnChanceDist(0.f, 1.f);
+        constexpr float MINION_SPAWN_CHANCE = 0.35f;
+        if (spawnChanceDist(gen) <= MINION_SPAWN_CHANCE) {
+            size_t keyeCount = 0;
+            for (const auto& enemy : *enemies) {
+                if (!enemy || enemy->IsDead()) {
+                    continue;
+                }
+                if (std::dynamic_pointer_cast<KeyeEnemy>(enemy)) {
+                    ++keyeCount;
+                }
+            }
+
+            constexpr size_t MAX_KEYE_ENEMIES = 3;
+            const size_t spawnCount = (keyeCount < MAX_KEYE_ENEMIES)
+                ? (std::min)(static_cast<size_t>(1), MAX_KEYE_ENEMIES - keyeCount)
+                : 0;
+
+            if (spawnCount > 0) {
+                auto [bossX, bossY] = GetWorldPosition();
+                for (size_t i = 0; i < spawnCount; ++i) {
+                    float spawnX = 1200;
+                    float spawnY = 0;
+                    auto minion = std::make_shared<KeyeEnemy>(transformManager, 25.0f, spawnX, spawnY);
+                    minion->Init(graphicsDevice, camera);
+                    minion->SetOnRequestEnemyCard(onRequestEnemyCard);
+                    enemies->push_back(minion);
+                }
+
+                if (auto tm = transformManager.lock()) {
+                    tm->RebuildHierarchy();
+                }
+
+                if (popUpMessage) {
+                    popUpMessage->QueueMessage(&commandBuffer, L"The boss had spawned minions");
+                }
+            }
+        }
+    }
+
     std::uniform_int_distribution<int> dist(1, 2);
 
     if (dist(gen) == 1) {

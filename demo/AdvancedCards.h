@@ -66,7 +66,7 @@ namespace Demo {
 		}
 
 		size_t GetCost() const override { return 3; }
-		std::wstring GetDescription() const override { return L"Deal 6, 4, 2 damage to up to 3 enemies."; }
+		std::wstring GetDescription() const override { return L"Deal 6 damage to up to 3 enemies."; }
 
 		bool Execute() override;
 
