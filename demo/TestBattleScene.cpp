@@ -41,20 +41,20 @@ void Demo::TestBattleScene::Init()
 		drawPile.push_back(strikeCard);
 	}*/
 
-	/*auto bat = std::make_shared<VampireBatEnemy>(transformManager, 45.f);
-	bat->Init(game->GetGraphicsDevice(), &camera);
-	bat->SetOnRequestEnemyCard([this](std::shared_ptr<IEnemy> enemy) { CreateEnemyCard(enemy); });
-	enemies.push_back(bat);*/
+	//auto bat = std::make_shared<VampireBatEnemy>(transformManager, 45.f);
+	//bat->Init(game->GetGraphicsDevice(), &camera);
+	//bat->SetOnRequestEnemyCard([this](std::shared_ptr<IEnemy> enemy) { CreateEnemyCard(enemy); });
+	//enemies.push_back(bat);
 
-	auto mimic = std::make_shared<MimicEnemy>(transformManager, 70.f);
-	mimic->Init(game->GetGraphicsDevice(), &camera);
-	mimic->SetOnRequestEnemyCard([this](std::shared_ptr<IEnemy> enemy) { CreateEnemyCard(enemy); });
-	enemies.push_back(mimic);
+	//auto mimic = std::make_shared<MimicEnemy>(transformManager, 70.f);
+	//mimic->Init(game->GetGraphicsDevice(), &camera);
+	//mimic->SetOnRequestEnemyCard([this](std::shared_ptr<IEnemy> enemy) { CreateEnemyCard(enemy); });
+	//enemies.push_back(mimic);
 
-	/*auto warlock = std::make_shared<WarlockEnemy>(transformManager, 55.f);
+	auto warlock = std::make_shared<WarlockEnemy>(transformManager, 55.f);
 	warlock->Init(game->GetGraphicsDevice(), &camera);
 	warlock->SetOnRequestEnemyCard([this](std::shared_ptr<IEnemy> enemy) { CreateEnemyCard(enemy); });
-	enemies.push_back(warlock);*/
+	enemies.push_back(warlock);
 
 	// Heavy Strike
 	auto heavy = std::make_shared<HeavyStrikeCard>(transformManager, -260.f, -80.f);

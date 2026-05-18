@@ -26,7 +26,7 @@ void Demo::ThreadAlleyScene::Init()
 		{"DemonEyeEnemy", 40},
 		{"VampireBatEnemy", 30},
 		{"MimicEnemy", 20},
-		{"WarlockEnemy", 10},
+		{"WarlockEnemy", 35},
 		{"CupidEnemy", 5}
 		}, drawBuffer, commandBuffer, &isGamePaused, [this](DX9GF::GraphicsDevice* gd, unsigned long long deltaTime) { DrawCheckerBackground(gd, deltaTime); }));
 

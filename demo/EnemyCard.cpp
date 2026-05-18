@@ -87,3 +87,8 @@ void Demo::EnemyCard::Draw(unsigned long long deltaTime)
 	arrowSprite->Draw(*camera, deltaTime);
 	arrowSprite->End();
 }
+
+bool Demo::EnemyCard::OnDrop(std::shared_ptr<IDraggable> draggable)
+{
+	return false;
+}

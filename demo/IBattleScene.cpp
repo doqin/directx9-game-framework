@@ -260,7 +260,11 @@ void Demo::IBattleScene::QueueEnemyLayoutTransition(State targetState)
 
 void Demo::IBattleScene::CreateEnemyCard(std::shared_ptr<IEnemy> enemy)
 {
-	auto card = std::make_shared<EnemyCard>(transformManager, enemy, enemy->GetWorldX() - enemy->GetCardSpawnTrigger().lock()->GetWidth() * 1.5f, enemy->GetWorldY() - 32);
+	std::random_device rd;
+	std::mt19937 gen(rd());
+	std::uniform_int_distribution<int> xdist(-10, 10);
+	std::uniform_int_distribution<int> ydist(-10, 10);
+	auto card = std::make_shared<EnemyCard>(transformManager, enemy, enemy->GetWorldX() - enemy->GetCardSpawnTrigger().lock()->GetWidth() * 1.5f + xdist(gen), enemy->GetWorldY() - 32 + ydist(gen));
 	card->Init(draggableManager, game->GetGraphicsDevice(), &camera);
 	enemyCards.push_back(card);
 }

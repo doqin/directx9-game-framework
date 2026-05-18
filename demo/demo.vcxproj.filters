@@ -156,6 +156,7 @@
     <Image Include="bugprojectile-Sheet.png" />
     <Image Include="xprojectile.png" />
     <Image Include="threadalley.png" />
+    <Image Include="crawler-Sheet.png" />
   </ItemGroup>
   <ItemGroup>
     <Font Include="arcade-among-2-r46pv.ttf" />

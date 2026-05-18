@@ -42,7 +42,7 @@ namespace Demo {
 					enemy->Init(game->GetGraphicsDevice(), &camera);
 					enemy->SetOnRequestEnemyCard([this](std::shared_ptr<IEnemy> enemyCardOwner) { CreateEnemyCard(enemyCardOwner); });
 					enemies.push_back(enemy);
-                } else if (enemyName == "WarlockEnemy") {
+                } else if (enemyName == "WarlockEnemy") { // crawler
 					auto enemy = std::make_shared<WarlockEnemy>(transformManager, 55.0f);
 					enemy->Init(game->GetGraphicsDevice(), &camera);
 					enemy->SetOnRequestEnemyCard([this](std::shared_ptr<IEnemy> enemyCardOwner) { CreateEnemyCard(enemyCardOwner); });

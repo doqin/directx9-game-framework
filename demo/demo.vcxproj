@@ -364,6 +364,9 @@
     <Image Include="computerbug-Sheet.png">
       <DeploymentContent>true</DeploymentContent>
     </Image>
+    <Image Include="crawler-Sheet.png">
+      <DeploymentContent>true</DeploymentContent>
+    </Image>
     <Image Include="cursor.png">
       <DeploymentContent>true</DeploymentContent>
     </Image>
