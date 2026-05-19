@@ -1,6 +1,7 @@
 <?xml version="1.0" encoding="UTF-8"?>
-<map version="1.10" tiledversion="1.12.1" orientation="orthogonal" renderorder="right-down" width="30" height="20" tilewidth="16" tileheight="16" infinite="1" nextlayerid="10" nextobjectid="169">
+<map version="1.10" tiledversion="1.12.1" orientation="orthogonal" renderorder="right-down" width="30" height="20" tilewidth="16" tileheight="16" infinite="1" nextlayerid="11" nextobjectid="170">
  <tileset firstgid="1" source="tutorial.tsx"/>
+ <tileset firstgid="169" source="bossmatrix.tsx"/>
  <layer id="4" name="background0" width="30" height="20">
   <data encoding="csv">
    <chunk x="-16" y="-48" width="16" height="16">
@@ -857,9 +858,9 @@
 0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,
 0,0,121,122,122,123,0,0,0,0,0,0,0,0,0,0,
 0,121,112,134,134,113,123,0,0,0,0,0,0,0,0,0,
-122,112,134,134,134,134,135,0,0,0,0,0,0,0,0,0,
-134,134,134,134,134,134,113,123,0,0,0,0,0,0,0,0,
-134,125,146,146,124,134,134,135,0,0,0,0,0,0,0,0,
+122,112,134,134,134,134,135,0,0,0,0,49,50,51,0,0,
+134,134,134,134,134,134,113,123,0,0,0,61,98,63,0,0,
+134,125,146,146,124,134,134,135,0,0,0,73,74,75,0,0,
 146,147,0,0,145,146,146,147,0,0,0,0,0,0,0,0,
 0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,
 0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0
@@ -1062,8 +1063,8 @@
   <object id="95" x="234" y="-579" width="71" height="56.3333"/>
   <object id="96" x="383.5" y="-564.5" width="114" height="55"/>
   <object id="97" x="495" y="-548.5" width="239" height="63"/>
-  <object id="98" x="730.5" y="-610" width="30" height="86.5"/>
-  <object id="99" x="651.5" y="-649" width="83.5" height="48.5"/>
+  <object id="98" x="733.167" y="-610" width="27.3333" height="86.5"/>
+  <object id="99" x="651.5" y="-649" width="83.5" height="44.1667"/>
   <object id="100" x="603" y="-673.5" width="56.5" height="40"/>
   <object id="101" x="524.5" y="-678" width="82" height="27"/>
   <object id="102" x="458" y="-664.5" width="73" height="46.5"/>
@@ -1140,5 +1141,8 @@
   <object id="166" x="500.667" y="-443.333" width="21.3333" height="86"/>
   <object id="167" x="484.333" y="-396" width="21.6667" height="39"/>
   <object id="168" x="521" y="-428.333" width="17.3333" height="54.3333"/>
+ </objectgroup>
+ <objectgroup id="10" name="trigger_p">
+  <object id="169" x="703.5" y="-592.25" width="16.5" height="16.25"/>
  </objectgroup>
 </map>

@@ -11,6 +11,7 @@
 
 namespace Demo
 {
+	std::shared_ptr<SaveGameState> MainMenu::gameSaveState = nullptr;
 	void MainMenu::UpdateLayout(int screenW, int screenH)
 	{
 		camera.SetPosition({ screenW / 2.f, 0 });
@@ -104,7 +105,7 @@ namespace Demo
 	{
 
 		transformManager = std::make_shared<DX9GF::TransformManager>();
-       saveManager = std::make_shared<DX9GF::SaveManager>();
+		saveManager = std::make_shared<DX9GF::SaveManager>();
 		gameSaveState = std::make_shared<SaveGameState>(game, saveManager);
 
 		auto app = DX9GF::Application::GetInstance();

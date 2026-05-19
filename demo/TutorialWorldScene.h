@@ -38,7 +38,8 @@ namespace Demo {
 		std::shared_ptr<DauDauNPC> npcIntroduction;
 		std::shared_ptr<DauDauNPC> npcExplainingEnemyEncounters;
 		std::shared_ptr<DauDauNPC> npcExplainingHealingPoint;
-		std::shared_ptr<IConversation> currentConversation;
+		std::shared_ptr<DauDauNPC> npcExplainingPortal;
+		std::shared_ptr<IConversation> currentConversation;		
 	public:
 		TutorialWorldScene(Game* game, std::shared_ptr<DX9GF::SaveManager> sm, UINT sw, UINT sh) : IScene(sw, sh), game(game), saveManager(sm), uiCamera(sw, sh) {}
 		void Init() override;

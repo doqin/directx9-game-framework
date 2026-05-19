@@ -1,6 +1,8 @@
 ﻿#include "pch.h"
 #include "TutorialWorldScene.h"
 #include "RandomEncounter.h"
+#include "MainMenu.h"
+#include "SaveGameState.h"
 
 void Demo::TutorialWorldScene::Init()
 {
@@ -16,13 +18,15 @@ void Demo::TutorialWorldScene::Init()
 	map->Create(transformManager, colliderManager, "./tutorial.tmx");
 	map->SetAreaUpdateHandler("triggers", GetRandomEncounterFunc(game, player, {
 		{"DemonEyeEnemy", 40},
-		{"VampireBatEnemy", 30},
 		{"MimicEnemy", 20},
-		{"WarlockEnemy", 10},
-		{"CupidEnemy", 5},
-		{"KeyeEnemy", 50},
-		{"KeyeproEnemy", 20}
 		}, drawBuffer, commandBuffer, &isGamePaused, [this](DX9GF::GraphicsDevice* gd, unsigned long long deltaTime) { DrawBackground(gd, deltaTime); }));
+	map->SetAreaUpdateHandler("trigger_p", [this](const DX9GF::Map::ObjectArea& area) {
+		nlohmann::json saveData;
+		player->GenerateSaveGlobalData(saveData["player"]);
+		auto sceMan = game->GetSceneManager();
+		MainMenu::gameSaveState->GetPlayerFromScene(sceMan->GetScene(static_cast<size_t>(sceMan->GetIndex()) + 1))->RestoreSaveGlobalData(saveData["player"]);
+		sceMan->GoToNext();
+	});
 	font = std::make_shared<DX9GF::Font>(game->GetGraphicsDevice(), L"StatusPlz", 16);
 	
 	npcIntroduction = std::make_shared<DauDauNPC>(transformManager, 167.0f, -18.0f);
@@ -45,6 +49,11 @@ void Demo::TutorialWorldScene::Init()
 	npcExplainingHealingPoint->AddLine(L"Player", L"Yeah, I feel dizzy...");
 	npcExplainingHealingPoint->AddLine(L"Dau Dau", L"This is a healing point. You can use it to restore your health. Just interact with it like you do with me.");
 	npcExplainingHealingPoint->AddLine(L"Dau Dau", L"If you want to heal in combat, you can use healing items! Check out my shop up ahead for some.");
+	npcExplainingPortal = std::make_shared<DauDauNPC>(transformManager, 630.f, -639.f);
+	npcExplainingPortal->Init(game->GetGraphicsDevice(), player, colliderManager, font, drawBuffer);
+	npcExplainingPortal->AddLine(L"Dau Dau", L"This is a portal. It will take you to the next area.");
+	npcExplainingPortal->AddLine(L"Dau Dau", L"Just step on it and you'll be teleported. It's that simple!");
+	npcExplainingPortal->AddLine(L"Dau Dau", L"Beware that portals can be a one way trip!");
 
 	savePoints.push_back(std::make_shared<SavePoint>(transformManager, 248.0f, -70.0f));
 	savePoints.back()->Init(game->GetGraphicsDevice(), &camera, player, colliderManager, saveManager, font, drawBuffer);
@@ -136,6 +145,16 @@ void Demo::TutorialWorldScene::Update(unsigned long long deltaTime)
 			}
 		}
 	}
+	if (npcExplainingPortal) {
+		npcExplainingPortal->Update(deltaTime);
+		if (!currentConversation && npcExplainingPortal->CanInteract() && inpMan->KeyPress(DIK_E)) {
+			auto [sw, sh] = camera.GetScreenResolution();
+			currentConversation = std::make_shared<IConversation>(std::make_shared<DX9GF::FontSprite>(font.get()), sw, sh);
+			for (auto& line : npcExplainingPortal->GetDialogueLines()) {
+				currentConversation->AddLine(line);
+			}
+		}
+	}
 
 	if (currentConversation) {
 		isGamePaused = true;
@@ -197,6 +216,7 @@ void Demo::TutorialWorldScene::Draw(unsigned long long deltaTime)
 		if (shopPoint_Card) shopPoint_Card->Draw(camera, deltaTime);
 		if (shopPoint_BSItem) shopPoint_BSItem->Draw(camera, deltaTime);
 		if (healingPoint) healingPoint->Draw(camera, deltaTime);
+		if (npcExplainingPortal) npcExplainingPortal->Draw(camera, deltaTime);
 		player->Draw(deltaTime);
 		if (drawBuffer) {
 			drawBuffer->Update(deltaTime);

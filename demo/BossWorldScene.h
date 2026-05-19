@@ -35,6 +35,7 @@ namespace Demo {
         int currentHackStep = 0;
         bool isBossDoorUnlocked = false;
         bool hasGottenUselessItem = false;
+		bool isTransitioning = false;
 
     public:
         BossWorldScene(Game* game, std::shared_ptr<DX9GF::SaveManager> sm, UINT sw, UINT sh) : IScene(sw, sh), game(game), saveManager(sm), uiCamera(sw, sh) {}

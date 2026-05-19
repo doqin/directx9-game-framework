@@ -28,10 +28,9 @@ void Demo::BossWorldScene::Init() {
 	map->Create(transformManager, colliderManager, "./BossMatrix.tmx");
 
 	map->SetAreaUpdateHandler("trigger_encounters", GetRandomEncounterFunc(game, player, {
-		{"DemonEyeEnemy", 40},
-		{"VampireBatEnemy", 30},
-		{"WarlockEnemy", 10},
-		{"CupidEnemy", 5}
+		{"VampireBatEnemy", 40},
+		{"WarlockEnemy", 30},
+		{"CupidEnemy", 20}
 		//i removed the mimic here
 		}, drawBuffer, commandBuffer, &isGamePaused, [this](DX9GF::GraphicsDevice* gd, unsigned long long deltaTime) { DrawBackground(gd, deltaTime, currentIslandID); }));
 

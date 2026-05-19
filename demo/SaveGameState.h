@@ -14,8 +14,8 @@ namespace Demo {
         std::unordered_map<std::string, size_t> sceneMap;
         void BuildScenes();
 		void ClearScenes();
-        std::shared_ptr<Player> GetPlayerFromScene(DX9GF::IScene* scene) const;
     public:
+        std::shared_ptr<Player> GetPlayerFromScene(DX9GF::IScene* scene) const;
         SaveGameState(Game* game, std::shared_ptr<DX9GF::SaveManager> saveManager);
         std::string GetSaveID() const override;
         void GenerateSaveData(nlohmann::json& outData) override;

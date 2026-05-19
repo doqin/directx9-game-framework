@@ -98,7 +98,7 @@ namespace Demo {
         saveManager->Register(saveState.get());
         saveState->ClearScenes();
         saveState->BuildScenes();
-        auto sceneIt = saveState->sceneMap.find("BossWorldScene");
+        auto sceneIt = saveState->sceneMap.find("TutorialWorldScene");
         if (sceneIt != saveState->sceneMap.end()) {
             game->GetSceneManager()->GoToScene(sceneIt->second);
         }
