@@ -49,9 +49,12 @@ void Demo::IEnemy::Update(unsigned long long deltaTime)
             --i;
         }
     }
-    for (auto& projectile : projectiles) {
-        projectile->Update(deltaTime);
-    }
+    tf::Executor executor;
+    tf::Taskflow taskflow;
+	taskflow.for_each(projectiles.begin(), projectiles.end(), [deltaTime](std::shared_ptr<IProjectile>& projectile) {
+		projectile->Update(deltaTime);
+	});
+	executor.run(taskflow).wait();
     commandBuffer.Update(deltaTime);
     animationBuffer.Update(deltaTime);
 }

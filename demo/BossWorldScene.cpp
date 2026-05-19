@@ -220,7 +220,7 @@ void Demo::BossWorldScene::Init() {
 
 		if (this->isBossDoorUnlocked && !this->isFinalBossDead) {
 
-			std::map<std::string, int> forcedEnemyMap = { {"KeyeproEnemy", 100} };
+			std::map<std::string, int> forcedEnemyMap = { {"KeyeproEnemy", 100}, {"KeyeEnemy", 100} };
 
 			auto demoGame = dynamic_cast<Demo::Game*>(this->game);
 			auto app = DX9GF::Application::GetInstance();

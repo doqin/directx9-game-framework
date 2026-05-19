@@ -4,6 +4,7 @@
 #include "SineWaveProjectile.h"
 #include "RoundProjectile.h"
 #include "TargetedProjectile.h"
+#include "BoomerangProjectile.h"
 #include "KeyeEnemy.h"
 #include "PopUpMessage.h"
 #include <random>
@@ -40,7 +41,7 @@ void Demo::KeyeproEnemy::Draw(DX9GF::GraphicsDevice* graphicsDevice, DX9GF::Came
 int Demo::KeyeproEnemy::GetRandomPattern() {
     std::random_device rd;
     std::mt19937 gen(rd());
-    std::uniform_int_distribution<int> dist(1, 2);
+    std::uniform_int_distribution<int> dist(1, 3);
     return dist(gen);
 }
 
@@ -90,37 +91,41 @@ void Demo::KeyeproEnemy::StartAttack(std::shared_ptr<Player> player, std::vector
                 }
             }
         }
-    }
+        else {
+            std::uniform_int_distribution<int> dist(1, 3);
+            if (dist(gen) == 1) {
+                PatternTargetedSniping(projDamage);
+            }
+            else if (dist(gen) == 2) {
+                PatternEcholocation(projDamage);
+            }
+            else {
+                PatternSwoopBite(projDamage);
+            }
 
-    std::uniform_int_distribution<int> dist(1, 2);
-
-    if (dist(gen) == 1) {
-        PatternSineWaveStorm(projDamage);
+            commandBuffer.PushCommand(std::make_shared<DX9GF::DelayCommand>(2.f));
+        }
     }
-    else {
-        PatternTargetedSniping(projDamage);
-    }
-
-    commandBuffer.PushCommand(std::make_shared<DX9GF::DelayCommand>(4.f));
 }
 
 void Demo::KeyeproEnemy::PatternSineWaveStorm(float projDamage) {
-    const int BULLETS =15;
-    const int SPACING = 45;
+    const int BULLETS =10;
+    const int SPACING = 80;
+	const int WAVE_COUNT = 10;
 
-    auto sineAttack = std::make_shared<DX9GF::CustomCommand>([this, projDamage, BULLETS, SPACING](std::function<void(void)> markFinished) {
+    auto leftAttack = std::make_shared<DX9GF::CustomCommand>([this, projDamage, BULLETS, SPACING, WAVE_COUNT](std::function<void(void)> markFinished) {
         if (auto lock = this->player.lock()) {
-            for (int waveCount = 0; waveCount < 6; waveCount++) {
+            for (int waveCount = 0; waveCount < WAVE_COUNT; waveCount++) {
                 for (int i = 0; i < BULLETS; i++) {
                     float startY = (i - BULLETS / 2.f) * SPACING;
 
                     projectiles.push_back(
                         SineWaveProjectile::Builder(transformManager, lock, projSprite, 16, 16, -350.f, startY)
                         .SetTrajectory(D3DXVECTOR2(1, 0)) 
-                        .SetWave(65.f, 4.0f)
+                        .SetWave(20.f, 4.0f)
                         .SetDelay((waveCount * 0.25f) + (i * 0.05f)) 
-                        .SetDecayTime(5.f)
-                        .SetVelocity(220.f)
+                        .SetDecayTime(10.f)
+                        .SetVelocity(100.f)
                         .SetDamage(projDamage)
                         .Build()
                     );
@@ -131,23 +136,65 @@ void Demo::KeyeproEnemy::PatternSineWaveStorm(float projDamage) {
         }
         markFinished();
         });
+	//auto topAttack = std::make_shared<DX9GF::CustomCommand>([this, projDamage, BULLETS, SPACING, WAVE_COUNT](std::function<void(void)> markFinished) {
+	//	if (auto lock = this->player.lock()) {
+	//		for (int waveCount = 0; waveCount < WAVE_COUNT; waveCount++) {
+	//			for (int i = 0; i < BULLETS; i++) {
+	//				float startX = (i - BULLETS / 2.f) * SPACING;
+	//				projectiles.push_back(
+	//					SineWaveProjectile::Builder(transformManager, lock, projSprite, 16, 16, startX, -350.f)
+	//					.SetTrajectory(D3DXVECTOR2(0, 1))
+	//					.SetWave(20.f, 4.0f)
+	//					.SetDelay((waveCount * 0.25f) + (i * 0.05f))
+	//					.SetDecayTime(10.f)
+	//					.SetVelocity(100.f)
+	//					.SetDamage(projDamage)
+	//					.Build()
+	//				);
+	//				projectiles.back()->Init();
+	//			}
+	//		}
+	//		transformManager.lock()->RebuildHierarchy();
+	//	}
+	//	markFinished();
+	//	});
 
-    commandBuffer.PushCommand(std::make_shared<DX9GF::CustomCommand>(*sineAttack));
+    commandBuffer.PushCommand(std::make_shared<DX9GF::CustomCommand>(*leftAttack));
+	//commandBuffer.PushCommand(std::make_shared<DX9GF::CustomCommand>(*topAttack));
 }
 
 void Demo::KeyeproEnemy::PatternTargetedSniping(float projDamage) {
-    std::random_device rd;
-    std::mt19937 gen(rd());
+    auto currentPosition = std::make_shared<int>(0);
 
     for (int i = 0; i < 100; i++) {
-        commandBuffer.PushCommand(std::make_shared<DX9GF::CustomCommand>([this, projDamage, &gen](std::function<void(void)> markFinished) {
+        commandBuffer.PushCommand(std::make_shared<DX9GF::CustomCommand>([this, projDamage, currentPosition](std::function<void(void)> markFinished) {
             if (auto lock = this->player.lock()) {
-                std::uniform_real_distribution<float> spawnXDist(-300.f, 300.f);
+                std::uniform_int_distribution<int> positionDist(1, 4);
+				*currentPosition = *currentPosition % 4 + 1; // Cycle through positions 1 to 4
+				float x, y;
+				switch (*currentPosition) {
+				case 1: // Top
+					x = 0;
+					y = -350.f;
+					break;
+				case 2: // Bottom
+					x = 0;
+					y = 350.f;
+					break;
+				case 3: // Left
+					x = -350.f;
+					y = 0;
+					break;
+				case 4: // Right
+					x = 350.f;
+					y = 0;
+					break;
+				}
 
                 projectiles.push_back(
-                    RoundProjectile::Builder(transformManager, lock, projSprite, 16, 16, spawnXDist(gen), -260.f)
+                    RoundProjectile::Builder(transformManager, lock, projSprite, 16, 16, x, y)
                     .SetTargetPosition(lock->GetCollider().lock()->GetWorldX(), lock->GetCollider().lock()->GetWorldY())
-                    .SetVelocity(320.f) 
+                    .SetVelocity(200.f) 
                     .SetDelay(0.f)
                     .SetDecayTime(4.f)
                     .SetDamage(projDamage)
@@ -159,6 +206,147 @@ void Demo::KeyeproEnemy::PatternTargetedSniping(float projDamage) {
             markFinished();
             }));
 
-        commandBuffer.PushCommand(std::make_shared<DX9GF::DelayCommand>(0.04f));
+        commandBuffer.PushCommand(std::make_shared<DX9GF::DelayCommand>(0.1f));
+    }
+}
+
+void Demo::KeyeproEnemy::PatternEcholocation(float projDamage)
+{
+    const int BULLETS = 10;
+    const int VELOCITY = 180;
+    const int SPACING = 96;
+    auto rightAttack = std::make_shared<DX9GF::CustomCommand>([this, projDamage](std::function<void(void)> markFinished) {
+        for (int i = 0; i < BULLETS; i++) {
+            if (auto lock = this->player.lock()) {
+                float startY = (i - BULLETS / 2.f) * SPACING;
+                projectiles.push_back(
+                    SineWaveProjectile::Builder(transformManager, lock, projSprite, 16, 16, 320, startY)
+                    .SetTrajectory(D3DXVECTOR2(-1, 0))
+                    .SetWave(50.f, 4.f)
+                    .SetDelay(i * 0.1f)
+                    .SetDecayTime(4.f)
+                    .SetVelocity(VELOCITY)
+                    .SetDamage(projDamage)
+                    .Build()
+                );
+                projectiles.back()->Init();
+                transformManager.lock()->RebuildHierarchy();
+            }
+        }
+        markFinished();
+        });
+    auto leftAttack = std::make_shared<DX9GF::CustomCommand>([this, projDamage](std::function<void(void)> markFinished) {
+        for (int i = 0; i < BULLETS; i++) {
+            if (auto lock = this->player.lock()) {
+                float startY = (i - BULLETS / 2.f) * SPACING;
+                projectiles.push_back(
+                    SineWaveProjectile::Builder(transformManager, lock, projSprite, 16, 16, -320, startY)
+                    .SetTrajectory(D3DXVECTOR2(1, 0))
+                    .SetWave(50.f, 4.f)
+                    .SetDelay(i * 0.1f)
+                    .SetDecayTime(4.f)
+                    .SetVelocity(VELOCITY)
+                    .SetDamage(projDamage)
+                    .Build()
+                );
+                projectiles.back()->Init();
+                transformManager.lock()->RebuildHierarchy();
+            }
+        }
+        markFinished();
+        });
+    std::random_device rd;
+    std::mt19937 gen(rd());
+    std::uniform_int_distribution<int> dist(1, 2);
+    for (int i = 0; i < 40; i++) {
+        if (dist(gen) == 1) commandBuffer.PushCommand(std::make_shared<DX9GF::CustomCommand>(*leftAttack));
+        else commandBuffer.PushCommand(std::make_shared<DX9GF::CustomCommand>(*rightAttack));
+        commandBuffer.PushCommand(std::make_shared<DX9GF::DelayCommand>(0.5f));
+    }
+}
+
+void Demo::KeyeproEnemy::PatternSwoopBite(float projDamage)
+{
+    const int BULLET_COUNT = 8;
+    const float ANGLE_STEP = 0.3f;
+	const float INITIAL_VELOCITY = 370.f;
+    auto rightAttack = std::make_shared<DX9GF::CustomCommand>([this, projDamage, BULLET_COUNT, ANGLE_STEP, INITIAL_VELOCITY](std::function<void(void)> markFinished) {
+        if (auto lock = this->player.lock()) {
+            auto [px, py] = lock->GetCollider().lock()->GetWorldPosition();
+            float x = 320.f;
+            float y = 0;
+            float dx = px - x;
+            float dy = py - y;
+            float baseAngle = std::atan2(dy, dx);
+
+            for (int i = 0; i < BULLET_COUNT; i++) {
+                float offsetAngle = (i - (BULLET_COUNT / 2)) * ANGLE_STEP;
+                float finalAngle = baseAngle + offsetAngle;
+
+                float targetX = x + std::cos(finalAngle) * 500.f;
+                float targetY = y + std::sin(finalAngle) * 500.f;
+
+                float spawnX = x + (i - (BULLET_COUNT / 2)) * 15.f;
+                float spawnY = y - 10.f;
+
+                projectiles.push_back(
+                    BoomerangProjectile::Builder(transformManager, lock, projSprite, 16, 16, spawnX, spawnY)
+                    .SetTargetPosition(targetX, targetY)
+                    .SetInitialVelocity(INITIAL_VELOCITY)
+                    .SetReturnAcceleration(180.f)
+                    .SetDelay(i * 0.05f)
+                    .SetDecayTime(8.f)
+                    .SetDamage(projDamage)
+                    .Build()
+                );
+                projectiles.back()->Init();
+            }
+            transformManager.lock()->RebuildHierarchy();
+        }
+        markFinished();
+        });
+    auto leftAttack = std::make_shared<DX9GF::CustomCommand>([this, projDamage, BULLET_COUNT, ANGLE_STEP, INITIAL_VELOCITY](std::function<void(void)> markFinished) {
+        if (auto lock = this->player.lock()) {
+            auto [px, py] = lock->GetCollider().lock()->GetWorldPosition();
+            float x = -320.f;
+            float y = 0;
+            float dx = px - x;
+            float dy = py - y;
+            float baseAngle = std::atan2(dy, dx);
+
+            for (int i = 0; i < BULLET_COUNT; i++) {
+                float offsetAngle = (i - (BULLET_COUNT / 2)) * ANGLE_STEP;
+                float finalAngle = baseAngle + offsetAngle;
+
+                float targetX = x + std::cos(finalAngle) * 500.f;
+                float targetY = y + std::sin(finalAngle) * 500.f;
+
+                float spawnX = x + (i - (BULLET_COUNT / 2)) * 15.f;
+                float spawnY = y - 10.f;
+
+                projectiles.push_back(
+                    BoomerangProjectile::Builder(transformManager, lock, projSprite, 16, 16, spawnX, spawnY)
+                    .SetTargetPosition(targetX, targetY)
+                    .SetInitialVelocity(INITIAL_VELOCITY)
+                    .SetReturnAcceleration(180.f)
+                    .SetDelay(i * 0.05f)
+                    .SetDecayTime(8.f)
+                    .SetDamage(projDamage)
+                    .Build()
+                );
+                projectiles.back()->Init();
+            }
+            transformManager.lock()->RebuildHierarchy();
+        }
+        markFinished();
+        });
+    std::random_device rd;
+    std::mt19937 gen(rd());
+    std::uniform_int_distribution<int> dist(30, 40);
+    std::uniform_int_distribution<int> sideDist(1, 2);
+    for (int i = 0; i < dist(gen); i++) {
+        if (sideDist(gen) == 1) commandBuffer.PushCommand(std::make_shared<DX9GF::CustomCommand>(*leftAttack));
+        else commandBuffer.PushCommand(std::make_shared<DX9GF::CustomCommand>(*rightAttack));
+        commandBuffer.PushCommand(std::make_shared<DX9GF::DelayCommand>(0.5f));
     }
 }

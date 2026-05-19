@@ -13,6 +13,8 @@ namespace Demo {
         int GetRandomPattern();
         void PatternSineWaveStorm(float projDamage);
         void PatternTargetedSniping(float projDamage);
+        void PatternEcholocation(float projDamage);
+        void PatternSwoopBite(float projDamage);
     public:
         using IEnemy::IEnemy;
         void Init(DX9GF::GraphicsDevice* graphicsDevice, DX9GF::Camera* camera);
