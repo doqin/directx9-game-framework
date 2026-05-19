@@ -39,7 +39,11 @@ int Demo::VampireBatEnemy::GetRandomPattern() {
 	return dist(gen);
 }
 
-void Demo::VampireBatEnemy::StartAttack(std::shared_ptr<Player> player) {
+void Demo::VampireBatEnemy::StartAttack(std::shared_ptr<Player> player, std::vector<std::shared_ptr<IEnemy>>* enemies, std::shared_ptr<PopUpMessage> popUpMessage, DX9GF::GraphicsDevice* graphicsDevice, DX9GF::Camera* camera) {
+	(void)enemies;
+	(void)popUpMessage;
+	(void)graphicsDevice;
+	(void)camera;
 	this->player = player;
 
 	if (GetRandomPattern() == 1) PatternEcholocation(GetOutgoingDamage(2.f));
