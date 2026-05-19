@@ -866,10 +866,11 @@ void Demo::IBattleScene::Init()
 				popUpMessage->QueueMessage(&commandBuffer, L"You failed to flee!");
 				commandBuffer.PushCommand(std::make_shared<DX9GF::CustomCommand>([this](std::function<void(void)> markFinished) {
 					this->QueueToEnemyAttack(0);
-					commandBuffer.PushCommand(std::make_shared<DX9GF::CustomCommand>([this](std::function<void(void)> markFinished) {
+					commandBuffer.PushCommand(std::make_shared<DX9GF::CustomCommand>([this](std::function<void(void)> markFinished2) {
 						isFleeing = false;
-						markFinished();
+						markFinished2();
 					}));
+					markFinished();
 				}));
 			}
 			markFinished();

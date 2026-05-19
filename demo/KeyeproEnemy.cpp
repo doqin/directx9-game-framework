@@ -105,6 +105,7 @@ void Demo::KeyeproEnemy::StartAttack(std::shared_ptr<Player> player, std::vector
 
             commandBuffer.PushCommand(std::make_shared<DX9GF::DelayCommand>(2.f));
         }
+
     }
 }
 
