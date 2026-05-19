@@ -7,6 +7,7 @@
 #include <vector>
 
 namespace Demo {
+	class PopUpMessage;
 	enum class StatusType { POISON, VULNERABLE, WEAK, STUN };
 
 	struct StatusEffect {
@@ -54,7 +55,7 @@ namespace Demo {
 		virtual void Update(unsigned long long deltaTime);
 		virtual void Draw(DX9GF::GraphicsDevice* graphicsDevice, DX9GF::Camera* camera, unsigned long long deltaTime);
 		virtual bool TakeDamage(float damage);
-		virtual void StartAttack(std::shared_ptr<Player> player) = 0;
+		virtual void StartAttack(std::shared_ptr<Player> player, std::vector<std::shared_ptr<IEnemy>>* enemies = nullptr, std::shared_ptr<PopUpMessage> popUpMessage = nullptr, DX9GF::GraphicsDevice* graphicsDevice = nullptr, DX9GF::Camera* camera = nullptr) = 0;
 		void SetState(bool isOnStandby);
 		bool IsDoneAttacking();
 		int GetGoldReward() const { return goldReward; }

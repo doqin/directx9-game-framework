@@ -4,6 +4,8 @@
 #include "CardShop.h"
 #include "ItemShop.h"
 #include <cmath>
+#include "MainMenu.h"
+#include "SaveGameState.h"
 
 void Demo::ThreadAlleyScene::Init()
 {
@@ -23,12 +25,18 @@ void Demo::ThreadAlleyScene::Init()
 	map->Create(transformManager, colliderManager, "./ThreadAlley.tmx");
 
 	map->SetAreaUpdateHandler("triggers", GetRandomEncounterFunc(game, player, {
-		{"DemonEyeEnemy", 40},
-		{"VampireBatEnemy", 30},
-		{"MimicEnemy", 20},
-		{"WarlockEnemy", 35},
-		{"CupidEnemy", 5}
+		{"VampireBatEnemy", 40},
+		{"MimicEnemy", 25},
+		{"WarlockEnemy", 20},
 		}, drawBuffer, commandBuffer, &isGamePaused, [this](DX9GF::GraphicsDevice* gd, unsigned long long deltaTime) { DrawCheckerBackground(gd, deltaTime); }));
+
+	map->SetAreaUpdateHandler("trigger_p", [this](const DX9GF::Map::ObjectArea& area) {
+		nlohmann::json saveData;
+		player->GenerateSaveGlobalData(saveData["player"]);
+		auto sceMan = game->GetSceneManager();
+		MainMenu::gameSaveState->GetPlayerFromScene(sceMan->GetScene(static_cast<size_t>(sceMan->GetIndex()) + 1))->RestoreSaveGlobalData(saveData["player"]);
+		sceMan->GoToNext();
+	});
 
 	font = std::make_shared<DX9GF::Font>(game->GetGraphicsDevice(), L"StatusPlz", 16);
 

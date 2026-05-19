@@ -66,7 +66,7 @@ namespace Demo {
 		}
 
 		size_t GetCost() const override { return 3; }
-		std::wstring GetDescription() const override { return L"Deal 6, 4, 2 damage to up to 3 enemies."; }
+		std::wstring GetDescription() const override { return L"Deal 6 damage to up to 3 enemies."; }
 
 		bool Execute() override;
 
@@ -131,7 +131,7 @@ namespace Demo {
 			: IGameObject(tm, x, y), MultiTargetCard(tm, 1, L"Stun", x, y, 160, 32) {
 		}
 
-		size_t GetCost() const override { return 2; }
+		size_t GetCost() const override { return 3; }
 		std::wstring GetDescription() const override { return L"Stun an enemy for 1 turn."; }
 
 		bool Execute() override;

@@ -58,6 +58,11 @@
     <ClCompile Include="AdvancedCards.cpp" />
     <ClCompile Include="ThreadAlleyScene.cpp" />
     <ClCompile Include="SaveGameState.cpp" />
+    <ClCompile Include="BossWorldScene.cpp" />
+    <ClCompile Include="HackTerminal.cpp" />
+    <ClCompile Include="RustyChestNPC.cpp" />
+    <ClCompile Include="KeyeEnemy.cpp" />
+    <ClCompile Include="KeyeproEnemy.cpp" />
   </ItemGroup>
   <ItemGroup>
     <ClInclude Include="AdvancedCards.h" />
@@ -120,6 +125,11 @@
     <ClInclude Include="TransitionCommand.h" />
     <ClInclude Include="ThreadAlleyScene.h" />
     <ClInclude Include="SaveGameState.h" />
+    <ClInclude Include="BossWorldScene.h" />
+    <ClInclude Include="HackTerminal.h" />
+    <ClInclude Include="RustyChestNPC.h" />
+    <ClInclude Include="KeyeEnemy.h" />
+    <ClInclude Include="KeyeproEnemy.h" />
   </ItemGroup>
   <ItemGroup>
     <ResourceCompile Include="demo.rc" />
@@ -157,6 +167,11 @@
     <Image Include="xprojectile.png" />
     <Image Include="threadalley.png" />
     <Image Include="crawler-Sheet.png" />
+    <Image Include="terminals.png" />
+    <Image Include="Keyepro-Sheet.png" />
+    <Image Include="Keye-Sheet.png" />
+    <Image Include="Keye-Bullet.png" />
+    <Image Include="bossmatrix.png" />
   </ItemGroup>
   <ItemGroup>
     <Font Include="arcade-among-2-r46pv.ttf" />
@@ -171,5 +186,7 @@
     <None Include="uiter.aseprite" />
     <None Include="ThreadAlley.tmx" />
     <None Include="threadalley.tsx" />
+    <None Include="BossMatrix.tmx" />
+    <None Include="bossmatrix.tsx" />
   </ItemGroup>
 </Project>

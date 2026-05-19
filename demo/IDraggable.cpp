@@ -246,6 +246,14 @@ void Demo::IDraggable::DetachParent()
 void Demo::IDraggable::Update(unsigned long long deltaTime)
 {
 	this->trigger->Update(deltaTime);
+	if (trigger->IsHeldLeft(deltaTime)) {
+		auto inpMan = DX9GF::InputManager::GetInstance();
+		inpMan->SwitchCursor(DX9GF::InputManager::CursorType::CLICK);
+	}
+	else if (trigger->IsHovering(deltaTime)) {
+		auto inpMan = DX9GF::InputManager::GetInstance();
+		inpMan->SwitchCursor(DX9GF::InputManager::CursorType::POINTER);
+	}
 }
 
 void Demo::IDraggable::Draw(unsigned long long deltaTime)

@@ -102,7 +102,7 @@ void Demo::IShopScene::Update(unsigned long long deltaTime)
 	if (shouldLeave) {
 		auto sceMan = this->game->GetSceneManager();
 
-		sceMan->PopScene();
+		sceMan->RemoveScene(sceMan->GetIndex());
 		sceMan->GoToPrevious();
 	}
 }

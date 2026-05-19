@@ -4,6 +4,7 @@
 #include "Player.h"
 #include "TutorialWorldScene.h"
 #include "ThreadAlleyScene.h"
+#include "BossWorldScene.h"
 
 namespace Demo {
    SaveGameState::SaveGameState(Game* game, std::shared_ptr<DX9GF::SaveManager> saveManager)
@@ -17,6 +18,8 @@ namespace Demo {
         sceneMap["TutorialWorldScene"] = sceneManager->GetSceneCount() - 1;
         sceneManager->PushScene(new ThreadAlleyScene(game, saveManager, app->GetScreenWidth(), app->GetScreenHeight()));
         sceneMap["ThreadAlleyScene"] = sceneManager->GetSceneCount() - 1;
+        sceneManager->PushScene(new BossWorldScene(game, saveManager, app->GetScreenWidth(), app->GetScreenHeight()));
+        sceneMap["BossWorldScene"] = sceneManager->GetSceneCount() - 1;
     }
 
     void SaveGameState::ClearScenes()
@@ -31,6 +34,9 @@ namespace Demo {
             return tutorialScene->GetPlayer();
         }
         if (auto threadScene = dynamic_cast<Demo::ThreadAlleyScene*>(scene)) {
+            return threadScene->GetPlayer();
+        }
+        if (auto threadScene = dynamic_cast<Demo::BossWorldScene*>(scene)) {
             return threadScene->GetPlayer();
         }
         return nullptr;
@@ -92,7 +98,7 @@ namespace Demo {
         saveManager->Register(saveState.get());
         saveState->ClearScenes();
         saveState->BuildScenes();
-        auto sceneIt = saveState->sceneMap.find("ThreadAlleyScene");
+        auto sceneIt = saveState->sceneMap.find("TutorialWorldScene");
         if (sceneIt != saveState->sceneMap.end()) {
             game->GetSceneManager()->GoToScene(sceneIt->second);
         }

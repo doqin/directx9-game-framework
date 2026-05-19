@@ -15,7 +15,6 @@ namespace Demo
 		Game* game;
 		std::shared_ptr<DX9GF::TransformManager> transformManager;
 		std::shared_ptr<DX9GF::SaveManager> saveManager;
-      std::shared_ptr<SaveGameState> gameSaveState;
 		std::shared_ptr<DX9GF::Font> font;
 		std::shared_ptr<DX9GF::FontSprite> fontSprite;
 		std::shared_ptr<DX9GF::StaticSprite> bgSprite;
@@ -40,6 +39,7 @@ namespace Demo
 		int lastScreenHeight;
 
 	public:
+		static std::shared_ptr<SaveGameState> gameSaveState;
 
 		MainMenu(Game* game, int screenWidth, int screenHeight)
 			: IScene(screenWidth, screenHeight),
@@ -48,7 +48,7 @@ namespace Demo
 		void Update(unsigned long long deltaTime) override;
 		void Draw(unsigned long long deltaTime) override;
 		void UpdateLayout(int width, int height);
-
+		void DrawBackground(unsigned long long deltaTime);
 	};
 }
 

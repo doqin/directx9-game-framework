@@ -40,7 +40,11 @@ int Demo::WarlockEnemy::GetRandomPattern() {
 	return dist(gen);
 }
 
-void Demo::WarlockEnemy::StartAttack(std::shared_ptr<Player> player) {
+void Demo::WarlockEnemy::StartAttack(std::shared_ptr<Player> player, std::vector<std::shared_ptr<IEnemy>>* enemies, std::shared_ptr<PopUpMessage> popUpMessage, DX9GF::GraphicsDevice* graphicsDevice, DX9GF::Camera* camera) {
+	(void)enemies;
+	(void)popUpMessage;
+	(void)graphicsDevice;
+	(void)camera;
 	this->player = player;
 	float projDamage = GetOutgoingDamage(4.f);
 

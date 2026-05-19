@@ -49,8 +49,9 @@ namespace Demo {
 
 			if (sceneFactory) {
 				auto shopScene = sceneFactory(game, pLock.get(), sw, sh);
-				game->GetSceneManager()->PushScene(shopScene);
-				game->GetSceneManager()->GoToNext();
+                auto sceMan = game->GetSceneManager();
+				sceMan->InsertScene(sceMan->GetIndex() + 1, shopScene);
+				sceMan->GoToNext();
 			}
 
 		}

@@ -1,4 +1,4 @@
-#include "pch.h"
+﻿#include "pch.h"
 #include "DX9GFMapLayer.h"
 #include "DX9GFMap.h"
 #include "tmxlite/TileLayer.hpp"
@@ -22,7 +22,7 @@ void DX9GF::MapLayer::Create(Map* map, std::uint32_t layerIndex)
 	const auto& tileSets = tmxMap.getTilesets();
 	const auto tintColour = layer.getTintColour();
 	D3DXCOLOR vertexColour(
-		static_cast<float>(tintColour.r) / 0xFF, 
+		static_cast<float>(tintColour.r) / 0xFF,
 		static_cast<float>(tintColour.g) / 0xFF,
 		static_cast<float>(tintColour.b) / 0xFF,
 		static_cast<float>(tintColour.a) / 0xFF
@@ -31,7 +31,8 @@ void DX9GF::MapLayer::Create(Map* map, std::uint32_t layerIndex)
 	std::vector<tmx::TileLayer::Chunk> chunks;
 	if (tmxMap.isInfinite()) {
 		chunks = layer.getChunks();
-	} else {
+	}
+	else {
 		tmx::TileLayer::Chunk chunk;
 		chunk.position = { 0, 0 };
 		auto mapSize = tmxMap.getTileCount();
@@ -40,7 +41,7 @@ void DX9GF::MapLayer::Create(Map* map, std::uint32_t layerIndex)
 		chunks.push_back(chunk);
 	}
 
-   for (auto i = 0u; i < tileSets.size(); ++i) {
+	for (auto i = 0u; i < tileSets.size(); ++i) {
 		const auto& tileSet = tileSets[i];
 		const auto& [textureSizeX, textureSizeY] = textures[i]->GetSize();
 		const auto& tileSetTileSize = tileSet.getTileSize();
@@ -51,34 +52,69 @@ void DX9GF::MapLayer::Create(Map* map, std::uint32_t layerIndex)
 		const float vNorm = static_cast<float>(tileSetTileSize.y) / textureSizeY;
 		Subset subset;
 		subset.texture = textures[i].get();
+
 		for (const auto& chunk : chunks) {
-			const auto tilesView = chunk.tiles | std::views::transform([](const tmx::TileLayer::Tile& tile) { return tile.ID; });
-			const std::vector<std::uint32_t> tileIDs(tilesView.begin(), tilesView.end());
 			std::vector<TileVertex> vertices;
+
 			for (int y = 0; y < chunk.size.y; ++y) {
-				for (int x = 0; x < chunk.size.x; ++x) { // Fixed: was ++y, should be ++x
+				for (int x = 0; x < chunk.size.x; ++x) {
 					const auto idx = y * chunk.size.x + x;
-					if (!IsTileIDInTileSet(idx, tileIDs, tileSet)) continue;
-					// texture coords
-					auto idIndex = (tileIDs[idx] - tileSet.getFirstGID());
+
+					const auto& tile = chunk.tiles[idx];
+					std::uint32_t cleanTileID = tile.ID;
+
+					if (cleanTileID == 0 || cleanTileID < tileSet.getFirstGID() || cleanTileID >= (tileSet.getFirstGID() + tileSet.getTileCount())) {
+						continue;
+					}
+
+					bool flipX = (tile.flipFlags & tmx::TileLayer::FlipFlag::Horizontal);
+					bool flipY = (tile.flipFlags & tmx::TileLayer::FlipFlag::Vertical);
+					bool flipD = (tile.flipFlags & tmx::TileLayer::FlipFlag::Diagonal);
+
+					auto idIndex = (cleanTileID - tileSet.getFirstGID());
 					const auto tileX = idIndex % tileCountX;
 					const auto tileY = idIndex / tileCountX;
-					float u = static_cast<float>(tileMargin + tileX * (tileSetTileSize.x + tileSpacing)) / textureSizeX;
-					float v = static_cast<float>(tileMargin + tileY * (tileSetTileSize.y + tileSpacing)) / textureSizeY;
-					// vertex pos
+					float u0 = static_cast<float>(tileMargin + tileX * (tileSetTileSize.x + tileSpacing)) / textureSizeX;
+					float v0 = static_cast<float>(tileMargin + tileY * (tileSetTileSize.y + tileSpacing)) / textureSizeY;
+					float u1 = u0 + uNorm;
+					float v1 = v0 + vNorm;
+
+					// default: 0:TopLeft, 1:TopRight, 2:BottomRight, 3:BottomLeft
+					struct UVCoord { float u, v; };
+					UVCoord tex[4] = {
+						{u0, v0}, // 0
+						{u1, v0}, // 1
+						{u1, v1}, // 2
+						{u0, v1}  // 3
+					};
+
+					//diagonal flip
+					if (flipD) {
+						std::swap(tex[1], tex[3]);
+					}
+					//horizontal flip
+					if (flipX) {
+						std::swap(tex[0], tex[1]);
+						std::swap(tex[3], tex[2]);
+					}
+					//vertical flip
+					if (flipY) {
+						std::swap(tex[0], tex[3]);
+						std::swap(tex[1], tex[2]);
+					}
+
 					const float tilePosX = static_cast<float>(x + chunk.position.x) * gridSize.x;
 					const float tilePosY = (static_cast<float>(y + chunk.position.y) * gridSize.y);
-					// first triangle
-					// top left, top right, bottom left
-					vertices.push_back({ .x = tilePosX, .y = tilePosY, .z = .0f, .color = vertexColour, .u = u, .v = v });
-					vertices.push_back({ .x = tilePosX + tileSetTileSize.x, .y = tilePosY, .z = .0f, .color = vertexColour, .u = u + uNorm, .v = v });
-					vertices.push_back({ .x = tilePosX, .y = tilePosY + tileSetTileSize.y, .z = .0f, .color = vertexColour, .u = u, .v = v + vNorm });
 
-					// second triangle
-					// top right, bottom right, bottom left
-					vertices.push_back({ .x = tilePosX + tileSetTileSize.x, .y = tilePosY, .z = .0f, .color = vertexColour, .u = u + uNorm, .v = v });
-					vertices.push_back({ .x = tilePosX + tileSetTileSize.x, .y = tilePosY + tileSetTileSize.y, .z = .0f, .color = vertexColour, .u = u + uNorm, .v = v + vNorm });
-					vertices.push_back({ .x = tilePosX, .y = tilePosY + tileSetTileSize.y, .z = .0f, .color = vertexColour, .u = u, .v = v + vNorm });
+					// Triangle 1: Top-Left (tex[0]), Top-Right (tex[1]), Bottom-Left (tex[3])
+					vertices.push_back({ .x = tilePosX, .y = tilePosY, .z = .0f, .color = vertexColour, .u = tex[0].u, .v = tex[0].v });
+					vertices.push_back({ .x = tilePosX + tileSetTileSize.x, .y = tilePosY, .z = .0f, .color = vertexColour, .u = tex[1].u, .v = tex[1].v });
+					vertices.push_back({ .x = tilePosX, .y = tilePosY + tileSetTileSize.y, .z = .0f, .color = vertexColour, .u = tex[3].u, .v = tex[3].v });
+
+					// Triangle 2: Top-Right (tex[1]), Bottom-Right (tex[2]), Bottom-Left (tex[3])
+					vertices.push_back({ .x = tilePosX + tileSetTileSize.x, .y = tilePosY, .z = .0f, .color = vertexColour, .u = tex[1].u, .v = tex[1].v });
+					vertices.push_back({ .x = tilePosX + tileSetTileSize.x, .y = tilePosY + tileSetTileSize.y, .z = .0f, .color = vertexColour, .u = tex[2].u, .v = tex[2].v });
+					vertices.push_back({ .x = tilePosX, .y = tilePosY + tileSetTileSize.y, .z = .0f, .color = vertexColour, .u = tex[3].u, .v = tex[3].v });
 				}
 			}
 
@@ -152,7 +188,7 @@ void DX9GF::MapLayer::Draw(const Camera& camera)
 	device->GetSamplerState(0, D3DSAMP_ADDRESSU, &oldAddressU);
 	device->GetSamplerState(0, D3DSAMP_ADDRESSV, &oldAddressV);
 
-  const auto [screenWidth, screenHeight] = camera.GetScreenResolution();
+	const auto [screenWidth, screenHeight] = camera.GetScreenResolution();
 	const auto [corner00X, corner00Y] = Utils::WindowToWorldCoords(camera, 0.0f, 0.0f);
 	const auto [corner10X, corner10Y] = Utils::WindowToWorldCoords(camera, static_cast<float>(screenWidth), 0.0f);
 	const auto [corner01X, corner01Y] = Utils::WindowToWorldCoords(camera, 0.0f, static_cast<float>(screenHeight));
@@ -169,7 +205,7 @@ void DX9GF::MapLayer::Draw(const Camera& camera)
 			&& x < viewMaxX - overlapEpsilon
 			&& rectMaxY > viewMinY + overlapEpsilon
 			&& y < viewMaxY - overlapEpsilon;
-	};
+		};
 	D3DXMATRIX matView;
 	D3DXMatrixIdentity(&matView);
 	D3DXMATRIX matProj;
@@ -210,7 +246,7 @@ void DX9GF::MapLayer::Draw(const Camera& camera)
 
 	device->SetFVF(D3DFVF_TILEVERTEX);
 	for (const auto& subset : subsets) {
-        if (subset.chunks.empty()) continue;
+		if (subset.chunks.empty()) continue;
 
 		if (auto texture = subset.texture; texture != nullptr) {
 			device->SetTexture(0, texture->GetRawTexture());
@@ -219,9 +255,9 @@ void DX9GF::MapLayer::Draw(const Camera& camera)
 			device->SetTexture(0, nullptr);
 		}
 
-       for (const auto& chunk : subset.chunks) {
+		for (const auto& chunk : subset.chunks) {
 			if (chunk.vertexData.empty()) continue;
-          if (!intersectsView(chunk.x, chunk.y, chunk.width, chunk.height)) continue;
+			if (!intersectsView(chunk.x, chunk.y, chunk.width, chunk.height)) continue;
 			const UINT primitiveCount = static_cast<UINT>(chunk.vertexData.size() / 3);
 			if (primitiveCount == 0) continue;
 			device->DrawPrimitiveUP(D3DPT_TRIANGLELIST, primitiveCount, chunk.vertexData.data(), sizeof(TileVertex));

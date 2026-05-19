@@ -11,17 +11,17 @@
 #include "IconButton.h"
 
 namespace Demo {
-   enum class ShopTier { BASIC, HYBRID, PREMIUM };
+	enum class ShopTier { BASIC, HYBRID, PREMIUM, RK_HYBRID };
 
 	struct ShopItem {
 		std::string name;
 		int cost;
-      std::wstring description;
+		std::wstring description;
 		std::function<void()> onBuyAction;
 	};
 
 	class IShopScene : public DX9GF::IScene {
-	protected: 
+	protected:
 		Game* game;
 		Player* player;
 
@@ -40,9 +40,9 @@ namespace Demo {
 
 		std::string statusMessage = "";
 		float messageTimer = 0.0f;
-		std::string shopTitle; 
+		std::string shopTitle;
 		bool shouldLeave = false;
-        std::shared_ptr<DX9GF::Texture> uiSheetTex;
+		std::shared_ptr<DX9GF::Texture> uiSheetTex;
 
 		void BuildUI();
 

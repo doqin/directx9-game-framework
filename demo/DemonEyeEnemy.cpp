@@ -41,8 +41,12 @@ int Demo::DemonEyeEnemy::GetRandomPattern()
 	return dist(gen);
 }
 
-void Demo::DemonEyeEnemy::StartAttack(std::shared_ptr<Player> player)
+void Demo::DemonEyeEnemy::StartAttack(std::shared_ptr<Player> player, std::vector<std::shared_ptr<IEnemy>>* enemies, std::shared_ptr<PopUpMessage> popUpMessage, DX9GF::GraphicsDevice* graphicsDevice, DX9GF::Camera* camera)
 {
+	(void)enemies;
+	(void)popUpMessage;
+	(void)graphicsDevice;
+	(void)camera;
 	this->player = player;
 	float baseDamage = 4.f;
 	float projDamage = GetOutgoingDamage(baseDamage);
