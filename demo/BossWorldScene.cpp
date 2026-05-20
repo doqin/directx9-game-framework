@@ -30,7 +30,6 @@ void Demo::BossWorldScene::Init() {
 	map->SetAreaUpdateHandler("trigger_encounters", GetRandomEncounterFunc(game, player, {
 		{"VampireBatEnemy", 40},
 		{"WarlockEnemy", 30},
-		{"CupidEnemy", 20}
 		//i removed the mimic here
 		}, drawBuffer, commandBuffer, &isGamePaused, [this](DX9GF::GraphicsDevice* gd, unsigned long long deltaTime) { DrawBackground(gd, deltaTime, currentIslandID); }));
 
@@ -167,7 +166,7 @@ void Demo::BossWorldScene::Init() {
 		bool hasRustyKey = player->GetInventoryItems().HasItem(10);
 		if (!hasRustyKey && !this->isMimicDead) {
 
-			std::map<std::string, int> forcedEnemyMap = { {"MimicEnemy", 100} };
+			std::map<std::string, int> forcedEnemyMap = { {"CupidEnemy", 100} };
 
 			auto demoGame = dynamic_cast<Demo::Game*>(this->game);
 			auto app = DX9GF::Application::GetInstance();

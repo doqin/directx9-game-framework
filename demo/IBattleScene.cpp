@@ -489,7 +489,7 @@ void Demo::IBattleScene::QueueToEnemyAttack(unsigned long long deltaTime)
 		std::make_shared<DX9GF::CustomCommand>([this, deltaTime, attackingEnemies](std::function<void(void)> markFinished) {
 			// Wait for enemies that died from statuses to finish animations
 			for (auto& enemy : this->enemies) {
-				if (enemy->IsDead() && !enemy->IsDoneAttacking()) {
+				if (!enemy->IsDoneAttacking()) {
 					return; // wait
 				}
 			}
@@ -532,6 +532,9 @@ void Demo::IBattleScene::PlayerOpenItemsUpdate(unsigned long long deltaTime)
 		for (auto& btn : buffItems) {
 			btn->Update(deltaTime);
 		}
+	}
+	for (auto& enemy : enemies) {
+		enemy->Update(deltaTime);
 	}
 }
 
@@ -757,7 +760,7 @@ void Demo::IBattleScene::Init()
 	drawBuffer = std::make_shared<DX9GF::CommandBuffer>();
 	// Setup player
 	battlePlayer = std::make_shared<Player>(transformManager);
-	battlePlayer->Init(game->GetGraphicsDevice(), &colliderManager, &camera);
+	battlePlayer->Init(game->GetGraphicsDevice(), &colliderManager, &camera, true);
 	battlePlayer->SetFollowCamera(false);
 	battlePlayer->SetVelocity(125);
 	battlePlayer->SetHealth(player->GetHealth());
