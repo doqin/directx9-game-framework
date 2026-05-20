@@ -1,7 +1,8 @@
 <?xml version="1.0" encoding="UTF-8"?>
-<map version="1.10" tiledversion="1.12.1" orientation="orthogonal" renderorder="right-down" width="30" height="20" tilewidth="16" tileheight="16" infinite="1" nextlayerid="11" nextobjectid="170">
+<map version="1.10" tiledversion="1.12.1" orientation="orthogonal" renderorder="right-down" width="30" height="20" tilewidth="16" tileheight="16" infinite="1" nextlayerid="12" nextobjectid="171">
  <tileset firstgid="1" source="tutorial.tsx"/>
  <tileset firstgid="169" source="bossmatrix.tsx"/>
+ <tileset firstgid="385" source="threadalley.tsx"/>
  <layer id="4" name="background0" width="30" height="20">
   <data encoding="csv">
    <chunk x="-16" y="-48" width="16" height="16">
@@ -977,6 +978,24 @@
 0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,
 0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0
 </chunk>
+   <chunk x="0" y="-32" width="16" height="16">
+0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,
+0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,
+0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,
+0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,
+0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,
+0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,
+0,0,0,0,0,0,0,0,0,0,0,0,436,437,0,0,
+0,0,0,0,0,0,0,0,0,0,0,0,448,449,0,0,
+0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,
+0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,
+0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,
+0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,
+0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,
+0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,
+0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,
+0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0
+</chunk>
   </data>
  </layer>
  <objectgroup id="3" name="collision">
@@ -1144,5 +1163,8 @@
  </objectgroup>
  <objectgroup id="10" name="trigger_p">
   <object id="169" x="703.5" y="-592.25" width="16.5" height="16.25"/>
+ </objectgroup>
+ <objectgroup id="11" name="trigger_secret">
+  <object id="170" x="192.5" y="-413.5" width="31" height="28.5"/>
  </objectgroup>
 </map>

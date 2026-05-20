@@ -345,6 +345,9 @@
       <DeploymentContent>true</DeploymentContent>
     </None>
     <None Include="placeholder-round-projectile.aseprite" />
+    <None Include="SecretPuzzle.tmx">
+      <DeploymentContent>true</DeploymentContent>
+    </None>
     <None Include="ThreadAlley.tmx">
       <DeploymentContent>true</DeploymentContent>
     </None>
