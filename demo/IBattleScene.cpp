@@ -419,7 +419,7 @@ void Demo::IBattleScene::PlayerAttackUpdate(unsigned long long deltaTime)
 			return QueueToEnemyAttack(deltaTime);
 		}
 		if (!isTransitioning) {
-			backButton->Update(deltaTime);
+			if (energy - usedEnergy == MAX_ENERGY) backButton->Update(deltaTime);
 			executeButton->Update(deltaTime);
 		}
 	}
@@ -645,7 +645,7 @@ void Demo::IBattleScene::PlayerAttackDraw(unsigned long long deltaTime)
 	hourglassIcon->Draw(camera, deltaTime);
 	hourglassIcon->End();
 	if (!mainBlockCard->IsExecuting() && !isTransitioning) {
-		backButton->Draw(game->GetGraphicsDevice(), deltaTime);
+		if (energy - usedEnergy == MAX_ENERGY) backButton->Draw(game->GetGraphicsDevice(), deltaTime);
 		executeButton->Draw(game->GetGraphicsDevice(), deltaTime);
 	}
 	draggableManager->Draw(deltaTime);
