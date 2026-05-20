@@ -419,7 +419,7 @@ void Demo::IBattleScene::PlayerAttackUpdate(unsigned long long deltaTime)
 			return QueueToEnemyAttack(deltaTime);
 		}
 		if (!isTransitioning) {
-			backButton->Update(deltaTime);
+			if (energy - usedEnergy == MAX_ENERGY) backButton->Update(deltaTime);
 			executeButton->Update(deltaTime);
 		}
 	}
@@ -489,7 +489,7 @@ void Demo::IBattleScene::QueueToEnemyAttack(unsigned long long deltaTime)
 		std::make_shared<DX9GF::CustomCommand>([this, deltaTime, attackingEnemies](std::function<void(void)> markFinished) {
 			// Wait for enemies that died from statuses to finish animations
 			for (auto& enemy : this->enemies) {
-				if (enemy->IsDead() && !enemy->IsDoneAttacking()) {
+				if (!enemy->IsDoneAttacking()) {
 					return; // wait
 				}
 			}
@@ -532,6 +532,9 @@ void Demo::IBattleScene::PlayerOpenItemsUpdate(unsigned long long deltaTime)
 		for (auto& btn : buffItems) {
 			btn->Update(deltaTime);
 		}
+	}
+	for (auto& enemy : enemies) {
+		enemy->Update(deltaTime);
 	}
 }
 
@@ -607,6 +610,10 @@ void Demo::IBattleScene::PlayerStandByDraw(unsigned long long deltaTime)
 	fleeButton->Draw(game->GetGraphicsDevice(), deltaTime);
 	itemsButton->Draw(game->GetGraphicsDevice(), deltaTime);
 	attackButton->Draw(game->GetGraphicsDevice(), deltaTime);
+	auto app = DX9GF::Application::GetInstance();
+	auto gd = game->GetGraphicsDevice();
+	const float y = app->GetScreenHeight() / 2.f - 128;
+	DrawHealthAndDefenseBar(y, gd);
 }
 
 void Demo::IBattleScene::PlayerAttackDraw(unsigned long long deltaTime)
@@ -642,7 +649,7 @@ void Demo::IBattleScene::PlayerAttackDraw(unsigned long long deltaTime)
 	hourglassIcon->Draw(camera, deltaTime);
 	hourglassIcon->End();
 	if (!mainBlockCard->IsExecuting() && !isTransitioning) {
-		backButton->Draw(game->GetGraphicsDevice(), deltaTime);
+		if (energy - usedEnergy == MAX_ENERGY) backButton->Draw(game->GetGraphicsDevice(), deltaTime);
 		executeButton->Draw(game->GetGraphicsDevice(), deltaTime);
 	}
 	draggableManager->Draw(deltaTime);
@@ -720,12 +727,17 @@ void Demo::IBattleScene::EnemyAttackDraw(unsigned long long deltaTime)
 	gd->DrawRectangle(camera, -battleHalfSize - outlineThickness, -battleHalfSize - outlineThickness, battleBoxSize + 2 * outlineThickness, battleBoxSize + 2 * outlineThickness, 0xFF000000, false);
 	gd->SetAlphaBlending(false);
 	battlePlayer->Draw(deltaTime);
+	const float y = app->GetScreenHeight() / 2.f - 40;
+	DrawHealthAndDefenseBar(y, gd);
+}
+
+void Demo::IBattleScene::DrawHealthAndDefenseBar(const float y, DX9GF::GraphicsDevice* gd)
+{
 	const float spacing = 5.f;
 	const float w = battlePlayer->GetMaxHealth() * spacing;
 	const float defenseW = (std::max)(0.f, battlePlayer->GetTemporaryDefense()) * spacing;
 	const float w_ = battlePlayer->GetHealth() * spacing;
 	const float x = -w / 2;
-	const float y = app->GetScreenHeight() / 2.f - 40;
 	const float defenseY = y - 24.f;
 	// Defense bar
 	gd->DrawRectangle(camera, x, defenseY, w, 16, 0xFF808080, true);
@@ -746,6 +758,48 @@ void Demo::IBattleScene::EnemyAttackDraw(unsigned long long deltaTime)
 
 	// Black border
 	gd->DrawRectangle(camera, x, y, w, 20, 0xFF000000, false);
+	auto buffs = battlePlayer->GetActiveBuffs();
+	auto buffY = y - 48.f;
+	for (auto buff : buffs) {
+		int value = buff.value;
+		auto turnsLeft = buff.turnsLeft;
+		if (buff.type == ItemBuffType::BuffDamage || buff.type == ItemBuffType::BuffDefense) {
+			if (buff.type == ItemBuffType::BuffDamage) {
+				fontSprite->SetColor(0xFFfa6a0a);
+			}
+			else {
+				fontSprite->SetColor(0xFF588dbe);
+			}
+			fontSprite->SetOutline(true, 0xFF000000, 3.f);
+			fontSprite->SetPosition(x, buffY);
+			fontSprite->SetText(std::to_wstring(value));
+			fontSprite->Begin();
+			fontSprite->Draw(camera, 0);
+			fontSprite->End();
+			auto textWidth = fontSprite->GetWidth();
+			if (buff.type == ItemBuffType::BuffDamage) {
+				attackBuffIcon->SetPosition(x + textWidth, buffY - 8.f);
+				attackBuffIcon->SetScale(2.f, 2.f);
+				attackBuffIcon->Begin();
+				attackBuffIcon->Draw(camera, 0);
+				attackBuffIcon->End();
+			}
+			else {
+				defenseBuffIcon->SetPosition(x + textWidth, buffY - 8.f);
+				defenseBuffIcon->SetScale(2.f, 2.f);
+				defenseBuffIcon->Begin();
+				defenseBuffIcon->Draw(camera, 0);
+				defenseBuffIcon->End();
+			}
+			fontSprite->SetColor(0xFFFFFFFF);
+			fontSprite->SetPosition(x + textWidth + 32.f, buffY);
+			fontSprite->SetText(std::to_wstring(turnsLeft) + L" turns");
+			fontSprite->Begin();
+			fontSprite->Draw(camera, 0);
+			fontSprite->End();
+			buffY -= 32.f;
+		}
+	}
 }
 
 void Demo::IBattleScene::Init()
@@ -757,7 +811,7 @@ void Demo::IBattleScene::Init()
 	drawBuffer = std::make_shared<DX9GF::CommandBuffer>();
 	// Setup player
 	battlePlayer = std::make_shared<Player>(transformManager);
-	battlePlayer->Init(game->GetGraphicsDevice(), &colliderManager, &camera);
+	battlePlayer->Init(game->GetGraphicsDevice(), &colliderManager, &camera, true);
 	battlePlayer->SetFollowCamera(false);
 	battlePlayer->SetVelocity(125);
 	battlePlayer->SetHealth(player->GetHealth());
@@ -769,6 +823,10 @@ void Demo::IBattleScene::Init()
 	tempTex->LoadTexture(L"TempTex.png");
 	itemsTex = std::make_shared<DX9GF::Texture>(game->GetGraphicsDevice());
 	itemsTex->LoadTexture(L"items.png");
+	attackBuffIcon = std::make_shared<DX9GF::StaticSprite>(uiSheetTex.get());
+	attackBuffIcon->SetSrcRect({ .left = 112, .top = 240, .right = 128, .bottom = 256 });
+	defenseBuffIcon = std::make_shared<DX9GF::StaticSprite>(uiSheetTex.get());
+	defenseBuffIcon->SetSrcRect({ .left = 96, .top = 240, .right = 112, .bottom = 256 });
 	// Create buttons
 	const auto buttonWidth = 96;
 	const auto buttonHeight = 32;
@@ -956,6 +1014,8 @@ void Demo::IBattleScene::Init()
 			popUpMessage->QueueMessage(&commandBuffer, L"Not enough energy");
 		}
 		else if (mainBlockCard && !mainBlockCard->IsExecuting()) {
+			commandBuffer.Clear();
+			popUpMessage->Reset(); // Really bad hack, please never do this in a production game lol
 			isExecutingAttacks = true;
 			mainBlockCard->StartExecution();
 		}

@@ -35,7 +35,7 @@ namespace Demo {
 					enemy->SetOnRequestEnemyCard([this](std::shared_ptr<IEnemy> enemyCardOwner) { CreateEnemyCard(enemyCardOwner); });
 					enemies.push_back(enemy);
                 } else if (enemyName == "VampireBatEnemy") { // shrimp
-					auto enemy = std::make_shared<VampireBatEnemy>(transformManager, 45.0f);
+					auto enemy = std::make_shared<VampireBatEnemy>(transformManager, 70.0f);
 					enemy->Init(game->GetGraphicsDevice(), &camera);
 					enemy->SetOnRequestEnemyCard([this](std::shared_ptr<IEnemy> enemyCardOwner) { CreateEnemyCard(enemyCardOwner); });
 					enemies.push_back(enemy);
@@ -45,23 +45,24 @@ namespace Demo {
 					enemy->SetOnRequestEnemyCard([this](std::shared_ptr<IEnemy> enemyCardOwner) { CreateEnemyCard(enemyCardOwner); });
 					enemies.push_back(enemy);
                 } else if (enemyName == "WarlockEnemy") { // crawler
-					auto enemy = std::make_shared<WarlockEnemy>(transformManager, 55.0f);
+					auto enemy = std::make_shared<WarlockEnemy>(transformManager, 80.0f);
 					enemy->Init(game->GetGraphicsDevice(), &camera);
 					enemy->SetOnRequestEnemyCard([this](std::shared_ptr<IEnemy> enemyCardOwner) { CreateEnemyCard(enemyCardOwner); });
 					enemies.push_back(enemy);
                 } else if (enemyName == "CupidEnemy") {
-					auto enemy = std::make_shared<CupidEnemy>(transformManager, 60.0f);
+					auto enemy = std::make_shared<CupidEnemy>(transformManager, 200.0f);
 					enemy->Init(game->GetGraphicsDevice(), &camera);
 					enemy->SetOnRequestEnemyCard([this](std::shared_ptr<IEnemy> enemyCardOwner) { CreateEnemyCard(enemyCardOwner); });
 					enemies.push_back(enemy);
-                } else if (enemyName == "KeyeEnemy") {
-					auto enemy = std::make_shared<KeyeEnemy>(transformManager, 25.0f);
-					enemy->Init(game->GetGraphicsDevice(), &camera);
-					enemy->SetOnRequestEnemyCard([this](std::shared_ptr<IEnemy> enemyCardOwner) { CreateEnemyCard(enemyCardOwner); });
-					enemies.push_back(enemy);
-				}
+                } 
                 else if (enemyName == "KeyeproEnemy") {
                     auto enemy = std::make_shared<KeyeproEnemy>(transformManager, 500.0f);
+                    enemy->Init(game->GetGraphicsDevice(), &camera);
+                    enemy->SetOnRequestEnemyCard([this](std::shared_ptr<IEnemy> enemyCardOwner) { CreateEnemyCard(enemyCardOwner); });
+                    enemies.push_back(enemy);
+                }
+                else if (enemyName == "KeyeEnemy") {
+                    auto enemy = std::make_shared<KeyeEnemy>(transformManager, 30.0f);
                     enemy->Init(game->GetGraphicsDevice(), &camera);
                     enemy->SetOnRequestEnemyCard([this](std::shared_ptr<IEnemy> enemyCardOwner) { CreateEnemyCard(enemyCardOwner); });
                     enemies.push_back(enemy);
@@ -88,7 +89,7 @@ namespace Demo {
                 enemy->SetOnRequestEnemyCard([this](std::shared_ptr<IEnemy> enemyCardOwner) { CreateEnemyCard(enemyCardOwner); });
                 enemies.push_back(enemy);
             } else if (enemyName == "VampireBatEnemy") {
-                auto enemy = std::make_shared<VampireBatEnemy>(transformManager, 45.0f);
+                auto enemy = std::make_shared<VampireBatEnemy>(transformManager, 70.0f);
                 enemy->Init(game->GetGraphicsDevice(), &camera);
                 enemy->SetOnRequestEnemyCard([this](std::shared_ptr<IEnemy> enemyCardOwner) { CreateEnemyCard(enemyCardOwner); });
                 enemies.push_back(enemy);
@@ -98,27 +99,29 @@ namespace Demo {
                 enemy->SetOnRequestEnemyCard([this](std::shared_ptr<IEnemy> enemyCardOwner) { CreateEnemyCard(enemyCardOwner); });
                 enemies.push_back(enemy);
             } else if (enemyName == "WarlockEnemy") {
-                auto enemy = std::make_shared<WarlockEnemy>(transformManager, 55.0f);
+                auto enemy = std::make_shared<WarlockEnemy>(transformManager, 80.0f);
                 enemy->Init(game->GetGraphicsDevice(), &camera);
                 enemy->SetOnRequestEnemyCard([this](std::shared_ptr<IEnemy> enemyCardOwner) { CreateEnemyCard(enemyCardOwner); });
                 enemies.push_back(enemy);
             } else if (enemyName == "CupidEnemy") {
-                auto enemy = std::make_shared<CupidEnemy>(transformManager, 60.0f);
+                auto enemy = std::make_shared<CupidEnemy>(transformManager, 200.0f);
                 enemy->Init(game->GetGraphicsDevice(), &camera);
                 enemy->SetOnRequestEnemyCard([this](std::shared_ptr<IEnemy> enemyCardOwner) { CreateEnemyCard(enemyCardOwner); });
                 enemies.push_back(enemy);
-            } else if (enemyName == "KeyeEnemy") {
-                auto enemy = std::make_shared<KeyeEnemy>(transformManager, 25.0f);
-                enemy->Init(game->GetGraphicsDevice(), &camera);
-                enemy->SetOnRequestEnemyCard([this](std::shared_ptr<IEnemy> enemyCardOwner) { CreateEnemyCard(enemyCardOwner); });
-                enemies.push_back(enemy);
-            }
+            } 
             else if (enemyName == "KeyeproEnemy") {
-                auto enemy = std::make_shared<KeyeproEnemy>(transformManager, 50.0f);
+                auto enemy = std::make_shared<KeyeproEnemy>(transformManager, 500.0f);
                 enemy->Init(game->GetGraphicsDevice(), &camera);
                 enemy->SetOnRequestEnemyCard([this](std::shared_ptr<IEnemy> enemyCardOwner) { CreateEnemyCard(enemyCardOwner); });
                 enemies.push_back(enemy);
             }
+            else if (enemyName == "KeyeEnemy") {
+                auto enemy = std::make_shared<KeyeEnemy>(transformManager, 30.0f);
+                enemy->Init(game->GetGraphicsDevice(), &camera);
+                enemy->SetOnRequestEnemyCard([this](std::shared_ptr<IEnemy> enemyCardOwner) { CreateEnemyCard(enemyCardOwner); });
+                enemies.push_back(enemy);
+            }
+            
         }
         transformManager->RebuildHierarchy();
         StartBattle();

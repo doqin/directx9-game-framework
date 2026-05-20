@@ -16,8 +16,8 @@ namespace Demo
 			{ 24, 0, 47, 35 });
 
 		itemRegistry[2] = ConsumableItem(2, L"Buff 15 Damage",
-			L"Buff 15 Damage for 2 turns",
-			{ ActiveBuff{ ItemBuffType::BuffDamage, 15.0f, 2 } },
+			L"Buff 15 Damage for 1 turns",
+			{ ActiveBuff{ ItemBuffType::BuffDamage, 15.0f, 1 } },
 			{ 48, 0, 71, 35 });
 
 		itemRegistry[3] = ConsumableItem(3, L"Buff 8 Damage & Heal 15HP",

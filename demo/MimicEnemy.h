@@ -11,8 +11,8 @@ namespace Demo {
 		std::weak_ptr<Player> player;
 
 		int GetRandomPattern();
-		void PatternCoinCyclone(float projDamage);
-		void PatternJunkVomit(float projDamage);
+		void PatternCoinCyclone(float projDamage, std::vector<std::shared_ptr<IEnemy>>* enemies);
+		void PatternJunkVomit(float projDamage, std::vector<std::shared_ptr<IEnemy>>* enemies);
 
 	public:
 		using IEnemy::IEnemy;

@@ -3,6 +3,7 @@
 #include "RandomEncounter.h"
 #include "MainMenu.h"
 #include "SaveGameState.h"
+#include "TransitionCommand.h"
 
 void Demo::TutorialWorldScene::Init()
 {
@@ -20,12 +21,23 @@ void Demo::TutorialWorldScene::Init()
 		{"DemonEyeEnemy", 40},
 		{"MimicEnemy", 20},
 		}, drawBuffer, commandBuffer, &isGamePaused, [this](DX9GF::GraphicsDevice* gd, unsigned long long deltaTime) { DrawBackground(gd, deltaTime); }));
-	map->SetAreaUpdateHandler("trigger_p", [this](const DX9GF::Map::ObjectArea& area) {
+	map->SetAreaUpdateHandler("trigger_p", [this](const DX9GF::Map::ObjectArea& area) {if (isTransitioning) return;
+		isTransitioning = true;
+		auto transitionInCommand = std::make_shared<TransitionCommand>(game->GetGraphicsDevice(), 1.f, true);
+		drawBuffer->PushCommand(transitionInCommand);
+		commandBuffer->PushCommand(std::make_shared<DX9GF::CustomCommand>([this, transitionInCommand](std::function<void(void)> markFinished) {
+		if (!transitionInCommand->IsFinished()) {
+			return;
+		}
 		nlohmann::json saveData;
 		player->GenerateSaveGlobalData(saveData["player"]);
 		auto sceMan = game->GetSceneManager();
 		MainMenu::gameSaveState->GetPlayerFromScene(sceMan->GetScene(static_cast<size_t>(sceMan->GetIndex()) + 1))->RestoreSaveGlobalData(saveData["player"]);
 		sceMan->GoToNext();
+		isTransitioning = false;
+		markFinished();
+		}));
+		drawBuffer->PushCommand(std::make_shared<TransitionCommand>(game->GetGraphicsDevice(), 1.f, false));
 	});
 	font = std::make_shared<DX9GF::Font>(game->GetGraphicsDevice(), L"StatusPlz", 16);
 	
@@ -90,6 +102,7 @@ void Demo::TutorialWorldScene::Init()
 	this->GiveTestItems();
 
 	transformManager->RebuildHierarchy();
+	drawBuffer->PushCommand(std::make_shared<Demo::TransitionCommand>(game->GetGraphicsDevice(), 1.f, false));
 }
 
 void Demo::TutorialWorldScene::Update(unsigned long long deltaTime)
@@ -234,6 +247,7 @@ void Demo::TutorialWorldScene::Draw(unsigned long long deltaTime)
 
 void Demo::TutorialWorldScene::DrawBackground(DX9GF::GraphicsDevice* gd, unsigned long long deltaTime)
 {
+
 	auto [screenWidth, screenHeight] = camera.GetScreenResolution();
 	const int spacingX = 32;
 	const int spacingY = 32;
