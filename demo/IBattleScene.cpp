@@ -1014,6 +1014,8 @@ void Demo::IBattleScene::Init()
 			popUpMessage->QueueMessage(&commandBuffer, L"Not enough energy");
 		}
 		else if (mainBlockCard && !mainBlockCard->IsExecuting()) {
+			commandBuffer.Clear();
+			popUpMessage->Reset(); // Really bad hack, please never do this in a production game lol
 			isExecutingAttacks = true;
 			mainBlockCard->StartExecution();
 		}

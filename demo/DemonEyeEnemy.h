@@ -11,9 +11,9 @@ namespace Demo {
 		std::weak_ptr<Player> player;
 
 		int GetRandomPattern();
-		void PatternBloodRain(float projDamage);
-		void PatternBloodWall(float projDamage);
-		void PatternBloodCross(float projDamage);
+		void PatternBloodRain(float projDamage, std::vector<std::shared_ptr<IEnemy>>* enemies);
+		void PatternBloodWall(float projDamage, std::vector<std::shared_ptr<IEnemy>>* enemies);
+		void PatternBloodCross(float projDamage, std::vector<std::shared_ptr<IEnemy>>* enemies);
 
 	public:
 		using IEnemy::IEnemy;

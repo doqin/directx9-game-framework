@@ -25,11 +25,11 @@ void Demo::CardShop::LoadItems()
 {
 	const int StrikeCardCost = 30;
 	const int HeavyStrikeCardCost = 70;
-	const int PoisonCardCost = 100;
+	const int PoisonCardCost = 50;
 	const int TwinStrikeCardCost = 40;
 	const int CleaveCardCost = 40;
-	const int VulnerableCardCost = 100;
-	const int WeaknessCardCost = 120;
+	const int VulnerableCardCost = 65;
+	const int WeaknessCardCost = 85;
 	const int ChainLightningCardCost = 100;
 	const int StunCardCost = 300;
     switch (currentTier) {

@@ -54,17 +54,19 @@ void Demo::DemonEyeEnemy::StartAttack(std::shared_ptr<Player> player, std::vecto
 	//surprise element
 	int patternId = GetRandomPattern();
 
-	if (patternId == 1) PatternBloodRain(projDamage);
-	else if (patternId == 2) PatternBloodWall(projDamage);
-	else PatternBloodCross(projDamage);
+	//PatternBloodCross(projDamage, enemies);
+	if (patternId == 1) PatternBloodRain(projDamage, enemies);
+	else if (patternId == 2) PatternBloodWall(projDamage, enemies);
+	else PatternBloodCross(projDamage, enemies);
 	commandBuffer.PushCommand(std::make_shared<DX9GF::DelayCommand>(5.f));
 }
 
-void Demo::DemonEyeEnemy::PatternBloodRain(float projDamage)
+void Demo::DemonEyeEnemy::PatternBloodRain(float projDamage, std::vector<std::shared_ptr<IEnemy>>* enemies)
 {
-	const int BULLET_COUNT = 180;
-	const float SPAWN_DELAY = 0.01f;
-	const float BULLET_SPEED = 380.f;
+	bool isAlone = enemies->size() == 1;
+	const int BULLET_COUNT = isAlone ? 180 : 90;
+	const float SPAWN_DELAY = isAlone ? 0.01f : 0.02f;
+	const float BULLET_SPEED = isAlone ? 380.f : 190.f;
 	const float OFFSET_RANGE = 300.f;
 	const float DROP_HEIGHT = 350.f;
 
@@ -100,15 +102,17 @@ void Demo::DemonEyeEnemy::PatternBloodRain(float projDamage)
 	}
 }
 
-void Demo::DemonEyeEnemy::PatternBloodWall(float projDamage)
+void Demo::DemonEyeEnemy::PatternBloodWall(float projDamage, std::vector<std::shared_ptr<IEnemy>>* enemies)
 {
-	const int WAVE_COUNT = 9;
-	const int BULLET_PER_WAVE = 15;
-	const float WAVE_DELAY = 0.6f;
-	const float BULLET_SPEED = 200.f;
+	bool isAlone = enemies->size() == 1;
+	const int WAVE_COUNT = isAlone ? 9 : 5;
+	const int BULLET_PER_WAVE = 8;
+	const float WAVE_DELAY = isAlone ? 0.6f : 1.2f;
+	const float BULLET_SPEED = isAlone ? 200.f : 100.f;
 	const float DROP_HEIGHT = 350.f;
 	const float WALL_START_X = -200.f;
-	const float BULLET_SPACING = 40.f;
+	const float BULLET_SPACING = isAlone ? 40.f : 80.f;
+	const float BULLET_DECAY_TIME = isAlone ? 4.f : 8.f;
 
 	std::random_device rd;
 	std::mt19937 gen(rd());
@@ -118,7 +122,7 @@ void Demo::DemonEyeEnemy::PatternBloodWall(float projDamage)
 		std::uniform_int_distribution<int> holeDist(0, BULLET_PER_WAVE - 1);
 		int emptyHole = holeDist(gen);
 
-		commandBuffer.PushCommand(std::make_shared<DX9GF::CustomCommand>([this, projDamage, emptyHole, BULLET_PER_WAVE, BULLET_SPEED, DROP_HEIGHT, WALL_START_X, BULLET_SPACING](std::function<void(void)> markFinished) {
+		commandBuffer.PushCommand(std::make_shared<DX9GF::CustomCommand>([this, projDamage, emptyHole, BULLET_PER_WAVE, BULLET_SPEED, DROP_HEIGHT, WALL_START_X, BULLET_SPACING, BULLET_DECAY_TIME](std::function<void(void)> markFinished) {
 			if (auto lock = this->player.lock()) {
 				auto [playerX, playerY] = lock->GetWorldPosition();
 
@@ -133,7 +137,7 @@ void Demo::DemonEyeEnemy::PatternBloodWall(float projDamage)
 						RoundProjectile::Builder(transformManager, lock, tearProjectileSprite, 16, 16, finalX, finalY)
 						.SetTrajectory(D3DXVECTOR2(0, 1))
 						.SetDelay(0.f)
-						.SetDecayTime(4.f)
+						.SetDecayTime(BULLET_DECAY_TIME)
 						.SetVelocity(BULLET_SPEED)
 						.SetDamage(projDamage)
 						.Build()
@@ -148,11 +152,12 @@ void Demo::DemonEyeEnemy::PatternBloodWall(float projDamage)
 	}
 }
 
-void Demo::DemonEyeEnemy::PatternBloodCross(float projDamage)
+void Demo::DemonEyeEnemy::PatternBloodCross(float projDamage, std::vector<std::shared_ptr<IEnemy>>* enemies)
 {
-	const int BULLET_COUNT = 180;
-	const float SPAWN_DELAY = 0.013f;
-	const float BULLET_SPEED = 300.f;
+	bool isAlone = enemies->size() == 1;
+	const int BULLET_COUNT = isAlone ? 180 : 70;
+	const float SPAWN_DELAY = isAlone ? 0.013f : 0.050f;
+	const float BULLET_SPEED = isAlone ? 300.f : 200.f;
 	const float DROP_HEIGHT = 350.f;
 	const float OFFSET_MIN = -450.f;
 	const float OFFSET_MAX = 150.f;
