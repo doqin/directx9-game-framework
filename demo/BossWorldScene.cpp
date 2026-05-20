@@ -132,31 +132,31 @@ void Demo::BossWorldScene::Init() {
 	// link with portal triggers on map
 	map->SetAreaUpdateHandler("trigger_p_1_2", [this](const DX9GF::Map::ObjectArea& area) {
 		player->SetLocalPosition(-1155, 0);
-		camera.SetPosition(-1155, 0);
+		//camera.SetPosition(-1155, 0);
 		this->currentIslandID = 2;
 		});
 	map->SetAreaUpdateHandler("trigger_p_2_3", [this](const DX9GF::Map::ObjectArea& area) {
 		player->SetLocalPosition(1500, 530);
-		camera.SetPosition(1500, 530);
+		//camera.SetPosition(1500, 530);
 		this->currentIslandID = 3;
 		});
 	map->SetAreaUpdateHandler("trigger_p_2_fake", [this](const DX9GF::Map::ObjectArea& area) {
 		player->SetLocalPosition(-1155, 0);
-		camera.SetPosition(-1155, 0);
+		//camera.SetPosition(-1155, 0);
 		});
 	map->SetAreaUpdateHandler("trigger_p_3_4", [this](const DX9GF::Map::ObjectArea& area) {
 		player->SetLocalPosition(740, -50);
-		camera.SetPosition(740, -50);
+		//camera.SetPosition(740, -50);
 		this->currentIslandID = 4;
 		});
 	map->SetAreaUpdateHandler("trigger_p_3_2", [this](const DX9GF::Map::ObjectArea& area) {
 		player->SetLocalPosition(-1155, 0);
-		camera.SetPosition(-1155, 0);
+		//camera.SetPosition(-1155, 0);
 		this->currentIslandID = 2;
 		});
 	map->SetAreaUpdateHandler("trigger_p_4_3", [this](const DX9GF::Map::ObjectArea& area) {
 		player->SetLocalPosition(1500, 530);
-		camera.SetPosition(1500, 530);
+		//camera.SetPosition(1500, 530);
 		this->currentIslandID = 3;
 		});
 
@@ -271,6 +271,7 @@ void Demo::BossWorldScene::Init() {
 	inventoryMenu->Init();
 
 	transformManager->RebuildHierarchy();
+	drawBuffer->PushCommand(std::make_shared<Demo::TransitionCommand>(game->GetGraphicsDevice(), 1.f, false));
 }
 
 void Demo::BossWorldScene::OnTerminalHacked(int terminalID) {

@@ -33,10 +33,14 @@ namespace Demo
 		std::shared_ptr<IconButton> optionsButton;
 		std::shared_ptr<IconButton> creditsButton;
 		std::shared_ptr<IconButton> quitButton;
+		std::shared_ptr<DX9GF::CommandBuffer> drawBuffer;
+		std::shared_ptr<DX9GF::CommandBuffer> commandBuffer;
 
 		//use to scale or relocate the sprite/object
 		int lastScreenWidth;
 		int lastScreenHeight;
+
+		bool isTransitioning = false;
 
 	public:
 		static std::shared_ptr<SaveGameState> gameSaveState;

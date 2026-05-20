@@ -6,6 +6,7 @@
 #include <cmath>
 #include "MainMenu.h"
 #include "SaveGameState.h"
+#include "TransitionCommand.h"
 
 void Demo::ThreadAlleyScene::Init()
 {
@@ -31,11 +32,22 @@ void Demo::ThreadAlleyScene::Init()
 		}, drawBuffer, commandBuffer, &isGamePaused, [this](DX9GF::GraphicsDevice* gd, unsigned long long deltaTime) { DrawCheckerBackground(gd, deltaTime); }));
 
 	map->SetAreaUpdateHandler("trigger_p", [this](const DX9GF::Map::ObjectArea& area) {
-		nlohmann::json saveData;
-		player->GenerateSaveGlobalData(saveData["player"]);
-		auto sceMan = game->GetSceneManager();
-		MainMenu::gameSaveState->GetPlayerFromScene(sceMan->GetScene(static_cast<size_t>(sceMan->GetIndex()) + 1))->RestoreSaveGlobalData(saveData["player"]);
-		sceMan->GoToNext();
+		isTransitioning = true;
+		auto transitionInCommand = std::make_shared<TransitionCommand>(game->GetGraphicsDevice(), 1.f, true);
+		drawBuffer->PushCommand(transitionInCommand);
+		commandBuffer->PushCommand(std::make_shared<DX9GF::CustomCommand>([this, transitionInCommand](std::function<void(void)> markFinished) {
+			if (!transitionInCommand->IsFinished()) {
+				return;
+			}
+			nlohmann::json saveData;
+			player->GenerateSaveGlobalData(saveData["player"]);
+			auto sceMan = game->GetSceneManager();
+			MainMenu::gameSaveState->GetPlayerFromScene(sceMan->GetScene(static_cast<size_t>(sceMan->GetIndex()) + 1))->RestoreSaveGlobalData(saveData["player"]);
+			sceMan->GoToNext();
+			isTransitioning = false;
+			markFinished();
+			}));
+		drawBuffer->PushCommand(std::make_shared<TransitionCommand>(game->GetGraphicsDevice(), 1.f, false));
 	});
 
 	font = std::make_shared<DX9GF::Font>(game->GetGraphicsDevice(), L"StatusPlz", 16);
@@ -190,6 +202,7 @@ void Demo::ThreadAlleyScene::Init()
 	this->GiveTestItems();
 
 	transformManager->RebuildHierarchy();
+	drawBuffer->PushCommand(std::make_shared<Demo::TransitionCommand>(game->GetGraphicsDevice(), 1.f, false));
 }
 
 void Demo::ThreadAlleyScene::Update(unsigned long long deltaTime)

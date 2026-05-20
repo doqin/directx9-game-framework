@@ -206,7 +206,7 @@ void Demo::Player::Update(unsigned long long deltaTime) {
 			}
 			else {
 				cameraDeltaTime += deltaTime;
-				const float maxSpeed = isRunning ? VELOCITY * SPRINT_MULTIPLIER : VELOCITY;
+				const float maxSpeed = 3000 /*isRunning ? VELOCITY * SPRINT_MULTIPLIER : VELOCITY*/;
 				const float easeIn = smoothStep(cameraDeltaTime / CAMERA_EASE_IN_TIME_MS);
 				const float easeOut = smoothStep(distance / CAMERA_EASE_OUT_DISTANCE);
 				const float easeFactor = easeIn * easeOut;
