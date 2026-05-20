@@ -36,7 +36,7 @@ namespace Demo {
             }
             this->isSaveMenuOpen = false;
             });
-        btnYes->SetBackgroundColors(D3DXCOLOR(0xFFE0E0E0), D3DXCOLOR(0, 1, 0, 0.3f), D3DXCOLOR(0, 1, 0, 0.6f))
+        btnYes->SetBackgroundColors(D3DXCOLOR(0xFFE0E0E0), 0xFF59c135, 0xFF14a02e)
             ->SetTextColors(0xFF000000, 0xFFFFFFFF, 0xFFFFFFFF)
             ->SetOutline(1.f, D3DXCOLOR(0xFF000000), D3DXCOLOR(0xFF000000), D3DXCOLOR(0xFF000000))
             ->SetPadding(4.f, 4.f);
@@ -50,7 +50,7 @@ namespace Demo {
         btnNo->SetOnReleaseLeft([this](DX9GF::ITrigger* t) {
             this->isSaveMenuOpen = false;
             });
-        btnNo->SetBackgroundColors(D3DXCOLOR(0xFFE0E0E0), D3DXCOLOR(1, 0, 0, 0.3f), D3DXCOLOR(1, 0, 0, 0.6f))
+        btnNo->SetBackgroundColors(D3DXCOLOR(0xFFE0E0E0), 0xFFb4202a, 0xFF73172d)
             ->SetTextColors(0xFF000000, 0xFFFFFFFF, 0xFFFFFFFF)
             ->SetOutline(1.f, D3DXCOLOR(0xFF000000), D3DXCOLOR(0xFF000000), D3DXCOLOR(0xFF000000))
             ->SetPadding(4.f, 4.f);
@@ -104,36 +104,41 @@ namespace Demo {
         if (fontSprite) {
             fontSprite->Begin();
             if (isSaveMenuOpen) {
-                const auto padding = 10.f;
-                const auto promptY = y - 30.f;
-                fontSprite->SetText(L"Do you want to save the game?");
-                fontSprite->SetPosition(x - fontSprite->GetWidth() / 4.f, promptY - fontSprite->GetHeight() / 4.f);
-                if (gd) {
-                    gd->DrawRectangle(
-                        camera,
-                        x - fontSprite->GetWidth() / 4.f - padding,
-                        promptY - fontSprite->GetHeight() / 4.f - padding,
-                        fontSprite->GetWidth() / 2.f + 2 * padding,
-                        fontSprite->GetHeight() / 2.f + 2 * padding,
-                        0xFFE0E0E0, true
-                    );
-                    gd->DrawRectangle(
-                        camera,
-                        x - fontSprite->GetWidth() / 4.f - padding,
-                        promptY - fontSprite->GetHeight() / 4.f - padding,
-                        fontSprite->GetWidth() / 2.f + 2 * padding,
-                        fontSprite->GetHeight() / 2.f + 2 * padding,
-                        0xFF000000, false
-                    );
-                }
-                fontSprite->SetColor(0xFF000000);
-                fontSprite->SetOutline(false);
-                fontSprite->SetScale(0.5f);
-                fontSprite->Draw(camera, deltaTime);
-                fontSprite->End();
+                if (auto bufferLock = drawBuffer.lock()) {
+                    bufferLock->StackCommand(std::make_shared<DX9GF::CustomCommand>([this, x, y, &camera, deltaTime](std::function<void(void)> markFinished) {
+                        const auto padding = 10.f;
+                        const auto promptY = y - 30.f;
+                        fontSprite->SetText(L"Do you want to save the game?");
+                        fontSprite->SetPosition(x - fontSprite->GetWidth() / 4.f, promptY - fontSprite->GetHeight() / 4.f);
+                        if (gd) {
+                            gd->DrawRectangle(
+                                camera,
+                                x - fontSprite->GetWidth() / 4.f - padding,
+                                promptY - fontSprite->GetHeight() / 4.f - padding,
+                                fontSprite->GetWidth() / 2.f + 2 * padding,
+                                fontSprite->GetHeight() / 2.f + 2 * padding,
+                                0xFFE0E0E0, true
+                            );
+                            gd->DrawRectangle(
+                                camera,
+                                x - fontSprite->GetWidth() / 4.f - padding,
+                                promptY - fontSprite->GetHeight() / 4.f - padding,
+                                fontSprite->GetWidth() / 2.f + 2 * padding,
+                                fontSprite->GetHeight() / 2.f + 2 * padding,
+                                0xFF000000, false
+                            );
+                        }
+                        fontSprite->SetColor(0xFF000000);
+                        fontSprite->SetOutline(false);
+                        fontSprite->SetScale(0.5f);
+                        fontSprite->Draw(camera, deltaTime);
+                        fontSprite->End();
 
-                btnYes->Draw(gd, deltaTime);
-                btnNo->Draw(gd, deltaTime);
+                        btnYes->Draw(gd, deltaTime);
+                        btnNo->Draw(gd, deltaTime);
+                        markFinished();
+                        }));
+                }
             }
             else if (isPlayerNear) {
                 fontSprite->End();
