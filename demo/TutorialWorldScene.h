@@ -17,6 +17,7 @@
 namespace Demo {
 	class TutorialWorldScene : public DX9GF::IScene, public DX9GF::ISaveable {
 		bool isGamePaused = false;
+		bool isTransitioning = false;
 		Game* game;
 		DX9GF::Camera uiCamera;
 		std::shared_ptr<DX9GF::ColliderManager> colliderManager;

@@ -20,7 +20,7 @@ namespace Demo {
 	private:
 		const float maxHealth;
 	protected:
-     int goldReward = 0;
+		int goldReward = 0;
 	   struct DamageIndicator {
 			std::wstring text;
 			float offsetX = 0.f;

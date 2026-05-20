@@ -23,15 +23,15 @@ Demo::CardShop::CardShop(Game* game, Player* player, int sw, int sh, ShopTier ti
 
 void Demo::CardShop::LoadItems()
 {
-	const int StrikeCardCost = 50;
-	const int HeavyStrikeCardCost = 100;
-	const int PoisonCardCost = 125;
-	const int TwinStrikeCardCost = 90;
-	const int CleaveCardCost = 100;
-	const int VulnerableCardCost = 200;
-	const int WeaknessCardCost = 150;
-	const int ChainLightningCardCost = 250;
-	const int StunCardCost = 500;
+	const int StrikeCardCost = 30;
+	const int HeavyStrikeCardCost = 70;
+	const int PoisonCardCost = 50;
+	const int TwinStrikeCardCost = 40;
+	const int CleaveCardCost = 40;
+	const int VulnerableCardCost = 65;
+	const int WeaknessCardCost = 85;
+	const int ChainLightningCardCost = 100;
+	const int StunCardCost = 300;
     switch (currentTier) {
 	case ShopTier::BASIC:
        AddShopCard("Strike Card", StrikeCardCost, StrikeCard(this->transformManager).GetDescription(), [this]() {

@@ -87,6 +87,8 @@ namespace Demo {
 		std::shared_ptr<DX9GF::StaticSprite> energyIcon;
 		std::shared_ptr<DX9GF::StaticSprite> hourglassIcon;
 		std::shared_ptr<DX9GF::StaticSprite> itemMenuBackground;
+		std::shared_ptr<DX9GF::StaticSprite> attackBuffIcon;
+		std::shared_ptr<DX9GF::StaticSprite> defenseBuffIcon;
 		//
 		std::function<void()> onVictoryCallback = nullptr;
 		//
@@ -116,6 +118,7 @@ namespace Demo {
 		void PlayerAttackDraw(unsigned long long deltaTime);
 		void PlayerOpenItemsDraw(unsigned long long deltaTime);
 		void EnemyAttackDraw(unsigned long long deltaTime);
+		void DrawHealthAndDefenseBar(const float y, DX9GF::GraphicsDevice* gd);
 	public:
 		IBattleScene(Game* game, std::shared_ptr<Player> player, int screenWidth, int screenHeight) : IScene(screenWidth, screenHeight), game(game), player(player) {}
 		virtual void Init() override;

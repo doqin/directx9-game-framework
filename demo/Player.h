@@ -75,7 +75,7 @@ namespace Demo {
 			float scaleY = 1
 		) : IGameObject(transformManager, parent, x, y, rotation, scaleX, scaleY) {}
 		~Player();
-		void Init(DX9GF::GraphicsDevice* graphicsDevice, DX9GF::ColliderManager* colliderManager, DX9GF::Camera* camera);
+		void Init(DX9GF::GraphicsDevice* graphicsDevice, DX9GF::ColliderManager* colliderManager, DX9GF::Camera* camera, bool isBattling = false);
 		void Update(unsigned long long deltaTime);
 		void Draw(unsigned long long deltaTime);
 		void SetFollowCamera(bool followCamera);

@@ -97,7 +97,7 @@ Demo::Player::~Player() {
 	colliderManager->Remove(collider);
 }
 
-void Demo::Player::Init(DX9GF::GraphicsDevice* graphicsDevice, DX9GF::ColliderManager* colliderManager, DX9GF::Camera* camera) {
+void Demo::Player::Init(DX9GF::GraphicsDevice* graphicsDevice, DX9GF::ColliderManager* colliderManager, DX9GF::Camera* camera, bool isBattling) {
 	// External components
 	this->graphicsDevice = graphicsDevice;
 	this->colliderManager = colliderManager;
@@ -133,9 +133,9 @@ void Demo::Player::Init(DX9GF::GraphicsDevice* graphicsDevice, DX9GF::ColliderMa
 	walkingRight->SetFrameRate(12);
 	walkingLeft->SetFrameRate(12);
 	// Create collider
-	collider = std::make_shared<DX9GF::RectangleCollider>(transformManager, shared_from_this(), 8, 4, 0, 14);
+	collider = std::make_shared<DX9GF::RectangleCollider>(transformManager, shared_from_this(), 8, 4, 0, isBattling ? 6 : 14);
 	collider->SetOriginCenter();
-	deck = { "StrikeCard", "StrikeCard", "StrikeCard" };
+	deck = { "StrikeCard", "StrikeCard", "StrikeCard", "TwinStrikeCard", "TwinStrikeCard" };
 	this->colliderManager->Add(collider);
 	inventoryItems.InitFixedInventory(12);
 }
@@ -206,7 +206,7 @@ void Demo::Player::Update(unsigned long long deltaTime) {
 			}
 			else {
 				cameraDeltaTime += deltaTime;
-				const float maxSpeed = isRunning ? VELOCITY * SPRINT_MULTIPLIER : VELOCITY;
+				const float maxSpeed = 3000 /*isRunning ? VELOCITY * SPRINT_MULTIPLIER : VELOCITY*/;
 				const float easeIn = smoothStep(cameraDeltaTime / CAMERA_EASE_IN_TIME_MS);
 				const float easeOut = smoothStep(distance / CAMERA_EASE_OUT_DISTANCE);
 				const float easeFactor = easeIn * easeOut;
