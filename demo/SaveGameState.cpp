@@ -3,6 +3,7 @@
 #include "Game.h"
 #include "Player.h"
 #include "TutorialWorldScene.h"
+#include "SecretPuzzleScene.h"
 #include "ThreadAlleyScene.h"
 #include "BossWorldScene.h"
 
@@ -16,6 +17,8 @@ namespace Demo {
         auto sceneManager = game->GetSceneManager();
         sceneManager->PushScene(new TutorialWorldScene(game, saveManager, app->GetScreenWidth(), app->GetScreenHeight()));
         sceneMap["TutorialWorldScene"] = sceneManager->GetSceneCount() - 1;
+		sceneManager->PushScene(new SecretPuzzleScene(game, saveManager, app->GetScreenWidth(), app->GetScreenHeight()));
+		sceneMap["SecretPuzzleScene"] = sceneManager->GetSceneCount() - 1;
         sceneManager->PushScene(new ThreadAlleyScene(game, saveManager, app->GetScreenWidth(), app->GetScreenHeight()));
         sceneMap["ThreadAlleyScene"] = sceneManager->GetSceneCount() - 1;
         sceneManager->PushScene(new BossWorldScene(game, saveManager, app->GetScreenWidth(), app->GetScreenHeight()));
@@ -32,6 +35,9 @@ namespace Demo {
     std::shared_ptr<Player> SaveGameState::GetPlayerFromScene(DX9GF::IScene* scene) const {
         if (auto tutorialScene = dynamic_cast<Demo::TutorialWorldScene*>(scene)) {
             return tutorialScene->GetPlayer();
+        }
+        if (auto secretScene = dynamic_cast<Demo::SecretPuzzleScene*>(scene)) {
+            return secretScene->GetPlayer();
         }
         if (auto threadScene = dynamic_cast<Demo::ThreadAlleyScene*>(scene)) {
             return threadScene->GetPlayer();

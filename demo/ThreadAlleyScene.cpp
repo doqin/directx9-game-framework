@@ -28,7 +28,6 @@ void Demo::ThreadAlleyScene::Init()
 	map->SetAreaUpdateHandler("triggers", GetRandomEncounterFunc(game, player, {
 		{"VampireBatEnemy", 40},
 		{"MimicEnemy", 25},
-		{"WarlockEnemy", 20},
 		}, drawBuffer, commandBuffer, &isGamePaused, [this](DX9GF::GraphicsDevice* gd, unsigned long long deltaTime) { DrawCheckerBackground(gd, deltaTime); }));
 
 	map->SetAreaUpdateHandler("trigger_p", [this](const DX9GF::Map::ObjectArea& area) {
@@ -227,8 +226,6 @@ void Demo::ThreadAlleyScene::Update(unsigned long long deltaTime)
 
 	bool isGamePaused = this->isGamePaused;
 
-	if (!isGamePaused) map->UpdateAreas(player->GetWorldX(), player->GetWorldY());
-
 	for (auto& savePoint : savePoints) {
 		savePoint->Update(deltaTime);
 		if (savePoint->IsMenuOpen()) isGamePaused = true;
@@ -253,7 +250,7 @@ void Demo::ThreadAlleyScene::Update(unsigned long long deltaTime)
 	}
 
 	transformManager->UpdateAll();
-
+	if (!isGamePaused) map->UpdateAreas(player->GetWorldX(), player->GetWorldY());
 
 	if (draggableManager && inventoryMenu && inventoryMenu->IsOpen() && inventoryMenu->GetCurrentTab() == Demo::InventoryMenu::Tab::DECK) {
 		draggableManager->Update(deltaTime);

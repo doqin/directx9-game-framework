@@ -159,60 +159,6 @@ void Demo::BossWorldScene::Init() {
 		this->currentIslandID = 3;
 		});
 
-	//optional battle to get key
-	map->SetAreaUpdateHandler("trigger_battle_rusty_key", [this](const DX9GF::Map::ObjectArea& area) {
-		if (!player->IsWalking()) return;
-
-		bool hasRustyKey = player->GetInventoryItems().HasItem(10);
-		if (!hasRustyKey && !this->isMimicDead) {
-
-			std::map<std::string, int> forcedEnemyMap = { {"CupidEnemy", 100} };
-
-			auto demoGame = dynamic_cast<Demo::Game*>(this->game);
-			auto app = DX9GF::Application::GetInstance();
-
-			auto battleScene = new CustomBattleScene(demoGame, player, app->GetScreenWidth(), app->GetScreenHeight(), forcedEnemyMap);
-
-			battleScene->SetOnVictoryCallback([this]() {
-				this->isMimicDead = true;
-				});
-
-			battleScene->SetCustomBackgroundDraw([](DX9GF::GraphicsDevice*, unsigned long long) {});
-
-			auto sceMan = this->game->GetSceneManager();
-			sceMan->InsertScene(sceMan->GetIndex() + 1, battleScene);
-
-			commandBuffer->PushCommand(std::make_shared<DX9GF::CustomCommand>([this](std::function<void()> markFinished) {
-				this->isGamePaused = true;
-				markFinished();
-				}));
-
-			auto transitionInCommand = std::make_shared<TransitionCommand>(this->game->GetGraphicsDevice(), 1.f, true);
-			drawBuffer->StackCommand(transitionInCommand);
-
-			commandBuffer->PushCommand(std::make_shared<DX9GF::CustomCommand>([sceMan, transitionInCommand, this](std::function<void()> markFinished) {
-				if (!transitionInCommand->IsFinished()) {
-					return;
-				}
-				sceMan->GoToNext();
-				markFinished();
-				}));
-
-			drawBuffer->PushCommand(std::make_shared<TransitionCommand>(this->game->GetGraphicsDevice(), 1.f, false));
-
-			//check battle result and give key
-			drawBuffer->PushCommand(std::make_shared<DX9GF::CustomCommand>([this](std::function<void()> markFinished) {
-				this->isGamePaused = false;
-
-				if (this->isMimicDead) {
-					this->player->GetInventoryItems().AddItem(10, 1);
-				}
-
-				markFinished();
-				}));
-		}
-		});
-
 	map->SetAreaUpdateHandler("trigger_battle_boss", [this](const DX9GF::Map::ObjectArea& area) {
 		if (!player->IsWalking()) return;
 
@@ -360,8 +306,6 @@ void Demo::BossWorldScene::Update(unsigned long long deltaTime) {
 
 	bool isGamePaused = this->isGamePaused;
 
-	if (!isGamePaused) map->UpdateAreas(player->GetWorldX(), player->GetWorldY());
-
 	if (npcHint) {
 		npcHint->Update(deltaTime);
 		if (!currentConversation && npcHint->CanInteract() && inpMan->KeyPress(DIK_E)) {
@@ -427,6 +371,7 @@ void Demo::BossWorldScene::Update(unsigned long long deltaTime) {
 	}
 
 	transformManager->UpdateAll();
+	if (!isGamePaused) map->UpdateAreas(player->GetWorldX(), player->GetWorldY());
 
 	if (draggableManager && inventoryMenu && inventoryMenu->IsOpen() && inventoryMenu->GetCurrentTab() == Demo::InventoryMenu::Tab::DECK) {
 		draggableManager->Update(deltaTime);
