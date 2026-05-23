@@ -32,11 +32,32 @@ void Demo::TutorialWorldScene::Init()
 		nlohmann::json saveData;
 		player->GenerateSaveGlobalData(saveData["player"]);
 		auto sceMan = game->GetSceneManager();
-		MainMenu::gameSaveState->GetPlayerFromScene(sceMan->GetScene(static_cast<size_t>(sceMan->GetIndex()) + 1))->RestoreSaveGlobalData(saveData["player"]);
-		sceMan->GoToNext();
+		MainMenu::gameSaveState->GetPlayerFromScene(sceMan->GetScene(static_cast<size_t>(sceMan->GetIndex()) + 2))->RestoreSaveGlobalData(saveData["player"]);
+		sceMan->GoToScene(sceMan->GetIndex() + 2);
 		isTransitioning = false;
 		markFinished();
 		}));
+		drawBuffer->PushCommand(std::make_shared<TransitionCommand>(game->GetGraphicsDevice(), 1.f, false));
+	});
+	map->SetAreaUpdateHandler("trigger_secret", [this](const DX9GF::Map::ObjectArea& area) {if (isTransitioning) return;
+		isTransitioning = true;
+		auto transitionInCommand = std::make_shared<TransitionCommand>(game->GetGraphicsDevice(), 1.f, true);
+		drawBuffer->PushCommand(transitionInCommand);
+		commandBuffer->PushCommand(std::make_shared<DX9GF::CustomCommand>([this, transitionInCommand](std::function<void(void)> markFinished) {
+			if (!transitionInCommand->IsFinished()) {
+				return;
+			}
+			nlohmann::json saveData;
+			player->GenerateSaveGlobalData(saveData["player"]);
+			auto sceMan = game->GetSceneManager();
+			auto targetScene = sceMan->GetScene(static_cast<size_t>(sceMan->GetIndex()) + 1);
+			auto targetPlayer = MainMenu::gameSaveState->GetPlayerFromScene(targetScene);
+			targetPlayer->RestoreSaveGlobalData(saveData["player"]);
+			targetPlayer->SetLocalPosition(-84 * 16, -39 * 16);
+			sceMan->GoToNext();
+			isTransitioning = false;
+			markFinished();
+			}));
 		drawBuffer->PushCommand(std::make_shared<TransitionCommand>(game->GetGraphicsDevice(), 1.f, false));
 	});
 	font = std::make_shared<DX9GF::Font>(game->GetGraphicsDevice(), L"StatusPlz", 16);
@@ -127,7 +148,6 @@ void Demo::TutorialWorldScene::Update(unsigned long long deltaTime)
 
 	bool isGamePaused = this->isGamePaused;
 
-	if (!isGamePaused) map->UpdateAreas(player->GetWorldX(), player->GetWorldY());
 	if (npcIntroduction) {
 		npcIntroduction->Update(deltaTime);
 		if (!currentConversation && npcIntroduction->CanInteract() && inpMan->KeyPress(DIK_E)) {
@@ -196,6 +216,7 @@ void Demo::TutorialWorldScene::Update(unsigned long long deltaTime)
 	}
 
 	transformManager->UpdateAll();
+	if (!isGamePaused) map->UpdateAreas(player->GetWorldX(), player->GetWorldY());
 
 
 	if (draggableManager && inventoryMenu && inventoryMenu->IsOpen() && inventoryMenu->GetCurrentTab() == Demo::InventoryMenu::Tab::DECK) {
