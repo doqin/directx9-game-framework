@@ -180,6 +180,7 @@
     <Image Include="Shop.png" />
     <Image Include="bubble-Sheet.png" />
     <Image Include="bubbleprojectile.png" />
+    <Image Include="secretpuzzle.png" />
   </ItemGroup>
   <ItemGroup>
     <Font Include="arcade-among-2-r46pv.ttf" />
@@ -201,5 +202,6 @@
     <None Include="XP.tsx" />
     <None Include="icon.tsx" />
     <None Include="Shop.tsx" />
+    <None Include="secretpuzzle.tsx" />
   </ItemGroup>
 </Project>
