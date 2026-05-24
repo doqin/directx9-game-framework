@@ -356,6 +356,9 @@
     <None Include="SecretPuzzle.tmx">
       <DeploymentContent>true</DeploymentContent>
     </None>
+    <None Include="secretpuzzle.tsx">
+      <DeploymentContent>true</DeploymentContent>
+    </None>
     <None Include="Shop.tsx">
       <DeploymentContent>true</DeploymentContent>
     </None>
@@ -455,6 +458,9 @@
       <DeploymentContent>true</DeploymentContent>
     </Image>
     <Image Include="savepoint-Sheet.png">
+      <DeploymentContent>true</DeploymentContent>
+    </Image>
+    <Image Include="secretpuzzle.png">
       <DeploymentContent>true</DeploymentContent>
     </Image>
     <Image Include="Shop-Sheet.png">
