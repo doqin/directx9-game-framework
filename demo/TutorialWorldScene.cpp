@@ -4,6 +4,7 @@
 #include "MainMenu.h"
 #include "SaveGameState.h"
 #include "TransitionCommand.h"
+#include "resource.h"
 
 void Demo::TutorialWorldScene::Init()
 {
@@ -22,10 +23,10 @@ void Demo::TutorialWorldScene::Init()
 		{"MimicEnemy", 20},
 		}, drawBuffer, commandBuffer, &isGamePaused, [this](DX9GF::GraphicsDevice* gd, unsigned long long deltaTime) { DrawBackground(gd, deltaTime); }));
 	map->SetAreaUpdateHandler("trigger_p", [this](const DX9GF::Map::ObjectArea& area) {if (isTransitioning) return;
-		isTransitioning = true;
-		auto transitionInCommand = std::make_shared<TransitionCommand>(game->GetGraphicsDevice(), 1.f, true);
-		drawBuffer->PushCommand(transitionInCommand);
-		commandBuffer->PushCommand(std::make_shared<DX9GF::CustomCommand>([this, transitionInCommand](std::function<void(void)> markFinished) {
+	isTransitioning = true;
+	auto transitionInCommand = std::make_shared<TransitionCommand>(game->GetGraphicsDevice(), 1.f, true);
+	drawBuffer->PushCommand(transitionInCommand);
+	commandBuffer->PushCommand(std::make_shared<DX9GF::CustomCommand>([this, transitionInCommand](std::function<void(void)> markFinished) {
 		if (!transitionInCommand->IsFinished()) {
 			return;
 		}
@@ -37,31 +38,31 @@ void Demo::TutorialWorldScene::Init()
 		isTransitioning = false;
 		markFinished();
 		}));
-		drawBuffer->PushCommand(std::make_shared<TransitionCommand>(game->GetGraphicsDevice(), 1.f, false));
-	});
+	drawBuffer->PushCommand(std::make_shared<TransitionCommand>(game->GetGraphicsDevice(), 1.f, false));
+		});
 	map->SetAreaUpdateHandler("trigger_secret", [this](const DX9GF::Map::ObjectArea& area) {if (isTransitioning) return;
-		isTransitioning = true;
-		auto transitionInCommand = std::make_shared<TransitionCommand>(game->GetGraphicsDevice(), 1.f, true);
-		drawBuffer->PushCommand(transitionInCommand);
-		commandBuffer->PushCommand(std::make_shared<DX9GF::CustomCommand>([this, transitionInCommand](std::function<void(void)> markFinished) {
-			if (!transitionInCommand->IsFinished()) {
-				return;
-			}
-			nlohmann::json saveData;
-			player->GenerateSaveGlobalData(saveData["player"]);
-			auto sceMan = game->GetSceneManager();
-			auto targetScene = sceMan->GetScene(static_cast<size_t>(sceMan->GetIndex()) + 1);
-			auto targetPlayer = MainMenu::gameSaveState->GetPlayerFromScene(targetScene);
-			targetPlayer->RestoreSaveGlobalData(saveData["player"]);
-			targetPlayer->SetLocalPosition(-84 * 16, -39 * 16);
-			sceMan->GoToNext();
-			isTransitioning = false;
-			markFinished();
-			}));
-		drawBuffer->PushCommand(std::make_shared<TransitionCommand>(game->GetGraphicsDevice(), 1.f, false));
-	});
+	isTransitioning = true;
+	auto transitionInCommand = std::make_shared<TransitionCommand>(game->GetGraphicsDevice(), 1.f, true);
+	drawBuffer->PushCommand(transitionInCommand);
+	commandBuffer->PushCommand(std::make_shared<DX9GF::CustomCommand>([this, transitionInCommand](std::function<void(void)> markFinished) {
+		if (!transitionInCommand->IsFinished()) {
+			return;
+		}
+		nlohmann::json saveData;
+		player->GenerateSaveGlobalData(saveData["player"]);
+		auto sceMan = game->GetSceneManager();
+		auto targetScene = sceMan->GetScene(static_cast<size_t>(sceMan->GetIndex()) + 1);
+		auto targetPlayer = MainMenu::gameSaveState->GetPlayerFromScene(targetScene);
+		targetPlayer->RestoreSaveGlobalData(saveData["player"]);
+		targetPlayer->SetLocalPosition(-84 * 16, -39 * 16);
+		sceMan->GoToNext();
+		isTransitioning = false;
+		markFinished();
+		}));
+	drawBuffer->PushCommand(std::make_shared<TransitionCommand>(game->GetGraphicsDevice(), 1.f, false));
+		});
 	font = std::make_shared<DX9GF::Font>(game->GetGraphicsDevice(), L"StatusPlz", 16);
-	
+
 	npcIntroduction = std::make_shared<DauDauNPC>(transformManager, 167.0f, -18.0f);
 	npcIntroduction->Init(game->GetGraphicsDevice(), player, colliderManager, font, drawBuffer);
 	npcIntroduction->AddLine(L"Dau Dau", L"Hello! Welcome.");
@@ -98,7 +99,7 @@ void Demo::TutorialWorldScene::Init()
 	shopPoint_Card = std::make_shared<ShopPoint>(transformManager, 183.0f, -460.0f);
 	shopPoint_Card->Init(game, game->GetGraphicsDevice(), &camera, player, colliderManager, font, drawBuffer,
 		[](Game* g, Player* p, int w, int h) {
-            return new CardShop(g, p, w, h, ShopTier::BASIC);
+			return new CardShop(g, p, w, h, ShopTier::BASIC);
 		}
 	);
 	shopPoint_Card->SetVisible(true);
@@ -118,6 +119,16 @@ void Demo::TutorialWorldScene::Init()
 	draggableManager = std::make_shared<Demo::DraggableManager>();
 	inventoryMenu = std::make_shared<InventoryMenu>(game, player, transformManager, draggableManager, &uiCamera, font.get());
 	inventoryMenu->Init();
+
+	player->SetBaseSurface("default");
+
+	map->SetAreaUpdateHandler("audio_zone_leaves", [this](const DX9GF::Map::ObjectArea&) {
+		GetPlayer()->SetSurface("leaves");
+		});
+
+	map->SetAreaUpdateHandler("audio_zone_metal", [this](const DX9GF::Map::ObjectArea&) {
+		GetPlayer()->SetSurface("metal");
+		});
 
 	ItemData::GetInstance()->LoadData();
 	this->GiveTestItems();

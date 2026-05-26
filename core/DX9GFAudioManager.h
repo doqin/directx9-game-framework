@@ -51,6 +51,7 @@ namespace DX9GF {
 
 	struct ActiveVoice
 	{
+		std::string name; //identify
 		IXAudio2SourceVoice* pVoice;
 		VoiceCallback* pCallback;
 		AudioType type;
@@ -64,6 +65,7 @@ namespace DX9GF {
 		IXAudio2* pEngine = nullptr;              //control XAudio2
 		IXAudio2MasteringVoice* pMasterVoice = nullptr; //output
 		std::map<std::string, SoundBuffer*> cache; //cache will save the loaded file (avoid disk loading latency)
+		std::map<std::string, std::vector<std::string>> soundBanks;
 		std::vector<ActiveVoice*> activeVoices; //list of playing sound
 
 		//settings manager will push values to these vars
@@ -71,10 +73,11 @@ namespace DX9GF {
 		float currentSfxVolume = 1.0f;
 
 		AudioManager() {}
-		~AudioManager() { if (instance) delete instance; }
+		~AudioManager() {}
 		static AudioManager* instance;
 	public:
 		static AudioManager* GetInstance();
+		static void DestroyInstance();
 		bool Init();
 
 		//load sound from file to cache
@@ -82,11 +85,17 @@ namespace DX9GF {
 
 		void Play(std::string name, bool loop = false, float volume = 1.0f, AudioType type = AudioType::SFX);
 		void Update();
+		void Stop(std::string name);
+		void StopAll();
 		void Shutdown();
 
 		//set game volume
 		void SetMasterVolume(float volume);
 		void SetMusicVolume(float volume);
 		void SetSfxVolume(float volume);
+		
+		//manage various types of footstep
+		void RegisterBank(std::string bankName, std::vector<std::string> soundNames);
+		void PlayRandom(std::string bankName, float volume = 1.0f, AudioType type = AudioType::SFX);
 	};
 }

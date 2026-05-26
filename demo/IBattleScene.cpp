@@ -84,6 +84,7 @@ void Demo::IBattleScene::OnAllEnemiesDefeated()
 
 	player->AddGold(finalGold);
 	popUpMessage->QueueMessage(&commandBuffer, L"You earned " + std::to_wstring(finalGold) + L" gold!", 1.5f);
+	DX9GF::AudioManager::GetInstance()->Play("coin_gather", false, 0.8f);
 
 	if (onVictoryCallback != nullptr) {
 		onVictoryCallback();
@@ -126,6 +127,7 @@ void Demo::IBattleScene::DrawCards(size_t count)
 		std::vector<std::shared_ptr<DX9GF::ICommand>> commands = {
 			std::make_shared<DX9GF::SetPositionCommand>(card, -static_cast<float>(screenWidth), y),
 			std::make_shared<DX9GF::CustomCommand>([this, card](std::function<void(void)> markFinished) {
+				DX9GF::AudioManager::GetInstance()->PlayRandom("card_draw", 0.3f);
 				this->queuedToDraw.push_back(card);
 				markFinished();
 			}),
@@ -159,6 +161,7 @@ void Demo::IBattleScene::ShuffleDiscardIntoDrawPile()
 		drawPile.push_back(card);
 	}
 	discardPile.clear();
+	DX9GF::AudioManager::GetInstance()->PlayRandom("card_draw", 0.6f);
 }
 
 void Demo::IBattleScene::MovePlayedPileToDiscardPileIfNeeded()

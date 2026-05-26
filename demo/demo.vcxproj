@@ -383,6 +383,7 @@
     <None Include="uiter.aseprite">
       <DeploymentContent>false</DeploymentContent>
     </None>
+    <None Include="wave1.bin" />
     <None Include="XP.tsx">
       <DeploymentContent>true</DeploymentContent>
     </None>
@@ -534,6 +535,55 @@
     <Font Include="statusplz.ttf">
       <DeploymentContent>true</DeploymentContent>
     </Font>
+  </ItemGroup>
+  <ItemGroup>
+    <Media Include="assets\audio\access_denied.wav" />
+    <Media Include="assets\audio\access_granted.wav" />
+    <Media Include="assets\audio\button-click.wav" />
+    <Media Include="assets\audio\button-hover.wav" />
+    <Media Include="assets\audio\buy_item.wav" />
+    <Media Include="assets\audio\card_draw1.wav" />
+    <Media Include="assets\audio\card_draw2.wav" />
+    <Media Include="assets\audio\card_draw3.wav" />
+    <Media Include="assets\audio\card_draw4.wav" />
+    <Media Include="assets\audio\card_snap.wav" />
+    <Media Include="assets\audio\coins_gather.wav" />
+    <Media Include="assets\audio\dead.wav" />
+    <Media Include="assets\audio\error.wav" />
+    <Media Include="assets\audio\hurt1.wav" />
+    <Media Include="assets\audio\hurt2.wav" />
+    <Media Include="assets\audio\hurt3.wav" />
+    <Media Include="assets\audio\hurt4.wav" />
+    <Media Include="assets\audio\hurt5.wav" />
+    <Media Include="assets\audio\inventory_close.wav" />
+    <Media Include="assets\audio\inventory_open.wav" />
+    <Media Include="assets\audio\step_concrete1.wav" />
+    <Media Include="assets\audio\step_concrete2.wav" />
+    <Media Include="assets\audio\step_concrete3.wav" />
+    <Media Include="assets\audio\step_concrete4.wav" />
+    <Media Include="assets\audio\step_default1.wav" />
+    <Media Include="assets\audio\step_default2.wav" />
+    <Media Include="assets\audio\step_default3.wav" />
+    <Media Include="assets\audio\step_default4.wav" />
+    <Media Include="assets\audio\step_dirt1.wav" />
+    <Media Include="assets\audio\step_dirt2.wav" />
+    <Media Include="assets\audio\step_dirt3.wav" />
+    <Media Include="assets\audio\step_dirt4.wav" />
+    <Media Include="assets\audio\step_dirt5.wav" />
+    <Media Include="assets\audio\step_leaves1.wav" />
+    <Media Include="assets\audio\step_leaves2.wav" />
+    <Media Include="assets\audio\step_leaves3.wav" />
+    <Media Include="assets\audio\step_leaves4.wav" />
+    <Media Include="assets\audio\step_metal1.wav" />
+    <Media Include="assets\audio\step_metal2.wav" />
+    <Media Include="assets\audio\step_metal3.wav" />
+    <Media Include="assets\audio\step_metal4.wav" />
+    <Media Include="assets\audio\step_metal5.wav" />
+    <Media Include="assets\audio\step_vinyl1.wav" />
+    <Media Include="assets\audio\step_vinyl2.wav" />
+    <Media Include="assets\audio\step_vinyl3.wav" />
+    <Media Include="assets\audio\step_vinyl4.wav" />
+    <Media Include="Sounds\button-hover.wav" />
   </ItemGroup>
   <Import Project="$(VCTargetsPath)\Microsoft.Cpp.targets" />
   <ImportGroup Label="ExtensionTargets">

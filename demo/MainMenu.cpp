@@ -241,19 +241,7 @@ namespace Demo
 		int currentWidth = app->GetScreenWidth();
 		int currentHeight = app->GetScreenHeight();
 
-		static float timer = 0;
-		timer += deltaTime;
-		if (timer > 0) {
-			std::ifstream f("savegame.json");
-			if (f.good()) {
-				continueButton->SetState(IButton::ButtonState::IDLE);
-			}
-			else {
-				continueButton->SetState(IButton::ButtonState::DISABLED);
-			}
-			f.close();
-			timer = 0;
-		}
+		//i removed the timer check for savegame.json here becuz it keeps spamming the audio. i think init() did a good job checking on savegame already
 
 		UpdateLayout(currW, currH);
 

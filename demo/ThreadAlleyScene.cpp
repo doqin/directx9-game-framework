@@ -7,6 +7,7 @@
 #include "MainMenu.h"
 #include "SaveGameState.h"
 #include "TransitionCommand.h"
+#include "resource.h"
 
 void Demo::ThreadAlleyScene::Init()
 {
@@ -196,6 +197,25 @@ void Demo::ThreadAlleyScene::Init()
 	draggableManager = std::make_shared<Demo::DraggableManager>();
 	inventoryMenu = std::make_shared<InventoryMenu>(game, player, transformManager, draggableManager, &uiCamera, font.get());
 	inventoryMenu->Init();
+
+	auto audio = DX9GF::AudioManager::GetInstance();
+
+	// 1. Load file wav
+	audio->Load("step_c1", IDR_STEP_C1);
+	audio->Load("step_c2", IDR_STEP_C2);
+	audio->Load("step_c3", IDR_STEP_C3);
+	audio->Load("step_c4", IDR_STEP_C4);
+
+	audio->RegisterBank("step_concrete", { "step_c1", "step_c2", "step_c3", "step_c4"});
+	player->SetBaseSurface("concrete");
+
+	map->SetAreaUpdateHandler("audio_zone_leaves", [this](const DX9GF::Map::ObjectArea&) {
+		GetPlayer()->SetSurface("leaves");
+		});
+
+	map->SetAreaUpdateHandler("audio_zone_metal", [this](const DX9GF::Map::ObjectArea&) {
+		GetPlayer()->SetSurface("metal");
+		});
 
 	ItemData::GetInstance()->LoadData();
 	this->GiveTestItems();

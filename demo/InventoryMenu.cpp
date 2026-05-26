@@ -1,6 +1,8 @@
 ﻿#include "pch.h"
 #include "InventoryMenu.h"
 #include "SettingsScene.h"
+#include "DX9GFAudioManager.h"
+
 namespace {
 	constexpr float RAW_ITEM_W = 23.0f;
 	constexpr float RAW_ITEM_H = 35.0f;
@@ -102,6 +104,7 @@ namespace Demo {
 		isOpen = !isOpen;
 		if (isOpen) {
 			RefreshItemsUI();
+			DX9GF::AudioManager::GetInstance()->Play("open_inv");
 			backBufferTexture = std::make_shared<DX9GF::Texture>(game->GetGraphicsDevice());
 			backBufferTexture->CaptureCurrentBackBuffer();
 			backBufferSprite = std::make_shared<DX9GF::StaticSprite>(backBufferTexture.get());
@@ -116,6 +119,7 @@ namespace Demo {
 			}
 		}
 		else {
+			DX9GF::AudioManager::GetInstance()->Play("close_inv");
 			player->ClearDeck();
 			for (auto& weakChild : deckContainer->GetChildren()) {
 				if (auto child = weakChild.lock()) {

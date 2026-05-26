@@ -1,12 +1,67 @@
-#include "pch.h"
+﻿#include "pch.h"
 #include "Game.h"
 #include "DebugScene.h"
 #include "World1Scene.h"
 #include "MainMenu.h"
 #include "SettingsScene.h"
+#include "DX9GFAudioManager.h"
+#include "resource.h"
 void Demo::Game::Init()
 {
+	srand(static_cast<unsigned int>(time(NULL)));
 	IGame::Init();
+
+	auto audio = DX9GF::AudioManager::GetInstance();
+	audio->Init();
+	audio->Load("btn_hover", IDR_WAV_HOVER);
+	audio->Load("btn_click", IDR_WAV_CLICK);
+	audio->Load("open_inv", IDR_WAVE_OPEN_INV);
+	audio->Load("close_inv", IDR_WAVE_CLOSE_INV);
+
+	// 2. NẠP ÂM THANH BƯỚC CHÂN (GLOBAL)
+	audio->Load("step_d1", IDR_STEP_D1);
+	audio->Load("step_d2", IDR_STEP_D2);
+	audio->Load("step_d3", IDR_STEP_D3);
+	audio->Load("step_d4", IDR_STEP_D4);
+
+	audio->Load("step_l1", IDR_STEP_L1);
+	audio->Load("step_l2", IDR_STEP_L2);
+	audio->Load("step_l3", IDR_STEP_L3);
+	audio->Load("step_l4", IDR_STEP_L4);
+
+	audio->Load("step_m1", IDR_STEP_M1);
+	audio->Load("step_m2", IDR_STEP_M2);
+	audio->Load("step_m3", IDR_STEP_M3);
+	audio->Load("step_m4", IDR_STEP_M4);
+	audio->Load("step_m5", IDR_STEP_M5);
+
+	audio->RegisterBank("step_default", { "step_d1", "step_d2", "step_d3", "step_d4" });
+	audio->RegisterBank("step_leaves", { "step_l1", "step_l2", "step_l3", "step_l4" });
+	audio->RegisterBank("step_metal", { "step_m1", "step_m2", "step_m3", "step_m4", "step_m5" });
+
+	audio->Load("shop_buy", IDR_SHOP_BUY);
+	audio->Load("error", IDR_WAV_ERROR);
+
+	audio->Load("card_draw1", IDR_CARD_DRAW1);
+	audio->Load("card_draw2", IDR_CARD_DRAW2);
+	audio->Load("card_draw3", IDR_CARD_DRAW3);
+	audio->Load("card_draw4", IDR_CARD_DRAW4);
+
+	audio->RegisterBank("card_draw", { "card_draw1", "card_draw2", "card_draw3", "card_draw4" });
+
+	audio->Load("hurt1", IDR_HURT1);
+	audio->Load("hurt2", IDR_HURT2);
+	audio->Load("hurt3", IDR_HURT3);
+	audio->Load("hurt4", IDR_HURT4);
+	audio->Load("hurt5", IDR_HURT5);
+
+	audio->RegisterBank("take_dmg", { "hurt1", "hurt2", "hurt3", "hurt4", "hurt5" });
+
+	audio->Load("player_dead", IDR_PLAYER_DEAD);
+	audio->Load("coin_gather", IDR_COIN_GATHER);
+	audio->Load("card_snap", IDR_CARD_SNAP);
+
+
 	auto app = DX9GF::Application::GetInstance();
 	DX9GF::Font::AddFont(L"arcade-among-2-r46pv.ttf");
 	DX9GF::Font::AddFont(L"statusplz.ttf");

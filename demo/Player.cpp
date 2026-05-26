@@ -1,4 +1,4 @@
-#include "pch.h"
+﻿#include "pch.h"
 #include "Player.h"
 #include "resource.h"
 #include "DamageTextManager.h"
@@ -178,6 +178,29 @@ void Demo::Player::Update(unsigned long long deltaTime) {
 		walkingRight->SetFrame(0);
 		walkingLeft->SetFrame(0);
 	}
+	// 1. CHẠY LOGIC CHÂM CHƯỚC (GRACE PERIOD) TRƯỚC
+	if (currentSurface != baseSurface) {
+		surfaceTimeout -= deltaTime / 1000.0f;
+		if (surfaceTimeout <= 0) {
+			currentSurface = baseSurface; // Hết giờ thì tụt về bề mặt gốc của Scene
+		}
+	}
+
+	// 2. CHẠY LOGIC BƯỚC CHÂN
+	if (isWalking) {
+		float stepInterval = isRunning ? 0.25f : 0.4f;
+		stepTimer -= deltaTime / 1000.0f;
+
+		if (stepTimer <= 0) {
+			std::string bankName = "step_" + currentSurface;
+			// Phát âm thanh ở mức 0.5f
+			DX9GF::AudioManager::GetInstance()->PlayRandom(bankName, 0.5f);
+			stepTimer = stepInterval;
+		}
+	}
+	else {
+		stepTimer = 0.0f;
+	}
 	// if (dirNorm.x == 0 && dirNorm.y == 0) return;
 	float dX = dirNorm.x * VELOCITY * deltaTime / 1000.f;
 	float dY = dirNorm.y * VELOCITY * deltaTime / 1000.f;
@@ -336,7 +359,17 @@ bool Demo::Player::TakeDamage(float damage)
 	health -= actualDamage;
 	isInvincible = true;
 	timeSinceTurnedInvincible = 0.f;
-	if (health < 0) health = 0;
+	if (health <= 0) // Sửa thành <=
+	{
+		// Nếu trước đó chưa chết (máu cũ > 0) thì mới kêu tiếng chết, tránh bị spam
+		if (health + actualDamage > 0) {
+			DX9GF::AudioManager::GetInstance()->Play("player_dead", false, 0.3f);
+		}
+		health = 0;
+	}
+	if (actualDamage > 0) {
+		DX9GF::AudioManager::GetInstance()->PlayRandom("take_dmg", 0.8f);
+	}
 	auto [x, y] = GetWorldPosition();
 	Demo::DamageTextManager::GetInstance()->Spawn(actualDamage, x, y - 16.0f, Demo::TextType::TakeDamage); //-16.0f from y so the text pops up from the head
 	return IsDead();
@@ -425,4 +458,9 @@ void Demo::Player::AddActiveBuff(const ActiveBuff& buff) {
    if (buff.type == ItemBuffType::BuffDefense) {
 		temporaryDefense = (std::max)(0.f, GetBuffStat(ItemBuffType::BuffDefense));
 	}
+}
+void Demo::Player::SetSurface(std::string surface)
+{
+	this->currentSurface = surface;
+	this->surfaceTimeout = 0.1f; // Châm chước 100 mili-giây (ủ hơi)
 }
