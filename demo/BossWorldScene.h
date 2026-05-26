@@ -11,6 +11,8 @@
 #include "ShopPoint.h"
 #include "HealingPoint.h"
 #include "RustyChestNPC.h"
+#include "TreasureChestNPC.h"
+
 
 namespace Demo {
     class BossWorldScene : public DX9GF::IScene, public DX9GF::ISaveable {
@@ -63,6 +65,7 @@ namespace Demo {
         bool isMimicDead = false;
 
         std::shared_ptr<RustyChestNPC> rustyChest;
+        std::vector<std::shared_ptr<TreasureChestNPC>> treasureChests;
         bool isFinalBossDead = false;
 
         int currentIslandID = 1;

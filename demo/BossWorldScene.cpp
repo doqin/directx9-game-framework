@@ -87,6 +87,19 @@ void Demo::BossWorldScene::Init() {
 	rustyChest = std::make_shared<RustyChestNPC>(transformManager, 690.f, -208.f);
 	rustyChest->Init(game->GetGraphicsDevice(), player, colliderManager, font, drawBuffer);
 
+	//TreasureChest
+	auto addChest = [&](float tx, float ty, std::vector<ChestReward> rewards, bool randomPick = false) {
+		auto c = std::make_shared<TreasureChestNPC>(transformManager, tx * 16, ty * 16, rewards, randomPick);
+		c->Init(game->GetGraphicsDevice(), player, colliderManager, font, drawBuffer);
+		treasureChests.push_back(c);
+		};
+
+	addChest(-38, 0, { ChestReward::Item(5,1), ChestReward::Card("ChainLightningCard") }, true);
+	addChest(-24, -18, { ChestReward::Item(6,1), ChestReward::Card("WeaknessCard") }, true);
+	addChest(166, 8, { ChestReward::Item(7,1), ChestReward::Card("VulnerableCard") }, true);
+	addChest(94, -8, { ChestReward::Item(8,1), ChestReward::Item(9,1), ChestReward::Card("VulnerableCard") }, true);
+	addChest(94, -32, { ChestReward::Item(6,1), ChestReward::Item(7,1), ChestReward::Card("WeaknessCard") }, true);
+
 	//heal
 	healingPoints.push_back(std::make_shared<HealingPoint>(transformManager, 144.f, 320.f));
 	healingPoints.back()->Init(game->GetGraphicsDevice(), &camera, player, colliderManager, font, drawBuffer);
@@ -286,6 +299,31 @@ void Demo::BossWorldScene::OnTerminalHacked(int terminalID) {
 }
 
 void Demo::BossWorldScene::Update(unsigned long long deltaTime) {
+	auto OpenChestWithDialog = [&](std::shared_ptr<TreasureChestNPC>& chest) {
+		auto given = chest->Open(player.get());
+		if (given.empty()) return;
+
+		std::wstring msg = L"You found: ";
+		for (auto& r : given) {
+			if (r.type == ChestRewardType::ITEM) {
+				auto* bp = ItemData::GetInstance()->GetItemBlueprint(r.itemID);
+				if (bp) {
+					msg += bp->GetName();
+					if (r.quantity > 1) msg += L" x" + std::to_wstring(r.quantity);
+					msg += L"  ";
+				}
+			}
+			else if (r.type == ChestRewardType::CARD) {
+				std::wstring wid(r.cardSaveID.begin(), r.cardSaveID.end());
+				msg += wid + L"  ";
+			}
+		}
+		auto [sw, sh] = camera.GetScreenResolution();
+		currentConversation = std::make_shared<IConversation>(
+			std::make_shared<DX9GF::FontSprite>(font.get()), sw, sh);
+		currentConversation->AddLine({ .name = L"Treasure Chest", .content = msg });
+		};
+
 	auto [currentWidth, currentHeight] = camera.GetScreenResolution();
 	auto [lastWidth, lastHeight] = uiCamera.GetScreenResolution();
 	if (currentWidth != lastWidth || currentHeight != lastHeight) {
@@ -357,6 +395,34 @@ void Demo::BossWorldScene::Update(unsigned long long deltaTime) {
 	for (auto& shopPoint : shopPoints) shopPoint->Update(deltaTime);
 	for (auto& healPoint : healingPoints) healPoint->Update(deltaTime);
 
+	for (auto& chest : treasureChests) {
+		chest->Update(deltaTime);
+		if (!currentConversation && chest->CanInteract() && inpMan->KeyPress(DIK_E)) {
+			auto given = chest->Open(player.get());
+			if (!given.empty()) {
+				std::wstring msg = L"You found: ";
+				for (auto& r : given) {
+					if (r.type == ChestRewardType::ITEM) {
+						auto* bp = ItemData::GetInstance()->GetItemBlueprint(r.itemID);
+						if (bp) {
+							msg += bp->GetName();
+							if (r.quantity > 1) msg += L" x" + std::to_wstring(r.quantity);
+							msg += L"  ";
+						}
+					}
+					else if (r.type == ChestRewardType::CARD) {
+						std::wstring wid(r.cardSaveID.begin(), r.cardSaveID.end());
+						msg += wid + L"  ";
+					}
+				}
+				auto [sw, sh] = camera.GetScreenResolution();
+				currentConversation = std::make_shared<IConversation>(
+					std::make_shared<DX9GF::FontSprite>(font.get()), sw, sh);
+				currentConversation->AddLine({ .name = L"Treasure Chest", .content = msg });
+			}
+		}
+	}
+
 	if (inventoryMenu && inventoryMenu->IsOpen()) {
 		isGamePaused = true;
 		inventoryMenu->Update(deltaTime);
@@ -408,6 +474,9 @@ void Demo::BossWorldScene::Draw(unsigned long long deltaTime) {
 		for (auto& shopPoint : shopPoints) shopPoint->Draw(camera, deltaTime);
 		for (auto& healPoint : healingPoints) healPoint->Draw(camera, deltaTime);
 
+		for (auto& chest : treasureChests)
+			chest->Draw(camera, deltaTime);
+
 		player->Draw(deltaTime);
 
 		if (drawBuffer) drawBuffer->Update(deltaTime);
@@ -440,6 +509,10 @@ void Demo::BossWorldScene::GenerateSaveData(nlohmann::json& outData) {
 		{"isFinalBossDead", isFinalBossDead},
 		{"isChestOpened", rustyChest ? rustyChest->GetIsOpened() : false}
 	};
+
+	nlohmann::json chestStates = nlohmann::json::array();
+	for (auto& c : treasureChests) chestStates.push_back(c->GetIsOpened());
+	outData["treasureChests"] = chestStates;
 }
 
 void Demo::BossWorldScene::RestoreSaveData(const nlohmann::json& inData) {

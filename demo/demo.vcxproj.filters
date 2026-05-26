@@ -64,6 +64,7 @@
     <ClCompile Include="KeyeproEnemy.cpp" />
     <ClCompile Include="SettingsManager.cpp" />
     <ClCompile Include="SecretPuzzleScene.cpp" />
+    <ClCompile Include="TreasureChestNPC.cpp" />
   </ItemGroup>
   <ItemGroup>
     <ClInclude Include="AdvancedCards.h" />
@@ -132,6 +133,7 @@
     <ClInclude Include="KeyeEnemy.h" />
     <ClInclude Include="KeyeproEnemy.h" />
     <ClInclude Include="SecretPuzzleScene.h" />
+    <ClInclude Include="TreasureChestNPC.h" />
   </ItemGroup>
   <ItemGroup>
     <ResourceCompile Include="demo.rc" />

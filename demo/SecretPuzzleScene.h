@@ -14,6 +14,8 @@
 #include "NPC1.h"
 #include "CardShop.h"
 #include "ItemShop.h"
+#include "TreasureChestNPC.h"
+
 
 namespace Demo {
 	class SecretPuzzleScene : public DX9GF::IScene, public DX9GF::ISaveable {
@@ -38,6 +40,9 @@ namespace Demo {
 		std::shared_ptr<DX9GF::CommandBuffer> drawBuffer;
 		std::shared_ptr<DX9GF::CommandBuffer> commandBuffer;
 		std::shared_ptr<IConversation> currentConversation;
+
+		std::vector<std::shared_ptr<TreasureChestNPC>> treasureChests;
+
 	public:
 		SecretPuzzleScene(Game* game, std::shared_ptr<DX9GF::SaveManager> sm, UINT sw, UINT sh) : IScene(sw, sh), game(game), saveManager(sm), uiCamera(sw, sh) {}
 		void Init() override;

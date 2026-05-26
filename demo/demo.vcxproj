@@ -260,6 +260,7 @@
     <ClCompile Include="TestBattleScene.cpp" />
     <ClCompile Include="ThreadAlleyScene.cpp" />
     <ClCompile Include="TransitionCommand.cpp" />
+    <ClCompile Include="TreasureChestNPC.cpp" />
     <ClCompile Include="TutorialWorldScene.cpp" />
     <ClCompile Include="VampireBatEnemy.cpp" />
     <ClCompile Include="WarlockEnemy.cpp" />
@@ -334,6 +335,7 @@
     <ClInclude Include="TestEnemy.h" />
     <ClInclude Include="ThreadAlleyScene.h" />
     <ClInclude Include="TransitionCommand.h" />
+    <ClInclude Include="TreasureChestNPC.h" />
     <ClInclude Include="TutorialWorldScene.h" />
     <ClInclude Include="VampireBatEnemy.h" />
     <ClInclude Include="WarlockEnemy.h" />
