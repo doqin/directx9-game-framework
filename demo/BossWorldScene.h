@@ -11,6 +11,8 @@
 #include "ShopPoint.h"
 #include "HealingPoint.h"
 #include "RustyChestNPC.h"
+#include "TreasureChestNPC.h"
+
 
 namespace Demo {
     class BossWorldScene : public DX9GF::IScene, public DX9GF::ISaveable {
@@ -28,6 +30,9 @@ namespace Demo {
         std::shared_ptr<DX9GF::CommandBuffer> drawBuffer;
         std::shared_ptr<DX9GF::CommandBuffer> commandBuffer;
         std::shared_ptr<DX9GF::SaveManager> saveManager;
+
+		std::shared_ptr<DX9GF::Texture> gateTexture;
+		std::shared_ptr<DX9GF::StaticSprite> gateSprite;
 
         std::vector<std::shared_ptr<HackTerminal>> hackMachines;
         std::shared_ptr<HackTerminal> mainTerminal;
@@ -63,6 +68,7 @@ namespace Demo {
         bool isMimicDead = false;
 
         std::shared_ptr<RustyChestNPC> rustyChest;
+        std::vector<std::shared_ptr<TreasureChestNPC>> treasureChests;
         bool isFinalBossDead = false;
 
         int currentIslandID = 1;

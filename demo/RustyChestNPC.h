@@ -6,7 +6,8 @@ namespace Demo {
 	class RustyChestNPC : public INPC {
 	private:
 		bool isOpened = false;
-
+		std::shared_ptr<DX9GF::Texture> openedTexture;
+		std::shared_ptr<DX9GF::AnimatedSprite> openedSprite;
 	public:
 		RustyChestNPC(std::weak_ptr<DX9GF::TransformManager> tm, float x, float y);
 

@@ -177,6 +177,16 @@ void Demo::SecretPuzzleScene::Init()
 	healingPoints.back()->Init(game->GetGraphicsDevice(), &camera, player, colliderManager, font, drawBuffer);
 	healingPoints.back()->SetVisible(true);
 
+	//TreasureChest
+	auto addChest = [&](float tx, float ty, std::vector<ChestReward> rewards, bool randomPick = false) {
+		auto c = std::make_shared<TreasureChestNPC>(transformManager, tx * 16, ty * 16, rewards, randomPick);
+		c->Init(game->GetGraphicsDevice(), player, colliderManager, font, drawBuffer);
+		treasureChests.push_back(c);
+		};
+	addChest(-32, 26, { ChestReward::Item(0,1), ChestReward::Item(1,1), ChestReward::Card("PoisonCard") }, true);
+	addChest(-11, -31, { ChestReward::Item(2,1), ChestReward::Item(3,1), ChestReward::Card("CleaveCard") }, true);
+	addChest(80, 48, { ChestReward::Item(4,1), ChestReward::Item(5,1), ChestReward::Card("TwinStrikeCard") }, true);
+
 	draggableManager = std::make_shared<Demo::DraggableManager>();
 	inventoryMenu = std::make_shared<InventoryMenu>(game, player, transformManager, draggableManager, &uiCamera, font.get());
 	inventoryMenu->Init();
@@ -213,6 +223,31 @@ void Demo::SecretPuzzleScene::Init()
 
 void Demo::SecretPuzzleScene::Update(unsigned long long deltaTime)
 {
+	auto OpenChestWithDialog = [&](std::shared_ptr<TreasureChestNPC>& chest) {
+		auto given = chest->Open(player.get());
+		if (given.empty()) return;
+
+		std::wstring msg = L"You found: ";
+		for (auto& r : given) {
+			if (r.type == ChestRewardType::ITEM) {
+				auto* bp = ItemData::GetInstance()->GetItemBlueprint(r.itemID);
+				if (bp) {
+					msg += bp->GetName();
+					if (r.quantity > 1) msg += L" x" + std::to_wstring(r.quantity);
+					msg += L"  ";
+				}
+			}
+			else if (r.type == ChestRewardType::CARD) {
+				std::wstring wid(r.cardSaveID.begin(), r.cardSaveID.end());
+				msg += wid + L"  ";
+			}
+		}
+		auto [sw, sh] = camera.GetScreenResolution();
+		currentConversation = std::make_shared<IConversation>(
+			std::make_shared<DX9GF::FontSprite>(font.get()), sw, sh);
+		currentConversation->AddLine({ .name = L"Treasure Chest", .content = msg });
+		};
+
 	auto [currentWidth, currentHeight] = camera.GetScreenResolution();
 	auto [lastWidth, lastHeight] = uiCamera.GetScreenResolution();
 	if (currentWidth != lastWidth || currentHeight != lastHeight) {
@@ -249,6 +284,34 @@ void Demo::SecretPuzzleScene::Update(unsigned long long deltaTime)
 	}
 	for (auto& healingPoint : healingPoints) {
 		healingPoint->Update(deltaTime);
+	}
+
+	for (auto& chest : treasureChests) {
+		chest->Update(deltaTime);
+		if (!currentConversation && chest->CanInteract() && inpMan->KeyPress(DIK_E)) {
+			auto given = chest->Open(player.get());
+			if (!given.empty()) {
+				std::wstring msg = L"You found: ";
+				for (auto& r : given) {
+					if (r.type == ChestRewardType::ITEM) {
+						auto* bp = ItemData::GetInstance()->GetItemBlueprint(r.itemID);
+						if (bp) {
+							msg += bp->GetName();
+							if (r.quantity > 1) msg += L" x" + std::to_wstring(r.quantity);
+							msg += L"  ";
+						}
+					}
+					else if (r.type == ChestRewardType::CARD) {
+						std::wstring wid(r.cardSaveID.begin(), r.cardSaveID.end());
+						msg += wid + L"  ";
+					}
+				}
+				auto [sw, sh] = camera.GetScreenResolution();
+				currentConversation = std::make_shared<IConversation>(
+					std::make_shared<DX9GF::FontSprite>(font.get()), sw, sh);
+				currentConversation->AddLine({ .name = L"Treasure Chest", .content = msg });
+			}
+		}
 	}
 
 	if (inventoryMenu && inventoryMenu->IsOpen()) {
@@ -297,6 +360,10 @@ void Demo::SecretPuzzleScene::Draw(unsigned long long deltaTime)
 		for (auto& healingPoint : healingPoints) {
 			healingPoint->Draw(camera, deltaTime);
 		}
+
+		for (auto& chest : treasureChests)
+			chest->Draw(camera, deltaTime);
+
 		player->Draw(deltaTime);
 		if (drawBuffer) {
 			drawBuffer->Update(deltaTime);
@@ -361,6 +428,10 @@ void Demo::SecretPuzzleScene::GenerateSaveData(nlohmann::json& outData)
 	outData["puzzle"] = {
 		{"isBossDead", isBossDead}
 	};
+
+	nlohmann::json chestStates = nlohmann::json::array();
+	for (auto& c : treasureChests) chestStates.push_back(c->GetIsOpened());
+	outData["treasureChests"] = chestStates;
 }
 
 void Demo::SecretPuzzleScene::RestoreSaveData(const nlohmann::json& inData)
@@ -370,6 +441,12 @@ void Demo::SecretPuzzleScene::RestoreSaveData(const nlohmann::json& inData)
 	camera.SetZoom(inData["camera"]["zoom"]);
 	if (inData.contains("puzzle") && inData["puzzle"].contains("isBossDead")) {
 		isBossDead = inData["puzzle"]["isBossDead"];
+	}
+
+	if (inData.contains("treasureChests")) {
+		auto& arr = inData["treasureChests"];
+		for (size_t i = 0; i < treasureChests.size() && i < arr.size(); ++i)
+			treasureChests[i]->SetOpened(arr[i].get<bool>());
 	}
 }
 

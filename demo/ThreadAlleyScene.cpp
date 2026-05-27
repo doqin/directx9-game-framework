@@ -194,6 +194,33 @@ void Demo::ThreadAlleyScene::Init()
 	healingPoints.back()->Init(game->GetGraphicsDevice(), &camera, player, colliderManager, font, drawBuffer);
 	healingPoints.back()->SetVisible(true);
 
+	//TreasureChest
+	struct ChestDef {
+		std::pair<float, float> pos;
+		std::vector<ChestReward> rewards;
+		bool randomPick = false;
+	};
+
+	const std::vector<ChestDef> chestDefs = {
+		{{-411.f, -249.f}, { ChestReward::Item(0,1), ChestReward::Card("TwinStrikeCard") },              true},
+		{{-603.f, -626.f}, { ChestReward::Item(1,1), ChestReward::Card("PoisonCard") },                  true},
+		{{-474.f, -921.f}, { ChestReward::Item(2,1), ChestReward::Item(3,1) },                           true},
+		{{1016.f, -246.f}, { ChestReward::Item(3,1), ChestReward::Card("CleaveCard") },                  true},
+		{{ 821.f, -506.f}, { ChestReward::Item(4,1), ChestReward::Card("TwinStrikeCard") },              true},
+		{{1096.f,  -76.f}, { ChestReward::Item(4,1), ChestReward::Item(5,1) },                           true},
+		{{1127.f, -892.f}, { ChestReward::Item(3,1), ChestReward::Card("PoisonCard") },                  true},
+		{{ 983.f, -841.f}, { ChestReward::Item(2,1), ChestReward::Item(3,1), ChestReward::Card("CleaveCard") }, true},
+		{{ 982.f,-1035.f}, { ChestReward::Item(4,1), ChestReward::Card("VulnerableCard") },              true},
+		{{-102.f, -951.f}, { ChestReward::Item(5,1), ChestReward::Card("PoisonCard") },                  true},
+		{{ 408.f,-1178.f}, { ChestReward::Item(3,1), ChestReward::Card("CleaveCard") },                  true},
+	};
+
+	for (auto& def : chestDefs) {
+		treasureChests.push_back(std::make_shared<TreasureChestNPC>(
+			transformManager, def.pos.first, def.pos.second,
+			def.rewards, def.randomPick));
+		treasureChests.back()->Init(game->GetGraphicsDevice(), player, colliderManager, font, drawBuffer);
+	}
 
 	draggableManager = std::make_shared<Demo::DraggableManager>();
 	inventoryMenu = std::make_shared<InventoryMenu>(game, player, transformManager, draggableManager, &uiCamera, font.get());
@@ -226,6 +253,31 @@ void Demo::ThreadAlleyScene::Init()
 
 void Demo::ThreadAlleyScene::Update(unsigned long long deltaTime)
 {
+	auto OpenChestWithDialog = [&](std::shared_ptr<TreasureChestNPC>& chest) {
+		auto given = chest->Open(player.get());
+		if (given.empty()) return;
+
+		std::wstring msg = L"You found: ";
+		for (auto& r : given) {
+			if (r.type == ChestRewardType::ITEM) {
+				auto* bp = ItemData::GetInstance()->GetItemBlueprint(r.itemID);
+				if (bp) {
+					msg += bp->GetName();
+					if (r.quantity > 1) msg += L" x" + std::to_wstring(r.quantity);
+					msg += L"  ";
+				}
+			}
+			else if (r.type == ChestRewardType::CARD) {
+				std::wstring wid(r.cardSaveID.begin(), r.cardSaveID.end());
+				msg += wid + L"  ";
+			}
+		}
+		auto [sw, sh] = camera.GetScreenResolution();
+		currentConversation = std::make_shared<IConversation>(
+			std::make_shared<DX9GF::FontSprite>(font.get()), sw, sh);
+		currentConversation->AddLine({ .name = L"Treasure Chest", .content = msg });
+		};
+
 	auto [currentWidth, currentHeight] = camera.GetScreenResolution();
 	auto [lastWidth, lastHeight] = uiCamera.GetScreenResolution();
 	if (currentWidth != lastWidth || currentHeight != lastHeight) {
@@ -246,6 +298,12 @@ void Demo::ThreadAlleyScene::Update(unsigned long long deltaTime)
 
 	bool isGamePaused = this->isGamePaused;
 
+	if (currentConversation) {
+		isGamePaused = true;
+		currentConversation->Execute(deltaTime);
+		if (currentConversation->IsFinished()) currentConversation = nullptr;
+	}
+
 	for (auto& savePoint : savePoints) {
 		savePoint->Update(deltaTime);
 		if (savePoint->IsMenuOpen()) isGamePaused = true;
@@ -257,6 +315,34 @@ void Demo::ThreadAlleyScene::Update(unsigned long long deltaTime)
 
 	for (auto& healPoint : healingPoints) {
 		healPoint->Update(deltaTime);
+	}
+
+	for (auto& chest : treasureChests) {
+		chest->Update(deltaTime);
+		if (!currentConversation && chest->CanInteract() && inpMan->KeyPress(DIK_E)) {
+			auto given = chest->Open(player.get());
+			if (!given.empty()) {
+				std::wstring msg = L"You found: ";
+				for (auto& r : given) {
+					if (r.type == ChestRewardType::ITEM) {
+						auto* bp = ItemData::GetInstance()->GetItemBlueprint(r.itemID);
+						if (bp) {
+							msg += bp->GetName();
+							if (r.quantity > 1) msg += L" x" + std::to_wstring(r.quantity);
+							msg += L"  ";
+						}
+					}
+					else if (r.type == ChestRewardType::CARD) {
+						std::wstring wid(r.cardSaveID.begin(), r.cardSaveID.end());
+						msg += wid + L"  ";
+					}
+				}
+				auto [sw, sh] = camera.GetScreenResolution();
+				currentConversation = std::make_shared<IConversation>(
+					std::make_shared<DX9GF::FontSprite>(font.get()), sw, sh);
+				currentConversation->AddLine({ .name = L"Treasure Chest", .content = msg });
+			}
+		}
 	}
 
 	if (inventoryMenu && inventoryMenu->IsOpen()) {
@@ -307,6 +393,9 @@ void Demo::ThreadAlleyScene::Draw(unsigned long long deltaTime)
 			healPoint->Draw(camera, deltaTime);
 		}
 
+		for (auto& chest : treasureChests)
+			chest->Draw(camera, deltaTime);
+
 		player->Draw(deltaTime);
 
 		if (drawBuffer) {
@@ -317,6 +406,7 @@ void Demo::ThreadAlleyScene::Draw(unsigned long long deltaTime)
 			draggableManager->Draw(deltaTime);
 		}
 
+		if (currentConversation) currentConversation->Draw(gd, deltaTime);
 		DX9GF::InputManager::GetInstance()->DrawCursor(&this->uiCamera, deltaTime);
 		gd->EndDraw();
 	}
@@ -337,6 +427,10 @@ void Demo::ThreadAlleyScene::GenerateSaveData(nlohmann::json& outData)
 		{"y", pos.y},
 		{"zoom", camera.GetZoom()}
 	};
+
+	nlohmann::json chestStates = nlohmann::json::array();
+	for (auto& c : treasureChests) chestStates.push_back(c->GetIsOpened());
+	outData["treasureChests"] = chestStates;
 }
 
 void Demo::ThreadAlleyScene::RestoreSaveData(const nlohmann::json& inData)
@@ -344,6 +438,12 @@ void Demo::ThreadAlleyScene::RestoreSaveData(const nlohmann::json& inData)
 	player->RestoreSaveData(inData["player"]);
 	camera.SetPosition(inData["camera"]["x"], inData["camera"]["y"]);
 	camera.SetZoom(inData["camera"]["zoom"]);
+
+	if (inData.contains("treasureChests")) {
+		auto& arr = inData["treasureChests"];
+		for (size_t i = 0; i < treasureChests.size() && i < arr.size(); ++i)
+			treasureChests[i]->SetOpened(arr[i].get<bool>());
+	}
 }
 
 void Demo::ThreadAlleyScene::GiveTestItems()
