@@ -5,6 +5,11 @@
 #include "DamageTextManager.h"
 #include "GameItems.h"
 #include "TransitionCommand.h"
+#include "resource.h"
+#include "TutorialWorldScene.h"
+#include "SecretPuzzleScene.h"
+#include "ThreadAlleyScene.h"
+#include "BossWorldScene.h"
 
 namespace {
 	constexpr float HiddenPileX = -10000.f;
@@ -57,6 +62,12 @@ void Demo::IBattleScene::StartBattle()
 	std::shuffle(drawPile.begin(), drawPile.end(), gen);
 	currentTurn = 1;
 	DrawCards(5);
+	if (!customBGMName.empty()) {
+		DX9GF::AudioManager::GetInstance()->PlayBGM_Fade(customBGMName, 0.3f, 1.5f);
+	}
+	else {
+		DX9GF::AudioManager::GetInstance()->PlayRandomBGM_Fade("battle_bgm", 0.3f, 1.5f);
+	}
 }
 
 void Demo::IBattleScene::CollectDeadEnemies()
@@ -79,11 +90,12 @@ void Demo::IBattleScene::OnAllEnemiesDefeated()
 	int finalGold = battleGoldReward;
 	if (initialEnemyCount > 1) {
 		const float multiplier = 1.25f * static_cast<float>(initialEnemyCount - 1);
-       finalGold = static_cast<int>(std::round(finalGold * multiplier));
+		finalGold = static_cast<int>(std::round(finalGold * multiplier));
 	}
 
 	player->AddGold(finalGold);
 	popUpMessage->QueueMessage(&commandBuffer, L"You earned " + std::to_wstring(finalGold) + L" gold!", 1.5f);
+	DX9GF::AudioManager::GetInstance()->Play("coin_gather", false, 0.8f);
 
 	if (onVictoryCallback != nullptr) {
 		onVictoryCallback();
@@ -98,10 +110,17 @@ void Demo::IBattleScene::OnAllEnemiesDefeated()
 		}
 		player->SetHealth(battlePlayer->GetHealth());
 		auto sceMan = game->GetSceneManager();
+		auto prevScene = sceMan->GetScene(sceMan->GetIndex() - 1);
+		auto audio = DX9GF::AudioManager::GetInstance();
+
+		if (dynamic_cast<Demo::TutorialWorldScene*>(prevScene)) audio->PlayBGM_Fade("bgm_tutorial", 0.5f, 1.0f);
+		else if (dynamic_cast<Demo::SecretPuzzleScene*>(prevScene)) audio->PlayBGM_Fade("bgm_secret", 0.3f, 1.0f);
+		else if (dynamic_cast<Demo::ThreadAlleyScene*>(prevScene)) audio->PlayBGM_Fade("bgm_arcade", 0.2f, 1.0f);
+		else if (dynamic_cast<Demo::BossWorldScene*>(prevScene)) audio->PlayBGM_Fade("bgm_boss", 0.3f, 1.0f);
 		sceMan->RemoveScene(sceMan->GetIndex());
 		sceMan->GoToPrevious();
 		markFinished();
-	}));
+		}));
 }
 
 void Demo::IBattleScene::DrawCards(size_t count)
@@ -126,6 +145,7 @@ void Demo::IBattleScene::DrawCards(size_t count)
 		std::vector<std::shared_ptr<DX9GF::ICommand>> commands = {
 			std::make_shared<DX9GF::SetPositionCommand>(card, -static_cast<float>(screenWidth), y),
 			std::make_shared<DX9GF::CustomCommand>([this, card](std::function<void(void)> markFinished) {
+				DX9GF::AudioManager::GetInstance()->PlayRandom("card_draw", 0.3f);
 				this->queuedToDraw.push_back(card);
 				markFinished();
 			}),
@@ -159,6 +179,7 @@ void Demo::IBattleScene::ShuffleDiscardIntoDrawPile()
 		drawPile.push_back(card);
 	}
 	discardPile.clear();
+	DX9GF::AudioManager::GetInstance()->PlayRandom("card_draw", 0.6f);
 }
 
 void Demo::IBattleScene::MovePlayedPileToDiscardPileIfNeeded()
@@ -231,7 +252,7 @@ void Demo::IBattleScene::QueueEnemyLayoutTransition(State targetState)
 
 	bool hasQueued = false;
 	const size_t enemyCount = enemies.size();
-for (size_t i = 0; i < enemyCount; ++i) {
+	for (size_t i = 0; i < enemyCount; ++i) {
 		float targetX = 0.f;
 		float targetY = 0.f;
 
@@ -300,7 +321,7 @@ void Demo::IBattleScene::RefreshItemMenu()
 	buffItems.clear();
 	auto& inventory = player->GetInventoryItems().GetSlots();
 
-	int columns = std::floor((BG_W- PADDING_X) / (ITEM_W + PADDING_X));
+	int columns = std::floor((BG_W - PADDING_X) / (ITEM_W + PADDING_X));
 	if (columns < 1) columns = 1;
 
 	float totalGridWidth = (columns * ITEM_W) + ((columns - 1) * PADDING_X);
@@ -526,7 +547,7 @@ void Demo::IBattleScene::PlayerOpenItemsUpdate(unsigned long long deltaTime)
 	float closeY = BG_H - 50.f - closeItemMenuButton->GetHeight();
 
 	closeItemMenuButton->SetLocalPosition(closeX, closeY);
-	
+
 	if (!isTransitioning) {
 		closeItemMenuButton->Update(deltaTime);
 		for (auto& btn : buffItems) {
@@ -540,7 +561,7 @@ void Demo::IBattleScene::PlayerOpenItemsUpdate(unsigned long long deltaTime)
 
 bool Demo::IBattleScene::EnemyAttackUpdate(unsigned long long deltaTime)
 {
-    if (isDefeatSequence) {
+	if (isDefeatSequence) {
 		defeatElapsedMs += static_cast<float>(deltaTime);
 		if (defeatElapsedMs >= 1000.f) {
 			const float fadeDurationMs = 1000.f;
@@ -551,6 +572,7 @@ bool Demo::IBattleScene::EnemyAttackUpdate(unsigned long long deltaTime)
 			while (sceMan->GetSceneCount() > 1) {
 				sceMan->PopScene();
 			}
+			DX9GF::AudioManager::GetInstance()->PlayBGM_Fade("bgm_sky", 0.9f, 1.0f);
 			sceMan->GoToScene(0); // Go to main menu
 			return true;
 		}
@@ -564,7 +586,7 @@ bool Demo::IBattleScene::EnemyAttackUpdate(unsigned long long deltaTime)
 		popUpMessage->QueueMessage(&commandBuffer, L"You were defeated", 1.5f);
 		return false;
 	}
-    if (enemyAttackStartPending) {
+	if (enemyAttackStartPending) {
 		if (commandBuffer.IsBusy()) {
 			return false;
 		}
@@ -590,7 +612,7 @@ bool Demo::IBattleScene::EnemyAttackUpdate(unsigned long long deltaTime)
 		isDoneAttacking &= enemy->IsDoneAttacking();
 	}
 	if (isDoneAttacking) {
-        CollectDeadEnemies();
+		CollectDeadEnemies();
 		if (enemies.empty()) {
 			OnAllEnemiesDefeated();
 			return false;
@@ -915,6 +937,15 @@ void Demo::IBattleScene::Init()
 					}
 					player->SetHealth(battlePlayer->GetHealth());
 					auto sceMan = game->GetSceneManager();
+
+					auto prevScene = sceMan->GetScene(sceMan->GetIndex() - 1);
+					auto audio = DX9GF::AudioManager::GetInstance();
+
+					if (dynamic_cast<Demo::TutorialWorldScene*>(prevScene)) audio->PlayBGM_Fade("bgm_tutorial", 0.5f, 1.0f);
+					else if (dynamic_cast<Demo::SecretPuzzleScene*>(prevScene)) audio->PlayBGM_Fade("bgm_secret", 0.3f, 1.0f);
+					else if (dynamic_cast<Demo::ThreadAlleyScene*>(prevScene)) audio->PlayBGM_Fade("bgm_arcade", 0.2f, 1.0f);
+					else if (dynamic_cast<Demo::BossWorldScene*>(prevScene)) audio->PlayBGM_Fade("bgm_boss", 0.3f, 1.0f);
+
 					sceMan->RemoveScene(sceMan->GetIndex());
 					sceMan->GoToPrevious();
 					markFinished2();
@@ -927,9 +958,9 @@ void Demo::IBattleScene::Init()
 					commandBuffer.PushCommand(std::make_shared<DX9GF::CustomCommand>([this](std::function<void(void)> markFinished2) {
 						isFleeing = false;
 						markFinished2();
-					}));
+						}));
 					markFinished();
-				}));
+					}));
 			}
 			markFinished();
 			}));
@@ -1012,6 +1043,7 @@ void Demo::IBattleScene::Init()
 	executeButton->SetOnReleaseLeft([&](DX9GF::ITrigger* thisObj) {
 		if (usedEnergy > energy) {
 			popUpMessage->QueueMessage(&commandBuffer, L"Not enough energy");
+			DX9GF::AudioManager::GetInstance()->Play("error", false, 0.8f);
 		}
 		else if (mainBlockCard && !mainBlockCard->IsExecuting()) {
 			commandBuffer.Clear();
@@ -1105,7 +1137,7 @@ void Demo::IBattleScene::Init()
 	handContainer = std::make_shared<HandContainer>(transformManager, 180, 40, -250.f, -200.f);
 	handContainer->Init(draggableManager, game->GetGraphicsDevice(), &camera, &playedPile);
 
-  const float battleHalfSize = battleBoxSize * 0.5f;
+	const float battleHalfSize = battleBoxSize * 0.5f;
 	const float battleBorder = 8.f;
 	const float battleLeft = -battleHalfSize - battleBorder;
 	const float battleTop = -battleHalfSize - battleBorder;
@@ -1130,6 +1162,16 @@ void Demo::IBattleScene::Init()
 	// Init pop up message
 	popUpMessage = std::make_shared<PopUpMessage>(transformManager);
 	popUpMessage->Init(game->GetGraphicsDevice(), &camera);
+
+	//Init BGM
+	auto audio = DX9GF::AudioManager::GetInstance();
+	audio->Load("battle_loop1", IDR_BGM_B1);
+	audio->Load("battle_loop2", IDR_BGM_B2);
+	audio->Load("battle_loop3", IDR_BGM_B3);
+	audio->Load("battle_loop4", IDR_BGM_B4);
+	audio->Load("battle_boss", IDR_BGM_BAT_BOSS);
+
+	audio->RegisterBank("battle_bgm", { "battle_loop1","battle_loop2","battle_loop3","battle_loop4" });
 
 	transformManager->RebuildHierarchy();
 	DamageTextManager::GetInstance()->Init(this->game);
@@ -1187,7 +1229,8 @@ void Demo::IBattleScene::Draw(unsigned long long deltaTime)
 	if (SUCCEEDED(gd->BeginDraw())) {
 		if (customBackgroundDraw) {
 			customBackgroundDraw(gd, deltaTime);
-		} else {
+		}
+		else {
 			/* Cool wave grid effect */
 			auto [screenWidth, screenHeight] = camera.GetScreenResolution();
 			const int spacingX = 32;
@@ -1250,7 +1293,7 @@ void Demo::IBattleScene::Draw(unsigned long long deltaTime)
 			dynamic_pointer_cast<IDraggable>(card)->Draw(deltaTime);
 		}
 		popUpMessage->Draw(deltaTime);
-        if (isDefeatSequence && defeatElapsedMs >= 1000.f) {
+		if (isDefeatSequence && defeatElapsedMs >= 1000.f) {
 			const auto app = DX9GF::Application::GetInstance();
 			const float screenWidth = static_cast<float>(app->GetScreenWidth());
 			const float screenHeight = static_cast<float>(app->GetScreenHeight());

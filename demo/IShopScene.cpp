@@ -53,9 +53,11 @@ void Demo::IShopScene::BuildUI()
                     item.onBuyAction();
                 }
 
+				DX9GF::AudioManager::GetInstance()->Play("shop_buy", false, 0.8f);
                 this->ShowMessage("Bought " + item.name + "!");
             }
             else {
+				DX9GF::AudioManager::GetInstance()->Play("error", false, 0.3f);
                 this->ShowMessage("Not enough gold!");
             }
         });

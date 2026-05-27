@@ -1,4 +1,4 @@
-#pragma once
+﻿#pragma once
 #include "DX9GF.h"
 #include "DX9GFExtras.h"
 #include "ICard.h"
@@ -55,6 +55,12 @@ namespace Demo {
 		std::vector<std::string> inventoryCards;
 		ItemInventory inventoryItems;
 		std::vector<ActiveBuff> activeBuffs;
+
+		//for audio
+		float stepTimer = 0.0f;
+		std::string baseSurface = "default";
+		std::string currentSurface = "default";
+		float surfaceTimeout = 0.0f;
 	public:
 		Player(std::weak_ptr<DX9GF::TransformManager> transformManager) : IGameObject(transformManager) {}
 		Player(
@@ -111,5 +117,11 @@ namespace Demo {
 		void UpdateBuffs();
 		void AddActiveBuff(const ActiveBuff& buff);
 		bool IsWalking() const { return isWalking; }
+
+		void SetSurface(std::string surface);
+		void SetBaseSurface(std::string surface) {
+			this->baseSurface = surface;
+			this->currentSurface = surface;
+		}
 	};
 }

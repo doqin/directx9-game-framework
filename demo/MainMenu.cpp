@@ -220,6 +220,11 @@ namespace Demo
 			}
 		}
 
+		auto audio = DX9GF::AudioManager::GetInstance();
+
+		audio->Load("bgm_sky", IDR_BGM_SKY);
+		audio->PlayBGM_Fade("bgm_sky", 0.9f, 1.5f);
+
 		//call it to setup the update layout
 		UpdateLayout(lastScreenWidth, lastScreenHeight);
 
@@ -241,19 +246,7 @@ namespace Demo
 		int currentWidth = app->GetScreenWidth();
 		int currentHeight = app->GetScreenHeight();
 
-		static float timer = 0;
-		timer += deltaTime;
-		if (timer > 0) {
-			std::ifstream f("savegame.json");
-			if (f.good()) {
-				continueButton->SetState(IButton::ButtonState::IDLE);
-			}
-			else {
-				continueButton->SetState(IButton::ButtonState::DISABLED);
-			}
-			f.close();
-			timer = 0;
-		}
+		//i removed the timer check for savegame.json here becuz it keeps spamming the audio. i think init() did a good job checking on savegame already
 
 		UpdateLayout(currW, currH);
 

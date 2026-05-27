@@ -5,6 +5,7 @@
 #include "MainMenu.h"
 #include "SaveGameState.h"
 #include "TransitionCommand.h"
+#include "resource.h"
 
 void Demo::SecretPuzzleScene::Init()
 {
@@ -38,6 +39,7 @@ void Demo::SecretPuzzleScene::Init()
 		auto targetPlayer = MainMenu::gameSaveState->GetPlayerFromScene(targetScene);
 		targetPlayer->RestoreSaveGlobalData(saveData["player"]);
 		targetPlayer->SetLocalPosition(-263.f, -295.f);
+		DX9GF::AudioManager::GetInstance()->PlayBGM_Fade("bgm_tutorial", 0.5f, 1.5f);
 		sceMan->GoToPrevious();
 		isTransitioning = false;
 		markFinished();
@@ -59,6 +61,7 @@ void Demo::SecretPuzzleScene::Init()
 			auto targetScene = sceMan->GetScene(static_cast<size_t>(sceMan->GetIndex()) + 1);
 			auto targetPlayer = MainMenu::gameSaveState->GetPlayerFromScene(targetScene);
 			targetPlayer->RestoreSaveGlobalData(saveData["player"]);
+			DX9GF::AudioManager::GetInstance()->PlayBGM_Fade("bgm_arcade", 0.2f, 1.5f);
 			sceMan->GoToNext();
 			isTransitioning = false;
 			markFinished();
@@ -188,6 +191,29 @@ void Demo::SecretPuzzleScene::Init()
 	inventoryMenu = std::make_shared<InventoryMenu>(game, player, transformManager, draggableManager, &uiCamera, font.get());
 	inventoryMenu->Init();
 
+	auto audio = DX9GF::AudioManager::GetInstance();
+
+	audio->Load("step_dir1", IDR_STEP_DIR1);
+	audio->Load("step_dir2", IDR_STEP_DIR2);
+	audio->Load("step_dir3", IDR_STEP_DIR3);
+	audio->Load("step_dir4", IDR_STEP_DIR4);
+	audio->Load("step_dir5", IDR_STEP_DIR5);
+
+	audio->RegisterBank("step_dirt", { "step_dir1", "step_dir2", "step_dir3", "step_dir4" , "step_dir5" });
+	player->SetBaseSurface("dirt");
+
+	map->SetAreaUpdateHandler("audio_zone_default", [this](const DX9GF::Map::ObjectArea&) {
+		GetPlayer()->SetSurface("default");
+		});
+
+	map->SetAreaUpdateHandler("audio_zone_leaves", [this](const DX9GF::Map::ObjectArea&) {
+		GetPlayer()->SetSurface("leaves");
+		});
+
+	map->SetAreaUpdateHandler("audio_zone_metal", [this](const DX9GF::Map::ObjectArea&) {
+		GetPlayer()->SetSurface("metal");
+		});
+
 	ItemData::GetInstance()->LoadData();
 	this->GiveTestItems();
 
@@ -308,6 +334,8 @@ void Demo::SecretPuzzleScene::Update(unsigned long long deltaTime)
 	if (inventoryMenu && inventoryMenu->IsPendingLeave()) {
 		auto sceMan = game->GetSceneManager();
 		sceMan->GoToScene(0);
+		auto audio = DX9GF::AudioManager::GetInstance();
+		audio->PlayBGM_Fade("bgm_sky", 0.9f, 1.5f);
 		return;
 	}
 	commandBuffer->Update(deltaTime);

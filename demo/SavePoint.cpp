@@ -33,6 +33,7 @@ namespace Demo {
             if (auto smLock = this->saveManager.lock()) {
                 smLock->Save("savegame.json");
                 OutputDebugStringA("Successfully saved!\n");
+                DX9GF::AudioManager::GetInstance()->Play("checkpoint",false, 0.7f);
             }
             this->isSaveMenuOpen = false;
             });
