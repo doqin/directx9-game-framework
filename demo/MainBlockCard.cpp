@@ -6,7 +6,7 @@ void Demo::MainBlockCard::Draw(unsigned long long deltaTime)
     IBlockCard::Draw(deltaTime);
 	if (!blockTexture) {
         blockTexture = std::make_shared<DX9GF::Texture>(graphicsDevice);
-		blockTexture->LoadTexture(L"ui.png");
+		blockTexture->LoadTexture(L"assets/ui.png");
         blockSprite = std::make_shared<DX9GF::StaticSprite>(blockTexture.get());
 		blockSprite->SetSrcRect({ .left = 0, .top = 272, .right = 80, .bottom = 288 });
 		pointerSprite = std::make_shared<DX9GF::StaticSprite>(blockTexture.get());

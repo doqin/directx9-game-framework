@@ -7,13 +7,13 @@
 
 void Demo::VampireBatEnemy::Init(DX9GF::GraphicsDevice* graphicsDevice, DX9GF::Camera* camera) {
 	texture = std::make_shared<DX9GF::Texture>(graphicsDevice);
-	texture->LoadTexture(L"shrimp-Sheet.png");
+	texture->LoadTexture(L"assets/shrimp-Sheet.png");
 	sprite = std::make_shared<DX9GF::AnimatedSprite>(texture.get(), DX9GF::Utils::CreateRectsHorizontal(0, 0, 64, 64, 12), 12);
 	sprite->SetOrigin(32, 32);
 	sprite->SetScale(2.f);
 
 	projTexture = std::make_shared<DX9GF::Texture>(graphicsDevice);
-	projTexture->LoadTexture(L"spearprojectile.png");
+	projTexture->LoadTexture(L"assets/spearprojectile.png");
 	projSprite = std::make_shared<DX9GF::StaticSprite>(projTexture.get());
 	projSprite->SetOrigin(16, 8);
 

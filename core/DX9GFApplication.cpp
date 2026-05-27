@@ -12,6 +12,9 @@ LRESULT CALLBACK WinProc(HWND hwnd, UINT msg, WPARAM wParam, LPARAM lParam)
 	switch (msg)
 	{
 	case WM_SIZE:
+		if (wParam == SIZE_MINIMIZED) {
+			return 0;
+		}
 		if (p_game != nullptr) {
 			p_game->OnResize(LOWORD(lParam), HIWORD(lParam));
 		}

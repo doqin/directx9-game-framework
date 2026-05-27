@@ -26,7 +26,7 @@ void Demo::BossWorldScene::Init() {
 	font = std::make_shared<DX9GF::Font>(game->GetGraphicsDevice(), L"StatusPlz", 16);
 
 	map = std::make_shared<DX9GF::Map>(game->GetGraphicsDevice());
-	map->Create(transformManager, colliderManager, "./BossMatrix.tmx");
+	map->Create(transformManager, colliderManager, "./assets/BossMatrix.tmx");
 
 	map->SetAreaUpdateHandler("trigger_encounters", GetRandomEncounterFunc(game, player, {
 		{"VampireBatEnemy", 40},
@@ -253,7 +253,7 @@ void Demo::BossWorldScene::Init() {
 	audio->Load("hack_success", IDR_TERMINAL_GRANTED);
 
 	gateTexture = std::make_shared<DX9GF::Texture>(game->GetGraphicsDevice());
-	gateTexture->LoadTexture(L"gate.png");
+	gateTexture->LoadTexture(L"assets/gate.png");
 	gateSprite = std::make_shared<DX9GF::StaticSprite>(gateTexture.get());
 	gateSprite->SetPosition(46 * 16, -15 * 16);
 

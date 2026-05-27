@@ -17,7 +17,7 @@ void Demo::IShopScene::Init()
 	backBufferTexture->CaptureCurrentBackBuffer();
 	backBufferSprite = std::make_shared<DX9GF::StaticSprite>(backBufferTexture.get());
 	uiSheetTex = std::make_shared<DX9GF::Texture>(game->GetGraphicsDevice()); 
-    uiSheetTex->LoadTexture(L"ui.png"); // load here
+    uiSheetTex->LoadTexture(L"assets/ui.png"); // load here
 	LoadItems();
 
 	BuildUI();

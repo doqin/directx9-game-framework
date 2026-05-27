@@ -12,7 +12,7 @@ void Demo::EnemyCard::Draw(unsigned long long deltaTime)
 	IExpressionCard::Draw(deltaTime);
 	if (!uiTexture) {
 		uiTexture = std::make_shared<DX9GF::Texture>(graphicsDevice);
-		uiTexture->LoadTexture(L"ui.png");
+		uiTexture->LoadTexture(L"assets/ui.png");
 		untargetedSprite = std::make_shared<DX9GF::StaticSprite>(uiTexture.get());
 		untargetedSprite->SetSrcRect({ .left = 80, .top = 272, .right = 128, .bottom = 288 });
 		untargetedSprite->SetScale(2.f, 2.f);
@@ -24,7 +24,7 @@ void Demo::EnemyCard::Draw(unsigned long long deltaTime)
 		targetSprite->SetScale(2.f, 2.f);
 		targetSprite->SetOrigin(8.f, 16.f);
 		arrowTexture = std::make_shared<DX9GF::Texture>(graphicsDevice);
-		arrowTexture->LoadTexture(L"arrow.png");
+		arrowTexture->LoadTexture(L"assets/arrow.png");
 		arrowSprite = std::make_shared<DX9GF::StaticSprite>(arrowTexture.get());
 		arrowSprite->SetScale(2.f);
 		auto [w, h] = arrowTexture->GetSize();

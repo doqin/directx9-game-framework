@@ -24,7 +24,7 @@ void Demo::ThreadAlleyScene::Init()
 	commandBuffer = std::make_shared<DX9GF::CommandBuffer>();
 
 	map = std::make_shared<DX9GF::Map>(game->GetGraphicsDevice());
-	map->Create(transformManager, colliderManager, "./ThreadAlley.tmx");
+	map->Create(transformManager, colliderManager, "./assets/ThreadAlley.tmx");
 
 	map->SetAreaUpdateHandler("triggers", GetRandomEncounterFunc(game, player, {
 		{"VampireBatEnemy", 40},

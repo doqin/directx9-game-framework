@@ -15,13 +15,13 @@ namespace Demo {
 
         spritesheet = std::make_shared<DX9GF::Texture>(gd);
 
-        spritesheet->LoadTexture(L"chestclosed.png");
+        spritesheet->LoadTexture(L"assets/chestclosed.png");
 
         sprite = std::make_shared<DX9GF::AnimatedSprite>(spritesheet.get(), DX9GF::Utils::CreateRectsHorizontal(0, 0, 32, 32, 1), 12, true);
         sprite->SetOrigin(16.f, 16.f);
         sprite->SetPosition(this->GetWorldX(), this->GetWorldY());
 		openedTexture = std::make_shared<DX9GF::Texture>(gd);
-		openedTexture->LoadTexture(L"chestopened.png");
+		openedTexture->LoadTexture(L"assets/chestopened.png");
 		openedSprite = std::make_shared<DX9GF::AnimatedSprite>(openedTexture.get(), DX9GF::Utils::CreateRectsHorizontal(0, 0, 32, 32, 1), 12, true);
 		openedSprite->SetOrigin(16.f, 16.f);
 		openedSprite->SetPosition(this->GetWorldX(), this->GetWorldY());

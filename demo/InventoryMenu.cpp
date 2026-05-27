@@ -50,10 +50,10 @@ namespace Demo {
 		float leaveX = optionsX + buttonW + bottomGap;
 
 		itemSheetTex = std::make_shared<DX9GF::Texture>(game->GetGraphicsDevice());
-		itemSheetTex->LoadTexture(L"items.png");
+		itemSheetTex->LoadTexture(L"assets/items.png");
 
 		uiTex = std::make_shared<DX9GF::Texture>(game->GetGraphicsDevice());
-		uiTex->LoadTexture(L"ui.png");
+		uiTex->LoadTexture(L"assets/ui.png");
 
 		btnTabItems = std::make_shared<IconButton>(transformManager, centerX - tabGap / 2.0f - 80.0f, tabY, 48.0f * 2, 32.0f * 2, uiTex);
 		btnTabItems->SetSpriteRects(DX9GF::Utils::CreateRectsHorizontal(0, 144, 48, 32, 3));
@@ -76,8 +76,9 @@ namespace Demo {
 		btnOptions = std::make_shared<IconButton>(transformManager, optionsX, bottomY - 50.0f, 48.0f * 2, 32.0f * 2, uiTex);
 		btnOptions->SetSpriteRects(DX9GF::Utils::CreateRectsHorizontal(0, 208, 48, 32, 3));
 		btnOptions->SetOnReleaseLeft([this, sw, sh](DX9GF::ITrigger* t) {
-				this->game->GetSceneManager()->PushScene(new SettingsScene(this->game, sw, sh));
-				this->game->GetSceneManager()->GoToNext();
+			auto sceMan = this->game->GetSceneManager();
+				sceMan->InsertScene(sceMan->GetIndex() + 1, new SettingsScene(this->game, sw, sh));
+				sceMan->GoToNext();
 			});
 		btnOptions->SetSpriteScale(2.f, 2.f);
 		btnOptions->Init(uiCamera);
