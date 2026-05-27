@@ -13,13 +13,13 @@
 void Demo::KeyeproEnemy::Init(DX9GF::GraphicsDevice* graphicsDevice, DX9GF::Camera* camera) {
 
     texture = std::make_shared<DX9GF::Texture>(graphicsDevice);
-    texture->LoadTexture(L"Keyepro-Sheet.png");
+    texture->LoadTexture(L"assets/Keyepro-Sheet.png");
     sprite = std::make_shared<DX9GF::StaticSprite>(texture.get());
     sprite->SetOrigin(32, 32);
     sprite->SetScale(2.f); 
 
     projTexture = std::make_shared<DX9GF::Texture>(graphicsDevice);
-    projTexture->LoadTexture(L"Keye-bullet.png");
+    projTexture->LoadTexture(L"assets/Keye-bullet.png");
     projSprite = std::make_shared<DX9GF::StaticSprite>(projTexture.get());
     projSprite->SetOrigin(8, 8);
 

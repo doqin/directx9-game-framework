@@ -116,7 +116,7 @@ namespace Demo
 
 		//load textures
 		buttonSheetTex = std::make_shared<DX9GF::Texture>(game->GetGraphicsDevice());
-		buttonSheetTex->LoadTexture(L"ui.png");
+		buttonSheetTex->LoadTexture(L"assets/ui.png");
 
 		bgTex = std::make_shared<DX9GF::Texture>(game->GetGraphicsDevice());
 		bgTex->LoadTexture(IDB_PNG2);

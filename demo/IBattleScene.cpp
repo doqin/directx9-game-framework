@@ -840,11 +840,11 @@ void Demo::IBattleScene::Init()
 
 	// Initialize texture sheet
 	uiSheetTex = std::make_shared<DX9GF::Texture>(game->GetGraphicsDevice());
-	uiSheetTex->LoadTexture(L"ui.png");
+	uiSheetTex->LoadTexture(L"assets/ui.png");
 	tempTex = std::make_shared<DX9GF::Texture>(game->GetGraphicsDevice());
-	tempTex->LoadTexture(L"TempTex.png");
+	tempTex->LoadTexture(L"assets/TempTex.png");
 	itemsTex = std::make_shared<DX9GF::Texture>(game->GetGraphicsDevice());
-	itemsTex->LoadTexture(L"items.png");
+	itemsTex->LoadTexture(L"assets/items.png");
 	attackBuffIcon = std::make_shared<DX9GF::StaticSprite>(uiSheetTex.get());
 	attackBuffIcon->SetSrcRect({ .left = 112, .top = 240, .right = 128, .bottom = 256 });
 	defenseBuffIcon = std::make_shared<DX9GF::StaticSprite>(uiSheetTex.get());

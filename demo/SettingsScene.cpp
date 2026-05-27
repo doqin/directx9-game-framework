@@ -158,9 +158,9 @@ namespace Demo
 		fontSprite->SetColor(0xFF000000);
 
 		placeholderTex = std::make_shared<DX9GF::Texture>(game->GetGraphicsDevice());
-		placeholderTex->LoadTexture(L"ui-pack.png");
+		placeholderTex->LoadTexture(L"assets/ui-pack.png");
 		uiSheetTex = std::make_shared<DX9GF::Texture>(game->GetGraphicsDevice());
-		uiSheetTex->LoadTexture(L"ui.png");
+		uiSheetTex->LoadTexture(L"assets/ui.png");
 		bgTex = std::make_shared<DX9GF::Texture>(game->GetGraphicsDevice());
 		bgTex->LoadTexture(IDB_PNG2);
 

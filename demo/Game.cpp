@@ -88,18 +88,18 @@ void Demo::Game::Init()
 	audio->Load("bgm_arcade", IDR_BGM_ARCADE);
 
 	auto app = DX9GF::Application::GetInstance();
-	DX9GF::Font::AddFont(L"arcade-among-2-r46pv.ttf");
-	DX9GF::Font::AddFont(L"statusplz.ttf");
+	DX9GF::Font::AddFont(L"assets/arcade-among-2-r46pv.ttf");
+	DX9GF::Font::AddFont(L"assets/statusplz.ttf");
 	//Load cursor textures
 	auto input = DX9GF::InputManager::GetInstance();
 	auto gd = GetGraphicsDevice();
 
 	//hotspot (hX, hY) must be multiplied by the scale factor
-	input->AddCursor(DX9GF::InputManager::CursorType::CURSOR, gd, L"cursor.png", 0.2f, 0.0f, 0.0f);
-	input->AddCursor(DX9GF::InputManager::CursorType::POINTER, gd, L"pointer.png", 0.2f, 0.0f, 0.0f);
-	input->AddCursor(DX9GF::InputManager::CursorType::CLICK, gd, L"click.png", 0.2f, 4.0f, 6.0f);
-	input->AddCursor(DX9GF::InputManager::CursorType::GRAB, gd, L"grab.png", 0.2f, 14.8f, 14.8);
-	input->AddCursor(DX9GF::InputManager::CursorType::TEXTSELECT, gd, L"text-select.png", 0.2f, 10.0f, 16.0f);
+	input->AddCursor(DX9GF::InputManager::CursorType::CURSOR, gd, L"assets/cursor.png", 0.2f, 0.0f, 0.0f);
+	input->AddCursor(DX9GF::InputManager::CursorType::POINTER, gd, L"assets/pointer.png", 0.2f, 0.0f, 0.0f);
+	input->AddCursor(DX9GF::InputManager::CursorType::CLICK, gd, L"assets/click.png", 0.2f, 4.0f, 6.0f);
+	input->AddCursor(DX9GF::InputManager::CursorType::GRAB, gd, L"assets/grab.png", 0.2f, 14.8f, 14.8);
+	input->AddCursor(DX9GF::InputManager::CursorType::TEXTSELECT, gd, L"assets/text-select.png", 0.2f, 10.0f, 16.0f);
 #ifdef TESTING
 	this->sceneManager->PushScene(new DebugScene(this, app->GetScreenWidth(), app->GetScreenHeight()));
 #else

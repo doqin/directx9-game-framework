@@ -188,7 +188,7 @@ bool Demo::IEnemy::TakeDamage(float damage)
     });
 	if (!hitImpactTexture && graphicsDevice) { // graphicsDevice should be not null by now
 		hitImpactTexture = std::make_shared<DX9GF::Texture>(graphicsDevice);
-		hitImpactTexture->LoadTexture(L"hitimpact-Sheet.png");
+		hitImpactTexture->LoadTexture(L"assets/hitimpact-Sheet.png");
 	}
 	hitImpactSprites.push_back(std::make_shared<DX9GF::AnimatedSprite>(hitImpactTexture.get(), DX9GF::Utils::CreateRectsHorizontal(0, 0, 32, 32, 4), 24, false));
 	std::uniform_real_distribution<float> dis(-16.f, 16.f);

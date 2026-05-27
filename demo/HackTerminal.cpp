@@ -20,7 +20,7 @@ namespace Demo {
 
         spritesheet = std::make_shared<DX9GF::Texture>(gd);
 
-        spritesheet->LoadTexture(L"terminals.png");
+        spritesheet->LoadTexture(L"assets/terminals.png");
 
 
         sprite = std::make_shared<DX9GF::StaticSprite>(spritesheet.get());

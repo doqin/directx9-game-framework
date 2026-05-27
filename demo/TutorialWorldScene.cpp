@@ -17,7 +17,7 @@ void Demo::TutorialWorldScene::Init()
 	drawBuffer = std::make_shared<DX9GF::CommandBuffer>();
 	commandBuffer = std::make_shared<DX9GF::CommandBuffer>();
 	map = std::make_shared<DX9GF::Map>(game->GetGraphicsDevice());
-	map->Create(transformManager, colliderManager, "./tutorial.tmx");
+	map->Create(transformManager, colliderManager, "./assets/tutorial.tmx");
 	map->SetAreaUpdateHandler("triggers", GetRandomEncounterFunc(game, player, {
 		{"DemonEyeEnemy", 40},
 		{"MimicEnemy", 20},

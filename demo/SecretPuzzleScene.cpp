@@ -18,7 +18,7 @@ void Demo::SecretPuzzleScene::Init()
 	drawBuffer = std::make_shared<DX9GF::CommandBuffer>();
 	commandBuffer = std::make_shared<DX9GF::CommandBuffer>();
 	map = std::make_shared<DX9GF::Map>(game->GetGraphicsDevice());
-	map->Create(transformManager, colliderManager, "./SecretPuzzle.tmx");
+	map->Create(transformManager, colliderManager, "./assets/SecretPuzzle.tmx");
 	map->SetAreaUpdateHandler("trigger_encounter", GetRandomEncounterFunc(game, player, {
 		{"VampireBatEnemy", 40},
 		{"MimicEnemy", 35},

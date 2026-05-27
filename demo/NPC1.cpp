@@ -14,7 +14,7 @@ namespace Demo {
         cm->Add(collider);
 
         spritesheet = std::make_shared<DX9GF::Texture>(gd);
-        spritesheet->LoadTexture(L"NPC1.png");
+        spritesheet->LoadTexture(L"assets/NPC1.png");
         sprite = std::make_shared<DX9GF::AnimatedSprite>(spritesheet.get(), DX9GF::Utils::CreateRectsHorizontal(0, 0, 32, 32, 4), 8, true);
         sprite->SetOrigin(16.f, 16.f);
         sprite->SetPosition(this->GetWorldX(), this->GetWorldY());

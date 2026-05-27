@@ -21,7 +21,7 @@ void Demo::HeavyStrikeCard::Draw(unsigned long long deltaTime) {
 	}
 	if (!strikeTexture) {
 		strikeTexture = std::make_shared<DX9GF::Texture>(graphicsDevice);
-		strikeTexture->LoadTexture(L"ui.png");
+		strikeTexture->LoadTexture(L"assets/ui.png");
 		strikeSprite = std::make_shared<DX9GF::StaticSprite>(strikeTexture.get());
 		strikeSprite->SetSrcRect({ .left = 128, .top = 272, .right = 224, .bottom = 288 });
 	}
@@ -61,7 +61,7 @@ void Demo::TwinStrikeCard::Draw(unsigned long long deltaTime) {
 	}
 	if (!strikeTexture) {
 		strikeTexture = std::make_shared<DX9GF::Texture>(graphicsDevice);
-		strikeTexture->LoadTexture(L"ui.png");
+		strikeTexture->LoadTexture(L"assets/ui.png");
 		strikeSprite = std::make_shared<DX9GF::StaticSprite>(strikeTexture.get());
 		strikeSprite->SetSrcRect({ .left = 128, .top = 288, .right = 224, .bottom = 304 });
 	}
@@ -102,7 +102,7 @@ void Demo::CleaveCard::Draw(unsigned long long deltaTime) {
 	}
 	if (!strikeTexture) {
 		strikeTexture = std::make_shared<DX9GF::Texture>(graphicsDevice);
-		strikeTexture->LoadTexture(L"ui.png");
+		strikeTexture->LoadTexture(L"assets/ui.png");
 		strikeSprite = std::make_shared<DX9GF::StaticSprite>(strikeTexture.get());
 		strikeSprite->SetSrcRect({ .left = 0, .top = 304, .right = 80, .bottom = 320 });
 	}
@@ -139,7 +139,7 @@ void Demo::ChainLightningCard::Draw(unsigned long long deltaTime) {
 	}
 	if (!strikeTexture) {
 		strikeTexture = std::make_shared<DX9GF::Texture>(graphicsDevice);
-		strikeTexture->LoadTexture(L"ui.png");
+		strikeTexture->LoadTexture(L"assets/ui.png");
 		strikeSprite = std::make_shared<DX9GF::StaticSprite>(strikeTexture.get());
 		strikeSprite->SetSrcRect({ .left = 80, .top = 304, .right = 192, .bottom = 320 });
 	}
@@ -177,7 +177,7 @@ void Demo::PoisonCard::Draw(unsigned long long deltaTime) {
 	}
 	if (!strikeTexture) {
 		strikeTexture = std::make_shared<DX9GF::Texture>(graphicsDevice);
-		strikeTexture->LoadTexture(L"ui.png");
+		strikeTexture->LoadTexture(L"assets/ui.png");
 		strikeSprite = std::make_shared<DX9GF::StaticSprite>(strikeTexture.get());
 		strikeSprite->SetSrcRect({ .left = 192, .top = 304, .right = 272, .bottom = 320 });
 	}
@@ -212,7 +212,7 @@ void Demo::VulnerableCard::Draw(unsigned long long deltaTime) {
 	}
 	if (!strikeTexture) {
 		strikeTexture = std::make_shared<DX9GF::Texture>(graphicsDevice);
-		strikeTexture->LoadTexture(L"ui.png");
+		strikeTexture->LoadTexture(L"assets/ui.png");
 		strikeSprite = std::make_shared<DX9GF::StaticSprite>(strikeTexture.get());
 		strikeSprite->SetSrcRect({ .left = 0, .top = 320, .right = 96, .bottom = 336 });
 	}
@@ -247,7 +247,7 @@ void Demo::WeaknessCard::Draw(unsigned long long deltaTime) {
 	}
 	if (!strikeTexture) {
 		strikeTexture = std::make_shared<DX9GF::Texture>(graphicsDevice);
-		strikeTexture->LoadTexture(L"ui.png");
+		strikeTexture->LoadTexture(L"assets/ui.png");
 		strikeSprite = std::make_shared<DX9GF::StaticSprite>(strikeTexture.get());
 		strikeSprite->SetSrcRect({ .left = 96, .top = 320, .right = 192, .bottom = 336 });
 	}
@@ -282,7 +282,7 @@ void Demo::StunCard::Draw(unsigned long long deltaTime) {
 	}
 	if (!strikeTexture) {
 		strikeTexture = std::make_shared<DX9GF::Texture>(graphicsDevice);
-		strikeTexture->LoadTexture(L"ui.png");
+		strikeTexture->LoadTexture(L"assets/ui.png");
 		strikeSprite = std::make_shared<DX9GF::StaticSprite>(strikeTexture.get());
 		strikeSprite->SetSrcRect({ .left = 192, .top = 320, .right = 272, .bottom = 352 });
 	}
