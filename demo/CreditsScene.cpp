@@ -150,10 +150,10 @@ namespace Demo
 		//bgTex->LoadTexture(IDB_PNG2);
 
 		uiSheetTex = std::make_shared<DX9GF::Texture>(game->GetGraphicsDevice());
-		uiSheetTex->LoadTexture(L"ui.png");
+		uiSheetTex->LoadTexture(L"./assets/ui.png");
 
 		placeholderTex = std::make_shared<DX9GF::Texture>(game->GetGraphicsDevice());
-		placeholderTex->LoadTexture(L"ui-pack.png");
+		placeholderTex->LoadTexture(L"./assets/ui-pack.png");
 
 		backButton = std::make_shared<Demo::IconButton>(transformManager, 0, 0, 96, 32, uiSheetTex, 3);
 		backButton->SetSpriteRects(DX9GF::Utils::CreateRectsVertical(96, 48, 48, 16, 3));

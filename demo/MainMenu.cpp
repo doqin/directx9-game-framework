@@ -214,7 +214,8 @@ namespace Demo
 		creditsButton->SetSpriteRects(DX9GF::Utils::CreateRectsVertical(192, 96, 48, 16, 3));
 		creditsButton->SetOnReleaseLeft([this](DX9GF::ITrigger* t) {
 			auto app = DX9GF::Application::GetInstance();
-			this->game->GetSceneManager()->PushScene(
+			auto sceMan = this->game->GetSceneManager();
+			sceMan->InsertScene(sceMan->GetIndex() + 1,
 				new CreditsScene(this->game, app->GetScreenWidth(), app->GetScreenHeight())
 			);
 			this->game->GetSceneManager()->GoToNext();
