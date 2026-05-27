@@ -88,7 +88,7 @@ void Demo::SecretPuzzleScene::Init()
 				this->isBossDead = true;
 				});
 
-			battleScene->SetCustomBackgroundDraw([](DX9GF::GraphicsDevice*, unsigned long long) {});
+			battleScene->SetCustomBackgroundDraw([this](DX9GF::GraphicsDevice* gd, unsigned long long deltaTime) { DrawBackground(gd, deltaTime); });
 
 			auto sceMan = this->game->GetSceneManager();
 			sceMan->InsertScene(sceMan->GetIndex() + 1, battleScene);
@@ -219,6 +219,10 @@ void Demo::SecretPuzzleScene::Init()
 
 	transformManager->RebuildHierarchy();
 	drawBuffer->PushCommand(std::make_shared<Demo::TransitionCommand>(game->GetGraphicsDevice(), 1.f, false));
+
+	dauDau = std::make_shared<DauDauNPC>(transformManager, 1 * 16, -31.0f * 16);
+	dauDau->Init(game->GetGraphicsDevice(), player, colliderManager, font, drawBuffer);
+	dauDau->AddLine(L"Dau Dau", L"Watch out! This portal is a one-way trip to the invisible maze! Enter if you dare!"); 
 }
 
 void Demo::SecretPuzzleScene::Update(unsigned long long deltaTime)
@@ -284,6 +288,15 @@ void Demo::SecretPuzzleScene::Update(unsigned long long deltaTime)
 	}
 	for (auto& healingPoint : healingPoints) {
 		healingPoint->Update(deltaTime);
+	}
+
+	dauDau->Update(deltaTime);
+	if (!currentConversation && dauDau->CanInteract() && inpMan->KeyPress(DIK_E)) {
+		auto [sw, sh] = camera.GetScreenResolution();
+		currentConversation = std::make_shared<IConversation>(std::make_shared<DX9GF::FontSprite>(font.get()), sw, sh);
+		for (auto& line : dauDau->GetDialogueLines()) {
+			currentConversation->AddLine(line);
+		}
 	}
 
 	for (auto& chest : treasureChests) {
@@ -363,6 +376,8 @@ void Demo::SecretPuzzleScene::Draw(unsigned long long deltaTime)
 
 		for (auto& chest : treasureChests)
 			chest->Draw(camera, deltaTime);
+
+		dauDau->Draw(camera, deltaTime);
 
 		player->Draw(deltaTime);
 		if (drawBuffer) {

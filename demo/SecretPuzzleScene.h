@@ -41,6 +41,8 @@ namespace Demo {
 		std::shared_ptr<DX9GF::CommandBuffer> commandBuffer;
 		std::shared_ptr<IConversation> currentConversation;
 
+		std::shared_ptr<DauDauNPC> dauDau;
+
 		std::vector<std::shared_ptr<TreasureChestNPC>> treasureChests;
 
 	public:

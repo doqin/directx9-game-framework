@@ -190,7 +190,8 @@ namespace Demo
 		optionsButton->SetOnReleaseLeft([this](DX9GF::ITrigger* t) {
 			auto app = DX9GF::Application::GetInstance();
 			//push Settings Scene
-			this->game->GetSceneManager()->PushScene(
+			auto sceMan = this->game->GetSceneManager();
+			sceMan->InsertScene(sceMan->GetIndex() + 1,
 				new SettingsScene(this->game, app->GetScreenWidth(), app->GetScreenHeight())
 			);
 			this->game->GetSceneManager()->GoToNext();
