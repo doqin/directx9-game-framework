@@ -4,6 +4,7 @@
 #include "IconButton.h"
 #include "SettingsManager.h"
 #include <algorithm>
+#include <cmath>
 #include <dinput.h>
 namespace Demo
 {
@@ -41,6 +42,38 @@ namespace Demo
 		fontSprite->SetText(std::move(text));
 		fontSprite->Draw(camera, 0); // deltaTime is not really used for anything :P
 		fontSprite->End();
+	}
+
+	void SettingsScene::DrawBackground(unsigned long long deltaTime)
+	{
+		const D3DCOLOR polyColor = 0xFF9cdb43;
+		auto [screenWidth, screenHeight] = camera.GetScreenResolution();
+
+		static float timeAcc = 0.0f;
+		timeAcc += static_cast<float>(deltaTime) * 0.001f;
+
+		for (int i = 0; i < 15; ++i) {
+			float size = 100.0f + (i % 3) * 50.0f;
+			float margin = size * 2.0f;
+			float bx = std::fmod((i * 123.0f) + timeAcc * 10.0f, static_cast<float>(screenWidth) + margin * 2.0f) - margin;
+			float by = std::fmod((i * 456.0f) + timeAcc * 5.0f, static_cast<float>(screenHeight) + margin * 2.0f) - margin;
+			float angle = timeAcc * 0.1f + i;
+
+			float glitchSize = size + std::sinf(timeAcc * 2.0f + i) * 5.0f;
+
+			float prevX = bx + std::cosf(angle) * glitchSize;
+			float prevY = by + std::sinf(angle) * glitchSize;
+
+			for (int v = 1; v <= 5; ++v) {
+				float vAngle = angle + (v * 72.0f * 3.14159f / 180.0f);
+				float vx = bx + std::cosf(vAngle) * glitchSize;
+				float vy = by + std::sinf(vAngle) * glitchSize;
+
+				game->GetGraphicsDevice()->DrawLine(prevX, prevY, vx, vy, polyColor);
+				prevX = vx;
+				prevY = vy;
+			}
+		}
 	}
 
 	void SettingsScene::DrawVolumeTrack(std::shared_ptr<DX9GF::StaticSprite> bg, std::shared_ptr<DX9GF::StaticSprite> fill, float vol, RECT originalRect, unsigned long long deltaTime)
@@ -318,20 +351,24 @@ namespace Demo
 	void SettingsScene::Draw(unsigned long long deltaTime)
 	{
 		auto gd = game->GetGraphicsDevice();
-		gd->Clear(0xFFFFFFFF);
+		gd->Clear(0xFF000000);
 		if (SUCCEEDED(gd->BeginDraw())) {
-			//if (bgSprite) { bgSprite->Begin(); bgSprite->Draw(camera, deltaTime); bgSprite->End(); }
+			DrawBackground(deltaTime);
+
+			gd->SetAlphaBlending(true);
+			gd->DrawRectangle(camera, -lastScreenWidth / 2.f, -lastScreenHeight / 2.f, lastScreenWidth, lastScreenHeight, D3DCOLOR_ARGB(200, 0, 0, 0), true);
+			gd->SetAlphaBlending(false);
 
 			float startY = -lastScreenHeight / 2.f + 64.f;
 
 			//Draw label
-			DrawString(L"Master Volume", LABEL_COLUMN_X, startY, D3DCOLOR_XRGB(0, 0, 0));
-			DrawString(L"Music Volume", LABEL_COLUMN_X, startY + SPACING_Y, D3DCOLOR_XRGB(0, 0, 0));
-			DrawString(L"Sfx Volume", LABEL_COLUMN_X, startY + SPACING_Y * 2, D3DCOLOR_XRGB(0, 0, 0));
-			DrawString(L"Move up", LABEL_COLUMN_X, startY + SPACING_Y * 3.5f, D3DCOLOR_XRGB(0, 0, 0));
-			DrawString(L"Move down", LABEL_COLUMN_X, startY + SPACING_Y * 5.0f, D3DCOLOR_XRGB(0, 0, 0));
-			DrawString(L"Move left", LABEL_COLUMN_X, startY + SPACING_Y * 6.5f, D3DCOLOR_XRGB(0, 0, 0));
-			DrawString(L"Move right", LABEL_COLUMN_X, startY + SPACING_Y * 8.0f, D3DCOLOR_XRGB(0, 0, 0));
+			DrawString(L"Master Volume", LABEL_COLUMN_X, startY, 0xFFFFFFFF);
+			DrawString(L"Music Volume", LABEL_COLUMN_X, startY + SPACING_Y, 0xFFFFFFFF);
+			DrawString(L"Sfx Volume", LABEL_COLUMN_X, startY + SPACING_Y * 2, 0xFFFFFFFF);
+			DrawString(L"Move up", LABEL_COLUMN_X, startY + SPACING_Y * 3.5f, 0xFFFFFFFF);
+			DrawString(L"Move down", LABEL_COLUMN_X, startY + SPACING_Y * 5.0f, 0xFFFFFFFF);
+			DrawString(L"Move left", LABEL_COLUMN_X, startY + SPACING_Y * 6.5f, 0xFFFFFFFF);
+			DrawString(L"Move right", LABEL_COLUMN_X, startY + SPACING_Y * 8.0f, 0xFFFFFFFF);
 
 			//draw tracks
 			auto sm = SettingsManager::GetInstance();

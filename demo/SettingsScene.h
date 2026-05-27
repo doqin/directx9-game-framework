@@ -58,6 +58,7 @@ namespace Demo
         bool isListeningRight = false;
 
         // ---HELPER METHOD ---
+        void DrawBackground(unsigned long long deltaTime);
         void DrawVolumeTrack(std::shared_ptr<DX9GF::StaticSprite> bg, std::shared_ptr<DX9GF::StaticSprite> fill, float vol, RECT originalRect, unsigned long long deltaTime);
         void DrawKeybindButton(const std::string& action, std::shared_ptr<IconButton> btn, bool listening);
 
