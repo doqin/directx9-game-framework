@@ -6,6 +6,7 @@
 #include "GameItems.h"
 #include "CustomBattleScene.h"
 #include "TransitionCommand.h"
+#include "OutroScene.h"
 #include "Game.h"
 #include <vector>
 #include <cmath>
@@ -219,6 +220,31 @@ void Demo::BossWorldScene::Init() {
 		}
 		});
 
+
+	map->SetAreaUpdateHandler("trigger_outro", [this](const DX9GF::Map::ObjectArea& area) {
+		if (!this->isFinalBossDead) return;
+		if (!player->IsWalking()) return;
+
+		auto sceMan = this->game->GetSceneManager();
+		auto app = DX9GF::Application::GetInstance();
+		sceMan->InsertScene(sceMan->GetIndex() + 1,
+			new OutroScene(this->game, app->GetScreenWidth(), app->GetScreenHeight())
+		);
+		isTransitioning = true;
+		auto transitionInCommand = std::make_shared<TransitionCommand>(game->GetGraphicsDevice(), 1.f, true);
+		drawBuffer->PushCommand(transitionInCommand);
+		commandBuffer->PushCommand(std::make_shared<DX9GF::CustomCommand>([this, transitionInCommand, sceMan](std::function<void(void)> markFinished) {
+			if (!transitionInCommand->IsFinished()) {
+				return;
+			}
+			this->isGamePaused = true;
+			auto audio = DX9GF::AudioManager::GetInstance();
+			audio->StopAll();
+			sceMan->GoToNext();
+			markFinished();
+			}));
+		drawBuffer->PushCommand(std::make_shared<TransitionCommand>(game->GetGraphicsDevice(), 1.f, false));
+	});
 
 	map->SetAreaUpdateHandler("trigger_spec_item", [this](const DX9GF::Map::ObjectArea& area) {
 		if (!this->hasGottenUselessItem) {

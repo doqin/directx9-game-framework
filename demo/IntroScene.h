@@ -1,0 +1,24 @@
+#pragma once
+#include "DX9GF.h"
+#include "DX9GFExtras.h"
+#include "DX9GFIScene.h"
+#include "Game.h"
+#include "IConversation.h"
+
+namespace Demo {
+    class IntroScene : public DX9GF::IScene {
+    private:
+        Game* game;
+        DX9GF::Camera uiCamera;
+        std::shared_ptr<DX9GF::Font> font;
+        std::shared_ptr<DX9GF::FontSprite> fontSprite;
+        std::shared_ptr<IConversation> conversation;
+        bool hasTransitioned = false;
+    public:
+        IntroScene(Game* game, int screenWidth, int screenHeight)
+            : IScene(screenWidth, screenHeight), game(game), uiCamera(screenWidth, screenHeight) {}
+        void Init() override;
+        void Update(unsigned long long deltaTime) override;
+        void Draw(unsigned long long deltaTime) override;
+    };
+}

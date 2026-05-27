@@ -1,6 +1,7 @@
 <?xml version="1.0" encoding="UTF-8"?>
-<map version="1.10" tiledversion="1.12.1" orientation="orthogonal" renderorder="right-down" width="30" height="20" tilewidth="16" tileheight="16" infinite="1" nextlayerid="26" nextobjectid="1951">
+<map version="1.10" tiledversion="1.12.1" orientation="orthogonal" renderorder="right-down" width="30" height="20" tilewidth="16" tileheight="16" infinite="1" nextlayerid="27" nextobjectid="1952">
  <tileset firstgid="1" source="bossmatrix.tsx"/>
+ <tileset firstgid="217" source="bossmatrix.tsx"/>
  <layer id="1" name="background0" width="30" height="20">
   <data encoding="csv"/>
  </layer>
@@ -2630,9 +2631,9 @@
    <chunk x="48" y="-32" width="16" height="16">
 149,149,149,0,0,0,0,0,0,0,0,0,0,0,0,0,
 149,149,149,0,0,0,0,0,0,0,0,0,0,0,0,0,
-149,149,149,0,0,0,149,0,0,0,0,0,0,0,0,0,
-149,149,149,0,0,149,0,0,0,0,0,0,0,0,0,0,
-149,149,149,0,149,149,0,0,0,0,0,0,0,0,0,0,
+265,266,267,0,0,0,149,0,0,0,0,0,0,0,0,0,
+277,314,279,0,0,149,0,0,0,0,0,0,0,0,0,0,
+289,290,291,0,149,149,0,0,0,0,0,0,0,0,0,0,
 149,149,149,149,149,149,0,0,0,0,0,0,0,0,0,0,
 149,149,149,149,149,149,0,0,0,0,0,0,0,0,0,0,
 149,149,149,149,149,0,149,0,149,0,0,0,0,0,0,0,
@@ -4475,7 +4476,10 @@
  <objectgroup id="19" name="trigger_battle_boss">
   <object id="1522" x="624.5" y="-384" width="255.5" height="80"/>
  </objectgroup>
- <objectgroup id="20" name="trigger_spec_item" visible="0">
+ <objectgroup id="20" name="trigger_spec_item">
   <object id="1525" x="747.75" y="-642.75" width="16.5" height="26.75"/>
+ </objectgroup>
+ <objectgroup id="26" name="trigger_outro">
+  <object id="1951" x="784" y="-463.667" width="15.6667" height="15.6667"/>
  </objectgroup>
 </map>

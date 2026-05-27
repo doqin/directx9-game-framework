@@ -178,6 +178,17 @@ namespace Demo
 				std::remove("savegame.json");
 				gameSaveState = SaveGameState::StartNewGame(game, saveManager);
 				isTransitioning = false;
+				commandBuffer->PushCommand(std::make_shared<DX9GF::CustomCommand>([this](std::function<void(void)> markFinished1) {
+					std::ifstream f("savegame.json");
+					if (f.good()) {
+						continueButton->SetState(IButton::ButtonState::IDLE);
+					}
+					else {
+						continueButton->SetState(IButton::ButtonState::DISABLED);
+					}
+					f.close();
+					markFinished1();
+				}));
 				markFinished();
 			}));
 			drawBuffer->PushCommand(std::make_shared<TransitionCommand>(game->GetGraphicsDevice(), 1.f, false));
@@ -190,7 +201,8 @@ namespace Demo
 		optionsButton->SetOnReleaseLeft([this](DX9GF::ITrigger* t) {
 			auto app = DX9GF::Application::GetInstance();
 			//push Settings Scene
-			this->game->GetSceneManager()->PushScene(
+			auto sceMan = this->game->GetSceneManager();
+			sceMan->InsertScene(sceMan->GetIndex() + 1,
 				new SettingsScene(this->game, app->GetScreenWidth(), app->GetScreenHeight())
 			);
 			this->game->GetSceneManager()->GoToNext();
@@ -252,6 +264,7 @@ namespace Demo
 
 		for (auto& button : uiButtons)
 		{
+			if (button->GetState() == IButton::ButtonState::DISABLED) continue;
 			button->Update(deltaTime);
 		}
 

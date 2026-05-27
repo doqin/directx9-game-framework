@@ -2,6 +2,7 @@
 #include "SaveGameState.h"
 #include "Game.h"
 #include "Player.h"
+#include "IntroScene.h"
 #include "TutorialWorldScene.h"
 #include "SecretPuzzleScene.h"
 #include "ThreadAlleyScene.h"
@@ -15,6 +16,7 @@ namespace Demo {
 	void SaveGameState::BuildScenes() {
 		auto app = DX9GF::Application::GetInstance();
 		auto sceneManager = game->GetSceneManager();
+		sceneManager->PushScene(new IntroScene(game, app->GetScreenWidth(), app->GetScreenHeight()));
 		sceneManager->PushScene(new TutorialWorldScene(game, saveManager, app->GetScreenWidth(), app->GetScreenHeight()));
 		sceneMap["TutorialWorldScene"] = sceneManager->GetSceneCount() - 1;
 		sceneManager->PushScene(new SecretPuzzleScene(game, saveManager, app->GetScreenWidth(), app->GetScreenHeight()));
@@ -119,11 +121,8 @@ namespace Demo {
 		saveManager->Register(saveState.get());
 		saveState->ClearScenes();
 		saveState->BuildScenes();
-		auto sceneIt = saveState->sceneMap.find("TutorialWorldScene");
-		DX9GF::AudioManager::GetInstance()->PlayBGM_Fade("bgm_tutorial", 0.5f, 1.5f);
-		if (sceneIt != saveState->sceneMap.end()) {
-			game->GetSceneManager()->GoToScene(sceneIt->second);
-		}
+		DX9GF::AudioManager::GetInstance()->StopAll();
+		game->GetSceneManager()->GoToScene(1);
 		return saveState;
 	}
 
