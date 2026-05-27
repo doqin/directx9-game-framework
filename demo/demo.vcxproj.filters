@@ -185,6 +185,7 @@
     <Image Include="secretpuzzle.png" />
     <Image Include="chestopened.png" />
     <Image Include="chestclosed.png" />
+    <Image Include="gate.png" />
   </ItemGroup>
   <ItemGroup>
     <Font Include="arcade-among-2-r46pv.ttf" />

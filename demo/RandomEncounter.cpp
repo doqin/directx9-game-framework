@@ -59,8 +59,9 @@ std::function<void(const DX9GF::Map::ObjectArea&)> Demo::GetRandomEncounterFunc(
 					markFinished();
 				}));
 				drawBuffer->PushCommand(std::make_shared<TransitionCommand>(game->GetGraphicsDevice(), 1.f, false));
-				drawBuffer->PushCommand(std::make_shared<DX9GF::CustomCommand>([isGamePaused](std::function<void()> markFinished) {
+				drawBuffer->PushCommand(std::make_shared<DX9GF::CustomCommand>([isGamePaused, &lastEncounterTime](std::function<void()> markFinished) {
 					*isGamePaused = false;
+					lastEncounterTime = std::chrono::steady_clock::now();
 					markFinished();
 				}));
 			}

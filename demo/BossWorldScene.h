@@ -31,6 +31,9 @@ namespace Demo {
         std::shared_ptr<DX9GF::CommandBuffer> commandBuffer;
         std::shared_ptr<DX9GF::SaveManager> saveManager;
 
+		std::shared_ptr<DX9GF::Texture> gateTexture;
+		std::shared_ptr<DX9GF::StaticSprite> gateSprite;
+
         std::vector<std::shared_ptr<HackTerminal>> hackMachines;
         std::shared_ptr<HackTerminal> mainTerminal;
 

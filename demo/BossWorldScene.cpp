@@ -48,9 +48,9 @@ void Demo::BossWorldScene::Init() {
 	npcHint->AddLine(L"Veteran Debugger", L"...'The red sun sets over the blue ocean, giving life to the green earth, until it fades into\norange autumn'...");
 	npcHint->AddLine(L"Veteran Debugger", L"Bah, probably just corrupted junk data. Don't mind my rambling.");
 
-	npcHint->AddLine(L"Veteran Debugger", L"Listen carefully. There is a heavily glitched battlefield up ahead.");
-	npcHint->AddLine(L"Veteran Debugger", L"You don't need to clear it to proceed. Bypassing that mess won't affect your journey at all.");
-	npcHint->AddLine(L"Veteran Debugger", L"I strongly advise you to keep your head down and walk away. It's not worth it.");
+	//npcHint->AddLine(L"Veteran Debugger", L"Listen carefully. There is a heavily glitched battlefield up ahead.");
+	//npcHint->AddLine(L"Veteran Debugger", L"You don't need to clear it to proceed. Bypassing that mess won't affect your journey at all.");
+	//npcHint->AddLine(L"Veteran Debugger", L"I strongly advise you to keep your head down and walk away. It's not worth it.");
 
 
 	//hack machines
@@ -227,6 +227,11 @@ void Demo::BossWorldScene::Init() {
 	draggableManager = std::make_shared<Demo::DraggableManager>();
 	inventoryMenu = std::make_shared<InventoryMenu>(game, player, transformManager, draggableManager, &uiCamera, font.get());
 	inventoryMenu->Init();
+
+	gateTexture = std::make_shared<DX9GF::Texture>(game->GetGraphicsDevice());
+	gateTexture->LoadTexture(L"gate.png");
+	gateSprite = std::make_shared<DX9GF::StaticSprite>(gateTexture.get());
+	gateSprite->SetPosition(46 * 16, -15 * 16);
 
 	transformManager->RebuildHierarchy();
 	drawBuffer->PushCommand(std::make_shared<Demo::TransitionCommand>(game->GetGraphicsDevice(), 1.f, false));
@@ -463,6 +468,11 @@ void Demo::BossWorldScene::Draw(unsigned long long deltaTime) {
 	if (SUCCEEDED(gd->BeginDraw())) {
 		DrawBackground(gd, deltaTime, currentIslandID);
 		map->Draw(camera);
+		if (!isBossDoorUnlocked) {
+			gateSprite->Begin();
+			gateSprite->Draw(camera, deltaTime);
+			gateSprite->End();
+		}
 
 		for (auto& m : hackMachines) m->Draw(camera, deltaTime);
 		mainTerminal->Draw(camera, deltaTime);

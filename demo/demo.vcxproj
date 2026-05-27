@@ -429,6 +429,9 @@
     <Image Include="First Asset pack.png">
       <DeploymentContent>true</DeploymentContent>
     </Image>
+    <Image Include="gate.png">
+      <DeploymentContent>true</DeploymentContent>
+    </Image>
     <Image Include="grab.png">
       <DeploymentContent>true</DeploymentContent>
     </Image>
