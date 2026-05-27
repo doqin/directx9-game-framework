@@ -8,6 +8,10 @@
 #include "StrikeCard.h"
 #include "ShopPoint.h"
 #include "HealingPoint.h"
+#include "TreasureChestNPC.h"
+#include "IConversation.h"
+
+
 
 namespace Demo {
 	class ThreadAlleyScene : public DX9GF::IScene, public DX9GF::ISaveable {
@@ -30,6 +34,10 @@ namespace Demo {
 		std::shared_ptr<DX9GF::Map> map;
 		std::shared_ptr<DX9GF::CommandBuffer> drawBuffer;
 		std::shared_ptr<DX9GF::CommandBuffer> commandBuffer;
+
+		std::vector<std::shared_ptr<TreasureChestNPC>> treasureChests;
+		std::shared_ptr<IConversation> currentConversation;
+
 
 		float bgBaseScrollX = 0;
 		float bgBaseScrollY = 0;
