@@ -208,6 +208,7 @@
     <ClCompile Include="BoomerangProjectile.cpp" />
     <ClCompile Include="BossWorldScene.cpp" />
     <ClCompile Include="CardShop.cpp" />
+    <ClCompile Include="CreditsScene.cpp" />
     <ClCompile Include="CupidEnemy.cpp" />
     <ClCompile Include="CustomBattleScene.cpp" />
     <ClCompile Include="DamageTextManager.cpp" />
@@ -280,6 +281,7 @@
     <ClInclude Include="BoomerangProjectile.h" />
     <ClInclude Include="BossWorldScene.h" />
     <ClInclude Include="CardShop.h" />
+    <ClInclude Include="CreditsScene.h" />
     <ClInclude Include="CupidEnemy.h" />
     <ClInclude Include="CustomBattleScene.h" />
     <ClInclude Include="DamageTextManager.h" />
