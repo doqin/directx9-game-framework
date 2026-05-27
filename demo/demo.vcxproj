@@ -405,6 +405,12 @@
     <Image Include="bugprojectile-Sheet.png">
       <DeploymentContent>true</DeploymentContent>
     </Image>
+    <Image Include="chestclosed.png">
+      <DeploymentContent>true</DeploymentContent>
+    </Image>
+    <Image Include="chestopened.png">
+      <DeploymentContent>true</DeploymentContent>
+    </Image>
     <Image Include="click.png">
       <DeploymentContent>true</DeploymentContent>
     </Image>

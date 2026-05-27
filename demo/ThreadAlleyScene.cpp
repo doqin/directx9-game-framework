@@ -405,6 +405,10 @@ void Demo::ThreadAlleyScene::GenerateSaveData(nlohmann::json& outData)
 		{"y", pos.y},
 		{"zoom", camera.GetZoom()}
 	};
+
+	nlohmann::json chestStates = nlohmann::json::array();
+	for (auto& c : treasureChests) chestStates.push_back(c->GetIsOpened());
+	outData["treasureChests"] = chestStates;
 }
 
 void Demo::ThreadAlleyScene::RestoreSaveData(const nlohmann::json& inData)

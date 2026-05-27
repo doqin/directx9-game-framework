@@ -19,13 +19,22 @@ namespace Demo {
         collider->SetOriginCenter();
         cm->Add(collider);
         spritesheet = std::make_shared<DX9GF::Texture>(gd);
-        spritesheet->LoadTexture(L"daudau-Sheet.png");
+        spritesheet->LoadTexture(L"chestclosed.png");
         sprite = std::make_shared<DX9GF::AnimatedSprite>(
             spritesheet.get(),
             DX9GF::Utils::CreateRectsHorizontal(0, 0, 32, 32, 1),
             12, true);
         sprite->SetOrigin(16.f, 16.f);
         sprite->SetPosition(this->GetWorldX(), this->GetWorldY());
+		openedTexture = std::make_shared<DX9GF::Texture>(gd);
+		openedTexture->LoadTexture(L"chestopened.png");
+		openedSprite = std::make_shared<DX9GF::AnimatedSprite>(
+			openedTexture.get(),
+			DX9GF::Utils::CreateRectsHorizontal(0, 0, 32, 32, 1),
+			12, true);
+		openedSprite->SetOrigin(16.f, 16.f);
+		openedSprite->SetPosition(this->GetWorldX(), this->GetWorldY());
+
     }
     std::vector<ChestReward> TreasureChestNPC::Open(Player* p) {
         if (isOpened) return {};
@@ -50,10 +59,16 @@ namespace Demo {
         return given;
     }
     void TreasureChestNPC::Draw(const DX9GF::Camera& camera, unsigned long long deltaTime) {
-        if (isOpened) return;
-        sprite->Begin();
-        sprite->Draw(camera, deltaTime);
-        sprite->End();
+        if (isOpened) {
+			openedSprite->Begin();
+			openedSprite->Draw(camera, deltaTime);
+			openedSprite->End();
+        }
+        else {
+            sprite->Begin();
+            sprite->Draw(camera, deltaTime);
+            sprite->End();
+        }
         INPC::Draw(camera, deltaTime);
     }
 }

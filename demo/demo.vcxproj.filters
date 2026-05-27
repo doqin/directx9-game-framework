@@ -183,6 +183,8 @@
     <Image Include="bubble-Sheet.png" />
     <Image Include="bubbleprojectile.png" />
     <Image Include="secretpuzzle.png" />
+    <Image Include="chestopened.png" />
+    <Image Include="chestclosed.png" />
   </ItemGroup>
   <ItemGroup>
     <Font Include="arcade-among-2-r46pv.ttf" />

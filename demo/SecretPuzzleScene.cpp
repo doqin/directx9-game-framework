@@ -400,6 +400,10 @@ void Demo::SecretPuzzleScene::GenerateSaveData(nlohmann::json& outData)
 	outData["puzzle"] = {
 		{"isBossDead", isBossDead}
 	};
+
+	nlohmann::json chestStates = nlohmann::json::array();
+	for (auto& c : treasureChests) chestStates.push_back(c->GetIsOpened());
+	outData["treasureChests"] = chestStates;
 }
 
 void Demo::SecretPuzzleScene::RestoreSaveData(const nlohmann::json& inData)

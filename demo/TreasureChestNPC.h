@@ -23,6 +23,8 @@ namespace Demo {
         bool isOpened = false;
         bool randomPick = false;
         std::vector<ChestReward> rewards;
+		std::shared_ptr<DX9GF::Texture> openedTexture;
+		std::shared_ptr<DX9GF::AnimatedSprite> openedSprite;
     public:
         TreasureChestNPC(std::weak_ptr<DX9GF::TransformManager> tm, float x, float y,
             std::vector<ChestReward> rewards, bool randomPick = false);
