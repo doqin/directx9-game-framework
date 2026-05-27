@@ -59,6 +59,8 @@
     <ClCompile Include="SaveGameState.cpp" />
     <ClCompile Include="BossWorldScene.cpp" />
     <ClCompile Include="HackTerminal.cpp" />
+    <ClCompile Include="IntroScene.cpp" />
+    <ClCompile Include="OutroScene.cpp" />
     <ClCompile Include="RustyChestNPC.cpp" />
     <ClCompile Include="KeyeEnemy.cpp" />
     <ClCompile Include="KeyeproEnemy.cpp" />
@@ -129,6 +131,8 @@
     <ClInclude Include="SaveGameState.h" />
     <ClInclude Include="BossWorldScene.h" />
     <ClInclude Include="HackTerminal.h" />
+    <ClInclude Include="IntroScene.h" />
+    <ClInclude Include="OutroScene.h" />
     <ClInclude Include="RustyChestNPC.h" />
     <ClInclude Include="KeyeEnemy.h" />
     <ClInclude Include="KeyeproEnemy.h" />

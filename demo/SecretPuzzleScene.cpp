@@ -387,6 +387,7 @@ void Demo::SecretPuzzleScene::Draw(unsigned long long deltaTime)
 		if (draggableManager && inventoryMenu && inventoryMenu->IsOpen() && inventoryMenu->GetCurrentTab() == Demo::InventoryMenu::Tab::DECK) {
 			draggableManager->Draw(deltaTime);
 		}
+
 		if (currentConversation) currentConversation->Draw(gd, deltaTime);
 		DX9GF::InputManager::GetInstance()->DrawCursor(&this->uiCamera, deltaTime);
 		gd->EndDraw();
