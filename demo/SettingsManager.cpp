@@ -15,10 +15,10 @@ namespace Demo
 		this->SetSfxVolume(1.0f);
 		this->SetMasterVolume(1.0f);
 
-		keybinds["MOVE_LEFT"] = 65; //a
-		keybinds["MOVE_UP"] = 87; //w
-		keybinds["MOVE_RIGHT"] = 68; //d
-		keybinds["MOVE_DOWN"] = 83; //s
+		keybinds["MOVE_LEFT"] = DIK_A;
+		keybinds["MOVE_UP"] = DIK_W;
+		keybinds["MOVE_RIGHT"] = DIK_D;
+		keybinds["MOVE_DOWN"] = DIK_S;
 	}
 
 	bool SettingsManager::LoadSettings()
@@ -28,6 +28,7 @@ namespace Demo
 		if (!fileInput.is_open())
 		{
 			this->SetDefaultSettings();
+			this->SaveSettings();
 			return true;
 		}
 

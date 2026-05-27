@@ -207,7 +207,7 @@ void Demo::IDraggable::Init(std::shared_ptr<DraggableManager> manager, DX9GF::Gr
 		auto parent = dynamic_pointer_cast<IDraggable>(thisObj->GetParent().value().lock());
 		parent->GetDraggableManager().lock()->AttachDroppable(parent);
 		if (parent->GetParent().has_value()) {
-			DX9GF::AudioManager::GetInstance()->Play("card_snap", false, 0.4f);
+			DX9GF::AudioManager::GetInstance()->PlayRandom("card_snap", 0.2f);
 		}
 		else {
 			 DX9GF::AudioManager::GetInstance()->PlayRandom("card_draw", 0.2f);

@@ -220,6 +220,11 @@ namespace Demo
 			}
 		}
 
+		auto audio = DX9GF::AudioManager::GetInstance();
+
+		audio->Load("bgm_sky", IDR_BGM_SKY);
+		audio->PlayBGM_Fade("bgm_sky", 0.9f, 1.5f);
+
 		//call it to setup the update layout
 		UpdateLayout(lastScreenWidth, lastScreenHeight);
 

@@ -409,6 +409,8 @@ void Demo::BossWorldScene::Update(unsigned long long deltaTime) {
 	if (inventoryMenu && inventoryMenu->IsPendingLeave()) {
 		auto sceMan = game->GetSceneManager();
 		sceMan->GoToScene(0);
+		auto audio = DX9GF::AudioManager::GetInstance();
+		audio->PlayBGM_Fade("bgm_sky", 0.9f, 1.5f);
 		return;
 	}
 	commandBuffer->Update(deltaTime);

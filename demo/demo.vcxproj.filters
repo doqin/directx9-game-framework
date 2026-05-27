@@ -253,5 +253,26 @@
     <Media Include="assets\audio\dead.wav" />
     <Media Include="assets\audio\coins_gather.wav" />
     <Media Include="assets\audio\card_snap.wav" />
+    <Media Include="assets\audio\card_snap2.wav" />
+    <Media Include="assets\audio\power_up.wav" />
+    <Media Include="assets\audio\dialog_voice1.wav" />
+    <Media Include="assets\audio\dialog_voice2.wav" />
+    <Media Include="assets\audio\dialog_voice3.wav" />
+    <Media Include="assets\audio\dialog_voice4.wav" />
+    <Media Include="assets\audio\dialog_voice5.wav" />
+    <Media Include="assets\audio\power_up1.wav" />
+    <Media Include="assets\audio\power_up2.wav" />
+    <Media Include="assets\audio\power_up3.wav" />
+    <Media Include="assets\audio\checkpoint.wav" />
+    <Media Include="assets\audio\arcade-music-loop.wav" />
+    <Media Include="assets\audio\sky-loop.wav" />
+    <Media Include="assets\audio\tutorial-loop.wav" />
+    <Media Include="assets\audio\battle_boss.wav" />
+    <Media Include="assets\audio\battle-loop1.wav" />
+    <Media Include="assets\audio\battle-loop2.wav" />
+    <Media Include="assets\audio\battle-loop3.wav" />
+    <Media Include="assets\audio\battle-loop4.wav" />
+    <Media Include="assets\audio\boss-loop.wav" />
+    <Media Include="assets\audio\secret-loop.wav" />
   </ItemGroup>
 </Project>

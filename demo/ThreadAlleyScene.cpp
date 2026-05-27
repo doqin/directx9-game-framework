@@ -43,6 +43,7 @@ void Demo::ThreadAlleyScene::Init()
 			player->GenerateSaveGlobalData(saveData["player"]);
 			auto sceMan = game->GetSceneManager();
 			MainMenu::gameSaveState->GetPlayerFromScene(sceMan->GetScene(static_cast<size_t>(sceMan->GetIndex()) + 1))->RestoreSaveGlobalData(saveData["player"]);
+			DX9GF::AudioManager::GetInstance()->PlayBGM_Fade("bgm_boss", 0.3f, 1.5f);
 			sceMan->GoToNext();
 			isTransitioning = false;
 			markFinished();
@@ -200,7 +201,6 @@ void Demo::ThreadAlleyScene::Init()
 
 	auto audio = DX9GF::AudioManager::GetInstance();
 
-	// 1. Load file wav
 	audio->Load("step_c1", IDR_STEP_C1);
 	audio->Load("step_c2", IDR_STEP_C2);
 	audio->Load("step_c3", IDR_STEP_C3);
@@ -279,6 +279,8 @@ void Demo::ThreadAlleyScene::Update(unsigned long long deltaTime)
 	if (inventoryMenu && inventoryMenu->IsPendingLeave()) {
 		auto sceMan = game->GetSceneManager();
 		sceMan->GoToScene(0);
+		auto audio = DX9GF::AudioManager::GetInstance();
+		audio->PlayBGM_Fade("bgm_sky", 0.9f, 1.5f);
 		return;
 	}
 	commandBuffer->Update(deltaTime);

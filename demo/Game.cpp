@@ -6,11 +6,12 @@
 #include "SettingsScene.h"
 #include "DX9GFAudioManager.h"
 #include "resource.h"
+#include "SettingsManager.h"
 void Demo::Game::Init()
 {
 	srand(static_cast<unsigned int>(time(NULL)));
 	IGame::Init();
-
+	SettingsManager::GetInstance()->LoadSettings();
 	auto audio = DX9GF::AudioManager::GetInstance();
 	audio->Init();
 	audio->Load("btn_hover", IDR_WAV_HOVER);
@@ -59,7 +60,33 @@ void Demo::Game::Init()
 
 	audio->Load("player_dead", IDR_PLAYER_DEAD);
 	audio->Load("coin_gather", IDR_COIN_GATHER);
-	audio->Load("card_snap", IDR_CARD_SNAP);
+
+	audio->Load("card_snap1", IDR_CARD_SNAP);
+	audio->Load("card_snap2", IDR_CARD_SNAP2);
+	audio->RegisterBank("card_snap", { "card_snap1", "card_snap2" });
+
+	audio->Load("dialog_voice1", IDR_DIALOG_VOICE1);
+	audio->Load("dialog_voice2", IDR_DIALOG_VOICE2);
+	audio->Load("dialog_voice3", IDR_DIALOG_VOICE3);
+	audio->Load("dialog_voice4", IDR_DIALOG_VOICE4);
+	audio->Load("dialog_voice5", IDR_DIALOG_VOICE5);
+
+	audio->RegisterBank("dialog_voice", { "dialog_voice1", "dialog_voice2", "dialog_voice3", "dialog_voice4", "dialog_voice5" });
+
+	audio->Load("power_up1", IDR_POWERUP1);
+	audio->Load("power_up2", IDR_POWERUP2);
+	audio->Load("power_up3", IDR_POWERUP3);
+
+	audio->RegisterBank("power_up", { "power_up1", "power_up2", "power_up3" });
+
+	audio->Load("checkpoint", IDR_CHECKPOINT);
+
+	//load maps
+	audio->Load("bgm_tutorial", IDR_BGM_TUTORIAL);
+	audio->Load("bgm_secret", IDR_BGM_SECRET);
+	audio->Load("bgm_boss", IDR_BGM_BOSS);
+	audio->Load("bgm_arcade", IDR_BGM_ARCADE);
+
 
 
 	auto app = DX9GF::Application::GetInstance();

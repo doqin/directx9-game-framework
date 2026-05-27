@@ -47,10 +47,12 @@ namespace Demo {
             if (pLock->GetHealth() < pLock->GetMaxHealth()) {
                 pLock->SetHealth(pLock->GetMaxHealth());
                 statusMessage = "Healed to FULL HP!";
+                DX9GF::AudioManager::GetInstance()->PlayRandom("power_up", 0.2f);
                 messageTimer = 1.5f;
             }
             else {
                 statusMessage = "HP is already full!";
+                DX9GF::AudioManager::GetInstance()->Play("error", false, 0.3f);
                 messageTimer = 1.0f;
             }
         }

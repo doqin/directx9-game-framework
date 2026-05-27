@@ -34,6 +34,7 @@ void Demo::TutorialWorldScene::Init()
 		player->GenerateSaveGlobalData(saveData["player"]);
 		auto sceMan = game->GetSceneManager();
 		MainMenu::gameSaveState->GetPlayerFromScene(sceMan->GetScene(static_cast<size_t>(sceMan->GetIndex()) + 2))->RestoreSaveGlobalData(saveData["player"]);
+		DX9GF::AudioManager::GetInstance()->PlayBGM_Fade("bgm_arcade", 0.2f, 1.5f);
 		sceMan->GoToScene(sceMan->GetIndex() + 2);
 		isTransitioning = false;
 		markFinished();
@@ -55,6 +56,7 @@ void Demo::TutorialWorldScene::Init()
 		auto targetPlayer = MainMenu::gameSaveState->GetPlayerFromScene(targetScene);
 		targetPlayer->RestoreSaveGlobalData(saveData["player"]);
 		targetPlayer->SetLocalPosition(-84 * 16, -39 * 16);
+		DX9GF::AudioManager::GetInstance()->PlayBGM_Fade("bgm_secret", 0.3f, 1.5f);
 		sceMan->GoToNext();
 		isTransitioning = false;
 		markFinished();
@@ -237,6 +239,8 @@ void Demo::TutorialWorldScene::Update(unsigned long long deltaTime)
 	if (inventoryMenu && inventoryMenu->IsPendingLeave()) {
 		auto sceMan = game->GetSceneManager();
 		sceMan->GoToScene(0);
+		auto audio = DX9GF::AudioManager::GetInstance();
+		audio->PlayBGM_Fade("bgm_sky", 0.9f, 1.5f);
 		return;
 	}
 	commandBuffer->Update(deltaTime);
@@ -335,7 +339,7 @@ void Demo::TutorialWorldScene::RestoreSaveData(const nlohmann::json& inData)
 void Demo::TutorialWorldScene::GiveTestItems()
 {
 	//ItemInventory& testItems = this->player->GetInventoryItems();
-	//testItems.InitFixedInventory(10);
+	//testItems.InitFixedInventory(12);
 
 	//testItems.AddItem(0, 5);
 	//testItems.AddItem(1, 3);

@@ -143,7 +143,7 @@ void DX9GF::Application::Run()
 				unsigned long long deltaTime = GetTickCount64() - start;
 				start = GetTickCount64();
 				p_game->Update(deltaTime);
-				audioManager->Update();
+				audioManager->Update(deltaTime);
 				p_game->Draw(deltaTime);
 			}
 		}

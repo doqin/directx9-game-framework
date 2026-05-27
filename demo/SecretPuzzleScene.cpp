@@ -39,6 +39,7 @@ void Demo::SecretPuzzleScene::Init()
 		auto targetPlayer = MainMenu::gameSaveState->GetPlayerFromScene(targetScene);
 		targetPlayer->RestoreSaveGlobalData(saveData["player"]);
 		targetPlayer->SetLocalPosition(-263.f, -295.f);
+		DX9GF::AudioManager::GetInstance()->PlayBGM_Fade("bgm_tutorial", 0.5f, 1.5f);
 		sceMan->GoToPrevious();
 		isTransitioning = false;
 		markFinished();
@@ -60,6 +61,7 @@ void Demo::SecretPuzzleScene::Init()
 			auto targetScene = sceMan->GetScene(static_cast<size_t>(sceMan->GetIndex()) + 1);
 			auto targetPlayer = MainMenu::gameSaveState->GetPlayerFromScene(targetScene);
 			targetPlayer->RestoreSaveGlobalData(saveData["player"]);
+			DX9GF::AudioManager::GetInstance()->PlayBGM_Fade("bgm_arcade", 0.2f, 1.5f);
 			sceMan->GoToNext();
 			isTransitioning = false;
 			markFinished();
@@ -202,6 +204,7 @@ void Demo::SecretPuzzleScene::Init()
 	map->SetAreaUpdateHandler("audio_zone_metal", [this](const DX9GF::Map::ObjectArea&) {
 		GetPlayer()->SetSurface("metal");
 		});
+
 	ItemData::GetInstance()->LoadData();
 	this->GiveTestItems();
 
@@ -269,6 +272,8 @@ void Demo::SecretPuzzleScene::Update(unsigned long long deltaTime)
 	if (inventoryMenu && inventoryMenu->IsPendingLeave()) {
 		auto sceMan = game->GetSceneManager();
 		sceMan->GoToScene(0);
+		auto audio = DX9GF::AudioManager::GetInstance();
+		audio->PlayBGM_Fade("bgm_sky", 0.9f, 1.5f);
 		return;
 	}
 	commandBuffer->Update(deltaTime);

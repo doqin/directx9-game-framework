@@ -2,7 +2,7 @@
 #include "IConversation.h"
 #include <DX9GFInputManager.h>
 #include <DX9GFApplication.h>
-
+#include "DX9GFAudioManager.h"
 Demo::IConversation::IConversation(std::shared_ptr<DX9GF::FontSprite> fontSprite, int screenWidth, int screenHeight)
 	: fontSprite(fontSprite), fixedCamera(screenWidth, screenHeight)
 {
@@ -34,6 +34,10 @@ void Demo::IConversation::Execute(unsigned long long deltaTime)
 			if (currentCharIndex < currentLine.content.length()) {
 				currentCharIndex++;
 				displayedContent = currentLine.content.substr(0, currentCharIndex);
+				//skip space
+				if (currentLine.content[currentCharIndex - 1] != L' ') {
+					DX9GF::AudioManager::GetInstance()->PlayRandom("dialog_voice", 0.3f);
+				}
 			}
 			else {
 				isTyping = false;

@@ -69,8 +69,22 @@ namespace DX9GF {
 		std::vector<ActiveVoice*> activeVoices; //list of playing sound
 
 		//settings manager will push values to these vars
+		float currentMasterVolume = 1.0f;
 		float currentMusicVolume = 1.0f;
 		float currentSfxVolume = 1.0f;
+
+		// Biến cho Cross-Fade BGM
+		bool isFading = false;
+		float fadeTimer = 0.0f;
+		float fadeDuration = 0.0f;
+
+		// Bài đang phát (bị giảm nhỏ tiếng)
+		std::string fadingOutSound = "";
+
+		// Bài mới (chờ bật lên)
+		std::string fadingInSound = "";
+		float fadingInTargetVolume = 1.0f;
+		bool fadingInLoop = true;
 
 		AudioManager() {}
 		~AudioManager() {}
@@ -84,7 +98,7 @@ namespace DX9GF {
 		void Load(std::string name, int resID);
 
 		void Play(std::string name, bool loop = false, float volume = 1.0f, AudioType type = AudioType::SFX);
-		void Update();
+		void Update(unsigned long long deltaTime);
 		void Stop(std::string name);
 		void StopAll();
 		void Shutdown();
@@ -97,5 +111,9 @@ namespace DX9GF {
 		//manage various types of footstep
 		void RegisterBank(std::string bankName, std::vector<std::string> soundNames);
 		void PlayRandom(std::string bankName, float volume = 1.0f, AudioType type = AudioType::SFX);
+
+		//background music
+		void PlayBGM_Fade(std::string name, float targetVolume = 0.5f, float duration = 1.5f);
+		void PlayRandomBGM_Fade(std::string bankName, float targetVolume = 0.5f, float duration = 1.5f);
 	};
 }

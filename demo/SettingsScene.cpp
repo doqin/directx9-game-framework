@@ -4,7 +4,7 @@
 #include "IconButton.h"
 #include "SettingsManager.h"
 #include <algorithm>
-
+#include <dinput.h>
 namespace Demo
 {
 	//Extra helpers, use to get keyname and string
@@ -12,18 +12,22 @@ namespace Demo
 	{
 		return std::wstring(s.begin(), s.end());
 	}
-
-	std::string GetKeyName(int vkCode)
+	std::string GetKeyName(int dikCode)
 	{
-		if (vkCode <= 0) return "None";
+		if (dikCode <= 0 || dikCode > 255) return "None";
 		char name[64];
-		UINT scanCode = MapVirtualKey(vkCode, MAPVK_VK_TO_VSC);
-		LONG lParam = scanCode << 16;
-		if ((vkCode >= 33 && vkCode <= 46) || (vkCode >= 91 && vkCode <= 93)) {
+
+		LONG lParam = (dikCode & 0x7F) << 16;
+
+		if (dikCode == DIK_UP || dikCode == DIK_DOWN || dikCode == DIK_LEFT || dikCode == DIK_RIGHT ||
+			dikCode == DIK_INSERT || dikCode == DIK_DELETE || dikCode == DIK_HOME || dikCode == DIK_END ||
+			dikCode == DIK_PRIOR || dikCode == DIK_NEXT || dikCode == DIK_DIVIDE || dikCode == DIK_RALT ||
+			dikCode == DIK_RMENU) {
 			lParam |= 0x01000000;
 		}
+
 		if (GetKeyNameTextA(lParam, name, 64)) return std::string(name);
-		return "Key " + std::to_string(vkCode);
+		return "Key " + std::to_string(dikCode);
 	}
 
 	//Draw functions for scene (to avoid code duplication)
@@ -77,7 +81,7 @@ namespace Demo
 		fontSprite->Begin();
 		fontSprite->SetPosition(x, y);
 		fontSprite->SetColor(color);
-		
+
 		fontSprite->Draw(camera, 0);
 		fontSprite->End();
 	}
@@ -153,11 +157,11 @@ namespace Demo
 		fontSprite = std::make_shared<DX9GF::FontSprite>(font.get());
 		fontSprite->SetColor(0xFF000000);
 
-		placeholderTex = std::make_shared<DX9GF::Texture>(game->GetGraphicsDevice()); 
+		placeholderTex = std::make_shared<DX9GF::Texture>(game->GetGraphicsDevice());
 		placeholderTex->LoadTexture(L"ui-pack.png");
 		uiSheetTex = std::make_shared<DX9GF::Texture>(game->GetGraphicsDevice());
 		uiSheetTex->LoadTexture(L"ui.png");
-		bgTex = std::make_shared<DX9GF::Texture>(game->GetGraphicsDevice()); 
+		bgTex = std::make_shared<DX9GF::Texture>(game->GetGraphicsDevice());
 		bgTex->LoadTexture(IDB_PNG2);
 
 		//disable custom cursor to use the Windows default system cursor.
@@ -208,37 +212,37 @@ namespace Demo
 		btnUp = std::make_shared<Demo::IconButton>(transformManager, 0, 0, 32, 32, uiSheetTex, 3);
 		btnUp->SetSpriteRects(DX9GF::Utils::CreateRectsVertical(0, 0, 16, 16, 3));
 		btnUp->SetOnReleaseLeft([this](DX9GF::ITrigger*) {
-				this->ResetListening();
-				this->isListeningUp = true;
-				btnUp->SetState(Demo::IButton::ButtonState::LISTENING);
-		});
+			this->ResetListening();
+			this->isListeningUp = true;
+			btnUp->SetState(Demo::IButton::ButtonState::LISTENING);
+			});
 		btnUp->SetSpriteScale(2.f, 2.f);
 
 		btnDown = std::make_shared<Demo::IconButton>(transformManager, 0, 0, 32, 32, uiSheetTex, 3);
 		btnDown->SetSpriteRects(DX9GF::Utils::CreateRectsVertical(0, 0, 16, 16, 3));
 		btnDown->SetOnReleaseLeft([this](DX9GF::ITrigger*) {
-				this->ResetListening();
-				this->isListeningDown = true;
-				btnDown->SetState(Demo::IButton::ButtonState::LISTENING);
-		});
+			this->ResetListening();
+			this->isListeningDown = true;
+			btnDown->SetState(Demo::IButton::ButtonState::LISTENING);
+			});
 		btnDown->SetSpriteScale(2.f, 2.f);
 
 		btnLeft = std::make_shared<Demo::IconButton>(transformManager, 0, 0, 32, 32, uiSheetTex, 3);
 		btnLeft->SetSpriteRects(DX9GF::Utils::CreateRectsVertical(0, 0, 16, 16, 3));
 		btnLeft->SetOnReleaseLeft([this](DX9GF::ITrigger*) {
-				this->ResetListening();
-				this->isListeningLeft = true;
-				btnLeft->SetState(Demo::IButton::ButtonState::LISTENING);
-		});
+			this->ResetListening();
+			this->isListeningLeft = true;
+			btnLeft->SetState(Demo::IButton::ButtonState::LISTENING);
+			});
 		btnLeft->SetSpriteScale(2.f, 2.f);
 
 		btnRight = std::make_shared<Demo::IconButton>(transformManager, 0, 0, 32, 32, uiSheetTex, 3);
 		btnRight->SetSpriteRects(DX9GF::Utils::CreateRectsVertical(0, 0, 16, 16, 3));
 		btnRight->SetOnReleaseLeft([this](DX9GF::ITrigger*) {
-				this->ResetListening();
-				this->isListeningRight = true;
-				btnRight->SetState(Demo::IButton::ButtonState::LISTENING);
-		});
+			this->ResetListening();
+			this->isListeningRight = true;
+			btnRight->SetState(Demo::IButton::ButtonState::LISTENING);
+			});
 		btnRight->SetSpriteScale(2.f, 2.f);
 
 		// Active Buttons
@@ -280,20 +284,23 @@ namespace Demo
 			{
 				if (!isListeningFlag) return;
 
-				for (int i = 0x07; i <= 0xFE; i++)
+				for (int i = 1; i < 256; i++)
 				{
-					if (GetAsyncKeyState(i) & 0x8000)
-					{
-						if (i >= 1 && i <= 6) continue; // Bỏ qua chuột
+					if (i == DIK_ESCAPE) continue;
 
+					if (inpMan->KeyPress(i))
+					{
 						SettingsManager::GetInstance()->SetKeybind(actionName, i);
 						btn->SetState(IButton::ButtonState::IDLE);
-						isListeningFlag = false; // Tắt đúng cờ của nó nhờ truyền tham chiếu (bool&)
+						isListeningFlag = false;
 						SettingsManager::GetInstance()->SaveSettings();
+
+						inpMan->ConsumeKey(i);
 						break;
 					}
 				}
 			};
+
 		HandleKeybind(isListeningUp, "MOVE_UP", btnUp);
 		HandleKeybind(isListeningDown, "MOVE_DOWN", btnDown);
 		HandleKeybind(isListeningLeft, "MOVE_LEFT", btnLeft);

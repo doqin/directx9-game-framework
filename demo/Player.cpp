@@ -5,7 +5,7 @@
 #include "AdvancedCards.h"
 #include "StrikeCard.h"
 #include "MainBlockCard.h"
-
+#include "SettingsManager.h"
 #include "IDraggable.h"
 #include "IEnemy.h"
 std::shared_ptr<Demo::ICard> Demo::ICard::CreateCard(const std::string& id, std::weak_ptr<DX9GF::TransformManager> transformManager, std::shared_ptr<DraggableManager> draggableManager, DX9GF::GraphicsDevice* graphicsDevice, DX9GF::Camera* camera) {
@@ -142,12 +142,17 @@ void Demo::Player::Init(DX9GF::GraphicsDevice* graphicsDevice, DX9GF::ColliderMa
 
 void Demo::Player::Update(unsigned long long deltaTime) {
 	auto inpMan = DX9GF::InputManager::GetInstance();
+	auto sm = Demo::SettingsManager::GetInstance();
+	int keyUp = sm->GetKeybind("MOVE_UP");
+	int keyDown = sm->GetKeybind("MOVE_DOWN");
+	int keyLeft = sm->GetKeybind("MOVE_LEFT");
+	int keyRight = sm->GetKeybind("MOVE_RIGHT");
 	// Movement
 	D3DXVECTOR2 dir{ 0, 0 };
-	if (inpMan->KeyPress(DIK_D)) dir.x += 1;
-	if (inpMan->KeyPress(DIK_A)) dir.x -= 1;
-	if (inpMan->KeyPress(DIK_S)) dir.y += 1;
-	if (inpMan->KeyPress(DIK_W)) dir.y -= 1;
+	if (inpMan->KeyPress(keyRight)) dir.x += 1;
+	if (inpMan->KeyPress(keyLeft))  dir.x -= 1;
+	if (inpMan->KeyPress(keyDown))  dir.y += 1;
+	if (inpMan->KeyPress(keyUp))    dir.y -= 1;
 	if (dir.x == 1) state = State::Right;
 	if (dir.x == -1) state = State::Left;
 	if (dir.y == 1) state = State::Down;
