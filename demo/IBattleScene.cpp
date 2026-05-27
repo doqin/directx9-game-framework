@@ -62,7 +62,12 @@ void Demo::IBattleScene::StartBattle()
 	std::shuffle(drawPile.begin(), drawPile.end(), gen);
 	currentTurn = 1;
 	DrawCards(5);
-	DX9GF::AudioManager::GetInstance()->PlayRandomBGM_Fade("battle_bgm", 0.3f, 1.5f);
+	if (!customBGMName.empty()) {
+		DX9GF::AudioManager::GetInstance()->PlayBGM_Fade(customBGMName, 0.3f, 1.5f);
+	}
+	else {
+		DX9GF::AudioManager::GetInstance()->PlayRandomBGM_Fade("battle_bgm", 0.3f, 1.5f);
+	}
 }
 
 void Demo::IBattleScene::CollectDeadEnemies()
@@ -1164,6 +1169,7 @@ void Demo::IBattleScene::Init()
 	audio->Load("battle_loop2", IDR_BGM_B2);
 	audio->Load("battle_loop3", IDR_BGM_B3);
 	audio->Load("battle_loop4", IDR_BGM_B4);
+	audio->Load("battle_boss", IDR_BGM_BAT_BOSS);
 
 	audio->RegisterBank("battle_bgm", { "battle_loop1","battle_loop2","battle_loop3","battle_loop4" });
 

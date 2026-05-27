@@ -171,6 +171,8 @@ void Demo::BossWorldScene::Init() {
 			auto app = DX9GF::Application::GetInstance();
 			auto battleScene = new CustomBattleScene(demoGame, player, app->GetScreenWidth(), app->GetScreenHeight(), forcedEnemyMap);
 
+			battleScene->SetCustomBGM("battle_boss");
+
 			battleScene->SetOnVictoryCallback([this]() {
 				this->isFinalBossDead = true;
 				});
