@@ -3,6 +3,7 @@
 #include "RandomEncounter.h"
 #include "MainMenu.h"
 #include "SaveGameState.h"
+#include "TransitionCommand.h"
 
 void Demo::TutorialWorldScene::Init()
 {
@@ -20,12 +21,44 @@ void Demo::TutorialWorldScene::Init()
 		{"DemonEyeEnemy", 40},
 		{"MimicEnemy", 20},
 		}, drawBuffer, commandBuffer, &isGamePaused, [this](DX9GF::GraphicsDevice* gd, unsigned long long deltaTime) { DrawBackground(gd, deltaTime); }));
-	map->SetAreaUpdateHandler("trigger_p", [this](const DX9GF::Map::ObjectArea& area) {
+	map->SetAreaUpdateHandler("trigger_p", [this](const DX9GF::Map::ObjectArea& area) {if (isTransitioning) return;
+		isTransitioning = true;
+		auto transitionInCommand = std::make_shared<TransitionCommand>(game->GetGraphicsDevice(), 1.f, true);
+		drawBuffer->PushCommand(transitionInCommand);
+		commandBuffer->PushCommand(std::make_shared<DX9GF::CustomCommand>([this, transitionInCommand](std::function<void(void)> markFinished) {
+		if (!transitionInCommand->IsFinished()) {
+			return;
+		}
 		nlohmann::json saveData;
 		player->GenerateSaveGlobalData(saveData["player"]);
 		auto sceMan = game->GetSceneManager();
-		MainMenu::gameSaveState->GetPlayerFromScene(sceMan->GetScene(static_cast<size_t>(sceMan->GetIndex()) + 1))->RestoreSaveGlobalData(saveData["player"]);
-		sceMan->GoToNext();
+		MainMenu::gameSaveState->GetPlayerFromScene(sceMan->GetScene(static_cast<size_t>(sceMan->GetIndex()) + 2))->RestoreSaveGlobalData(saveData["player"]);
+		sceMan->GoToScene(sceMan->GetIndex() + 2);
+		isTransitioning = false;
+		markFinished();
+		}));
+		drawBuffer->PushCommand(std::make_shared<TransitionCommand>(game->GetGraphicsDevice(), 1.f, false));
+	});
+	map->SetAreaUpdateHandler("trigger_secret", [this](const DX9GF::Map::ObjectArea& area) {if (isTransitioning) return;
+		isTransitioning = true;
+		auto transitionInCommand = std::make_shared<TransitionCommand>(game->GetGraphicsDevice(), 1.f, true);
+		drawBuffer->PushCommand(transitionInCommand);
+		commandBuffer->PushCommand(std::make_shared<DX9GF::CustomCommand>([this, transitionInCommand](std::function<void(void)> markFinished) {
+			if (!transitionInCommand->IsFinished()) {
+				return;
+			}
+			nlohmann::json saveData;
+			player->GenerateSaveGlobalData(saveData["player"]);
+			auto sceMan = game->GetSceneManager();
+			auto targetScene = sceMan->GetScene(static_cast<size_t>(sceMan->GetIndex()) + 1);
+			auto targetPlayer = MainMenu::gameSaveState->GetPlayerFromScene(targetScene);
+			targetPlayer->RestoreSaveGlobalData(saveData["player"]);
+			targetPlayer->SetLocalPosition(-84 * 16, -39 * 16);
+			sceMan->GoToNext();
+			isTransitioning = false;
+			markFinished();
+			}));
+		drawBuffer->PushCommand(std::make_shared<TransitionCommand>(game->GetGraphicsDevice(), 1.f, false));
 	});
 	font = std::make_shared<DX9GF::Font>(game->GetGraphicsDevice(), L"StatusPlz", 16);
 	
@@ -82,6 +115,26 @@ void Demo::TutorialWorldScene::Init()
 	healingPoint->Init(game->GetGraphicsDevice(), &camera, player, colliderManager, font, drawBuffer);
 	healingPoint->SetVisible(true);
 
+	//TreasureChest
+	treasureChests.push_back(std::make_shared<TreasureChestNPC>(
+		transformManager, 372.f, -483.f,
+		std::vector<ChestReward>{
+		ChestReward::Item(0, 1),
+			ChestReward::Card("StrikeCard")
+	}, true));
+	treasureChests.back()->Init(game->GetGraphicsDevice(), player, colliderManager, font, drawBuffer);
+
+
+	treasureChests.push_back(std::make_shared<TreasureChestNPC>(
+		transformManager, 164.f, -380.f,
+		std::vector<ChestReward>{
+		ChestReward::Item(2, 1),
+			ChestReward::Card("HeavyStrikeCard")
+	}, true));
+	treasureChests.back()->Init(game->GetGraphicsDevice(), player, colliderManager, font, drawBuffer);
+
+
+
 	draggableManager = std::make_shared<Demo::DraggableManager>();
 	inventoryMenu = std::make_shared<InventoryMenu>(game, player, transformManager, draggableManager, &uiCamera, font.get());
 	inventoryMenu->Init();
@@ -90,10 +143,36 @@ void Demo::TutorialWorldScene::Init()
 	this->GiveTestItems();
 
 	transformManager->RebuildHierarchy();
+	drawBuffer->PushCommand(std::make_shared<Demo::TransitionCommand>(game->GetGraphicsDevice(), 1.f, false));
 }
 
 void Demo::TutorialWorldScene::Update(unsigned long long deltaTime)
 {
+	auto OpenChestWithDialog = [&](std::shared_ptr<TreasureChestNPC>& chest) {
+		auto given = chest->Open(player.get());
+		if (given.empty()) return;
+
+		std::wstring msg = L"You found: ";
+		for (auto& r : given) {
+			if (r.type == ChestRewardType::ITEM) {
+				auto* bp = ItemData::GetInstance()->GetItemBlueprint(r.itemID);
+				if (bp) {
+					msg += bp->GetName();
+					if (r.quantity > 1) msg += L" x" + std::to_wstring(r.quantity);
+					msg += L"  ";
+				}
+			}
+			else if (r.type == ChestRewardType::CARD) {
+				std::wstring wid(r.cardSaveID.begin(), r.cardSaveID.end());
+				msg += wid + L"  ";
+			}
+		}
+		auto [sw, sh] = camera.GetScreenResolution();
+		currentConversation = std::make_shared<IConversation>(
+			std::make_shared<DX9GF::FontSprite>(font.get()), sw, sh);
+		currentConversation->AddLine({ .name = L"Treasure Chest", .content = msg });
+		};
+
 	auto [currentWidth, currentHeight] = camera.GetScreenResolution();
 	auto [lastWidth, lastHeight] = uiCamera.GetScreenResolution();
 	if (currentWidth != lastWidth || currentHeight != lastHeight) {
@@ -114,7 +193,6 @@ void Demo::TutorialWorldScene::Update(unsigned long long deltaTime)
 
 	bool isGamePaused = this->isGamePaused;
 
-	if (!isGamePaused) map->UpdateAreas(player->GetWorldX(), player->GetWorldY());
 	if (npcIntroduction) {
 		npcIntroduction->Update(deltaTime);
 		if (!currentConversation && npcIntroduction->CanInteract() && inpMan->KeyPress(DIK_E)) {
@@ -172,6 +250,34 @@ void Demo::TutorialWorldScene::Update(unsigned long long deltaTime)
 
 	if (healingPoint) healingPoint->Update(deltaTime);
 
+	for (auto& chest : treasureChests) {
+		chest->Update(deltaTime);
+		if (!currentConversation && chest->CanInteract() && inpMan->KeyPress(DIK_E)) {
+			auto given = chest->Open(player.get());
+			if (!given.empty()) {
+				std::wstring msg = L"You found: ";
+				for (auto& r : given) {
+					if (r.type == ChestRewardType::ITEM) {
+						auto* bp = ItemData::GetInstance()->GetItemBlueprint(r.itemID);
+						if (bp) {
+							msg += bp->GetName();
+							if (r.quantity > 1) msg += L" x" + std::to_wstring(r.quantity);
+							msg += L"  ";
+						}
+					}
+					else if (r.type == ChestRewardType::CARD) {
+						std::wstring wid(r.cardSaveID.begin(), r.cardSaveID.end());
+						msg += wid + L"  ";
+					}
+				}
+				auto [sw, sh] = camera.GetScreenResolution();
+				currentConversation = std::make_shared<IConversation>(
+					std::make_shared<DX9GF::FontSprite>(font.get()), sw, sh);
+				currentConversation->AddLine({ .name = L"Treasure Chest", .content = msg });
+			}
+		}
+	}
+
 	if (inventoryMenu && inventoryMenu->IsOpen()) {
 		isGamePaused = true;
 		inventoryMenu->Update(deltaTime);
@@ -183,6 +289,7 @@ void Demo::TutorialWorldScene::Update(unsigned long long deltaTime)
 	}
 
 	transformManager->UpdateAll();
+	if (!isGamePaused) map->UpdateAreas(player->GetWorldX(), player->GetWorldY());
 
 
 	if (draggableManager && inventoryMenu && inventoryMenu->IsOpen() && inventoryMenu->GetCurrentTab() == Demo::InventoryMenu::Tab::DECK) {
@@ -216,6 +323,9 @@ void Demo::TutorialWorldScene::Draw(unsigned long long deltaTime)
 		if (shopPoint_Card) shopPoint_Card->Draw(camera, deltaTime);
 		if (shopPoint_BSItem) shopPoint_BSItem->Draw(camera, deltaTime);
 		if (healingPoint) healingPoint->Draw(camera, deltaTime);
+		for (auto& chest : treasureChests)
+			chest->Draw(camera, deltaTime);
+
 		if (npcExplainingPortal) npcExplainingPortal->Draw(camera, deltaTime);
 		player->Draw(deltaTime);
 		if (drawBuffer) {
@@ -234,6 +344,7 @@ void Demo::TutorialWorldScene::Draw(unsigned long long deltaTime)
 
 void Demo::TutorialWorldScene::DrawBackground(DX9GF::GraphicsDevice* gd, unsigned long long deltaTime)
 {
+
 	auto [screenWidth, screenHeight] = camera.GetScreenResolution();
 	const int spacingX = 32;
 	const int spacingY = 32;
@@ -277,6 +388,10 @@ void Demo::TutorialWorldScene::GenerateSaveData(nlohmann::json& outData)
 		{"y", pos.y},
 		{"zoom", camera.GetZoom()}
 	};
+
+	nlohmann::json chestStates = nlohmann::json::array();
+	for (auto& c : treasureChests) chestStates.push_back(c->GetIsOpened());
+	outData["treasureChests"] = chestStates;
 }
 
 void Demo::TutorialWorldScene::RestoreSaveData(const nlohmann::json& inData)
@@ -284,6 +399,12 @@ void Demo::TutorialWorldScene::RestoreSaveData(const nlohmann::json& inData)
 	player->RestoreSaveData(inData["player"]);
 	camera.SetPosition(inData["camera"]["x"], inData["camera"]["y"]);
 	camera.SetZoom(inData["camera"]["zoom"]);
+
+	if (inData.contains("treasureChests")) {
+		auto& arr = inData["treasureChests"];
+		for (size_t i = 0; i < treasureChests.size() && i < arr.size(); ++i)
+			treasureChests[i]->SetOpened(arr[i].get<bool>());
+	}
 }
 
 void Demo::TutorialWorldScene::GiveTestItems()

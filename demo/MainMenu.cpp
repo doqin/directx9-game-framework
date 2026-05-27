@@ -8,6 +8,7 @@
 #include "SaveGameState.h"
 #include <fstream>
 #include <cstdio>
+#include "TransitionCommand.h"
 
 namespace Demo
 {
@@ -103,7 +104,8 @@ namespace Demo
 
 	void MainMenu::Init()
 	{
-
+		drawBuffer = std::make_shared<DX9GF::CommandBuffer>();
+		commandBuffer = std::make_shared<DX9GF::CommandBuffer>();
 		transformManager = std::make_shared<DX9GF::TransformManager>();
 		saveManager = std::make_shared<DX9GF::SaveManager>();
 		gameSaveState = std::make_shared<SaveGameState>(game, saveManager);
@@ -146,15 +148,39 @@ namespace Demo
 		f.close();
 
         continueButton->SetOnReleaseLeft([this](DX9GF::ITrigger* t) {
-			gameSaveState = SaveGameState::LoadSavedGame(game, saveManager);
+			if (isTransitioning) return;
+			isTransitioning = true;
+			auto transitionInCommand = std::make_shared<TransitionCommand>(game->GetGraphicsDevice(), 1.f, true);
+			drawBuffer->PushCommand(transitionInCommand);
+			commandBuffer->PushCommand(std::make_shared<DX9GF::CustomCommand>([this, transitionInCommand](std::function<void(void)> markFinished) {
+				if (!transitionInCommand->IsFinished()) {
+					return;
+				}
+				gameSaveState = SaveGameState::LoadSavedGame(game, saveManager);
+				isTransitioning = false;
+				markFinished();
+				}));
+			drawBuffer->PushCommand(std::make_shared<TransitionCommand>(game->GetGraphicsDevice(), 1.f, false));
 		});
 
 		//New Game Button
 		newGameButton = std::make_shared<Demo::IconButton>(transformManager, 0, 0, 96, 32, buttonSheetTex, 3);
 		newGameButton->SetSpriteRects(DX9GF::Utils::CreateRectsVertical(144, 48, 48, 16, 3));
         newGameButton->SetOnReleaseLeft([this](DX9GF::ITrigger* t) { 
-			std::remove("savegame.json");
-          gameSaveState = SaveGameState::StartNewGame(game, saveManager);
+			if (isTransitioning) return;
+			isTransitioning = true;
+			auto transitionInCommand = std::make_shared<TransitionCommand>(game->GetGraphicsDevice(), 1.f, true);
+			drawBuffer->PushCommand(transitionInCommand);
+			commandBuffer->PushCommand(std::make_shared<DX9GF::CustomCommand>([this, transitionInCommand](std::function<void(void)> markFinished) {
+				if (!transitionInCommand->IsFinished()) {
+					return;
+				}
+				std::remove("savegame.json");
+				gameSaveState = SaveGameState::StartNewGame(game, saveManager);
+				isTransitioning = false;
+				markFinished();
+			}));
+			drawBuffer->PushCommand(std::make_shared<TransitionCommand>(game->GetGraphicsDevice(), 1.f, false));
 		});
 		newGameButton->SetSpriteScale(2.f, 2.f);
 
@@ -238,6 +264,7 @@ namespace Demo
 
 		transformManager->UpdateAll();
 		camera.Update();
+		commandBuffer->Update(deltaTime);
 	}
 
 	void MainMenu::Draw(unsigned long long deltaTime)
@@ -273,6 +300,7 @@ namespace Demo
 			{
 				btn->Draw(gd, deltaTime);
 			}
+			drawBuffer->Update(deltaTime);
 			DX9GF::InputManager::GetInstance()->DrawCursor(&this->uiCamera, deltaTime);
 			gd->EndDraw();
 		}

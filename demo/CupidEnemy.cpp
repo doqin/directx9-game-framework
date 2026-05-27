@@ -11,17 +11,18 @@ const float PI = 3.14159265359f;
 void Demo::CupidEnemy::Init(DX9GF::GraphicsDevice* graphicsDevice, DX9GF::Camera* camera)
 {
 	texture = std::make_shared<DX9GF::Texture>(graphicsDevice);
-	texture->LoadTexture(IDB_PNG4); // TODO: enemy img
-	sprite = std::make_shared<DX9GF::StaticSprite>(texture.get());
+	texture->LoadTexture(L"bubble-Sheet.png");
+	sprite = std::make_shared<DX9GF::AnimatedSprite>(texture.get(), DX9GF::Utils::CreateRectsHorizontal(0, 0, 64, 64, 11), 12);
 	sprite->SetOrigin(32, 32);
+	sprite->SetScale(2.f);
 
 	heartTexture = std::make_shared<DX9GF::Texture>(graphicsDevice);
-	heartTexture->LoadTexture(IDB_PNG5); // TODO: Heart img
+	heartTexture->LoadTexture(L"bubbleprojectile.png");
 	heartSprite = std::make_shared<DX9GF::StaticSprite>(heartTexture.get());
 	heartSprite->SetOrigin(8, 8);
 
 	arrowTexture = std::make_shared<DX9GF::Texture>(graphicsDevice);
-	arrowTexture->LoadTexture(IDB_PNG5); // TODO: Arrow img
+	arrowTexture->LoadTexture(L"bubbleprojectile.png");
 	arrowSprite = std::make_shared<DX9GF::StaticSprite>(arrowTexture.get());
 	arrowSprite->SetOrigin(8, 8);
 

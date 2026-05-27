@@ -16,8 +16,8 @@ namespace Demo
 			{ 24, 0, 47, 35 });
 
 		itemRegistry[2] = ConsumableItem(2, L"Buff 15 Damage",
-			L"Buff 15 Damage for 2 turns",
-			{ ActiveBuff{ ItemBuffType::BuffDamage, 15.0f, 2 } },
+			L"Buff 15 Damage for 1 turns",
+			{ ActiveBuff{ ItemBuffType::BuffDamage, 15.0f, 1 } },
 			{ 48, 0, 71, 35 });
 
 		itemRegistry[3] = ConsumableItem(3, L"Buff 8 Damage & Heal 15HP",
@@ -70,12 +70,12 @@ namespace Demo
 		itemRegistry[10] = ConsumableItem(99, L"Rusty Key",
 			L"It looks very old and fragile. What does it open?",
 			{},//buff nothing
-			{ 0, 0, 23, 35 }); //i need another item sprite here
+			{ 120, 0, 143, 35 }); //i need another item sprite here
 
 		itemRegistry[11] = ConsumableItem(99, L"G(r)ayStone",
 			L"Has no practical use. Just a trophy for our winner.",
 			{},//buff nothing
-			{ 0, 0, 23, 35 }); // import a rainbow stone bruh
+			{ 120, 36, 143, 71 }); // import a rainbow stone bruh
 	}
 
 	const ConsumableItem* ItemData::GetItemBlueprint(int id)

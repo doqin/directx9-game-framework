@@ -246,6 +246,7 @@
     <ClCompile Include="RustyChestNPC.cpp" />
     <ClCompile Include="SaveGameState.cpp" />
     <ClCompile Include="SavePoint.cpp" />
+    <ClCompile Include="SecretPuzzleScene.cpp" />
     <ClCompile Include="SettingsManager.cpp" />
     <ClCompile Include="SettingsScene.cpp" />
     <ClCompile Include="IShopScene.cpp" />
@@ -259,6 +260,7 @@
     <ClCompile Include="TestBattleScene.cpp" />
     <ClCompile Include="ThreadAlleyScene.cpp" />
     <ClCompile Include="TransitionCommand.cpp" />
+    <ClCompile Include="TreasureChestNPC.cpp" />
     <ClCompile Include="TutorialWorldScene.cpp" />
     <ClCompile Include="VampireBatEnemy.cpp" />
     <ClCompile Include="WarlockEnemy.cpp" />
@@ -318,6 +320,7 @@
     <ClInclude Include="RustyChestNPC.h" />
     <ClInclude Include="SaveGameState.h" />
     <ClInclude Include="SavePoint.h" />
+    <ClInclude Include="SecretPuzzleScene.h" />
     <ClInclude Include="SettingsManager.h" />
     <ClInclude Include="SettingsScene.h" />
     <ClInclude Include="IShopScene.h" />
@@ -332,6 +335,7 @@
     <ClInclude Include="TestEnemy.h" />
     <ClInclude Include="ThreadAlleyScene.h" />
     <ClInclude Include="TransitionCommand.h" />
+    <ClInclude Include="TreasureChestNPC.h" />
     <ClInclude Include="TutorialWorldScene.h" />
     <ClInclude Include="VampireBatEnemy.h" />
     <ClInclude Include="WarlockEnemy.h" />
@@ -344,7 +348,22 @@
     <None Include="bossmatrix.tsx">
       <DeploymentContent>true</DeploymentContent>
     </None>
+    <None Include="First Asset pack.tsx">
+      <DeploymentContent>true</DeploymentContent>
+    </None>
+    <None Include="icon.tsx">
+      <DeploymentContent>true</DeploymentContent>
+    </None>
     <None Include="placeholder-round-projectile.aseprite" />
+    <None Include="SecretPuzzle.tmx">
+      <DeploymentContent>true</DeploymentContent>
+    </None>
+    <None Include="secretpuzzle.tsx">
+      <DeploymentContent>true</DeploymentContent>
+    </None>
+    <None Include="Shop.tsx">
+      <DeploymentContent>true</DeploymentContent>
+    </None>
     <None Include="ThreadAlley.tmx">
       <DeploymentContent>true</DeploymentContent>
     </None>
@@ -366,6 +385,9 @@
     <None Include="uiter.aseprite">
       <DeploymentContent>false</DeploymentContent>
     </None>
+    <None Include="XP.tsx">
+      <DeploymentContent>true</DeploymentContent>
+    </None>
   </ItemGroup>
   <ItemGroup>
     <Image Include="arrow.png">
@@ -374,7 +396,19 @@
     <Image Include="bossmatrix.png">
       <DeploymentContent>true</DeploymentContent>
     </Image>
+    <Image Include="bubble-Sheet.png">
+      <DeploymentContent>true</DeploymentContent>
+    </Image>
+    <Image Include="bubbleprojectile.png">
+      <DeploymentContent>true</DeploymentContent>
+    </Image>
     <Image Include="bugprojectile-Sheet.png">
+      <DeploymentContent>true</DeploymentContent>
+    </Image>
+    <Image Include="chestclosed.png">
+      <DeploymentContent>true</DeploymentContent>
+    </Image>
+    <Image Include="chestopened.png">
       <DeploymentContent>true</DeploymentContent>
     </Image>
     <Image Include="click.png">
@@ -392,6 +426,12 @@
     <Image Include="daudau-Sheet.png">
       <DeploymentContent>true</DeploymentContent>
     </Image>
+    <Image Include="First Asset pack.png">
+      <DeploymentContent>true</DeploymentContent>
+    </Image>
+    <Image Include="gate.png">
+      <DeploymentContent>true</DeploymentContent>
+    </Image>
     <Image Include="grab.png">
       <DeploymentContent>true</DeploymentContent>
     </Image>
@@ -399,6 +439,9 @@
       <DeploymentContent>true</DeploymentContent>
     </Image>
     <Image Include="hitimpact-Sheet.png">
+      <DeploymentContent>true</DeploymentContent>
+    </Image>
+    <Image Include="icon.jpg">
       <DeploymentContent>true</DeploymentContent>
     </Image>
     <Image Include="items.png">
@@ -428,7 +471,13 @@
     <Image Include="savepoint-Sheet.png">
       <DeploymentContent>true</DeploymentContent>
     </Image>
+    <Image Include="secretpuzzle.png">
+      <DeploymentContent>true</DeploymentContent>
+    </Image>
     <Image Include="Shop-Sheet.png">
+      <DeploymentContent>true</DeploymentContent>
+    </Image>
+    <Image Include="Shop.png">
       <DeploymentContent>true</DeploymentContent>
     </Image>
     <Image Include="shrimp-Sheet.png">
@@ -471,6 +520,9 @@
       <DeploymentContent>true</DeploymentContent>
     </Image>
     <Image Include="uiter-Sheet.png">
+      <DeploymentContent>true</DeploymentContent>
+    </Image>
+    <Image Include="XP.jpg">
       <DeploymentContent>true</DeploymentContent>
     </Image>
     <Image Include="xprojectile.png">

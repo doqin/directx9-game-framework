@@ -10,6 +10,7 @@
 #include "HealingPoint.h"
 #include "DauDauNPC.h"
 #include "IConversation.h"
+#include "TreasureChestNPC.h"
 
 #include "NPC1.h"
 #include "CardShop.h"
@@ -17,6 +18,7 @@
 namespace Demo {
 	class TutorialWorldScene : public DX9GF::IScene, public DX9GF::ISaveable {
 		bool isGamePaused = false;
+		bool isTransitioning = false;
 		Game* game;
 		DX9GF::Camera uiCamera;
 		std::shared_ptr<DX9GF::ColliderManager> colliderManager;
@@ -39,7 +41,9 @@ namespace Demo {
 		std::shared_ptr<DauDauNPC> npcExplainingEnemyEncounters;
 		std::shared_ptr<DauDauNPC> npcExplainingHealingPoint;
 		std::shared_ptr<DauDauNPC> npcExplainingPortal;
-		std::shared_ptr<IConversation> currentConversation;		
+		std::shared_ptr<IConversation> currentConversation;	
+
+		std::vector<std::shared_ptr<TreasureChestNPC>> treasureChests;
 	public:
 		TutorialWorldScene(Game* game, std::shared_ptr<DX9GF::SaveManager> sm, UINT sw, UINT sh) : IScene(sw, sh), game(game), saveManager(sm), uiCamera(sw, sh) {}
 		void Init() override;

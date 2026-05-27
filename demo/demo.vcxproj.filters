@@ -30,7 +30,6 @@
     <ClCompile Include="pch.cpp" />
     <ClCompile Include="Player.cpp" />
     <ClCompile Include="SavePoint.cpp" />
-    <ClCompile Include="SettingsManager.cpp" />
     <ClCompile Include="SettingsScene.cpp" />
     <ClCompile Include="IShopScene.cpp" />
     <ClCompile Include="ShopPoint.cpp" />
@@ -63,6 +62,9 @@
     <ClCompile Include="RustyChestNPC.cpp" />
     <ClCompile Include="KeyeEnemy.cpp" />
     <ClCompile Include="KeyeproEnemy.cpp" />
+    <ClCompile Include="SettingsManager.cpp" />
+    <ClCompile Include="SecretPuzzleScene.cpp" />
+    <ClCompile Include="TreasureChestNPC.cpp" />
   </ItemGroup>
   <ItemGroup>
     <ClInclude Include="AdvancedCards.h" />
@@ -130,6 +132,8 @@
     <ClInclude Include="RustyChestNPC.h" />
     <ClInclude Include="KeyeEnemy.h" />
     <ClInclude Include="KeyeproEnemy.h" />
+    <ClInclude Include="SecretPuzzleScene.h" />
+    <ClInclude Include="TreasureChestNPC.h" />
   </ItemGroup>
   <ItemGroup>
     <ResourceCompile Include="demo.rc" />
@@ -172,6 +176,16 @@
     <Image Include="Keye-Sheet.png" />
     <Image Include="Keye-Bullet.png" />
     <Image Include="bossmatrix.png" />
+    <Image Include="First Asset pack.png" />
+    <Image Include="XP.jpg" />
+    <Image Include="icon.jpg" />
+    <Image Include="Shop.png" />
+    <Image Include="bubble-Sheet.png" />
+    <Image Include="bubbleprojectile.png" />
+    <Image Include="secretpuzzle.png" />
+    <Image Include="chestopened.png" />
+    <Image Include="chestclosed.png" />
+    <Image Include="gate.png" />
   </ItemGroup>
   <ItemGroup>
     <Font Include="arcade-among-2-r46pv.ttf" />
@@ -188,5 +202,11 @@
     <None Include="threadalley.tsx" />
     <None Include="BossMatrix.tmx" />
     <None Include="bossmatrix.tsx" />
+    <None Include="SecretPuzzle.tmx" />
+    <None Include="First Asset pack.tsx" />
+    <None Include="XP.tsx" />
+    <None Include="icon.tsx" />
+    <None Include="Shop.tsx" />
+    <None Include="secretpuzzle.tsx" />
   </ItemGroup>
 </Project>

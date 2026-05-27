@@ -1,4 +1,4 @@
 <?xml version="1.0" encoding="UTF-8"?>
-<tileset version="1.10" tiledversion="1.12.0" name="Shop" tilewidth="16" tileheight="16" tilecount="64" columns="5">
- <image source="../example/Resources/Shop.aseprite" width="80" height="80"/>
+<tileset version="1.10" tiledversion="1.12.0" name="Shop" tilewidth="16" tileheight="16" tilecount="64" columns="8">
+ <image source="Shop.png" width="128" height="128"/>
 </tileset>
