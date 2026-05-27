@@ -73,15 +73,12 @@ namespace DX9GF {
 		float currentMusicVolume = 1.0f;
 		float currentSfxVolume = 1.0f;
 
-		// Biến cho Cross-Fade BGM
 		bool isFading = false;
 		float fadeTimer = 0.0f;
 		float fadeDuration = 0.0f;
 
-		// Bài đang phát (bị giảm nhỏ tiếng)
 		std::string fadingOutSound = "";
 
-		// Bài mới (chờ bật lên)
 		std::string fadingInSound = "";
 		float fadingInTargetVolume = 1.0f;
 		bool fadingInLoop = true;

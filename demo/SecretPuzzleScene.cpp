@@ -183,7 +183,6 @@ void Demo::SecretPuzzleScene::Init()
 
 	auto audio = DX9GF::AudioManager::GetInstance();
 
-	// 1. Load file wav
 	audio->Load("step_dir1", IDR_STEP_DIR1);
 	audio->Load("step_dir2", IDR_STEP_DIR2);
 	audio->Load("step_dir3", IDR_STEP_DIR3);

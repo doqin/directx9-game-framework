@@ -28,11 +28,11 @@ void Demo::BossWorldScene::Init() {
 	map = std::make_shared<DX9GF::Map>(game->GetGraphicsDevice());
 	map->Create(transformManager, colliderManager, "./BossMatrix.tmx");
 
-	//map->SetAreaUpdateHandler("trigger_encounters", GetRandomEncounterFunc(game, player, {
-	//	{"VampireBatEnemy", 40},
-	//	{"WarlockEnemy", 30},
-	//	//i removed the mimic here
-	//	}, drawBuffer, commandBuffer, &isGamePaused, [this](DX9GF::GraphicsDevice* gd, unsigned long long deltaTime) { DrawBackground(gd, deltaTime, currentIslandID); }));
+	map->SetAreaUpdateHandler("trigger_encounters", GetRandomEncounterFunc(game, player, {
+		{"VampireBatEnemy", 40},
+		{"WarlockEnemy", 30},
+		//i removed the mimic here
+		}, drawBuffer, commandBuffer, &isGamePaused, [this](DX9GF::GraphicsDevice* gd, unsigned long long deltaTime) { DrawBackground(gd, deltaTime, currentIslandID); }));
 
 	//dialogue with NPC, rambles about lore regarding the optional battle to get the key, and hints at the correct color sequence for hacking the terminal
 	npcHint = std::make_shared<DauDauNPC>(transformManager, -950.0f, -220.0f);
@@ -218,7 +218,6 @@ void Demo::BossWorldScene::Init() {
 
 	auto audio = DX9GF::AudioManager::GetInstance();
 
-	// 1. Load file wav
 	audio->Load("step_v1", IDR_STEP_V1);
 	audio->Load("step_v2", IDR_STEP_V2);
 	audio->Load("step_v3", IDR_STEP_V3);

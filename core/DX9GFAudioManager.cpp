@@ -116,7 +116,6 @@ void DX9GF::AudioManager::Play(std::string name, bool loop, float volume, AudioT
 {
 	//set a limit voice count to protect the engine 
 	if (activeVoices.size() > 64) {
-		// Tùy chọn: Xóa voice cũ nhất, hoặc bỏ qua việc phát âm thanh mới
 		return;
 	}
 
@@ -159,44 +158,36 @@ void DX9GF::AudioManager::Play(std::string name, bool loop, float volume, AudioT
 
 void DX9GF::AudioManager::Update(unsigned long long deltaTime) {
 
-	// --- BẮT ĐẦU LOGIC FADE ---
 	if (isFading) {
-		// Cộng dồn thời gian (giả định deltaTime là mili-giây)
 		fadeTimer += (deltaTime / 1000.0f);
 
-		// Tỷ lệ hoàn thành (từ 0.0 đến 1.0)
 		float progress = fadeTimer / fadeDuration;
 		if (progress > 1.0f) progress = 1.0f;
 
 		for (auto av : activeVoices) {
 			if (av->type == AudioType::MUSIC && !av->pCallback->isFinished) {
 
-				// 1. Tụt volume bài cũ
 				if (av->name == fadingOutSound) {
 					float newVol = av->baseVolume * (1.0f - progress);
 					av->pVoice->SetVolume(newVol * currentMusicVolume * currentMasterVolume);
 				}
 
-				// 2. Tăng volume bài mới
 				if (av->name == fadingInSound) {
 					float newVol = fadingInTargetVolume * progress;
 					av->pVoice->SetVolume(newVol * currentMusicVolume * currentMasterVolume);
-					// Cập nhật baseVolume để sau này SetMusicVolume nó không bị reset
 					av->baseVolume = newVol;
 				}
 			}
 		}
 
-		// --- KẾT THÚC QUÁ TRÌNH FADE ---
 		if (progress >= 1.0f) {
 			isFading = false;
 			if (fadingOutSound != "") {
-				Stop(fadingOutSound); // Tắt hẳn bài cũ đi
-				Play(fadingInSound, true, fadingInTargetVolume, AudioType::MUSIC); // Bật bài mới lên
+				Stop(fadingOutSound);
+				Play(fadingInSound, true, fadingInTargetVolume, AudioType::MUSIC);
 			}
 		}
 	}
-	// --- KẾT THÚC LOGIC FADE ---
 
 	for (auto it = activeVoices.begin(); it != activeVoices.end(); )
 	{
@@ -303,21 +294,17 @@ void DX9GF::AudioManager::RegisterBank(std::string bankName, std::vector<std::st
 
 void DX9GF::AudioManager::PlayRandom(std::string bankName, float volume, AudioType type)
 {
-	// Check xem có cái bank này không, hoặc bank có rỗng không
 	if (soundBanks.find(bankName) == soundBanks.end() || soundBanks[bankName].empty())
 		return;
 
-	// Random mượt mà
 	int index = rand() % soundBanks[bankName].size();
 	std::string selectedSound = soundBanks[bankName][index];
 
-	// Gọi lại hàm Play gốc
 	Play(selectedSound, false, volume, type);
 }
 
 void DX9GF::AudioManager::PlayBGM_Fade(std::string name, float targetVolume, float duration)
 {
-	// Nếu gọi trùng bài đang phát thì dẹp
 	if (!activeVoices.empty()) {
 		bool isAlreadyPlaying = false;
 		for (auto av : activeVoices) {
@@ -329,14 +316,12 @@ void DX9GF::AudioManager::PlayBGM_Fade(std::string name, float targetVolume, flo
 		if (isAlreadyPlaying) return;
 	}
 
-	// Bắt đầu quá trình Fade
 	isFading = true;
 	fadeTimer = 0.0f;
 	fadeDuration = duration;
 	fadingInSound = name;
 	fadingInTargetVolume = targetVolume;
 
-	// Tìm bài MUSIC cũ để vặn nhỏ lại
 	fadingOutSound = "";
 	for (auto av : activeVoices) {
 		if (av->type == AudioType::MUSIC && !av->pCallback->isFinished) {
@@ -345,22 +330,18 @@ void DX9GF::AudioManager::PlayBGM_Fade(std::string name, float targetVolume, flo
 		}
 	}
 
-	// Nếu không có bài cũ nào đang phát, bật thẳng bài mới (Fade In luôn)
 	if (fadingOutSound == "") {
-		Play(fadingInSound, true, 0.01f, AudioType::MUSIC); // Bật ở mức siêu nhỏ
+		Play(fadingInSound, true, 0.01f, AudioType::MUSIC);
 	}
 }
 
 void DX9GF::AudioManager::PlayRandomBGM_Fade(std::string bankName, float targetVolume, float duration)
 {
-	// 1. Kiểm tra xem Bank có tồn tại và có âm thanh không
 	if (soundBanks.find(bankName) == soundBanks.end() || soundBanks[bankName].empty())
 		return;
 
-	// 2. Bốc ngẫu nhiên 1 bài
 	int index = rand() % soundBanks[bankName].size();
 	std::string selectedSound = soundBanks[bankName][index];
 
-	// 3. Đẩy bài vừa bốc được vào hàm Fade để nó tự lo vụ dọn nhạc cũ
 	PlayBGM_Fade(selectedSound, targetVolume, duration);
 }

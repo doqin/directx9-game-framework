@@ -58,8 +58,8 @@ namespace Demo {
 
 		//for audio
 		float stepTimer = 0.0f;
-		std::string baseSurface = "default";    // Sàn mặc định của Scene hiện tại
-		std::string currentSurface = "default"; // Sàn đang đạp lên		
+		std::string baseSurface = "default";
+		std::string currentSurface = "default";
 		float surfaceTimeout = 0.0f;
 	public:
 		Player(std::weak_ptr<DX9GF::TransformManager> transformManager) : IGameObject(transformManager) {}

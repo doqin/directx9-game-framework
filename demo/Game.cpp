@@ -12,6 +12,7 @@ void Demo::Game::Init()
 	srand(static_cast<unsigned int>(time(NULL)));
 	IGame::Init();
 	SettingsManager::GetInstance()->LoadSettings();
+
 	auto audio = DX9GF::AudioManager::GetInstance();
 	audio->Init();
 	audio->Load("btn_hover", IDR_WAV_HOVER);
@@ -19,7 +20,6 @@ void Demo::Game::Init()
 	audio->Load("open_inv", IDR_WAVE_OPEN_INV);
 	audio->Load("close_inv", IDR_WAVE_CLOSE_INV);
 
-	// 2. NẠP ÂM THANH BƯỚC CHÂN (GLOBAL)
 	audio->Load("step_d1", IDR_STEP_D1);
 	audio->Load("step_d2", IDR_STEP_D2);
 	audio->Load("step_d3", IDR_STEP_D3);
@@ -86,8 +86,6 @@ void Demo::Game::Init()
 	audio->Load("bgm_secret", IDR_BGM_SECRET);
 	audio->Load("bgm_boss", IDR_BGM_BOSS);
 	audio->Load("bgm_arcade", IDR_BGM_ARCADE);
-
-
 
 	auto app = DX9GF::Application::GetInstance();
 	DX9GF::Font::AddFont(L"arcade-among-2-r46pv.ttf");
