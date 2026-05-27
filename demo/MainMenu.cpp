@@ -9,7 +9,7 @@
 #include <fstream>
 #include <cstdio>
 #include "TransitionCommand.h"
-
+#include "CreditsScene.h"
 namespace Demo
 {
 	std::shared_ptr<SaveGameState> MainMenu::gameSaveState = nullptr;
@@ -147,7 +147,7 @@ namespace Demo
 		}
 		f.close();
 
-        continueButton->SetOnReleaseLeft([this](DX9GF::ITrigger* t) {
+		continueButton->SetOnReleaseLeft([this](DX9GF::ITrigger* t) {
 			if (isTransitioning) return;
 			isTransitioning = true;
 			auto transitionInCommand = std::make_shared<TransitionCommand>(game->GetGraphicsDevice(), 1.f, true);
@@ -161,12 +161,12 @@ namespace Demo
 				markFinished();
 				}));
 			drawBuffer->PushCommand(std::make_shared<TransitionCommand>(game->GetGraphicsDevice(), 1.f, false));
-		});
+			});
 
 		//New Game Button
 		newGameButton = std::make_shared<Demo::IconButton>(transformManager, 0, 0, 96, 32, buttonSheetTex, 3);
 		newGameButton->SetSpriteRects(DX9GF::Utils::CreateRectsVertical(144, 48, 48, 16, 3));
-        newGameButton->SetOnReleaseLeft([this](DX9GF::ITrigger* t) { 
+		newGameButton->SetOnReleaseLeft([this](DX9GF::ITrigger* t) {
 			if (isTransitioning) return;
 			isTransitioning = true;
 			auto transitionInCommand = std::make_shared<TransitionCommand>(game->GetGraphicsDevice(), 1.f, true);
@@ -179,9 +179,9 @@ namespace Demo
 				gameSaveState = SaveGameState::StartNewGame(game, saveManager);
 				isTransitioning = false;
 				markFinished();
-			}));
+				}));
 			drawBuffer->PushCommand(std::make_shared<TransitionCommand>(game->GetGraphicsDevice(), 1.f, false));
-		});
+			});
 		newGameButton->SetSpriteScale(2.f, 2.f);
 
 		//Options Button
@@ -194,13 +194,19 @@ namespace Demo
 				new SettingsScene(this->game, app->GetScreenWidth(), app->GetScreenHeight())
 			);
 			this->game->GetSceneManager()->GoToNext();
-		});
+			});
 		optionsButton->SetSpriteScale(2.f, 2.f);
 
 		//Credits Button
 		creditsButton = std::make_shared<Demo::IconButton>(transformManager, 0, 0, 96, 32, buttonSheetTex, 3);
 		creditsButton->SetSpriteRects(DX9GF::Utils::CreateRectsVertical(192, 96, 48, 16, 3));
-		creditsButton->SetOnReleaseLeft([](DX9GF::ITrigger* t) { /* Logic */ });
+		creditsButton->SetOnReleaseLeft([this](DX9GF::ITrigger* t) {
+			auto app = DX9GF::Application::GetInstance();
+			this->game->GetSceneManager()->PushScene(
+				new CreditsScene(this->game, app->GetScreenWidth(), app->GetScreenHeight())
+			);
+			this->game->GetSceneManager()->GoToNext();
+			});
 		creditsButton->SetSpriteScale(2.f, 2.f);
 
 		//Quit Button
