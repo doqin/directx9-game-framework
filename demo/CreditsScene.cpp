@@ -29,7 +29,7 @@ namespace Demo
 		//bgSprite->SetPosition(0, 0);
 
 		backButton->SetLocalPosition(-screenW / 2.0f + 32.f, -screenH / 2.0f + 32.f);
-		float bottomY = screenH / 2.0f - 48.f;
+		float bottomY = screenH / 2.0f - 64.f;
 		btnPrevPage->SetLocalPosition(-160.f - 18.f, bottomY);
 		btnNextPage->SetLocalPosition(160.f - 18.f, bottomY);
 	}
@@ -162,19 +162,19 @@ namespace Demo
 
 		auto CreatePageBtn = [&](int srcX, int srcY, const std::function<void(DX9GF::ITrigger*)>& action) {
 
-			auto btn = std::make_shared<Demo::IconButton>(transformManager, 0, 0, 36, 33, placeholderTex, 1);
+			auto btn = std::make_shared<Demo::IconButton>(transformManager, 0, 0, 36, 33, uiSheetTex, 3);
 
-			btn->SetSpriteCoords(srcX, srcY, 12, 11, 0);
+			btn->SetSpriteCoords(srcX, srcY, 16, 16, 0);
 			btn->SetSpriteScale(3.f, 3.f);
 			btn->SetOnReleaseLeft(action);
 			return btn;
 			};
 
-		btnPrevPage = CreatePageBtn(82, 82, [this](DX9GF::ITrigger*) {
+		btnPrevPage = CreatePageBtn(240, 96, [this](DX9GF::ITrigger*) {
 			if (currentPage > 0) currentPage--;
 			});
 
-		btnNextPage = CreatePageBtn(82, 71, [this](DX9GF::ITrigger*) {
+		btnNextPage = CreatePageBtn(240, 112, [this](DX9GF::ITrigger*) {
 			if (currentPage < creditsPages.size() - 1) currentPage++;
 			});
 
@@ -298,6 +298,7 @@ namespace Demo
 
 		transformManager->UpdateAll();
 		camera.Update();
+
 
 		if (this->isGoingBack)
 		{

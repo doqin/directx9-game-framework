@@ -215,8 +215,8 @@ namespace Demo
 
 		//LOCAL FUNCTION to init decs,inc buttons
 		auto CreateVolBtn = [&](int srcX, int srcY, const std::function<void(DX9GF::ITrigger*)>& action) {
-			auto btn = std::make_shared<Demo::IconButton>(transformManager, 0, 0, 12, 11, placeholderTex, 1);
-			btn->SetSpriteCoords(srcX, srcY, 12, 11, 0);
+			auto btn = std::make_shared<Demo::IconButton>(transformManager, 0, 0, 12, 11, uiSheetTex);
+			btn->SetSpriteCoords(srcX, srcY, 16, 16, 0);
 
 			btn->SetOnReleaseLeft([action](DX9GF::ITrigger* t)
 				{
@@ -227,14 +227,14 @@ namespace Demo
 			};
 
 		auto sm = SettingsManager::GetInstance();
-		btnMasterDec = CreateVolBtn(82, 82, [](DX9GF::ITrigger*) { SettingsManager::GetInstance()->SetMasterVolume(std::max(0.0f, SettingsManager::GetInstance()->GetMasterVolume() - 0.2f)); });
-		btnMasterInc = CreateVolBtn(82, 71, [](DX9GF::ITrigger*) { SettingsManager::GetInstance()->SetMasterVolume(std::min(1.0f, SettingsManager::GetInstance()->GetMasterVolume() + 0.2f)); });
+		btnMasterDec = CreateVolBtn(240, 96, [](DX9GF::ITrigger*) { SettingsManager::GetInstance()->SetMasterVolume(std::max(0.0f, SettingsManager::GetInstance()->GetMasterVolume() - 0.2f)); });
+		btnMasterInc = CreateVolBtn(240, 112, [](DX9GF::ITrigger*) { SettingsManager::GetInstance()->SetMasterVolume(std::min(1.0f, SettingsManager::GetInstance()->GetMasterVolume() + 0.2f)); });
 
-		btnMusicDec = CreateVolBtn(82, 82, [](DX9GF::ITrigger*) { SettingsManager::GetInstance()->SetMusicVolume(std::max(0.0f, SettingsManager::GetInstance()->GetMusicVolume() - 0.2f)); });
-		btnMusicInc = CreateVolBtn(82, 71, [](DX9GF::ITrigger*) { SettingsManager::GetInstance()->SetMusicVolume(std::min(1.0f, SettingsManager::GetInstance()->GetMusicVolume() + 0.2f)); });
+		btnMusicDec = CreateVolBtn(240, 96, [](DX9GF::ITrigger*) { SettingsManager::GetInstance()->SetMusicVolume(std::max(0.0f, SettingsManager::GetInstance()->GetMusicVolume() - 0.2f)); });
+		btnMusicInc = CreateVolBtn(240, 112, [](DX9GF::ITrigger*) { SettingsManager::GetInstance()->SetMusicVolume(std::min(1.0f, SettingsManager::GetInstance()->GetMusicVolume() + 0.2f)); });
 
-		btnSFXDec = CreateVolBtn(82, 82, [](DX9GF::ITrigger*) { SettingsManager::GetInstance()->SetSfxVolume(std::max(0.0f, SettingsManager::GetInstance()->GetSfxVolume() - 0.2f)); });
-		btnSFXInc = CreateVolBtn(82, 71, [](DX9GF::ITrigger*) { SettingsManager::GetInstance()->SetSfxVolume(std::min(1.0f, SettingsManager::GetInstance()->GetSfxVolume() + 0.2f)); });
+		btnSFXDec = CreateVolBtn(240, 96, [](DX9GF::ITrigger*) { SettingsManager::GetInstance()->SetSfxVolume(std::max(0.0f, SettingsManager::GetInstance()->GetSfxVolume() - 0.2f)); });
+		btnSFXInc = CreateVolBtn(240, 112, [](DX9GF::ITrigger*) { SettingsManager::GetInstance()->SetSfxVolume(std::min(1.0f, SettingsManager::GetInstance()->GetSfxVolume() + 0.2f)); });
 
 		backButton = std::make_shared<Demo::IconButton>(transformManager, 0, 0, 96, 32, uiSheetTex, 3);
 		backButton->SetSpriteRects(DX9GF::Utils::CreateRectsVertical(96, 48, 48, 16, 3));
