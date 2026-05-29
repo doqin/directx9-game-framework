@@ -400,7 +400,13 @@
     <Image Include="assets\arrow.png">
       <DeploymentContent>true</DeploymentContent>
     </Image>
+    <Image Include="assets\boss-Sheet.png">
+      <DeploymentContent>true</DeploymentContent>
+    </Image>
     <Image Include="assets\bossmatrix.png">
+      <DeploymentContent>true</DeploymentContent>
+    </Image>
+    <Image Include="assets\bossprojectile-Sheet.png">
       <DeploymentContent>true</DeploymentContent>
     </Image>
     <Image Include="assets\bubble-Sheet.png">
@@ -461,6 +467,9 @@
       <DeploymentContent>true</DeploymentContent>
     </Image>
     <Image Include="assets\Keyepro-Sheet.png">
+      <DeploymentContent>true</DeploymentContent>
+    </Image>
+    <Image Include="assets\minion-Sheet.png">
       <DeploymentContent>true</DeploymentContent>
     </Image>
     <Image Include="assets\notresponding-Sheet.png">
