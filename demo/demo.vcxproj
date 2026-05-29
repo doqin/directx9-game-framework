@@ -208,6 +208,7 @@
     <ClCompile Include="BoomerangProjectile.cpp" />
     <ClCompile Include="BossWorldScene.cpp" />
     <ClCompile Include="CardShop.cpp" />
+    <ClCompile Include="CreditsScene.cpp" />
     <ClCompile Include="CupidEnemy.cpp" />
     <ClCompile Include="CustomBattleScene.cpp" />
     <ClCompile Include="DamageTextManager.cpp" />
@@ -217,6 +218,7 @@
     <ClCompile Include="Game.cpp" />
     <ClCompile Include="GameItems.cpp" />
     <ClCompile Include="HackTerminal.cpp" />
+    <ClCompile Include="IntroScene.cpp" />
     <ClCompile Include="HandContainer.cpp" />
     <ClCompile Include="HealingPoint.cpp" />
     <ClCompile Include="IBattleScene.cpp" />
@@ -230,6 +232,7 @@
     <ClCompile Include="IStatementCard.cpp" />
     <ClCompile Include="ItemShop.cpp" />
     <ClCompile Include="KeyeEnemy.cpp" />
+    <ClCompile Include="OutroScene.cpp" />
     <ClCompile Include="KeyeproEnemy.cpp" />
     <ClCompile Include="main.cpp" />
     <ClCompile Include="MainMenu.cpp" />
@@ -278,6 +281,7 @@
     <ClInclude Include="BoomerangProjectile.h" />
     <ClInclude Include="BossWorldScene.h" />
     <ClInclude Include="CardShop.h" />
+    <ClInclude Include="CreditsScene.h" />
     <ClInclude Include="CupidEnemy.h" />
     <ClInclude Include="CustomBattleScene.h" />
     <ClInclude Include="DamageTextManager.h" />
@@ -289,6 +293,7 @@
     <ClInclude Include="Game.h" />
     <ClInclude Include="GameItems.h" />
     <ClInclude Include="HackTerminal.h" />
+    <ClInclude Include="IntroScene.h" />
     <ClInclude Include="HandContainer.h" />
     <ClInclude Include="HealingPoint.h" />
     <ClInclude Include="IBattleScene.h" />
@@ -303,6 +308,7 @@
     <ClInclude Include="InventoryMenu.h" />
     <ClInclude Include="ItemShop.h" />
     <ClInclude Include="KeyeEnemy.h" />
+    <ClInclude Include="OutroScene.h" />
     <ClInclude Include="KeyeproEnemy.h" />
     <ClInclude Include="MainMenu.h" />
     <ClInclude Include="IEnemy.h" />
@@ -342,190 +348,191 @@
     <ClInclude Include="World1Scene.h" />
   </ItemGroup>
   <ItemGroup>
-    <None Include="BossMatrix.tmx">
+    <None Include="assets\BossMatrix.tmx">
       <DeploymentContent>true</DeploymentContent>
     </None>
-    <None Include="bossmatrix.tsx">
+    <None Include="assets\bossmatrix.tsx">
       <DeploymentContent>true</DeploymentContent>
     </None>
-    <None Include="First Asset pack.tsx">
+    <None Include="assets\First Asset pack.tsx">
       <DeploymentContent>true</DeploymentContent>
     </None>
-    <None Include="icon.tsx">
+    <None Include="assets\icon.tsx">
       <DeploymentContent>true</DeploymentContent>
     </None>
-    <None Include="placeholder-round-projectile.aseprite" />
-    <None Include="SecretPuzzle.tmx">
+    <None Include="assets\placeholder-round-projectile.aseprite" />
+    <None Include="assets\SecretPuzzle.tmx">
       <DeploymentContent>true</DeploymentContent>
     </None>
-    <None Include="secretpuzzle.tsx">
+    <None Include="assets\secretpuzzle.tsx">
       <DeploymentContent>true</DeploymentContent>
     </None>
-    <None Include="Shop.tsx">
+    <None Include="assets\Shop.tsx">
       <DeploymentContent>true</DeploymentContent>
     </None>
-    <None Include="ThreadAlley.tmx">
+    <None Include="assets\ThreadAlley.tmx">
       <DeploymentContent>true</DeploymentContent>
     </None>
-    <None Include="threadalley.tsx">
+    <None Include="assets\threadalley.tsx">
       <DeploymentContent>true</DeploymentContent>
     </None>
-    <None Include="tutorial.aseprite">
+    <None Include="assets\tutorial.aseprite">
       <DeploymentContent>true</DeploymentContent>
     </None>
-    <None Include="tutorial.tmx">
+    <None Include="assets\tutorial.tmx">
       <DeploymentContent>true</DeploymentContent>
     </None>
-    <None Include="tutorial.tsx">
+    <None Include="assets\tutorial.tsx">
       <DeploymentContent>true</DeploymentContent>
     </None>
-    <None Include="uiter-Sheet.aseprite">
+    <None Include="assets\uiter-Sheet.aseprite">
       <DeploymentContent>false</DeploymentContent>
     </None>
-    <None Include="uiter.aseprite">
+    <None Include="assets\uiter.aseprite">
       <DeploymentContent>false</DeploymentContent>
     </None>
-    <None Include="XP.tsx">
+    <None Include="wave1.bin" />
+    <None Include="assets\XP.tsx">
       <DeploymentContent>true</DeploymentContent>
     </None>
   </ItemGroup>
   <ItemGroup>
-    <Image Include="arrow.png">
+    <Image Include="assets\arrow.png">
       <DeploymentContent>true</DeploymentContent>
     </Image>
-    <Image Include="bossmatrix.png">
+    <Image Include="assets\bossmatrix.png">
       <DeploymentContent>true</DeploymentContent>
     </Image>
-    <Image Include="bubble-Sheet.png">
+    <Image Include="assets\bubble-Sheet.png">
       <DeploymentContent>true</DeploymentContent>
     </Image>
-    <Image Include="bubbleprojectile.png">
+    <Image Include="assets\bubbleprojectile.png">
       <DeploymentContent>true</DeploymentContent>
     </Image>
-    <Image Include="bugprojectile-Sheet.png">
+    <Image Include="assets\bugprojectile-Sheet.png">
       <DeploymentContent>true</DeploymentContent>
     </Image>
-    <Image Include="chestclosed.png">
+    <Image Include="assets\chestclosed.png">
       <DeploymentContent>true</DeploymentContent>
     </Image>
-    <Image Include="chestopened.png">
+    <Image Include="assets\chestopened.png">
       <DeploymentContent>true</DeploymentContent>
     </Image>
-    <Image Include="click.png">
+    <Image Include="assets\click.png">
       <DeploymentContent>true</DeploymentContent>
     </Image>
-    <Image Include="computerbug-Sheet.png">
+    <Image Include="assets\computerbug-Sheet.png">
       <DeploymentContent>true</DeploymentContent>
     </Image>
-    <Image Include="crawler-Sheet.png">
+    <Image Include="assets\crawler-Sheet.png">
       <DeploymentContent>true</DeploymentContent>
     </Image>
-    <Image Include="cursor.png">
+    <Image Include="assets\cursor.png">
       <DeploymentContent>true</DeploymentContent>
     </Image>
-    <Image Include="daudau-Sheet.png">
+    <Image Include="assets\daudau-Sheet.png">
       <DeploymentContent>true</DeploymentContent>
     </Image>
-    <Image Include="First Asset pack.png">
+    <Image Include="assets\First Asset pack.png">
       <DeploymentContent>true</DeploymentContent>
     </Image>
-    <Image Include="gate.png">
+    <Image Include="assets\gate.png">
       <DeploymentContent>true</DeploymentContent>
     </Image>
-    <Image Include="grab.png">
+    <Image Include="assets\grab.png">
       <DeploymentContent>true</DeploymentContent>
     </Image>
-    <Image Include="healingpoint-Sheet.png">
+    <Image Include="assets\healingpoint-Sheet.png">
       <DeploymentContent>true</DeploymentContent>
     </Image>
-    <Image Include="hitimpact-Sheet.png">
+    <Image Include="assets\hitimpact-Sheet.png">
       <DeploymentContent>true</DeploymentContent>
     </Image>
-    <Image Include="icon.jpg">
+    <Image Include="assets\icon.jpg">
       <DeploymentContent>true</DeploymentContent>
     </Image>
-    <Image Include="items.png">
+    <Image Include="assets\items.png">
       <DeploymentContent>true</DeploymentContent>
     </Image>
-    <Image Include="Keye-Bullet.png">
+    <Image Include="assets\Keye-Bullet.png">
       <DeploymentContent>true</DeploymentContent>
     </Image>
-    <Image Include="Keye-Sheet.png">
+    <Image Include="assets\Keye-Sheet.png">
       <DeploymentContent>true</DeploymentContent>
     </Image>
-    <Image Include="Keyepro-Sheet.png">
+    <Image Include="assets\Keyepro-Sheet.png">
       <DeploymentContent>true</DeploymentContent>
     </Image>
-    <Image Include="notresponding-Sheet.png">
+    <Image Include="assets\notresponding-Sheet.png">
       <DeploymentContent>true</DeploymentContent>
     </Image>
-    <Image Include="NPC1.png">
+    <Image Include="assets\NPC1.png">
       <DeploymentContent>true</DeploymentContent>
     </Image>
-    <Image Include="placeholder-healingpoint.png">
+    <Image Include="assets\placeholder-healingpoint.png">
       <DeploymentContent>true</DeploymentContent>
     </Image>
-    <Image Include="pointer.png">
+    <Image Include="assets\pointer.png">
       <DeploymentContent>true</DeploymentContent>
     </Image>
-    <Image Include="savepoint-Sheet.png">
+    <Image Include="assets\savepoint-Sheet.png">
       <DeploymentContent>true</DeploymentContent>
     </Image>
-    <Image Include="secretpuzzle.png">
+    <Image Include="assets\secretpuzzle.png">
       <DeploymentContent>true</DeploymentContent>
     </Image>
-    <Image Include="Shop-Sheet.png">
+    <Image Include="assets\Shop-Sheet.png">
       <DeploymentContent>true</DeploymentContent>
     </Image>
-    <Image Include="Shop.png">
+    <Image Include="assets\Shop.png">
       <DeploymentContent>true</DeploymentContent>
     </Image>
-    <Image Include="shrimp-Sheet.png">
+    <Image Include="assets\shrimp-Sheet.png">
       <DeploymentContent>true</DeploymentContent>
     </Image>
-    <Image Include="spearprojectile.png">
+    <Image Include="assets\spearprojectile.png">
       <DeploymentContent>true</DeploymentContent>
     </Image>
-    <Image Include="TempTex.png">
+    <Image Include="assets\TempTex.png">
       <DeploymentContent>true</DeploymentContent>
     </Image>
-    <Image Include="placeholder-shop.png">
+    <Image Include="assets\placeholder-shop.png">
       <DeploymentContent>true</DeploymentContent>
     </Image>
-    <Image Include="terminals.png">
+    <Image Include="assets\terminals.png">
       <DeploymentContent>true</DeploymentContent>
     </Image>
-    <Image Include="test-background.png">
+    <Image Include="assets\test-background.png">
       <DeploymentContent>true</DeploymentContent>
     </Image>
-    <Image Include="test-title.png">
+    <Image Include="assets\test-title.png">
       <DeploymentContent>true</DeploymentContent>
     </Image>
-    <Image Include="placeholder-round-projectile.png">
+    <Image Include="assets\placeholder-round-projectile.png">
       <DeploymentContent>true</DeploymentContent>
     </Image>
-    <Image Include="placeholder.png">
+    <Image Include="assets\placeholder.png">
       <DeploymentContent>true</DeploymentContent>
     </Image>
-    <Image Include="threadalley.png">
+    <Image Include="assets\threadalley.png">
       <DeploymentContent>true</DeploymentContent>
     </Image>
-    <Image Include="tutorial.png">
+    <Image Include="assets\tutorial.png">
       <DeploymentContent>true</DeploymentContent>
     </Image>
-    <Image Include="ui.png">
+    <Image Include="assets\ui.png">
       <DeploymentContent>true</DeploymentContent>
     </Image>
-    <Image Include="text-select.png">
+    <Image Include="assets\text-select.png">
       <DeploymentContent>true</DeploymentContent>
     </Image>
-    <Image Include="uiter-Sheet.png">
+    <Image Include="assets\uiter-Sheet.png">
       <DeploymentContent>true</DeploymentContent>
     </Image>
-    <Image Include="XP.jpg">
+    <Image Include="assets\XP.jpg">
       <DeploymentContent>true</DeploymentContent>
     </Image>
-    <Image Include="xprojectile.png">
+    <Image Include="assets\xprojectile.png">
       <DeploymentContent>true</DeploymentContent>
     </Image>
   </ItemGroup>
@@ -534,17 +541,87 @@
     <ClInclude Include="TextButton.h" />
   </ItemGroup>
   <ItemGroup>
-    <Image Include="ui-pack.png">
+    <Image Include="assets\ui-pack.png">
       <DeploymentContent>true</DeploymentContent>
     </Image>
   </ItemGroup>
   <ItemGroup>
-    <Font Include="arcade-among-2-r46pv.ttf">
+    <Font Include="assets\arcade-among-2-r46pv.ttf">
       <DeploymentContent>true</DeploymentContent>
     </Font>
-    <Font Include="statusplz.ttf">
+    <Font Include="assets\statusplz.ttf">
       <DeploymentContent>true</DeploymentContent>
     </Font>
+  </ItemGroup>
+  <ItemGroup>
+    <Media Include="assets\audio\access_denied.wav" />
+    <Media Include="assets\audio\access_granted.wav" />
+    <Media Include="assets\audio\arcade-music-loop.wav" />
+    <Media Include="assets\audio\battle-loop1.wav" />
+    <Media Include="assets\audio\battle-loop2.wav" />
+    <Media Include="assets\audio\battle-loop3.wav" />
+    <Media Include="assets\audio\battle-loop4.wav" />
+    <Media Include="assets\audio\battle_boss.wav" />
+    <Media Include="assets\audio\boss-loop.wav" />
+    <Media Include="assets\audio\button-click.wav" />
+    <Media Include="assets\audio\button-hover.wav" />
+    <Media Include="assets\audio\buy_item.wav" />
+    <Media Include="assets\audio\card_draw1.wav" />
+    <Media Include="assets\audio\card_draw2.wav" />
+    <Media Include="assets\audio\card_draw3.wav" />
+    <Media Include="assets\audio\card_draw4.wav" />
+    <Media Include="assets\audio\card_snap.wav" />
+    <Media Include="assets\audio\card_snap2.wav" />
+    <Media Include="assets\audio\checkpoint.wav" />
+    <Media Include="assets\audio\coins_gather.wav" />
+    <Media Include="assets\audio\dead.wav" />
+    <Media Include="assets\audio\dialog_voice1.wav" />
+    <Media Include="assets\audio\dialog_voice2.wav" />
+    <Media Include="assets\audio\dialog_voice3.wav" />
+    <Media Include="assets\audio\dialog_voice4.wav" />
+    <Media Include="assets\audio\dialog_voice5.wav" />
+    <Media Include="assets\audio\error.wav" />
+    <Media Include="assets\audio\hurt1.wav" />
+    <Media Include="assets\audio\hurt2.wav" />
+    <Media Include="assets\audio\hurt3.wav" />
+    <Media Include="assets\audio\hurt4.wav" />
+    <Media Include="assets\audio\hurt5.wav" />
+    <Media Include="assets\audio\inventory_close.wav" />
+    <Media Include="assets\audio\inventory_open.wav" />
+    <Media Include="assets\audio\power_up.wav" />
+    <Media Include="assets\audio\power_up1.wav" />
+    <Media Include="assets\audio\power_up2.wav" />
+    <Media Include="assets\audio\power_up3.wav" />
+    <Media Include="assets\audio\secret-loop.wav" />
+    <Media Include="assets\audio\sky-loop.wav" />
+    <Media Include="assets\audio\step_concrete1.wav" />
+    <Media Include="assets\audio\step_concrete2.wav" />
+    <Media Include="assets\audio\step_concrete3.wav" />
+    <Media Include="assets\audio\step_concrete4.wav" />
+    <Media Include="assets\audio\step_default1.wav" />
+    <Media Include="assets\audio\step_default2.wav" />
+    <Media Include="assets\audio\step_default3.wav" />
+    <Media Include="assets\audio\step_default4.wav" />
+    <Media Include="assets\audio\step_dirt1.wav" />
+    <Media Include="assets\audio\step_dirt2.wav" />
+    <Media Include="assets\audio\step_dirt3.wav" />
+    <Media Include="assets\audio\step_dirt4.wav" />
+    <Media Include="assets\audio\step_dirt5.wav" />
+    <Media Include="assets\audio\step_leaves1.wav" />
+    <Media Include="assets\audio\step_leaves2.wav" />
+    <Media Include="assets\audio\step_leaves3.wav" />
+    <Media Include="assets\audio\step_leaves4.wav" />
+    <Media Include="assets\audio\step_metal1.wav" />
+    <Media Include="assets\audio\step_metal2.wav" />
+    <Media Include="assets\audio\step_metal3.wav" />
+    <Media Include="assets\audio\step_metal4.wav" />
+    <Media Include="assets\audio\step_metal5.wav" />
+    <Media Include="assets\audio\step_vinyl1.wav" />
+    <Media Include="assets\audio\step_vinyl2.wav" />
+    <Media Include="assets\audio\step_vinyl3.wav" />
+    <Media Include="assets\audio\step_vinyl4.wav" />
+    <Media Include="assets\audio\tutorial-loop.wav" />
+    <Media Include="Sounds\button-hover.wav" />
   </ItemGroup>
   <Import Project="$(VCTargetsPath)\Microsoft.Cpp.targets" />
   <ImportGroup Label="ExtensionTargets">

@@ -5,6 +5,7 @@
 #include "MainMenu.h"
 #include "SaveGameState.h"
 #include "TransitionCommand.h"
+#include "resource.h"
 
 void Demo::SecretPuzzleScene::Init()
 {
@@ -17,7 +18,7 @@ void Demo::SecretPuzzleScene::Init()
 	drawBuffer = std::make_shared<DX9GF::CommandBuffer>();
 	commandBuffer = std::make_shared<DX9GF::CommandBuffer>();
 	map = std::make_shared<DX9GF::Map>(game->GetGraphicsDevice());
-	map->Create(transformManager, colliderManager, "./SecretPuzzle.tmx");
+	map->Create(transformManager, colliderManager, "./assets/SecretPuzzle.tmx");
 	map->SetAreaUpdateHandler("trigger_encounter", GetRandomEncounterFunc(game, player, {
 		{"VampireBatEnemy", 40},
 		{"MimicEnemy", 35},
@@ -38,6 +39,7 @@ void Demo::SecretPuzzleScene::Init()
 		auto targetPlayer = MainMenu::gameSaveState->GetPlayerFromScene(targetScene);
 		targetPlayer->RestoreSaveGlobalData(saveData["player"]);
 		targetPlayer->SetLocalPosition(-263.f, -295.f);
+		DX9GF::AudioManager::GetInstance()->PlayBGM_Fade("bgm_tutorial", 0.5f, 1.5f);
 		sceMan->GoToPrevious();
 		isTransitioning = false;
 		markFinished();
@@ -59,6 +61,7 @@ void Demo::SecretPuzzleScene::Init()
 			auto targetScene = sceMan->GetScene(static_cast<size_t>(sceMan->GetIndex()) + 1);
 			auto targetPlayer = MainMenu::gameSaveState->GetPlayerFromScene(targetScene);
 			targetPlayer->RestoreSaveGlobalData(saveData["player"]);
+			DX9GF::AudioManager::GetInstance()->PlayBGM_Fade("bgm_arcade", 0.2f, 1.5f);
 			sceMan->GoToNext();
 			isTransitioning = false;
 			markFinished();
@@ -85,7 +88,7 @@ void Demo::SecretPuzzleScene::Init()
 				this->isBossDead = true;
 				});
 
-			battleScene->SetCustomBackgroundDraw([](DX9GF::GraphicsDevice*, unsigned long long) {});
+			battleScene->SetCustomBackgroundDraw([this](DX9GF::GraphicsDevice* gd, unsigned long long deltaTime) { DrawBackground(gd, deltaTime); });
 
 			auto sceMan = this->game->GetSceneManager();
 			sceMan->InsertScene(sceMan->GetIndex() + 1, battleScene);
@@ -188,11 +191,38 @@ void Demo::SecretPuzzleScene::Init()
 	inventoryMenu = std::make_shared<InventoryMenu>(game, player, transformManager, draggableManager, &uiCamera, font.get());
 	inventoryMenu->Init();
 
+	auto audio = DX9GF::AudioManager::GetInstance();
+
+	audio->Load("step_dir1", IDR_STEP_DIR1);
+	audio->Load("step_dir2", IDR_STEP_DIR2);
+	audio->Load("step_dir3", IDR_STEP_DIR3);
+	audio->Load("step_dir4", IDR_STEP_DIR4);
+	audio->Load("step_dir5", IDR_STEP_DIR5);
+
+	audio->RegisterBank("step_dirt", { "step_dir1", "step_dir2", "step_dir3", "step_dir4" , "step_dir5" });
+	player->SetBaseSurface("dirt");
+
+	map->SetAreaUpdateHandler("audio_zone_default", [this](const DX9GF::Map::ObjectArea&) {
+		GetPlayer()->SetSurface("default");
+		});
+
+	map->SetAreaUpdateHandler("audio_zone_leaves", [this](const DX9GF::Map::ObjectArea&) {
+		GetPlayer()->SetSurface("leaves");
+		});
+
+	map->SetAreaUpdateHandler("audio_zone_metal", [this](const DX9GF::Map::ObjectArea&) {
+		GetPlayer()->SetSurface("metal");
+		});
+
 	ItemData::GetInstance()->LoadData();
 	this->GiveTestItems();
 
 	transformManager->RebuildHierarchy();
 	drawBuffer->PushCommand(std::make_shared<Demo::TransitionCommand>(game->GetGraphicsDevice(), 1.f, false));
+
+	dauDau = std::make_shared<DauDauNPC>(transformManager, 1 * 16, -31.0f * 16);
+	dauDau->Init(game->GetGraphicsDevice(), player, colliderManager, font, drawBuffer);
+	dauDau->AddLine(L"Dau Dau", L"Watch out! This portal is a one-way trip to the invisible maze! Enter if you dare!"); 
 }
 
 void Demo::SecretPuzzleScene::Update(unsigned long long deltaTime)
@@ -260,6 +290,15 @@ void Demo::SecretPuzzleScene::Update(unsigned long long deltaTime)
 		healingPoint->Update(deltaTime);
 	}
 
+	dauDau->Update(deltaTime);
+	if (!currentConversation && dauDau->CanInteract() && inpMan->KeyPress(DIK_E)) {
+		auto [sw, sh] = camera.GetScreenResolution();
+		currentConversation = std::make_shared<IConversation>(std::make_shared<DX9GF::FontSprite>(font.get()), sw, sh);
+		for (auto& line : dauDau->GetDialogueLines()) {
+			currentConversation->AddLine(line);
+		}
+	}
+
 	for (auto& chest : treasureChests) {
 		chest->Update(deltaTime);
 		if (!currentConversation && chest->CanInteract() && inpMan->KeyPress(DIK_E)) {
@@ -308,6 +347,8 @@ void Demo::SecretPuzzleScene::Update(unsigned long long deltaTime)
 	if (inventoryMenu && inventoryMenu->IsPendingLeave()) {
 		auto sceMan = game->GetSceneManager();
 		sceMan->GoToScene(0);
+		auto audio = DX9GF::AudioManager::GetInstance();
+		audio->PlayBGM_Fade("bgm_sky", 0.9f, 1.5f);
 		return;
 	}
 	commandBuffer->Update(deltaTime);
@@ -336,6 +377,8 @@ void Demo::SecretPuzzleScene::Draw(unsigned long long deltaTime)
 		for (auto& chest : treasureChests)
 			chest->Draw(camera, deltaTime);
 
+		dauDau->Draw(camera, deltaTime);
+
 		player->Draw(deltaTime);
 		if (drawBuffer) {
 			drawBuffer->Update(deltaTime);
@@ -344,6 +387,7 @@ void Demo::SecretPuzzleScene::Draw(unsigned long long deltaTime)
 		if (draggableManager && inventoryMenu && inventoryMenu->IsOpen() && inventoryMenu->GetCurrentTab() == Demo::InventoryMenu::Tab::DECK) {
 			draggableManager->Draw(deltaTime);
 		}
+
 		if (currentConversation) currentConversation->Draw(gd, deltaTime);
 		DX9GF::InputManager::GetInstance()->DrawCursor(&this->uiCamera, deltaTime);
 		gd->EndDraw();

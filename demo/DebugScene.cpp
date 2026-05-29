@@ -24,7 +24,7 @@ void Demo::DebugScene::Init()
 
 	//just load resource (texture, font) 1 time and reuse it all over again
 	uiSheetTex = std::make_shared<DX9GF::Texture>(game->GetGraphicsDevice());
-	uiSheetTex->LoadTexture(L"ui-pack.png");
+	uiSheetTex->LoadTexture(L"assets/ui-pack.png");
 	//Everything works fine with .png, but .bmp is causing coordinate issues. Idk how to fix bruh
 	myFont = std::make_shared<DX9GF::Font>(game->GetGraphicsDevice(), L"Arcade Among 2 R46PV", 24);
 	myFontSprite = std::make_shared<DX9GF::FontSprite>(myFont.get());

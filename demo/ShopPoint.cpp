@@ -19,7 +19,7 @@ namespace Demo {
         cm->Add(collider);
 
         spritesheet = std::make_shared<DX9GF::Texture>(gd);
-        spritesheet->LoadTexture(L"Shop-Sheet.png");
+        spritesheet->LoadTexture(L"assets/Shop-Sheet.png");
 
         sprite = std::make_shared<DX9GF::AnimatedSprite>(spritesheet.get(), DX9GF::Utils::CreateRectsHorizontal(0, 0, 80, 80, 8), 8);
         sprite->SetOrigin(40.f, 40.f);

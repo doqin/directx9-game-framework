@@ -14,15 +14,13 @@ namespace Demo {
         this->gd = gd;
         this->onHackAttempt = hackCallback;
 
-        //change size collider after
         collider = std::make_shared<DX9GF::RectangleCollider>(transformManager, 32.f, 32.f, GetWorldX(), GetWorldY());
         collider->SetOriginCenter();
         cm->Add(collider);
 
         spritesheet = std::make_shared<DX9GF::Texture>(gd);
 
-        //change this
-        spritesheet->LoadTexture(L"terminals.png");
+        spritesheet->LoadTexture(L"assets/terminals.png");
 
 
         sprite = std::make_shared<DX9GF::StaticSprite>(spritesheet.get());

@@ -6,9 +6,11 @@
 #include "GameItems.h"
 #include "CustomBattleScene.h"
 #include "TransitionCommand.h"
+#include "OutroScene.h"
 #include "Game.h"
 #include <vector>
 #include <cmath>
+#include "resource.h"
 
 void Demo::BossWorldScene::Init() {
 	camera.SetZoom(2.0f);
@@ -25,7 +27,7 @@ void Demo::BossWorldScene::Init() {
 	font = std::make_shared<DX9GF::Font>(game->GetGraphicsDevice(), L"StatusPlz", 16);
 
 	map = std::make_shared<DX9GF::Map>(game->GetGraphicsDevice());
-	map->Create(transformManager, colliderManager, "./BossMatrix.tmx");
+	map->Create(transformManager, colliderManager, "./assets/BossMatrix.tmx");
 
 	map->SetAreaUpdateHandler("trigger_encounters", GetRandomEncounterFunc(game, player, {
 		{"VampireBatEnemy", 40},
@@ -183,9 +185,11 @@ void Demo::BossWorldScene::Init() {
 			auto app = DX9GF::Application::GetInstance();
 			auto battleScene = new CustomBattleScene(demoGame, player, app->GetScreenWidth(), app->GetScreenHeight(), forcedEnemyMap);
 
+			battleScene->SetCustomBGM("battle_boss");
+
 			battleScene->SetOnVictoryCallback([this]() {
 				this->isFinalBossDead = true;
-			});
+				});
 
 			battleScene->SetCustomBackgroundDraw([this](DX9GF::GraphicsDevice* gd, unsigned long long delta) { DrawBackground(gd, delta, currentIslandID); });
 			auto sceMan = this->game->GetSceneManager();
@@ -217,6 +221,31 @@ void Demo::BossWorldScene::Init() {
 		});
 
 
+	map->SetAreaUpdateHandler("trigger_outro", [this](const DX9GF::Map::ObjectArea& area) {
+		if (!this->isFinalBossDead) return;
+		if (!player->IsWalking()) return;
+
+		auto sceMan = this->game->GetSceneManager();
+		auto app = DX9GF::Application::GetInstance();
+		sceMan->InsertScene(sceMan->GetIndex() + 1,
+			new OutroScene(this->game, app->GetScreenWidth(), app->GetScreenHeight())
+		);
+		isTransitioning = true;
+		auto transitionInCommand = std::make_shared<TransitionCommand>(game->GetGraphicsDevice(), 1.f, true);
+		drawBuffer->PushCommand(transitionInCommand);
+		commandBuffer->PushCommand(std::make_shared<DX9GF::CustomCommand>([this, transitionInCommand, sceMan](std::function<void(void)> markFinished) {
+			if (!transitionInCommand->IsFinished()) {
+				return;
+			}
+			this->isGamePaused = true;
+			auto audio = DX9GF::AudioManager::GetInstance();
+			audio->StopAll();
+			sceMan->GoToNext();
+			markFinished();
+			}));
+		drawBuffer->PushCommand(std::make_shared<TransitionCommand>(game->GetGraphicsDevice(), 1.f, false));
+	});
+
 	map->SetAreaUpdateHandler("trigger_spec_item", [this](const DX9GF::Map::ObjectArea& area) {
 		if (!this->hasGottenUselessItem) {
 			player->GetInventoryItems().AddItem(11, 1);
@@ -228,8 +257,29 @@ void Demo::BossWorldScene::Init() {
 	inventoryMenu = std::make_shared<InventoryMenu>(game, player, transformManager, draggableManager, &uiCamera, font.get());
 	inventoryMenu->Init();
 
+	auto audio = DX9GF::AudioManager::GetInstance();
+
+	audio->Load("step_v1", IDR_STEP_V1);
+	audio->Load("step_v2", IDR_STEP_V2);
+	audio->Load("step_v3", IDR_STEP_V3);
+	audio->Load("step_v4", IDR_STEP_V4);
+
+	audio->RegisterBank("step_vinyl", { "step_v1", "step_v2", "step_v3", "step_v4" });
+	player->SetBaseSurface("vinyl");
+
+	map->SetAreaUpdateHandler("audio_zone_leaves", [this](const DX9GF::Map::ObjectArea&) {
+		GetPlayer()->SetSurface("leaves");
+		});
+
+	map->SetAreaUpdateHandler("audio_zone_metal", [this](const DX9GF::Map::ObjectArea&) {
+		GetPlayer()->SetSurface("metal");
+		});
+
+	audio->Load("hack_fail", IDR_TERMINAL_DENIED);
+	audio->Load("hack_success", IDR_TERMINAL_GRANTED);
+
 	gateTexture = std::make_shared<DX9GF::Texture>(game->GetGraphicsDevice());
-	gateTexture->LoadTexture(L"gate.png");
+	gateTexture->LoadTexture(L"assets/gate.png");
 	gateSprite = std::make_shared<DX9GF::StaticSprite>(gateTexture.get());
 	gateSprite->SetPosition(46 * 16, -15 * 16);
 
@@ -239,8 +289,9 @@ void Demo::BossWorldScene::Init() {
 
 void Demo::BossWorldScene::OnTerminalHacked(int terminalID) {
 
-	//srand(static_cast<unsigned int>(time(NULL))); ->> help me add this somewhere so that the random results are different every time the game runs
 	if (isBossDoorUnlocked) return;
+
+	auto audio = DX9GF::AudioManager::GetInstance();
 
 	std::vector<std::string> successMsgs = {
 		"Node override successful...",
@@ -263,6 +314,8 @@ void Demo::BossWorldScene::OnTerminalHacked(int terminalID) {
 			mainTerminal->SetHackedStatus(true);
 			mainTerminal->ShowStatusMessage("Access granted. Core unlocked.", 3.0f);
 
+			audio->Play("hack_success");
+
 			if (bossGateCollider) {
 				colliderManager->Remove(bossGateCollider);
 				bossGateCollider.reset();
@@ -278,6 +331,7 @@ void Demo::BossWorldScene::OnTerminalHacked(int terminalID) {
 			};
 
 			mainTerminal->ShowStatusMessage(lockedMsgs[rand() % lockedMsgs.size()], 3.0f);
+			audio->Play("hack_fail");
 		}
 		return;
 	}
@@ -288,6 +342,7 @@ void Demo::BossWorldScene::OnTerminalHacked(int terminalID) {
 		std::string msg = successMsgs[rand() % successMsgs.size()];
 		hackMachines[currentHackStep]->ShowStatusMessage(msg, 3.0f);
 		currentHackStep++;
+		audio->Play("hack_success");
 	}
 	else {
 		currentHackStep = 0;
@@ -300,6 +355,7 @@ void Demo::BossWorldScene::OnTerminalHacked(int terminalID) {
 				m->ShowStatusMessage(failMsg, 3.0f);
 			}
 		}
+		audio->Play("hack_fail");
 	}
 }
 
@@ -451,6 +507,8 @@ void Demo::BossWorldScene::Update(unsigned long long deltaTime) {
 	if (inventoryMenu && inventoryMenu->IsPendingLeave()) {
 		auto sceMan = game->GetSceneManager();
 		sceMan->GoToScene(0);
+		auto audio = DX9GF::AudioManager::GetInstance();
+		audio->PlayBGM_Fade("bgm_sky", 0.9f, 1.5f);
 		return;
 	}
 	commandBuffer->Update(deltaTime);

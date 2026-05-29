@@ -9,7 +9,7 @@
 #include <fstream>
 #include <cstdio>
 #include "TransitionCommand.h"
-
+#include "CreditsScene.h"
 namespace Demo
 {
 	std::shared_ptr<SaveGameState> MainMenu::gameSaveState = nullptr;
@@ -116,7 +116,7 @@ namespace Demo
 
 		//load textures
 		buttonSheetTex = std::make_shared<DX9GF::Texture>(game->GetGraphicsDevice());
-		buttonSheetTex->LoadTexture(L"ui.png");
+		buttonSheetTex->LoadTexture(L"assets/ui.png");
 
 		bgTex = std::make_shared<DX9GF::Texture>(game->GetGraphicsDevice());
 		bgTex->LoadTexture(IDB_PNG2);
@@ -147,7 +147,7 @@ namespace Demo
 		}
 		f.close();
 
-        continueButton->SetOnReleaseLeft([this](DX9GF::ITrigger* t) {
+		continueButton->SetOnReleaseLeft([this](DX9GF::ITrigger* t) {
 			if (isTransitioning) return;
 			isTransitioning = true;
 			auto transitionInCommand = std::make_shared<TransitionCommand>(game->GetGraphicsDevice(), 1.f, true);
@@ -161,12 +161,12 @@ namespace Demo
 				markFinished();
 				}));
 			drawBuffer->PushCommand(std::make_shared<TransitionCommand>(game->GetGraphicsDevice(), 1.f, false));
-		});
+			});
 
 		//New Game Button
 		newGameButton = std::make_shared<Demo::IconButton>(transformManager, 0, 0, 96, 32, buttonSheetTex, 3);
 		newGameButton->SetSpriteRects(DX9GF::Utils::CreateRectsVertical(144, 48, 48, 16, 3));
-        newGameButton->SetOnReleaseLeft([this](DX9GF::ITrigger* t) { 
+		newGameButton->SetOnReleaseLeft([this](DX9GF::ITrigger* t) {
 			if (isTransitioning) return;
 			isTransitioning = true;
 			auto transitionInCommand = std::make_shared<TransitionCommand>(game->GetGraphicsDevice(), 1.f, true);
@@ -178,10 +178,21 @@ namespace Demo
 				std::remove("savegame.json");
 				gameSaveState = SaveGameState::StartNewGame(game, saveManager);
 				isTransitioning = false;
+				commandBuffer->PushCommand(std::make_shared<DX9GF::CustomCommand>([this](std::function<void(void)> markFinished1) {
+					std::ifstream f("savegame.json");
+					if (f.good()) {
+						continueButton->SetState(IButton::ButtonState::IDLE);
+					}
+					else {
+						continueButton->SetState(IButton::ButtonState::DISABLED);
+					}
+					f.close();
+					markFinished1();
+				}));
 				markFinished();
-			}));
+				}));
 			drawBuffer->PushCommand(std::make_shared<TransitionCommand>(game->GetGraphicsDevice(), 1.f, false));
-		});
+			});
 		newGameButton->SetSpriteScale(2.f, 2.f);
 
 		//Options Button
@@ -190,17 +201,25 @@ namespace Demo
 		optionsButton->SetOnReleaseLeft([this](DX9GF::ITrigger* t) {
 			auto app = DX9GF::Application::GetInstance();
 			//push Settings Scene
-			this->game->GetSceneManager()->PushScene(
+			auto sceMan = this->game->GetSceneManager();
+			sceMan->InsertScene(sceMan->GetIndex() + 1,
 				new SettingsScene(this->game, app->GetScreenWidth(), app->GetScreenHeight())
 			);
 			this->game->GetSceneManager()->GoToNext();
-		});
+			});
 		optionsButton->SetSpriteScale(2.f, 2.f);
 
 		//Credits Button
 		creditsButton = std::make_shared<Demo::IconButton>(transformManager, 0, 0, 96, 32, buttonSheetTex, 3);
 		creditsButton->SetSpriteRects(DX9GF::Utils::CreateRectsVertical(192, 96, 48, 16, 3));
-		creditsButton->SetOnReleaseLeft([](DX9GF::ITrigger* t) { /* Logic */ });
+		creditsButton->SetOnReleaseLeft([this](DX9GF::ITrigger* t) {
+			auto app = DX9GF::Application::GetInstance();
+			auto sceMan = this->game->GetSceneManager();
+			sceMan->InsertScene(sceMan->GetIndex() + 1,
+				new CreditsScene(this->game, app->GetScreenWidth(), app->GetScreenHeight())
+			);
+			this->game->GetSceneManager()->GoToNext();
+			});
 		creditsButton->SetSpriteScale(2.f, 2.f);
 
 		//Quit Button
@@ -219,6 +238,11 @@ namespace Demo
 				uiButtons.push_back(btn);
 			}
 		}
+
+		auto audio = DX9GF::AudioManager::GetInstance();
+
+		audio->Load("bgm_sky", IDR_BGM_SKY);
+		audio->PlayBGM_Fade("bgm_sky", 0.9f, 1.5f);
 
 		//call it to setup the update layout
 		UpdateLayout(lastScreenWidth, lastScreenHeight);
@@ -241,24 +265,13 @@ namespace Demo
 		int currentWidth = app->GetScreenWidth();
 		int currentHeight = app->GetScreenHeight();
 
-		static float timer = 0;
-		timer += deltaTime;
-		if (timer > 0) {
-			std::ifstream f("savegame.json");
-			if (f.good()) {
-				continueButton->SetState(IButton::ButtonState::IDLE);
-			}
-			else {
-				continueButton->SetState(IButton::ButtonState::DISABLED);
-			}
-			f.close();
-			timer = 0;
-		}
+		//i removed the timer check for savegame.json here becuz it keeps spamming the audio. i think init() did a good job checking on savegame already
 
 		UpdateLayout(currW, currH);
 
 		for (auto& button : uiButtons)
 		{
+			if (button->GetState() == IButton::ButtonState::DISABLED) continue;
 			button->Update(deltaTime);
 		}
 

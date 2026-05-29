@@ -7,13 +7,13 @@
 void Demo::DemonEyeEnemy::Init(DX9GF::GraphicsDevice* graphicsDevice, DX9GF::Camera* camera)
 {
 	texture = std::make_shared<DX9GF::Texture>(graphicsDevice);
-	texture->LoadTexture(L"computerbug-Sheet.png"); // TODO: enemy img
+	texture->LoadTexture(L"assets/computerbug-Sheet.png"); // TODO: enemy img
 	sprite = std::make_shared<DX9GF::AnimatedSprite>(texture.get(), DX9GF::Utils::CreateRectsHorizontal(0, 0, 64, 64, 12), 12);
 	sprite->SetOrigin(32, 32);
 	sprite->SetScale(2.f);
 
 	tearProjectileTexture = std::make_shared<DX9GF::Texture>(graphicsDevice);
-	tearProjectileTexture->LoadTexture(L"bugprojectile-Sheet.png"); // TODO: blood drop img
+	tearProjectileTexture->LoadTexture(L"assets/bugprojectile-Sheet.png"); // TODO: blood drop img
 	tearProjectileSprite = std::make_shared<DX9GF::AnimatedSprite>(tearProjectileTexture.get(), DX9GF::Utils::CreateRectsHorizontal(0, 0, 16, 16, 4), 12);
 	tearProjectileSprite->SetOrigin(8, 8);
 

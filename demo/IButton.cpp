@@ -1,6 +1,6 @@
 #include "pch.h"
 #include "IButton.h"
-
+#include "DX9GFAudioManager.h"
 void Demo::IButton::SetOnReleaseLeft(std::function<void(DX9GF::ITrigger*)> cb)
 {
 	//save the button's feature
@@ -21,6 +21,7 @@ void Demo::IButton::Update(unsigned long long deltaTime)
 	//update trigger
 	this->trigger->Update(deltaTime);
 
+	ButtonState oldState = this->currentState;
 
 	if (this->currentState == ButtonState::LISTENING || this->currentState == ButtonState::DISABLED)
 	{
@@ -31,7 +32,6 @@ void Demo::IButton::Update(unsigned long long deltaTime)
 	if (this->trigger->IsHeldLeft(deltaTime)) {
 		this->currentState = ButtonState::CLICKED;
 	}
-		
 	else if (this->trigger->IsHovering(deltaTime))
 	{
 		this->currentState = ButtonState::HOVER;
@@ -47,6 +47,16 @@ void Demo::IButton::Update(unsigned long long deltaTime)
 		else {
 			DX9GF::InputManager::GetInstance()->SwitchCursor(DX9GF::InputManager::CursorType::POINTER);
 		}
+	}
+
+	if (oldState == ButtonState::IDLE && this->currentState == ButtonState::HOVER)
+	{
+		DX9GF::AudioManager::GetInstance()->Play(btnHoverSfxName);
+	}
+
+	if (oldState != ButtonState::CLICKED && this->currentState == ButtonState::CLICKED)
+	{
+		DX9GF::AudioManager::GetInstance()->Play(btnClickSfxName);
 	}
 }
 

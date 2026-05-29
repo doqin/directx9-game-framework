@@ -12,6 +12,9 @@ LRESULT CALLBACK WinProc(HWND hwnd, UINT msg, WPARAM wParam, LPARAM lParam)
 	switch (msg)
 	{
 	case WM_SIZE:
+		if (wParam == SIZE_MINIMIZED) {
+			return 0;
+		}
 		if (p_game != nullptr) {
 			p_game->OnResize(LOWORD(lParam), HIWORD(lParam));
 		}
@@ -143,7 +146,7 @@ void DX9GF::Application::Run()
 				unsigned long long deltaTime = GetTickCount64() - start;
 				start = GetTickCount64();
 				p_game->Update(deltaTime);
-				audioManager->Update();
+				audioManager->Update(deltaTime);
 				p_game->Draw(deltaTime);
 			}
 		}

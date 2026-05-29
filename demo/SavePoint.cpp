@@ -17,7 +17,7 @@ namespace Demo {
         collider->SetOriginCenter();
         cm->Add(collider);
         spritesheet = std::make_shared<DX9GF::Texture>(gd);
-		spritesheet->LoadTexture(L"savepoint-Sheet.png");
+		spritesheet->LoadTexture(L"assets/savepoint-Sheet.png");
         sprite = std::make_shared<DX9GF::AnimatedSprite>(spritesheet.get(), DX9GF::Utils::CreateRectsHorizontal(0, 0, 32, 32, 10), 12, true);
 		sprite->SetOrigin(16.f, 16.f);
 		sprite->SetPosition(GetWorldX(), GetWorldY());
@@ -33,6 +33,7 @@ namespace Demo {
             if (auto smLock = this->saveManager.lock()) {
                 smLock->Save("savegame.json");
                 OutputDebugStringA("Successfully saved!\n");
+                DX9GF::AudioManager::GetInstance()->Play("checkpoint",false, 0.7f);
             }
             this->isSaveMenuOpen = false;
             });

@@ -1,11 +1,11 @@
-#include "pch.h"
+﻿#include "pch.h"
 #include "Player.h"
 #include "resource.h"
 #include "DamageTextManager.h"
 #include "AdvancedCards.h"
 #include "StrikeCard.h"
 #include "MainBlockCard.h"
-
+#include "SettingsManager.h"
 #include "IDraggable.h"
 #include "IEnemy.h"
 std::shared_ptr<Demo::ICard> Demo::ICard::CreateCard(const std::string& id, std::weak_ptr<DX9GF::TransformManager> transformManager, std::shared_ptr<DraggableManager> draggableManager, DX9GF::GraphicsDevice* graphicsDevice, DX9GF::Camera* camera) {
@@ -142,12 +142,17 @@ void Demo::Player::Init(DX9GF::GraphicsDevice* graphicsDevice, DX9GF::ColliderMa
 
 void Demo::Player::Update(unsigned long long deltaTime) {
 	auto inpMan = DX9GF::InputManager::GetInstance();
+	auto sm = Demo::SettingsManager::GetInstance();
+	int keyUp = sm->GetKeybind("MOVE_UP");
+	int keyDown = sm->GetKeybind("MOVE_DOWN");
+	int keyLeft = sm->GetKeybind("MOVE_LEFT");
+	int keyRight = sm->GetKeybind("MOVE_RIGHT");
 	// Movement
 	D3DXVECTOR2 dir{ 0, 0 };
-	if (inpMan->KeyPress(DIK_D)) dir.x += 1;
-	if (inpMan->KeyPress(DIK_A)) dir.x -= 1;
-	if (inpMan->KeyPress(DIK_S)) dir.y += 1;
-	if (inpMan->KeyPress(DIK_W)) dir.y -= 1;
+	if (inpMan->KeyPress(keyRight)) dir.x += 1;
+	if (inpMan->KeyPress(keyLeft))  dir.x -= 1;
+	if (inpMan->KeyPress(keyDown))  dir.y += 1;
+	if (inpMan->KeyPress(keyUp))    dir.y -= 1;
 	if (dir.x == 1) state = State::Right;
 	if (dir.x == -1) state = State::Left;
 	if (dir.y == 1) state = State::Down;
@@ -177,6 +182,26 @@ void Demo::Player::Update(unsigned long long deltaTime) {
 		walkingUp->SetFrame(0);
 		walkingRight->SetFrame(0);
 		walkingLeft->SetFrame(0);
+	}
+	if (currentSurface != baseSurface) {
+		surfaceTimeout -= deltaTime / 1000.0f;
+		if (surfaceTimeout <= 0) {
+			currentSurface = baseSurface;
+		}
+	}
+
+	if (isWalking) {
+		float stepInterval = isRunning ? 0.25f : 0.4f;
+		stepTimer -= deltaTime / 1000.0f;
+
+		if (stepTimer <= 0) {
+			std::string bankName = "step_" + currentSurface;
+			DX9GF::AudioManager::GetInstance()->PlayRandom(bankName, 0.5f);
+			stepTimer = stepInterval;
+		}
+	}
+	else {
+		stepTimer = 0.0f;
 	}
 	// if (dirNorm.x == 0 && dirNorm.y == 0) return;
 	float dX = dirNorm.x * VELOCITY * deltaTime / 1000.f;
@@ -336,7 +361,16 @@ bool Demo::Player::TakeDamage(float damage)
 	health -= actualDamage;
 	isInvincible = true;
 	timeSinceTurnedInvincible = 0.f;
-	if (health < 0) health = 0;
+	if (health <= 0)
+	{
+		if (health + actualDamage > 0) {
+			DX9GF::AudioManager::GetInstance()->Play("player_dead", false, 0.3f);
+		}
+		health = 0;
+	}
+	if (actualDamage > 0) {
+		DX9GF::AudioManager::GetInstance()->PlayRandom("take_dmg", 0.8f);
+	}
 	auto [x, y] = GetWorldPosition();
 	Demo::DamageTextManager::GetInstance()->Spawn(actualDamage, x, y - 16.0f, Demo::TextType::TakeDamage); //-16.0f from y so the text pops up from the head
 	return IsDead();
@@ -425,4 +459,9 @@ void Demo::Player::AddActiveBuff(const ActiveBuff& buff) {
    if (buff.type == ItemBuffType::BuffDefense) {
 		temporaryDefense = (std::max)(0.f, GetBuffStat(ItemBuffType::BuffDefense));
 	}
+}
+void Demo::Player::SetSurface(std::string surface)
+{
+	this->currentSurface = surface;
+	this->surfaceTimeout = 0.1f;
 }

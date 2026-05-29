@@ -22,6 +22,9 @@ namespace Demo
 		std::shared_ptr<DX9GF::RectangleTrigger> trigger;
 		std::function<void(DX9GF::ITrigger*)> callback;
 		DX9GF::Camera* uiCamera = nullptr;
+
+		std::string btnHoverSfxName = "btn_hover";
+		std::string btnClickSfxName = "btn_click";
 	public:
 
 		IButton(std::shared_ptr<DX9GF::TransformManager> tm, float x, float y, float w, float h, int frames = 3)
@@ -44,6 +47,7 @@ namespace Demo
 		virtual void Update(unsigned long long deltaTime);
 
 		void SetState(ButtonState state) { this->currentState = state; }
+		ButtonState GetState() const { return this->currentState; }
 		std::shared_ptr<DX9GF::RectangleTrigger> GetTrigger() { return this->trigger; }
 
 		float GetWidth() const { return this->width; }

@@ -7,6 +7,7 @@
 #include "MainMenu.h"
 #include "SaveGameState.h"
 #include "TransitionCommand.h"
+#include "resource.h"
 
 void Demo::ThreadAlleyScene::Init()
 {
@@ -23,7 +24,7 @@ void Demo::ThreadAlleyScene::Init()
 	commandBuffer = std::make_shared<DX9GF::CommandBuffer>();
 
 	map = std::make_shared<DX9GF::Map>(game->GetGraphicsDevice());
-	map->Create(transformManager, colliderManager, "./ThreadAlley.tmx");
+	map->Create(transformManager, colliderManager, "./assets/ThreadAlley.tmx");
 
 	map->SetAreaUpdateHandler("triggers", GetRandomEncounterFunc(game, player, {
 		{"VampireBatEnemy", 40},
@@ -42,6 +43,7 @@ void Demo::ThreadAlleyScene::Init()
 			player->GenerateSaveGlobalData(saveData["player"]);
 			auto sceMan = game->GetSceneManager();
 			MainMenu::gameSaveState->GetPlayerFromScene(sceMan->GetScene(static_cast<size_t>(sceMan->GetIndex()) + 1))->RestoreSaveGlobalData(saveData["player"]);
+			DX9GF::AudioManager::GetInstance()->PlayBGM_Fade("bgm_boss", 0.3f, 1.5f);
 			sceMan->GoToNext();
 			isTransitioning = false;
 			markFinished();
@@ -224,6 +226,24 @@ void Demo::ThreadAlleyScene::Init()
 	inventoryMenu = std::make_shared<InventoryMenu>(game, player, transformManager, draggableManager, &uiCamera, font.get());
 	inventoryMenu->Init();
 
+	auto audio = DX9GF::AudioManager::GetInstance();
+
+	audio->Load("step_c1", IDR_STEP_C1);
+	audio->Load("step_c2", IDR_STEP_C2);
+	audio->Load("step_c3", IDR_STEP_C3);
+	audio->Load("step_c4", IDR_STEP_C4);
+
+	audio->RegisterBank("step_concrete", { "step_c1", "step_c2", "step_c3", "step_c4"});
+	player->SetBaseSurface("concrete");
+
+	map->SetAreaUpdateHandler("audio_zone_leaves", [this](const DX9GF::Map::ObjectArea&) {
+		GetPlayer()->SetSurface("leaves");
+		});
+
+	map->SetAreaUpdateHandler("audio_zone_metal", [this](const DX9GF::Map::ObjectArea&) {
+		GetPlayer()->SetSurface("metal");
+		});
+
 	ItemData::GetInstance()->LoadData();
 	this->GiveTestItems();
 
@@ -345,6 +365,8 @@ void Demo::ThreadAlleyScene::Update(unsigned long long deltaTime)
 	if (inventoryMenu && inventoryMenu->IsPendingLeave()) {
 		auto sceMan = game->GetSceneManager();
 		sceMan->GoToScene(0);
+		auto audio = DX9GF::AudioManager::GetInstance();
+		audio->PlayBGM_Fade("bgm_sky", 0.9f, 1.5f);
 		return;
 	}
 	commandBuffer->Update(deltaTime);

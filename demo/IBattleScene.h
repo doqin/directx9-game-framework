@@ -91,6 +91,7 @@ namespace Demo {
 		std::shared_ptr<DX9GF::StaticSprite> defenseBuffIcon;
 		//
 		std::function<void()> onVictoryCallback = nullptr;
+		std::string customBGMName;
 		//
 		void CreateEnemyCard(std::shared_ptr<IEnemy> enemy);
 		void StartBattle();
@@ -127,5 +128,6 @@ namespace Demo {
 		void SetCustomBackgroundDraw(std::function<void(DX9GF::GraphicsDevice*, unsigned long long)> drawFunc) { customBackgroundDraw = drawFunc; }
 		//
 		void SetOnVictoryCallback(std::function<void()> cb) { onVictoryCallback = cb; }
+		void SetCustomBGM(const std::string& name) { customBGMName = name; }
 	};
 }
