@@ -13,15 +13,15 @@
 void Demo::KeyeproEnemy::Init(DX9GF::GraphicsDevice* graphicsDevice, DX9GF::Camera* camera) {
 
     texture = std::make_shared<DX9GF::Texture>(graphicsDevice);
-    texture->LoadTexture(L"assets/Keyepro-Sheet.png");
-    sprite = std::make_shared<DX9GF::StaticSprite>(texture.get());
-    sprite->SetOrigin(32, 32);
+    texture->LoadTexture(L"assets/boss-Sheet.png");
+    sprite = std::make_shared<DX9GF::AnimatedSprite>(texture.get(), DX9GF::Utils::CreateRectsHorizontal(0, 0, 128, 128, 29), 6);
+    sprite->SetOrigin(64, 64);
     sprite->SetScale(2.f); 
 
     projTexture = std::make_shared<DX9GF::Texture>(graphicsDevice);
-    projTexture->LoadTexture(L"assets/Keye-bullet.png");
-    projSprite = std::make_shared<DX9GF::StaticSprite>(projTexture.get());
-    projSprite->SetOrigin(8, 8);
+    projTexture->LoadTexture(L"assets/bossprojectile-Sheet.png");
+    projSprite = std::make_shared<DX9GF::AnimatedSprite>(projTexture.get(), DX9GF::Utils::CreateRectsHorizontal(0, 0, 32, 32, 5), 3);
+    projSprite->SetOrigin(16, 16);
 
     SetGoldReward(static_cast<int>(std::round(GetMaxHealth())));
     InitCardSpawnTrigger(camera, 128.f, 128.f);
