@@ -14,8 +14,6 @@ void Demo::MimicEnemy::Init(DX9GF::GraphicsDevice* graphicsDevice, DX9GF::Camera
 
 	projTexture = std::make_shared<DX9GF::Texture>(graphicsDevice);
 	projTexture->LoadTexture(L"assets/xprojectile.png");
-	projSprite = std::make_shared<DX9GF::StaticSprite>(projTexture.get());
-	projSprite->SetOrigin(8, 8);
 
    SetGoldReward(static_cast<int>(std::round(GetMaxHealth())));
 	InitCardSpawnTrigger(camera, 128.f, 128.f);
@@ -59,8 +57,10 @@ void Demo::MimicEnemy::PatternCoinCyclone(float projDamage, std::vector<std::sha
 		if (auto lock = this->player.lock()) {
 			for (int i = 0; i < 12; i++) {
 				float angle = i * (3.14159f * 2.f / 12.f);
-				projectiles.push_back(
-					SpiralProjectile::Builder(transformManager, lock, projSprite, 16, 16, 256.f, 0)
+			auto projSprite = std::make_shared<DX9GF::StaticSprite>(projTexture.get());
+			projSprite->SetOrigin(8, 8);
+			projectiles.push_back(
+				SpiralProjectile::Builder(transformManager, lock, projSprite, 16, 16, 256.f, 0)
 					.SetSpiralParams(angle, RADICAL_SPEED, ANGULAR_SPEED)
 					.SetDelay(i * 0.05f)
 					.SetDecayTime(6.f)
@@ -93,8 +93,10 @@ void Demo::MimicEnemy::PatternJunkVomit(float projDamage, std::vector<std::share
 		commandBuffer.PushCommand(std::make_shared<DX9GF::CustomCommand>([this, projDamage, randY](std::function<void(void)> markFinished) {
 			if (auto lock = this->player.lock()) {
 				auto [px, py] = lock->GetWorldPosition();
-				projectiles.push_back(
-					BoomerangProjectile::Builder(transformManager, lock, projSprite, 16, 16, 512.f, 0.f)
+			auto projSprite = std::make_shared<DX9GF::StaticSprite>(projTexture.get());
+			projSprite->SetOrigin(8, 8);
+			projectiles.push_back(
+				BoomerangProjectile::Builder(transformManager, lock, projSprite, 16, 16, 512.f, 0.f)
 					.SetTargetPosition(px, py + randY)
 
 					.SetInitialVelocity(450.f)

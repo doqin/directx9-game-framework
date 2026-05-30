@@ -14,8 +14,6 @@ void Demo::VampireBatEnemy::Init(DX9GF::GraphicsDevice* graphicsDevice, DX9GF::C
 
 	projTexture = std::make_shared<DX9GF::Texture>(graphicsDevice);
 	projTexture->LoadTexture(L"assets/spearprojectile.png");
-	projSprite = std::make_shared<DX9GF::StaticSprite>(projTexture.get());
-	projSprite->SetOrigin(16, 8);
 
 	SetGoldReward(static_cast<int>(std::round(GetMaxHealth())));
 	InitCardSpawnTrigger(camera, 128.f, 128.f);
@@ -60,6 +58,8 @@ void Demo::VampireBatEnemy::PatternEcholocation(float projDamage) {
 		for (int i = 0; i < BULLETS; i++) {
 			if (auto lock = this->player.lock()) {
 				float startY = (i - BULLETS / 2.f) * SPACING;
+				auto projSprite = std::make_shared<DX9GF::StaticSprite>(projTexture.get());
+				projSprite->SetOrigin(16, 8);
 				projectiles.push_back(
 					SineWaveProjectile::Builder(transformManager, lock, projSprite, 16, 16, 320, startY)
 					.SetTrajectory(D3DXVECTOR2(-1, 0))
@@ -80,6 +80,8 @@ void Demo::VampireBatEnemy::PatternEcholocation(float projDamage) {
 		for (int i = 0; i < BULLETS; i++) {
 			if (auto lock = this->player.lock()) {
 				float startY = (i - BULLETS / 2.f) * SPACING;
+				auto projSprite = std::make_shared<DX9GF::StaticSprite>(projTexture.get());
+				projSprite->SetOrigin(16, 8);
 				projectiles.push_back(
 					SineWaveProjectile::Builder(transformManager, lock, projSprite, 16, 16, -320, startY)
 					.SetTrajectory(D3DXVECTOR2(1, 0))
@@ -129,6 +131,8 @@ void Demo::VampireBatEnemy::PatternSwoopBite(float projDamage) {
 				float spawnX = x + (i - (BULLET_COUNT / 2)) * 15.f;
 				float spawnY = y - 10.f;
 
+				auto projSprite = std::make_shared<DX9GF::StaticSprite>(projTexture.get());
+				projSprite->SetOrigin(16, 8);
 				projectiles.push_back(
 					BoomerangProjectile::Builder(transformManager, lock, projSprite, 16, 16, spawnX, spawnY)
 					.SetTargetPosition(targetX, targetY)
@@ -164,6 +168,8 @@ void Demo::VampireBatEnemy::PatternSwoopBite(float projDamage) {
 				float spawnX = x + (i - (BULLET_COUNT / 2)) * 15.f;
 				float spawnY = y - 10.f;
 
+				auto projSprite = std::make_shared<DX9GF::StaticSprite>(projTexture.get());
+				projSprite->SetOrigin(16, 8);
 				projectiles.push_back(
 					BoomerangProjectile::Builder(transformManager, lock, projSprite, 16, 16, spawnX, spawnY)
 					.SetTargetPosition(targetX, targetY)

@@ -18,13 +18,9 @@ void Demo::CupidEnemy::Init(DX9GF::GraphicsDevice* graphicsDevice, DX9GF::Camera
 
 	heartTexture = std::make_shared<DX9GF::Texture>(graphicsDevice);
 	heartTexture->LoadTexture(L"assets/bubbleprojectile.png");
-	heartSprite = std::make_shared<DX9GF::StaticSprite>(heartTexture.get());
-	heartSprite->SetOrigin(8, 8);
 
 	arrowTexture = std::make_shared<DX9GF::Texture>(graphicsDevice);
 	arrowTexture->LoadTexture(L"assets/bubbleprojectile.png");
-	arrowSprite = std::make_shared<DX9GF::StaticSprite>(arrowTexture.get());
-	arrowSprite->SetOrigin(8, 8);
 
 	SetGoldReward(static_cast<int>(std::round(GetMaxHealth())));
 	InitCardSpawnTrigger(camera, 128.f, 128.f);
@@ -90,8 +86,10 @@ void Demo::CupidEnemy::PatternHeartWave(float projDamage)
 				auto [playerX, playerY] = lock->GetWorldPosition();
 				float finalY = playerY + offsetY;
 
-				projectiles.push_back(
-					SineWaveProjectile::Builder(transformManager, lock, heartSprite, 16, 16, START_X, finalY)
+			auto newSprite = std::make_shared<DX9GF::StaticSprite>(heartTexture.get());
+			newSprite->SetOrigin(8, 8);
+			projectiles.push_back(
+				SineWaveProjectile::Builder(transformManager, lock, newSprite, 16, 16, START_X, finalY)
 					.SetTrajectory(D3DXVECTOR2(1, 0))
 					.SetWave(AMPLITUDE, FREQUENCY)
 					.SetDelay(0.f)
@@ -131,8 +129,10 @@ void Demo::CupidEnemy::PatternHomingArrow(float projDamage)
 				float finalX = playerX + offsetX;
 				float finalY = playerY - DROP_HEIGHT;
 
-				projectiles.push_back(
-					TargetedProjectile::Builder(transformManager, lock, arrowSprite, 16, 16, finalX, finalY)
+			auto newSprite = std::make_shared<DX9GF::StaticSprite>(arrowTexture.get());
+			newSprite->SetOrigin(8, 8);
+			projectiles.push_back(
+				TargetedProjectile::Builder(transformManager, lock, newSprite, 16, 16, finalX, finalY)
 					.SetTrajectory(D3DXVECTOR2(0, 1))
 					.SetHoming(TURN_SPEED)
 					.SetDelay(0.f)
@@ -173,8 +173,10 @@ void Demo::CupidEnemy::PatternHeartNova(float projDamage)
 					float currentAngle = i * angleStep + angleOffset;
 					D3DXVECTOR2 dir(std::cos(currentAngle), std::sin(currentAngle));
 
-					projectiles.push_back(
-						RoundProjectile::Builder(transformManager, lock, heartSprite, 16, 16, originX, originY)
+				auto newSprite = std::make_shared<DX9GF::StaticSprite>(heartTexture.get());
+				newSprite->SetOrigin(8, 8);
+				projectiles.push_back(
+					RoundProjectile::Builder(transformManager, lock, newSprite, 16, 16, originX, originY)
 						.SetTrajectory(dir)
 						.SetDelay(0.f)
 						.SetDecayTime(4.f)

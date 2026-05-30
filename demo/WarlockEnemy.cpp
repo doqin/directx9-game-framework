@@ -15,8 +15,6 @@ void Demo::WarlockEnemy::Init(DX9GF::GraphicsDevice* graphicsDevice, DX9GF::Came
 
 	projTexture = std::make_shared<DX9GF::Texture>(graphicsDevice);
 	projTexture->LoadTexture(IDB_PNG5);
-	projSprite = std::make_shared<DX9GF::StaticSprite>(projTexture.get());
-	projSprite->SetOrigin(8, 8);
 
    SetGoldReward(static_cast<int>(std::round(GetMaxHealth())));
 	InitCardSpawnTrigger(camera, 128.f, 128.f);
@@ -80,15 +78,17 @@ void Demo::WarlockEnemy::PatternDarkVortex(float projDamage) {
 						continue;
 					}
 
-					projectiles.push_back(
-						RoundProjectile::Builder(transformManager, lock, projSprite, 16, 16, radius * std::cos(angle), radius * std::sin(angle))
-						.SetDelay(0.2f)
-						.SetDecayTime(2.2f)
-						.SetVelocity(320.f)
-						.SetTrajectory(D3DXVECTOR2(-std::cos(angle), -std::sin(angle)))
-						.SetDamage(projDamage)
-						.Build()
-					);
+				auto projSprite = std::make_shared<DX9GF::StaticSprite>(projTexture.get());
+				projSprite->SetOrigin(8, 8);
+				projectiles.push_back(
+					RoundProjectile::Builder(transformManager, lock, projSprite, 16, 16, radius * std::cos(angle), radius * std::sin(angle))
+					.SetDelay(0.2f)
+					.SetDecayTime(2.2f)
+					.SetVelocity(320.f)
+					.SetTrajectory(D3DXVECTOR2(-std::cos(angle), -std::sin(angle)))
+					.SetDamage(projDamage)
+					.Build()
+				);
 
 					projectiles.back()->Init();
 				}
@@ -104,6 +104,8 @@ void Demo::WarlockEnemy::PatternHomingCurse(float projDamage) {
 	auto topRightAttack = std::make_shared<DX9GF::CustomCommand>([this, projDamage](std::function<void(void)> markFinished) {
 		if (auto lock = this->player.lock()) {
 			auto [px, py] = lock->GetWorldPosition();
+			auto projSprite = std::make_shared<DX9GF::StaticSprite>(projTexture.get());
+			projSprite->SetOrigin(8, 8);
 			projectiles.push_back(
 				TargetedProjectile::Builder(transformManager, lock, projSprite, 16, 16, 512, 128)
 				.SetTrajectory(D3DXVECTOR2(-1, 1))
@@ -122,6 +124,8 @@ void Demo::WarlockEnemy::PatternHomingCurse(float projDamage) {
 	auto topLeftAttack = std::make_shared<DX9GF::CustomCommand>([this, projDamage](std::function<void(void)> markFinished) {
 		if (auto lock = this->player.lock()) {
 			auto [px, py] = lock->GetWorldPosition();
+			auto projSprite = std::make_shared<DX9GF::StaticSprite>(projTexture.get());
+			projSprite->SetOrigin(8, 8);
 			projectiles.push_back(
 				TargetedProjectile::Builder(transformManager, lock, projSprite, 16, 16, -512, 128)
 				.SetTrajectory(D3DXVECTOR2(1, 1))
@@ -140,6 +144,8 @@ void Demo::WarlockEnemy::PatternHomingCurse(float projDamage) {
 	auto bottomRightAttack = std::make_shared<DX9GF::CustomCommand>([this, projDamage](std::function<void(void)> markFinished) {
 		if (auto lock = this->player.lock()) {
 			auto [px, py] = lock->GetWorldPosition();
+			auto projSprite = std::make_shared<DX9GF::StaticSprite>(projTexture.get());
+			projSprite->SetOrigin(8, 8);
 			projectiles.push_back(
 				TargetedProjectile::Builder(transformManager, lock, projSprite, 16, 16, 512, -128)
 				.SetTrajectory(D3DXVECTOR2(-1, -1))
@@ -158,6 +164,8 @@ void Demo::WarlockEnemy::PatternHomingCurse(float projDamage) {
 	auto bottomLeftAttack = std::make_shared<DX9GF::CustomCommand>([this, projDamage](std::function<void(void)> markFinished) {
 		if (auto lock = this->player.lock()) {
 			auto [px, py] = lock->GetWorldPosition();
+			auto projSprite = std::make_shared<DX9GF::StaticSprite>(projTexture.get());
+			projSprite->SetOrigin(8, 8);
 			projectiles.push_back(
 				TargetedProjectile::Builder(transformManager, lock, projSprite, 16, 16, -512, -128)
 				.SetTrajectory(D3DXVECTOR2(1, -1))

@@ -8,10 +8,7 @@ namespace Demo {
 		std::shared_ptr<DX9GF::AnimatedSprite> sprite;
 
 		std::shared_ptr<DX9GF::Texture> heartTexture;
-		std::shared_ptr<DX9GF::StaticSprite> heartSprite;
-
 		std::shared_ptr<DX9GF::Texture> arrowTexture;
-		std::shared_ptr<DX9GF::StaticSprite> arrowSprite;
 
 		std::weak_ptr<Player> player;
 
