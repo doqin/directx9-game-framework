@@ -13,6 +13,8 @@ namespace DX9GF {
 		int frameRate = -1;
 
 		HWND hwnd = nullptr;
+		HICON hIcon = nullptr;
+		std::wstring pendingIconPath;
 		static Application* instance;
 	public:
 		/// <summary>
@@ -24,6 +26,7 @@ namespace DX9GF {
       /// <param name="screenHeight">The height of the application window in pixels.</param>
 		/// <param name="resizable">Whether the application window is resizable.</param>
 		void Init(HINSTANCE hInstance, std::wstring appTitle, UINT screenWidth, UINT screenHeight, bool resizable = true);
+		void SetAppIcon(const std::wstring& iconPath);
 		void AttachGame(IGame* game);
 		void Run();
 
