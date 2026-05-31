@@ -1131,11 +1131,14 @@ void Demo::IBattleScene::Init()
 		}
 	}
 
+	auto sh = DX9GF::Application::GetInstance()->GetScreenHeight();
 	// Init draggables
 	mainBlockCard = std::make_shared<MainBlockCard>(transformManager, -100.f, -140.f);
 	mainBlockCard->Init(draggableManager, game->GetGraphicsDevice(), &camera);
+	mainBlockCard->SetMaxHeight(sh * 0.5f);
 	handContainer = std::make_shared<HandContainer>(transformManager, 180, 40, -250.f, -200.f);
 	handContainer->Init(draggableManager, game->GetGraphicsDevice(), &camera, &playedPile);
+	handContainer->SetMaxHeight(sh * 0.5f);
 
 	const float battleHalfSize = battleBoxSize * 0.5f;
 	const float battleBorder = 8.f;
