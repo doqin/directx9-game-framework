@@ -30,8 +30,8 @@ DX9GF::StaticSprite::~StaticSprite()
 
 void DX9GF::StaticSprite::Begin()
 {
-	//p_sprite->OnLostDevice();
-	//p_sprite->OnResetDevice();
+	p_sprite->OnLostDevice();
+	p_sprite->OnResetDevice();
 	if (auto result = p_sprite->Begin(D3DXSPRITE_ALPHABLEND); FAILED(result)) {
 		auto error = DXGetErrorDescription(result);
 		std::string what = std::string(error, error + wcslen(error));
@@ -115,8 +115,8 @@ bool DX9GF::AnimatedSprite::IsFinished() const
 
 void DX9GF::AnimatedSprite::Begin()
 {
-	//p_sprite->OnLostDevice();
-	//p_sprite->OnResetDevice();
+	p_sprite->OnLostDevice();
+	p_sprite->OnResetDevice();
 	if (auto result = p_sprite->Begin(D3DXSPRITE_ALPHABLEND); FAILED(result)) {
 		auto error = DXGetErrorDescription(result);
 		std::string what = std::string(error, error + wcslen(error));
