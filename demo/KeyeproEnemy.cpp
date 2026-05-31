@@ -349,6 +349,7 @@ void Demo::KeyeproEnemy::PatternSwoopBite(float projDamage)
                 projectiles.back()->Init();
             }
             transformManager.lock()->RebuildHierarchy();
+
         }
         markFinished();
         });

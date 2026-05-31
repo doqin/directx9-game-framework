@@ -6,7 +6,7 @@ bool Demo::HeavyStrikeCard::Execute() {
 	if (!targets.empty()) {
 		if (auto enemy = targets[0].lock()) {
 			if (auto e = enemy->GetValue())
-				if (owner) owner->DealDamage(e.get(), 12.f);
+				if (owner) owner->DealDamage(e.get(), 16.f);
 		}
 	}
 	isDone = true;
@@ -87,7 +87,7 @@ bool Demo::CleaveCard::Execute() {
 	for (auto& wp : targets) {
 		if (auto enemy = wp.lock()) {
 			if (auto e = enemy->GetValue())
-				if (owner) owner->DealDamage(e.get(), 4.f);
+				if (owner) owner->DealDamage(e.get(), 5.f);
 		}
 	}
 	isDone = true;
@@ -120,7 +120,7 @@ void Demo::CleaveCard::Draw(unsigned long long deltaTime) {
 
 bool Demo::ChainLightningCard::Execute() {
 	if (isDone) return true;
-	float damages[] = { 6.f, 6.f, 6.f };
+	float damages[] = { 10.f, 10.f, 10.f };
 	for (size_t i = 0; i < targets.size() && i < 3; ++i) {
 		if (auto enemy = targets[i].lock()) {
 			if (auto e = enemy->GetValue())
