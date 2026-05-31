@@ -14,8 +14,7 @@ void Demo::KeyeEnemy::Init(DX9GF::GraphicsDevice* graphicsDevice, DX9GF::Camera*
 
     projTexture = std::make_shared<DX9GF::Texture>(graphicsDevice);
     projTexture->LoadTexture(L"assets/bossprojectile-Sheet.png");
-    projSprite = std::make_shared<DX9GF::AnimatedSprite>(projTexture.get(), DX9GF::Utils::CreateRectsHorizontal(0, 0, 32, 32, 5), 3);
-    projSprite->SetOrigin(16, 16);
+    projFrames = DX9GF::Utils::CreateRectsHorizontal(0, 0, 32, 32, 5);
 
     SetGoldReward(static_cast<int>(std::round(GetMaxHealth())));
     InitCardSpawnTrigger(camera, 128.f, 128.f);
@@ -67,6 +66,8 @@ void Demo::KeyeEnemy::PatternBoomerangCross(float projDamage) {
             for (int i = 0; i < 5; i++) {
                 float offset = i * 2.0f;
 
+                auto projSprite = std::make_shared<DX9GF::AnimatedSprite>(projTexture.get(), projFrames, 12);
+                projSprite->SetOrigin(16, 16);
                 projectiles.push_back(
                     BoomerangProjectile::Builder(transformManager, lock, projSprite, 16, 16, xPos(gen), -256.f + offset)
                     .SetTargetPosition(px, py)
@@ -109,6 +110,8 @@ void Demo::KeyeEnemy::PatternRoundCircle(float projDamage) {
         float randX = xDist(gen);
         commandBuffer.PushCommand(std::make_shared<DX9GF::CustomCommand>([this, projDamage, randX](std::function<void(void)> markFinished) {
             if (auto lock = this->player.lock()) {
+                auto projSprite = std::make_shared<DX9GF::AnimatedSprite>(projTexture.get(), projFrames, 12);
+                projSprite->SetOrigin(16, 16);
                 projectiles.push_back(
                     RoundProjectile::Builder(transformManager, lock, projSprite, 16, 16, randX, -220.f)
                     .SetTargetPosition(lock->GetCollider().lock()->GetWorldX(), lock->GetCollider().lock()->GetWorldY())

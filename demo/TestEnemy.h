@@ -7,7 +7,6 @@ namespace Demo {
 		std::shared_ptr<DX9GF::Texture> texture;
 		std::shared_ptr<DX9GF::StaticSprite> sprite;
 		std::shared_ptr<DX9GF::Texture> roundProjectileTexture;
-		std::shared_ptr<DX9GF::StaticSprite> roundProjectileSprite;
 		std::weak_ptr<Player> player;
 	public:
 		using IEnemy::IEnemy;

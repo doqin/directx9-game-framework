@@ -14,8 +14,7 @@ void Demo::DemonEyeEnemy::Init(DX9GF::GraphicsDevice* graphicsDevice, DX9GF::Cam
 
 	tearProjectileTexture = std::make_shared<DX9GF::Texture>(graphicsDevice);
 	tearProjectileTexture->LoadTexture(L"assets/bugprojectile-Sheet.png"); // TODO: blood drop img
-	tearProjectileSprite = std::make_shared<DX9GF::AnimatedSprite>(tearProjectileTexture.get(), DX9GF::Utils::CreateRectsHorizontal(0, 0, 16, 16, 4), 12);
-	tearProjectileSprite->SetOrigin(8, 8);
+	tearProjectileFrames = DX9GF::Utils::CreateRectsHorizontal(0, 0, 16, 16, 4);
 
 	SetGoldReward(static_cast<int>(std::round(GetMaxHealth())));
 	InitCardSpawnTrigger(camera, 128.f, 128.f);
@@ -84,8 +83,10 @@ void Demo::DemonEyeEnemy::PatternBloodRain(float projDamage, std::vector<std::sh
 				float finalX = playerX + offsetX;
 				float finalY = playerY - DROP_HEIGHT;
 
+				auto projSprite = std::make_shared<DX9GF::AnimatedSprite>(tearProjectileTexture.get(), tearProjectileFrames, 12);
+				projSprite->SetOrigin(8, 8);
 				projectiles.push_back(
-					RoundProjectile::Builder(transformManager, lock, tearProjectileSprite, 16, 16, finalX, finalY)
+					RoundProjectile::Builder(transformManager, lock, projSprite, 16, 16, finalX, finalY)
 					.SetTrajectory(D3DXVECTOR2(0, 1))
 					.SetDelay(0.f)
 					.SetDecayTime(4.f)
@@ -133,8 +134,10 @@ void Demo::DemonEyeEnemy::PatternBloodWall(float projDamage, std::vector<std::sh
 					float finalX = playerX + offsetX;
 					float finalY = playerY - DROP_HEIGHT;
 
+					auto projSprite = std::make_shared<DX9GF::AnimatedSprite>(tearProjectileTexture.get(), tearProjectileFrames, 12);
+					projSprite->SetOrigin(8, 8);
 					projectiles.push_back(
-						RoundProjectile::Builder(transformManager, lock, tearProjectileSprite, 16, 16, finalX, finalY)
+						RoundProjectile::Builder(transformManager, lock, projSprite, 16, 16, finalX, finalY)
 						.SetTrajectory(D3DXVECTOR2(0, 1))
 						.SetDelay(0.f)
 						.SetDecayTime(BULLET_DECAY_TIME)
@@ -175,20 +178,22 @@ void Demo::DemonEyeEnemy::PatternBloodCross(float projDamage, std::vector<std::s
 			if (auto lock = this->player.lock()) {
 				auto [playerX, playerY] = lock->GetWorldPosition();
 
-				float finalX = playerX + offsetX;
-				float finalY = playerY - DROP_HEIGHT;
+			float finalX = playerX + offsetX;
+			float finalY = playerY - DROP_HEIGHT;
 
-				projectiles.push_back(
-					RoundProjectile::Builder(transformManager, lock, tearProjectileSprite, 16, 16, finalX, finalY)
-					.SetTrajectory(D3DXVECTOR2(0.5f, 1.0f))
-					.SetDelay(0.f)
-					.SetDecayTime(4.f)
-					.SetVelocity(BULLET_SPEED)
-					.SetDamage(projDamage)
-					.Build()
-				);
-				projectiles.back()->Init();
-				transformManager.lock()->RebuildHierarchy();
+			auto projSprite = std::make_shared<DX9GF::AnimatedSprite>(tearProjectileTexture.get(), tearProjectileFrames, 12);
+			projSprite->SetOrigin(8, 8);
+			projectiles.push_back(
+				RoundProjectile::Builder(transformManager, lock, projSprite, 16, 16, finalX, finalY)
+				.SetTrajectory(D3DXVECTOR2(0.5f, 1.0f))
+				.SetDelay(0.f)
+				.SetDecayTime(4.f)
+				.SetVelocity(BULLET_SPEED)
+				.SetDamage(projDamage)
+				.Build()
+			);
+			projectiles.back()->Init();
+			transformManager.lock()->RebuildHierarchy();
 			}
 			markFinished();
 			}));

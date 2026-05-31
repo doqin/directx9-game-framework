@@ -454,6 +454,9 @@
     <Image Include="assets\hitimpact-Sheet.png">
       <DeploymentContent>true</DeploymentContent>
     </Image>
+    <Image Include="assets\icon.ico">
+      <DeploymentContent>true</DeploymentContent>
+    </Image>
     <Image Include="assets\icon.jpg">
       <DeploymentContent>true</DeploymentContent>
     </Image>

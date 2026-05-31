@@ -11,8 +11,6 @@ void Demo::TestEnemy::Init(DX9GF::GraphicsDevice* graphicsDevice, DX9GF::Camera*
     sprite->SetOrigin(32, 32);
     roundProjectileTexture = std::make_shared<DX9GF::Texture>(graphicsDevice);
     roundProjectileTexture->LoadTexture(IDB_PNG5);
-    roundProjectileSprite = std::make_shared<DX9GF::StaticSprite>(roundProjectileTexture.get());
-    roundProjectileSprite->SetOrigin(8, 8);
     SetGoldReward(static_cast<int>(std::round(GetMaxHealth())));
     InitCardSpawnTrigger(camera, 64.f, 64.f);
 }
@@ -47,11 +45,13 @@ void Demo::TestEnemy::StartAttack(std::shared_ptr<Player> player, std::vector<st
         auto y = yDist(gen);
         commandBuffer.PushCommand(std::make_shared<DX9GF::CustomCommand>([this, x, y, projDamage](std::function<void(void)> markFinished) {
             if (auto lock = this->player.lock()) {
+                auto projSprite = std::make_shared<DX9GF::StaticSprite>(roundProjectileTexture.get());
+                projSprite->SetOrigin(8, 8);
                 projectiles.push_back(
                     RoundProjectile::Builder(
                         transformManager,
                         lock,
-                        roundProjectileSprite,
+                        projSprite,
                         16, 16,
                         x, y
                     )

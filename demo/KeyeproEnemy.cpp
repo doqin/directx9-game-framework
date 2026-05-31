@@ -20,8 +20,7 @@ void Demo::KeyeproEnemy::Init(DX9GF::GraphicsDevice* graphicsDevice, DX9GF::Came
 
     projTexture = std::make_shared<DX9GF::Texture>(graphicsDevice);
     projTexture->LoadTexture(L"assets/bossprojectile-Sheet.png");
-    projSprite = std::make_shared<DX9GF::AnimatedSprite>(projTexture.get(), DX9GF::Utils::CreateRectsHorizontal(0, 0, 32, 32, 5), 3);
-    projSprite->SetOrigin(16, 16);
+    projFrames = DX9GF::Utils::CreateRectsHorizontal(0, 0, 32, 32, 5);
 
     SetGoldReward(static_cast<int>(std::round(GetMaxHealth())));
     InitCardSpawnTrigger(camera, 128.f, 128.f);
@@ -120,6 +119,8 @@ void Demo::KeyeproEnemy::PatternSineWaveStorm(float projDamage) {
                 for (int i = 0; i < BULLETS; i++) {
                     float startY = (i - BULLETS / 2.f) * SPACING;
 
+                    auto projSprite = std::make_shared<DX9GF::AnimatedSprite>(projTexture.get(), projFrames, 12);
+                    projSprite->SetOrigin(16, 16);
                     projectiles.push_back(
                         SineWaveProjectile::Builder(transformManager, lock, projSprite, 16, 16, -350.f, startY)
                         .SetTrajectory(D3DXVECTOR2(1, 0)) 
@@ -192,6 +193,8 @@ void Demo::KeyeproEnemy::PatternTargetedSniping(float projDamage) {
 					break;
 				}
 
+                auto projSprite = std::make_shared<DX9GF::AnimatedSprite>(projTexture.get(), projFrames, 12);
+                projSprite->SetOrigin(16, 16);
                 projectiles.push_back(
                     RoundProjectile::Builder(transformManager, lock, projSprite, 16, 16, x, y)
                     .SetTargetPosition(lock->GetCollider().lock()->GetWorldX(), lock->GetCollider().lock()->GetWorldY())
@@ -220,6 +223,8 @@ void Demo::KeyeproEnemy::PatternEcholocation(float projDamage)
         for (int i = 0; i < BULLETS; i++) {
             if (auto lock = this->player.lock()) {
                 float startY = (i - BULLETS / 2.f) * SPACING;
+                auto projSprite = std::make_shared<DX9GF::AnimatedSprite>(projTexture.get(), projFrames, 12);
+                projSprite->SetOrigin(16, 16);
                 projectiles.push_back(
                     SineWaveProjectile::Builder(transformManager, lock, projSprite, 16, 16, 320, startY)
                     .SetTrajectory(D3DXVECTOR2(-1, 0))
@@ -240,6 +245,8 @@ void Demo::KeyeproEnemy::PatternEcholocation(float projDamage)
         for (int i = 0; i < BULLETS; i++) {
             if (auto lock = this->player.lock()) {
                 float startY = (i - BULLETS / 2.f) * SPACING;
+                auto projSprite = std::make_shared<DX9GF::AnimatedSprite>(projTexture.get(), projFrames, 12);
+                projSprite->SetOrigin(16, 16);
                 projectiles.push_back(
                     SineWaveProjectile::Builder(transformManager, lock, projSprite, 16, 16, -320, startY)
                     .SetTrajectory(D3DXVECTOR2(1, 0))
@@ -290,6 +297,8 @@ void Demo::KeyeproEnemy::PatternSwoopBite(float projDamage)
                 float spawnX = x + (i - (BULLET_COUNT / 2)) * 15.f;
                 float spawnY = y - 10.f;
 
+                auto projSprite = std::make_shared<DX9GF::AnimatedSprite>(projTexture.get(), projFrames, 12);
+                projSprite->SetOrigin(16, 16);
                 projectiles.push_back(
                     BoomerangProjectile::Builder(transformManager, lock, projSprite, 16, 16, spawnX, spawnY)
                     .SetTargetPosition(targetX, targetY)
@@ -325,6 +334,8 @@ void Demo::KeyeproEnemy::PatternSwoopBite(float projDamage)
                 float spawnX = x + (i - (BULLET_COUNT / 2)) * 15.f;
                 float spawnY = y - 10.f;
 
+                auto projSprite = std::make_shared<DX9GF::AnimatedSprite>(projTexture.get(), projFrames, 12);
+                projSprite->SetOrigin(16, 16);
                 projectiles.push_back(
                     BoomerangProjectile::Builder(transformManager, lock, projSprite, 16, 16, spawnX, spawnY)
                     .SetTargetPosition(targetX, targetY)

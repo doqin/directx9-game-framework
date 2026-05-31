@@ -38,6 +38,17 @@ void DX9GF::Application::Init(HINSTANCE hInstance, std::wstring appTitle, UINT s
 	this->screenWidth = screenWidth;
 	this->screenHeight = screenHeight;
 
+	// Load pending icon before registering the window class (so the taskbar gets it)
+	if (!pendingIconPath.empty()) {
+		hIcon = static_cast<HICON>(LoadImageW(
+			hInstance,
+			pendingIconPath.c_str(),
+			IMAGE_ICON,
+			0, 0,
+			LR_LOADFROMFILE | LR_DEFAULTSIZE | LR_SHARED
+		));
+	}
+
 	// Ensure the current working directory is the executable directory so relative paths work
 	wchar_t exePath[MAX_PATH]{};
 	DWORD exePathLen = GetModuleFileNameW(nullptr, exePath, MAX_PATH);
@@ -73,11 +84,17 @@ void DX9GF::Application::Init(HINSTANCE hInstance, std::wstring appTitle, UINT s
 		NULL, // c?a s? cha
 		NULL, // menu
 		hInstance, // instance
-		NULL // Các tham s? c?a s?
+		NULL // Cï¿½c tham s? c?a s?
 	);
 
 	if (!hwnd) {
 		throw std::runtime_error("Error creating window");
+	}
+
+	// Apply the icon to the created window so the title bar and taskbar show it
+	if (hIcon != nullptr) {
+		SendMessageW(hwnd, WM_SETICON, ICON_BIG, reinterpret_cast<LPARAM>(hIcon));
+		SendMessageW(hwnd, WM_SETICON, ICON_SMALL, reinterpret_cast<LPARAM>(hIcon));
 	}
 
 	DX9GF::InputManager::GetInstance()->Init(GetHWnd(), hInstance);
@@ -156,6 +173,27 @@ void DX9GF::Application::Run()
 	audioManager->Shutdown();
 }
 
+void DX9GF::Application::SetAppIcon(const std::wstring& iconPath)
+{
+	pendingIconPath = iconPath;
+
+	// If hInstance is already set, load the icon immediately
+	if (hInstance != nullptr) {
+		hIcon = static_cast<HICON>(LoadImageW(
+			hInstance,
+			pendingIconPath.c_str(),
+			IMAGE_ICON,
+			0, 0,
+			LR_LOADFROMFILE | LR_DEFAULTSIZE | LR_SHARED
+		));
+
+		if (hwnd != nullptr) {
+			SendMessageW(hwnd, WM_SETICON, ICON_BIG, reinterpret_cast<LPARAM>(hIcon));
+			SendMessageW(hwnd, WM_SETICON, ICON_SMALL, reinterpret_cast<LPARAM>(hIcon));
+		}
+	}
+}
+
 ATOM DX9GF::Application::AppRegisterClass()
 {
 	WNDCLASSEX wc;
@@ -165,12 +203,12 @@ ATOM DX9GF::Application::AppRegisterClass()
 	wc.cbClsExtra = 0;
 	wc.cbWndExtra = 0;
 	wc.hInstance = hInstance;
-	wc.hIcon = NULL;
+	wc.hIcon = hIcon;
 	wc.hCursor = LoadCursor(NULL, IDC_ARROW);
 	wc.hbrBackground = (HBRUSH)GetStockObject(WHITE_BRUSH);
 	wc.lpszMenuName = NULL;
 	wc.lpszClassName = DX9GF::Application::appTitle.c_str();
-	wc.hIconSm = NULL;
+	wc.hIconSm = hIcon;
 
 	return RegisterClassEx(&wc);
 }

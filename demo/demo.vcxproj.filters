@@ -195,6 +195,7 @@
     <Image Include="assets\boss-Sheet.png" />
     <Image Include="assets\bossprojectile-Sheet.png" />
     <Image Include="assets\minion-Sheet.png" />
+    <Image Include="assets\icon.ico" />
   </ItemGroup>
   <ItemGroup>
     <Font Include="assets\arcade-among-2-r46pv.ttf" />
