@@ -14,7 +14,7 @@ namespace Demo {
 		}
 
 		size_t GetCost() const override { return 2; }
-		std::wstring GetDescription() const override { return L"Deal 12 damage to an enemy."; }
+		std::wstring GetDescription() const override { return L"Deal 16 damage to an enemy."; }
 
 		bool Execute() override;
 
@@ -50,7 +50,7 @@ namespace Demo {
 		}
 
 		size_t GetCost() const override { return 2; }
-		std::wstring GetDescription() const override { return L"Deal 4 damage to up to 2 enemies."; }
+		std::wstring GetDescription() const override { return L"Deal 5 damage to up to 2 enemies."; }
 
 		bool Execute() override;
 
@@ -66,7 +66,7 @@ namespace Demo {
 		}
 
 		size_t GetCost() const override { return 3; }
-		std::wstring GetDescription() const override { return L"Deal 6 damage to up to 3 enemies."; }
+		std::wstring GetDescription() const override { return L"Deal 10 damage to up to 3 enemies."; }
 
 		bool Execute() override;
 
