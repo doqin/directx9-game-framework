@@ -57,7 +57,7 @@ void Demo::DemonEyeEnemy::StartAttack(std::shared_ptr<Player> player, std::vecto
 	if (patternId == 1) PatternBloodRain(projDamage, enemies);
 	else if (patternId == 2) PatternBloodWall(projDamage, enemies);
 	else PatternBloodCross(projDamage, enemies);
-	commandBuffer.PushCommand(std::make_shared<DX9GF::DelayCommand>(5.f));
+	//commandBuffer.PushCommand(std::make_shared<DX9GF::DelayCommand>(1.f));
 }
 
 void Demo::DemonEyeEnemy::PatternBloodRain(float projDamage, std::vector<std::shared_ptr<IEnemy>>* enemies)

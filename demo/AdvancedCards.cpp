@@ -87,7 +87,7 @@ bool Demo::CleaveCard::Execute() {
 	for (auto& wp : targets) {
 		if (auto enemy = wp.lock()) {
 			if (auto e = enemy->GetValue())
-				if (owner) owner->DealDamage(e.get(), 5.f);
+				if (owner) owner->DealDamage(e.get(), 7.f);
 		}
 	}
 	isDone = true;

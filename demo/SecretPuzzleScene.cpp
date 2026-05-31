@@ -21,7 +21,7 @@ void Demo::SecretPuzzleScene::Init()
 	map->Create(transformManager, colliderManager, "./assets/SecretPuzzle.tmx");
 	map->SetAreaUpdateHandler("trigger_encounter", GetRandomEncounterFunc(game, player, {
 		{"VampireBatEnemy", 40},
-		{"MimicEnemy", 35},
+		{"DemonEyeEnemy", 35},
 		}, drawBuffer, commandBuffer, &isGamePaused, [this](DX9GF::GraphicsDevice* gd, unsigned long long deltaTime) { DrawBackground(gd, deltaTime); }));
 	map->SetAreaUpdateHandler("trigger_p_back", [this](const DX9GF::Map::ObjectArea& area) {
 		if (isTransitioning) return;

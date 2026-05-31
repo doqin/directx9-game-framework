@@ -10,8 +10,8 @@ namespace Demo {
 		std::weak_ptr<Player> player;
 
 		int GetRandomPattern();
-		void PatternDarkVortex(float projDamage);
-		void PatternHomingCurse(float projDamage);
+		void PatternDarkVortex(float projDamage, std::vector<std::shared_ptr<IEnemy>>* enemies);
+		void PatternHomingCurse(float projDamage, std::vector<std::shared_ptr<IEnemy>>* enemies);
 
 	public:
 		using IEnemy::IEnemy;

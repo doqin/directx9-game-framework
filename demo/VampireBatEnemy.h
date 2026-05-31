@@ -10,7 +10,7 @@ namespace Demo {
 		std::weak_ptr<Player> player;
 
 		int GetRandomPattern();
-		void PatternEcholocation(float projDamage);
+		void PatternEcholocation(float projDamage, std::vector<std::shared_ptr<IEnemy>>* enemies);
 		void PatternSwoopBite(float projDamage);
 
 	public:
