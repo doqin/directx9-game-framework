@@ -95,11 +95,9 @@ void Demo::TextButton::Draw(DX9GF::GraphicsDevice* gd, unsigned long long deltaT
 
 	if (!this->fontSprite) return;
 
-	// BƯỚC 1: Mapping Trạng thái sang Index Màu
-	int stateIndex = 0; // IDLE mặc định
+	int stateIndex = 0; // IDLE default
 	if (this->currentState == ButtonState::HOVER) stateIndex = 1;
 
-	// Gom chung CLICKED và LISTENING để nút giữ nguyên màu "đã bấm"
 	else if (this->currentState == ButtonState::CLICKED || this->currentState == ButtonState::LISTENING) stateIndex = 2;
 
 	else if (this->currentState == ButtonState::DISABLED) stateIndex = 3;
@@ -122,7 +120,7 @@ void Demo::TextButton::Draw(DX9GF::GraphicsDevice* gd, unsigned long long deltaT
 		);
 	}
 
-	////draw button's background
+	//draw button's background
 	if (gd && uiCamera) {
 		gd->DrawRectangle(
 			*uiCamera,

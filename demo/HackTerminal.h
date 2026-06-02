@@ -41,7 +41,6 @@ namespace Demo {
 		void SetVisible(bool visible) { isVisible = visible; }
 		bool IsVisible() const { return isVisible; }
 
-		// Các hàm để Scene điều khiển máy
 		void SetHackedStatus(bool status);
 		void ShowStatusMessage(const std::string& msg, float time);
 		bool IsHacked() const { return isHacked; }
