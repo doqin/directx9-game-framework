@@ -19,3 +19,5 @@ Vì đây là một dự án sử dụng DirectX 9 nên chúng mình phải tả
 24521166 - Trần Thị Hoài Ngọc
 
 24520743 - Lê Nguyễn Hữu Khang
+
+Youtube Walkthrough: https://youtu.be/pcNXUmLuEN8
