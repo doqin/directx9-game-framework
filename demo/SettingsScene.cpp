@@ -342,8 +342,8 @@ namespace Demo
 		if (this->isGoingBack)
 		{
 			auto sm = this->game->GetSceneManager();
+			sm->RemoveScene(sm->GetIndex()); //remove self from scene manager
 			sm->GoToPrevious();
-			sm->PopScene();
 			return;
 		}
 	}

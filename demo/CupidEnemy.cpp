@@ -57,46 +57,61 @@ void Demo::CupidEnemy::StartAttack(std::shared_ptr<Player> player, std::vector<s
 	float projDamage = GetOutgoingDamage(baseDamage);
 
 	int patternId = GetRandomPattern();
+
+	//PatternHeartWave(projDamage);
 	if (patternId == 1) PatternHeartWave(projDamage);
 	else if (patternId == 2) PatternHomingArrow(projDamage);
 	else PatternHeartNova(projDamage);
 
-	commandBuffer.PushCommand(std::make_shared<DX9GF::DelayCommand>(4.f));
+	//commandBuffer.PushCommand(std::make_shared<DX9GF::DelayCommand>(4.f));
 }
 
 void Demo::CupidEnemy::PatternHeartWave(float projDamage)
 {
-	const int BULLET_COUNT = 20;
-	const float SPAWN_DELAY = 0.25f;
-	const float BULLET_SPEED = 140.f;
-	const float AMPLITUDE = 100.f;
-	const float FREQUENCY = 6.f;
-	const float START_X = -400.f;
-	const float OFFSET_RANGE = 170.f;
+	const int BULLET_COUNT = 126;
+	const float SPAWN_DELAY = 0.01f;
+	const float BULLET_SPEED = 300.f;
+	const float START_X = -200.f;
+	const float START_Y = 0.f;
+	const float DECAY_TIME = 4.f;
+	const float MIN_ANGLE = -PI * 0.5f;
+	const float MAX_ANGLE = PI * 0.5f;
+	const float MIN_STEP = PI * 0.08f;
+	const float MAX_STEP = PI * 0.22f;
 
 	std::random_device rd;
 	std::mt19937 gen(rd());
-	std::uniform_real_distribution<float> offsetDist(-OFFSET_RANGE, OFFSET_RANGE);
+	std::uniform_real_distribution<float> stepDist(MIN_STEP, MAX_STEP);
 
+	float angle = MIN_ANGLE;
+	float direction = 1.f;
 	for (int i = 0; i < BULLET_COUNT; i++) {
-		float offsetY = offsetDist(gen);
+		float currentAngle = angle;
 
-		commandBuffer.PushCommand(std::make_shared<DX9GF::CustomCommand>([this, projDamage, offsetY, BULLET_SPEED, AMPLITUDE, FREQUENCY, START_X](std::function<void(void)> markFinished) {
+		angle += direction * stepDist(gen);
+		if (angle > MAX_ANGLE) {
+			angle = MAX_ANGLE - (angle - MAX_ANGLE);
+			direction = -1.f;
+		}
+		else if (angle < MIN_ANGLE) {
+			angle = MIN_ANGLE + (MIN_ANGLE - angle);
+			direction = 1.f;
+		}
+
+		commandBuffer.PushCommand(std::make_shared<DX9GF::CustomCommand>([this, projDamage, BULLET_SPEED, START_X, START_Y, DECAY_TIME, currentAngle](std::function<void(void)> markFinished) {
 			if (auto lock = this->player.lock()) {
-				auto [playerX, playerY] = lock->GetWorldPosition();
-				float finalY = playerY + offsetY;
+				D3DXVECTOR2 dir(std::cos(currentAngle), std::sin(currentAngle));
 
-			auto newSprite = std::make_shared<DX9GF::StaticSprite>(heartTexture.get());
-			newSprite->SetOrigin(8, 8);
-			projectiles.push_back(
-				SineWaveProjectile::Builder(transformManager, lock, newSprite, 16, 16, START_X, finalY)
-					.SetTrajectory(D3DXVECTOR2(1, 0))
-					.SetWave(AMPLITUDE, FREQUENCY)
-					.SetDelay(0.f)
-					.SetDecayTime(5.f)
-					.SetVelocity(BULLET_SPEED)
-					.SetDamage(projDamage)
-					.Build()
+				auto newSprite = std::make_shared<DX9GF::StaticSprite>(heartTexture.get());
+				newSprite->SetOrigin(8, 8);
+				projectiles.push_back(
+					RoundProjectile::Builder(transformManager, lock, newSprite, 16, 16, START_X, START_Y)
+						.SetTrajectory(dir)
+						.SetDelay(0.f)
+						.SetDecayTime(DECAY_TIME)
+						.SetVelocity(BULLET_SPEED)
+						.SetDamage(projDamage)
+						.Build()
 				);
 				projectiles.back()->Init();
 				transformManager.lock()->RebuildHierarchy();
@@ -152,44 +167,50 @@ void Demo::CupidEnemy::PatternHomingArrow(float projDamage)
 
 void Demo::CupidEnemy::PatternHeartNova(float projDamage)
 {
-	const int BURST_COUNT = 9;
-	const int BULLET_PER_RING = 29;
-	const float BURST_DELAY = 0.3f; 
-	const float BULLET_SPEED = 130.f;
+	const int WAVE_COUNT = 10;
+	const int BURST_COUNT = 5;
+	const int BULLET_PER_ARC = 8;
+	const float BURST_DELAY = 0.05f; 
+	const float BULLET_SPEED = 200.f;
 	const float SPAWN_OFFSET_Y = -200.f; 
+	const float DECAY_TIME = 2.f;
 
-	for (int wave = 0; wave < BURST_COUNT; wave++) {
-		//simple trick to avoid blindspot
-		float angleOffset = (wave % 2 == 0) ? 0.f : (PI / BULLET_PER_RING);
-		commandBuffer.PushCommand(std::make_shared<DX9GF::CustomCommand>([this, projDamage, BULLET_PER_RING, BULLET_SPEED, SPAWN_OFFSET_Y, angleOffset](std::function<void(void)> markFinished) {
-			if (auto lock = this->player.lock()) {
-				auto [playerX, playerY] = lock->GetWorldPosition();
-				float originX = playerX;
-				float originY = playerY + SPAWN_OFFSET_Y;
+	for (int wave = 0; wave < WAVE_COUNT; wave++) {
+		for (int burst = 0; burst < BURST_COUNT; burst++) {
+			float angleOffset = (burst - (BURST_COUNT / 2)) * (PI / (BULLET_PER_ARC - 1)) * 0.5f;
+			commandBuffer.PushCommand(std::make_shared<DX9GF::CustomCommand>([this, projDamage, BULLET_PER_ARC, BULLET_SPEED, SPAWN_OFFSET_Y, angleOffset, DECAY_TIME](std::function<void(void)> markFinished) {
+				if (auto lock = this->player.lock()) {
+					auto [playerX, playerY] = lock->GetWorldPosition();
+					float originX = 0;
+					float originY = SPAWN_OFFSET_Y;
 
-				float angleStep = (2.f * PI) / BULLET_PER_RING;
+					float baseAngle = std::atan2(playerY - originY, playerX - originX);
+					float angleStep = PI / (BULLET_PER_ARC - 1);
+					float startAngle = baseAngle - (PI * 0.5f);
 
-				for (int i = 0; i < BULLET_PER_RING; i++) {
-					float currentAngle = i * angleStep + angleOffset;
-					D3DXVECTOR2 dir(std::cos(currentAngle), std::sin(currentAngle));
+					for (int i = 0; i < BULLET_PER_ARC; i++) {
+						float currentAngle = startAngle + i * angleStep + angleOffset;
+						D3DXVECTOR2 dir(std::cos(currentAngle), std::sin(currentAngle));
 
-				auto newSprite = std::make_shared<DX9GF::StaticSprite>(heartTexture.get());
-				newSprite->SetOrigin(8, 8);
-				projectiles.push_back(
-					RoundProjectile::Builder(transformManager, lock, newSprite, 16, 16, originX, originY)
-						.SetTrajectory(dir)
-						.SetDelay(0.f)
-						.SetDecayTime(4.f)
-						.SetVelocity(BULLET_SPEED)
-						.SetDamage(projDamage)
-						.Build()
-					);
-					projectiles.back()->Init();
+						auto newSprite = std::make_shared<DX9GF::StaticSprite>(heartTexture.get());
+						newSprite->SetOrigin(8, 8);
+						projectiles.push_back(
+							RoundProjectile::Builder(transformManager, lock, newSprite, 16, 16, originX, originY)
+							.SetTrajectory(dir)
+							.SetDelay(0.f)
+							.SetDecayTime(DECAY_TIME)
+							.SetVelocity(BULLET_SPEED)
+							.SetDamage(projDamage)
+							.Build()
+						);
+						projectiles.back()->Init();
+					}
+					transformManager.lock()->RebuildHierarchy();
 				}
-				transformManager.lock()->RebuildHierarchy();
-			}
-			markFinished();
-			}));
-		commandBuffer.PushCommand(std::make_shared<DX9GF::DelayCommand>(BURST_DELAY));
+				markFinished();
+				}));
+			commandBuffer.PushCommand(std::make_shared<DX9GF::DelayCommand>(BURST_DELAY));
+		}
+		commandBuffer.PushCommand(std::make_shared<DX9GF::DelayCommand>(0.2f)); // delay between waves
 	}
 }

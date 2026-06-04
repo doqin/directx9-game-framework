@@ -44,17 +44,20 @@ void Demo::VampireBatEnemy::StartAttack(std::shared_ptr<Player> player, std::vec
 	(void)camera;
 	this->player = player;
 
-	if (GetRandomPattern() == 1) PatternEcholocation(GetOutgoingDamage(2.f));
+	if (GetRandomPattern() == 1) PatternEcholocation(GetOutgoingDamage(2.f), enemies);
 	else PatternSwoopBite(GetOutgoingDamage(4.f));
 
-	commandBuffer.PushCommand(std::make_shared<DX9GF::DelayCommand>(1.f));
+	//commandBuffer.PushCommand(std::make_shared<DX9GF::DelayCommand>(1.f));
 }
 
-void Demo::VampireBatEnemy::PatternEcholocation(float projDamage) {
-	const int BULLETS = 10;
-	const int VELOCITY = 180;
+void Demo::VampireBatEnemy::PatternEcholocation(float projDamage, std::vector<std::shared_ptr<IEnemy>>* enemies) {
+	bool isAlone = enemies->size() == 1;
+	const int BULLETS = isAlone ? 10 : 5;
+	const int VELOCITY = isAlone ? 180 : 90;
 	const int SPACING = 96;
-	auto rightAttack = std::make_shared<DX9GF::CustomCommand>([this, projDamage](std::function<void(void)> markFinished) {
+	const int AMPLITUDE = isAlone ? 50 : 25;
+	const int DECAY_TIME = isAlone ? 4 : 8;
+	auto rightAttack = std::make_shared<DX9GF::CustomCommand>([this, projDamage, VELOCITY, AMPLITUDE, DECAY_TIME, BULLETS](std::function<void(void)> markFinished) {
 		for (int i = 0; i < BULLETS; i++) {
 			if (auto lock = this->player.lock()) {
 				float startY = (i - BULLETS / 2.f) * SPACING;
@@ -63,9 +66,9 @@ void Demo::VampireBatEnemy::PatternEcholocation(float projDamage) {
 				projectiles.push_back(
 					SineWaveProjectile::Builder(transformManager, lock, projSprite, 16, 16, 320, startY)
 					.SetTrajectory(D3DXVECTOR2(-1, 0))
-					.SetWave(50.f, 4.f)
+					.SetWave(AMPLITUDE, 4.f)
 					.SetDelay(i * 0.1f)
-					.SetDecayTime(4.f)
+					.SetDecayTime(DECAY_TIME)
 					.SetVelocity(VELOCITY)
 					.SetDamage(projDamage)
 					.Build()
@@ -76,7 +79,7 @@ void Demo::VampireBatEnemy::PatternEcholocation(float projDamage) {
 		}
 		markFinished();
 	});
-	auto leftAttack = std::make_shared<DX9GF::CustomCommand>([this, projDamage](std::function<void(void)> markFinished) {
+	auto leftAttack = std::make_shared<DX9GF::CustomCommand>([this, projDamage, VELOCITY, AMPLITUDE, DECAY_TIME, BULLETS](std::function<void(void)> markFinished) {
 		for (int i = 0; i < BULLETS; i++) {
 			if (auto lock = this->player.lock()) {
 				float startY = (i - BULLETS / 2.f) * SPACING;
@@ -85,9 +88,9 @@ void Demo::VampireBatEnemy::PatternEcholocation(float projDamage) {
 				projectiles.push_back(
 					SineWaveProjectile::Builder(transformManager, lock, projSprite, 16, 16, -320, startY)
 					.SetTrajectory(D3DXVECTOR2(1, 0))
-					.SetWave(50.f, 4.f)
+					.SetWave(AMPLITUDE, 4.f)
 					.SetDelay(i * 0.1f)
-					.SetDecayTime(4.f)
+					.SetDecayTime(DECAY_TIME)
 					.SetVelocity(VELOCITY)
 					.SetDamage(projDamage)
 					.Build()
@@ -110,7 +113,7 @@ void Demo::VampireBatEnemy::PatternEcholocation(float projDamage) {
 }
 
 void Demo::VampireBatEnemy::PatternSwoopBite(float projDamage) {
-	const int BULLET_COUNT = 8;
+	const int BULLET_COUNT = 4;
 	const float ANGLE_STEP = 0.02f;
 	auto rightAttack = std::make_shared<DX9GF::CustomCommand>([this, projDamage, BULLET_COUNT, ANGLE_STEP](std::function<void(void)> markFinished) {
 		if (auto lock = this->player.lock()) {

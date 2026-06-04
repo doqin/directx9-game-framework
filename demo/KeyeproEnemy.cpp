@@ -5,6 +5,7 @@
 #include "RoundProjectile.h"
 #include "TargetedProjectile.h"
 #include "BoomerangProjectile.h"
+#include "SpiralProjectile.h"
 #include "KeyeEnemy.h"
 #include "PopUpMessage.h"
 #include <random>
@@ -40,7 +41,7 @@ void Demo::KeyeproEnemy::Draw(DX9GF::GraphicsDevice* graphicsDevice, DX9GF::Came
 int Demo::KeyeproEnemy::GetRandomPattern() {
     std::random_device rd;
     std::mt19937 gen(rd());
-    std::uniform_int_distribution<int> dist(1, 3);
+    std::uniform_int_distribution<int> dist(1, 6);
     return dist(gen);
 }
 
@@ -88,23 +89,30 @@ void Demo::KeyeproEnemy::StartAttack(std::shared_ptr<Player> player, std::vector
                 if (popUpMessage) {
                     popUpMessage->QueueMessage(&commandBuffer, L"The boss had spawned minions");
                 }
+                return;
             }
+        }
+        int patternId = GetRandomPattern();
+        if (patternId == 1) {
+            PatternTargetedSniping(projDamage);
+        }
+        else if (patternId == 2) {
+            PatternEcholocation(projDamage);
+        }
+        else if (patternId == 3) {
+            PatternSwoopBite(projDamage);
+        }
+        else if (patternId == 4) {
+            PatternSpiralBloom(projDamage);
+        }
+        else if (patternId == 5) {
+            PatternCrossfireSweep(projDamage);
         }
         else {
-            std::uniform_int_distribution<int> dist(1, 3);
-            if (dist(gen) == 1) {
-                PatternTargetedSniping(projDamage);
-            }
-            else if (dist(gen) == 2) {
-                PatternEcholocation(projDamage);
-            }
-            else {
-                PatternSwoopBite(projDamage);
-            }
-
-            commandBuffer.PushCommand(std::make_shared<DX9GF::DelayCommand>(2.f));
+            PatternHomingConstellation(projDamage);
         }
 
+        //commandBuffer.PushCommand(std::make_shared<DX9GF::DelayCommand>(2.f));
     }
 }
 
@@ -361,5 +369,143 @@ void Demo::KeyeproEnemy::PatternSwoopBite(float projDamage)
         if (sideDist(gen) == 1) commandBuffer.PushCommand(std::make_shared<DX9GF::CustomCommand>(*leftAttack));
         else commandBuffer.PushCommand(std::make_shared<DX9GF::CustomCommand>(*rightAttack));
         commandBuffer.PushCommand(std::make_shared<DX9GF::DelayCommand>(0.5f));
+    }
+}
+
+void Demo::KeyeproEnemy::PatternSpiralBloom(float projDamage)
+{
+    const int WAVE_COUNT = 4;
+    const int BULLETS_PER_WAVE = 8;
+    const float WAVE_DELAY = 0.55f;
+    const float RADIAL_SPEED = 65.f;
+    const float ANGULAR_SPEED = 1.35f;
+    const float DECAY_TIME = 5.5f;
+    const float ORIGIN_X = 240.f;
+    const float ORIGIN_Y = -160.f;
+
+    for (int wave = 0; wave < WAVE_COUNT; wave++) {
+        commandBuffer.PushCommand(std::make_shared<DX9GF::CustomCommand>([this, projDamage, wave, BULLETS_PER_WAVE, RADIAL_SPEED, ANGULAR_SPEED, DECAY_TIME, ORIGIN_X, ORIGIN_Y](std::function<void(void)> markFinished) {
+            if (auto lock = this->player.lock()) {
+                float spinDirection = (wave % 2 == 0) ? 1.f : -1.f;
+                float waveOffset = wave * 0.35f;
+
+                for (int i = 0; i < BULLETS_PER_WAVE; i++) {
+                    float angle = waveOffset + i * (2.f * 3.14159265359f / BULLETS_PER_WAVE);
+
+                    auto projSprite = std::make_shared<DX9GF::AnimatedSprite>(projTexture.get(), projFrames, 12);
+                    projSprite->SetOrigin(16, 16);
+                    projectiles.push_back(
+                        SpiralProjectile::Builder(transformManager, lock, projSprite, 16, 16, ORIGIN_X, ORIGIN_Y)
+                            .SetSpiralParams(angle, RADIAL_SPEED, spinDirection * ANGULAR_SPEED)
+                            .SetDelay(0.f)
+                            .SetDecayTime(DECAY_TIME)
+                            .SetDamage(projDamage)
+                            .Build()
+                    );
+                    projectiles.back()->Init();
+                }
+                transformManager.lock()->RebuildHierarchy();
+            }
+            markFinished();
+            }));
+        commandBuffer.PushCommand(std::make_shared<DX9GF::DelayCommand>(WAVE_DELAY));
+    }
+}
+
+void Demo::KeyeproEnemy::PatternCrossfireSweep(float projDamage)
+{
+    constexpr float PI = 3.14159265359f;
+    const int PAIR_COUNT = 56;
+    const float SPAWN_DELAY = 0.08f;
+    const float BULLET_SPEED = 220.f;
+    const float DECAY_TIME = 4.f;
+    const float START_X = 0.f;
+    const float TOP_Y = -350.f;
+    const float BOTTOM_Y = 350.f;
+    const float SWEEP_RANGE = PI * 0.38f;
+
+    for (int i = 0; i < PAIR_COUNT; i++) {
+        float sweep = std::sin(i * 0.65f) * SWEEP_RANGE;
+        commandBuffer.PushCommand(std::make_shared<DX9GF::CustomCommand>([this, projDamage, BULLET_SPEED, DECAY_TIME, START_X, TOP_Y, BOTTOM_Y, sweep](std::function<void(void)> markFinished) {
+            if (auto lock = this->player.lock()) {
+                auto topSprite = std::make_shared<DX9GF::AnimatedSprite>(projTexture.get(), projFrames, 12);
+                topSprite->SetOrigin(16, 16);
+                projectiles.push_back(
+                    RoundProjectile::Builder(transformManager, lock, topSprite, 16, 16, START_X, TOP_Y)
+                        .SetTrajectory(D3DXVECTOR2(std::sin(sweep), 1.f))
+                        .SetVelocity(BULLET_SPEED)
+                        .SetDelay(0.f)
+                        .SetDecayTime(DECAY_TIME)
+                        .SetDamage(projDamage)
+                        .Build()
+                );
+                projectiles.back()->Init();
+
+                auto bottomSprite = std::make_shared<DX9GF::AnimatedSprite>(projTexture.get(), projFrames, 12);
+                bottomSprite->SetOrigin(16, 16);
+                projectiles.push_back(
+                    RoundProjectile::Builder(transformManager, lock, bottomSprite, 16, 16, -START_X, BOTTOM_Y)
+                        .SetTrajectory(D3DXVECTOR2(-std::sin(sweep), -1.f))
+                        .SetVelocity(BULLET_SPEED)
+                        .SetDelay(0.f)
+                        .SetDecayTime(DECAY_TIME)
+                        .SetDamage(projDamage)
+                        .Build()
+                );
+                projectiles.back()->Init();
+                transformManager.lock()->RebuildHierarchy();
+            }
+            markFinished();
+            }));
+        commandBuffer.PushCommand(std::make_shared<DX9GF::DelayCommand>(SPAWN_DELAY));
+    }
+}
+
+void Demo::KeyeproEnemy::PatternHomingConstellation(float projDamage)
+{
+    constexpr float PI = 3.14159265359f;
+    const int POINT_COUNT = 7;
+    const int WAVE_COUNT = 4;
+    const float RADIUS = 360.f;
+    const float ARC_WIDTH = PI * 0.85f;
+    const float WAVE_DELAY = 0.8f;
+    const float BULLET_SPEED = 115.f;
+    const float TURN_SPEED = 0.8f;
+    const float DECAY_TIME = 5.5f;
+    const float BULLET_DELAY = 0.12f;
+
+    for (int wave = 0; wave < WAVE_COUNT; wave++) {
+        commandBuffer.PushCommand(std::make_shared<DX9GF::CustomCommand>([this, projDamage, wave, POINT_COUNT, RADIUS, ARC_WIDTH, BULLET_SPEED, TURN_SPEED, DECAY_TIME, BULLET_DELAY](std::function<void(void)> markFinished) {
+            if (auto lock = this->player.lock()) {
+                float centerAngle = (wave % 2 == 0) ? 0.f : 3.14159265359f;
+                float waveOffset = (wave / 2) * 0.35f;
+
+                for (int i = 0; i < POINT_COUNT; i++) {
+                    float arcRatio = (POINT_COUNT == 1) ? 0.5f : static_cast<float>(i) / (POINT_COUNT - 1);
+                    float angle = centerAngle - ARC_WIDTH * 0.5f + arcRatio * ARC_WIDTH + waveOffset;
+                    float spawnX = std::cos(angle) * RADIUS;
+                    float spawnY = std::sin(angle) * RADIUS;
+                    float tangentDirection = (wave % 2 == 0) ? 1.f : -1.f;
+                    D3DXVECTOR2 tangent(-std::sin(angle) * tangentDirection, std::cos(angle) * tangentDirection);
+
+                    auto projSprite = std::make_shared<DX9GF::AnimatedSprite>(projTexture.get(), projFrames, 12);
+                    projSprite->SetOrigin(16, 16);
+                    projectiles.push_back(
+                        TargetedProjectile::Builder(transformManager, lock, projSprite, 16, 16, spawnX, spawnY)
+                            .SetTrajectory(tangent)
+                            .SetHoming(TURN_SPEED)
+                            .SetVelocity(BULLET_SPEED)
+                            .SetDelay(i * BULLET_DELAY)
+                            .SetDecayTime(DECAY_TIME)
+                            .SetDamage(projDamage)
+                            .Build()
+                    );
+                    projectiles.back()->Init();
+                }
+                transformManager.lock()->RebuildHierarchy();
+            }
+            markFinished();
+            }));
+        commandBuffer.PushCommand(std::make_shared<DX9GF::DelayCommand>(WAVE_DELAY));
     }
 }

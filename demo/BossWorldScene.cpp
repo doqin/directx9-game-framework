@@ -611,6 +611,12 @@ void Demo::BossWorldScene::RestoreSaveData(const nlohmann::json& inData) {
 			hackMachines[i]->SetHackedStatus(true);
 		}
 	}
+
+	if (inData.contains("treasureChests")) {
+		auto& arr = inData["treasureChests"];
+		for (size_t i = 0; i < treasureChests.size() && i < arr.size(); ++i)
+			treasureChests[i]->SetOpened(arr[i].get<bool>());
+	}
 }
 
 void Demo::BossWorldScene::DrawBackground(DX9GF::GraphicsDevice* gd, unsigned long long deltaTime, int islandID)

@@ -475,6 +475,9 @@
     <Image Include="assets\minion-Sheet.png">
       <DeploymentContent>true</DeploymentContent>
     </Image>
+    <Image Include="assets\minionprojectile-Sheet.png">
+      <DeploymentContent>true</DeploymentContent>
+    </Image>
     <Image Include="assets\notresponding-Sheet.png">
       <DeploymentContent>true</DeploymentContent>
     </Image>
@@ -491,6 +494,9 @@
       <DeploymentContent>true</DeploymentContent>
     </Image>
     <Image Include="assets\secretpuzzle.png">
+      <DeploymentContent>true</DeploymentContent>
+    </Image>
+    <Image Include="assets\shardprojectile.png">
       <DeploymentContent>true</DeploymentContent>
     </Image>
     <Image Include="assets\Shop-Sheet.png">

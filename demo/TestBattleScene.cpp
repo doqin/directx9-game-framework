@@ -23,12 +23,12 @@ void Demo::TestBattleScene::Init()
 	});
 	enemies.push_back(testEnemy);*/
 
-	auto demonEye = std::make_shared<DemonEyeEnemy>(transformManager, 60.f);
-	demonEye->Init(game->GetGraphicsDevice(), &camera);
-	demonEye->SetOnRequestEnemyCard([this](std::shared_ptr<IEnemy> enemy) {
-		CreateEnemyCard(enemy);
-		});
-	enemies.push_back(demonEye);
+	//auto demonEye = std::make_shared<DemonEyeEnemy>(transformManager, 60.f);
+	//demonEye->Init(game->GetGraphicsDevice(), &camera);
+	//demonEye->SetOnRequestEnemyCard([this](std::shared_ptr<IEnemy> enemy) {
+	//	CreateEnemyCard(enemy);
+	//	});
+	//enemies.push_back(demonEye);
 
 	//auto cupid = std::make_shared<CupidEnemy>(transformManager, 50.f);
 	//cupid->Init(game->GetGraphicsDevice(), &camera);
@@ -42,31 +42,33 @@ void Demo::TestBattleScene::Init()
 		strikeCard->Init(draggableManager, game->GetGraphicsDevice(), &camera);
 		drawPile.push_back(strikeCard);
 	}*/
+	auto audioManager = DX9GF::AudioManager::GetInstance();
+	audioManager->SetMasterVolume(0.f);
 
 	//auto bat = std::make_shared<VampireBatEnemy>(transformManager, 45.f);
 	//bat->Init(game->GetGraphicsDevice(), &camera);
 	//bat->SetOnRequestEnemyCard([this](std::shared_ptr<IEnemy> enemy) { CreateEnemyCard(enemy); });
 	//enemies.push_back(bat);
 
-	auto mimic = std::make_shared<MimicEnemy>(transformManager, 70.f);
-	mimic->Init(game->GetGraphicsDevice(), &camera);
-	mimic->SetOnRequestEnemyCard([this](std::shared_ptr<IEnemy> enemy) { CreateEnemyCard(enemy); });
-	enemies.push_back(mimic);
+	//auto mimic = std::make_shared<MimicEnemy>(transformManager, 70.f);
+	//mimic->Init(game->GetGraphicsDevice(), &camera);
+	//mimic->SetOnRequestEnemyCard([this](std::shared_ptr<IEnemy> enemy) { CreateEnemyCard(enemy); });
+	//enemies.push_back(mimic);
 
 	//auto warlock = std::make_shared<WarlockEnemy>(transformManager, 55.f);
 	//warlock->Init(game->GetGraphicsDevice(), &camera);
 	//warlock->SetOnRequestEnemyCard([this](std::shared_ptr<IEnemy> enemy) { CreateEnemyCard(enemy); });
 	//enemies.push_back(warlock);
 
-	//auto keyeproEnemy = std::make_shared<KeyeproEnemy>(transformManager, 500.f);
-	//keyeproEnemy->Init(game->GetGraphicsDevice(), &camera);
-	//keyeproEnemy->SetOnRequestEnemyCard([this](std::shared_ptr<IEnemy> enemy) { CreateEnemyCard(enemy); });
-	//enemies.push_back(keyeproEnemy);
+	auto keyeproEnemy = std::make_shared<KeyeproEnemy>(transformManager, 500.f);
+	keyeproEnemy->Init(game->GetGraphicsDevice(), &camera);
+	keyeproEnemy->SetOnRequestEnemyCard([this](std::shared_ptr<IEnemy> enemy) { CreateEnemyCard(enemy); });
+	enemies.push_back(keyeproEnemy);
 
-	//auto keyeEnemy = std::make_shared<KeyeEnemy>(transformManager, 25.f);
-	//keyeEnemy->Init(game->GetGraphicsDevice(), &camera);
-	//keyeEnemy->SetOnRequestEnemyCard([this](std::shared_ptr<IEnemy> enemy) { CreateEnemyCard(enemy); });
-	//enemies.push_back(keyeEnemy);
+	auto keyeEnemy = std::make_shared<KeyeEnemy>(transformManager, 25.f);
+	keyeEnemy->Init(game->GetGraphicsDevice(), &camera);
+	keyeEnemy->SetOnRequestEnemyCard([this](std::shared_ptr<IEnemy> enemy) { CreateEnemyCard(enemy); });
+	enemies.push_back(keyeEnemy);
 
 	// Heavy Strike
 	auto heavy = std::make_shared<HeavyStrikeCard>(transformManager, -260.f, -80.f);

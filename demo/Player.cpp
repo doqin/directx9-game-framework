@@ -114,24 +114,48 @@ void Demo::Player::Init(DX9GF::GraphicsDevice* graphicsDevice, DX9GF::ColliderMa
 	idleRight->SetSrcRect({ .left = 0, .top = 64, .right = 32, .bottom = 96 });
 	idleLeft = std::make_shared<DX9GF::StaticSprite>(spritesheet.get());
 	idleLeft->SetSrcRect({ .left = 0, .top = 96, .right = 32, .bottom = 128 });
+	idleDownRight = std::make_shared<DX9GF::StaticSprite>(spritesheet.get());
+	idleDownRight->SetSrcRect({ .left = 0, .top = 128, .right = 32, .bottom = 160 });
+	idleUpRight = std::make_shared<DX9GF::StaticSprite>(spritesheet.get());
+	idleUpRight->SetSrcRect({ .left = 0, .top = 160, .right = 32, .bottom = 192 });
+	idleDownLeft = std::make_shared<DX9GF::StaticSprite>(spritesheet.get());
+	idleDownLeft->SetSrcRect({ .left = 0, .top = 192, .right = 32, .bottom = 224 });
+	idleUpLeft = std::make_shared<DX9GF::StaticSprite>(spritesheet.get());
+	idleUpLeft->SetSrcRect({ .left = 0, .top = 224, .right = 32, .bottom = 256 });
 	walkingDown = std::make_shared<DX9GF::AnimatedSprite>(spritesheet.get(), DX9GF::Utils::CreateFrames(128, 128, 32, 32, 4, 0));
 	walkingUp = std::make_shared<DX9GF::AnimatedSprite>(spritesheet.get(), DX9GF::Utils::CreateFrames(128, 128, 32, 32, 4, 4));
 	walkingRight = std::make_shared<DX9GF::AnimatedSprite>(spritesheet.get(), DX9GF::Utils::CreateFrames(128, 128, 32, 32, 4, 8));
 	walkingLeft = std::make_shared<DX9GF::AnimatedSprite>(spritesheet.get(), DX9GF::Utils::CreateFrames(128, 128, 32, 32, 4, 12));
+	walkingDownRight = std::make_shared<DX9GF::AnimatedSprite>(spritesheet.get(), DX9GF::Utils::CreateFrames(128, 128, 32, 32, 4, 16));
+	walkingUpRight = std::make_shared<DX9GF::AnimatedSprite>(spritesheet.get(), DX9GF::Utils::CreateFrames(128, 128, 32, 32, 4, 20));
+	walkingDownLeft = std::make_shared<DX9GF::AnimatedSprite>(spritesheet.get(), DX9GF::Utils::CreateFrames(128, 128, 32, 32, 4, 24));
+	walkingUpLeft = std::make_shared<DX9GF::AnimatedSprite>(spritesheet.get(), DX9GF::Utils::CreateFrames(128, 128, 32, 32, 4, 28));
 	// Align sprites
 	idleDown->SetOrigin(16, 16);
 	idleUp->SetOrigin(16, 16);
 	idleRight->SetOrigin(16, 16);
 	idleLeft->SetOrigin(16, 16);
+	idleDownRight->SetOrigin(16, 16);
+	idleUpRight->SetOrigin(16, 16);
+	idleDownLeft->SetOrigin(16, 16);
+	idleUpLeft->SetOrigin(16, 16);
 	walkingDown->SetOrigin(16, 16);
 	walkingUp->SetOrigin(16, 16);
 	walkingRight->SetOrigin(16, 16);
 	walkingLeft->SetOrigin(16, 16);
+	walkingDownRight->SetOrigin(16, 16);
+	walkingUpRight->SetOrigin(16, 16);
+	walkingDownLeft->SetOrigin(16, 16);
+	walkingUpLeft->SetOrigin(16, 16);
 	// Set framerate
 	walkingDown->SetFrameRate(12);
 	walkingUp->SetFrameRate(12);
 	walkingRight->SetFrameRate(12);
 	walkingLeft->SetFrameRate(12);
+	walkingDownRight->SetFrameRate(12);
+	walkingUpRight->SetFrameRate(12);
+	walkingDownLeft->SetFrameRate(12);
+	walkingUpLeft->SetFrameRate(12);
 	// Create collider
 	collider = std::make_shared<DX9GF::RectangleCollider>(transformManager, shared_from_this(), 8, 4, 0, isBattling ? 6 : 14);
 	collider->SetOriginCenter();
@@ -157,6 +181,10 @@ void Demo::Player::Update(unsigned long long deltaTime) {
 	if (dir.x == -1) state = State::Left;
 	if (dir.y == 1) state = State::Down;
 	if (dir.y == -1) state = State::Up;
+	if (dir.x == 1 && dir.y == 1) state = State::DownRight;
+	if (dir.x == 1 && dir.y == -1) state = State::UpRight;
+	if (dir.x == -1 && dir.y == 1) state = State::DownLeft;
+	if (dir.x == -1 && dir.y == -1) state = State::UpLeft;
 	D3DXVECTOR2 dirNorm;
 	D3DXVec2Normalize(&dirNorm, &dir);
 	bool isRunning = false;
@@ -168,12 +196,20 @@ void Demo::Player::Update(unsigned long long deltaTime) {
 		walkingUp->SetFrameRate(12 * SPRINT_MULTIPLIER);
 		walkingRight->SetFrameRate(12 * SPRINT_MULTIPLIER);
 		walkingLeft->SetFrameRate(12 * SPRINT_MULTIPLIER);
+		walkingDownRight->SetFrameRate(12 * SPRINT_MULTIPLIER);
+		walkingUpRight->SetFrameRate(12 * SPRINT_MULTIPLIER);
+		walkingDownLeft->SetFrameRate(12 * SPRINT_MULTIPLIER);
+		walkingUpLeft->SetFrameRate(12 * SPRINT_MULTIPLIER);
 	}
 	else {
 		walkingDown->SetFrameRate(12);
 		walkingUp->SetFrameRate(12);
 		walkingRight->SetFrameRate(12);
 		walkingLeft->SetFrameRate(12);
+		walkingDownRight->SetFrameRate(12);
+		walkingUpRight->SetFrameRate(12);
+		walkingDownLeft->SetFrameRate(12);
+		walkingUpLeft->SetFrameRate(12);
 	}
 	if (dirNorm.x != 0 || dirNorm.y != 0) isWalking = true;
 	else {
@@ -182,6 +218,10 @@ void Demo::Player::Update(unsigned long long deltaTime) {
 		walkingUp->SetFrame(0);
 		walkingRight->SetFrame(0);
 		walkingLeft->SetFrame(0);
+		walkingDownRight->SetFrame(0);
+		walkingUpRight->SetFrame(0);
+		walkingDownLeft->SetFrame(0);
+		walkingUpLeft->SetFrame(0);
 	}
 	if (currentSurface != baseSurface) {
 		surfaceTimeout -= deltaTime / 1000.0f;
@@ -325,6 +365,74 @@ void Demo::Player::Draw(unsigned long long deltaTime) {
 				idleLeft->SetPosition(x, y);
 				idleLeft->Draw(*camera, deltaTime);
 				idleLeft->End();
+			}
+		}
+						break;
+		case State::DownRight: {
+			if (isWalking) {
+				walkingDownRight->Begin();
+				auto [x, y] = GetWorldPosition();
+				walkingDownRight->SetPosition(x, y);
+				walkingDownRight->Draw(*camera, deltaTime);
+				walkingDownRight->End();
+			}
+			else {
+				idleDownRight->Begin();
+				auto [x, y] = GetWorldPosition();
+				idleDownRight->SetPosition(x, y);
+				idleDownRight->Draw(*camera, deltaTime);
+				idleDownRight->End();
+			}
+		}
+			break;
+		case State::UpRight: {
+			if (isWalking) {
+				walkingUpRight->Begin();
+				auto [x, y] = GetWorldPosition();
+				walkingUpRight->SetPosition(x, y);
+				walkingUpRight->Draw(*camera, deltaTime);
+				walkingUpRight->End();
+			}
+			else {
+				idleUpRight->Begin();
+				auto [x, y] = GetWorldPosition();
+				idleUpRight->SetPosition(x, y);
+				idleUpRight->Draw(*camera, deltaTime);
+				idleUpRight->End();
+			}
+		}
+			break;
+		case State::DownLeft: {
+			if (isWalking) {
+				walkingDownLeft->Begin();
+				auto [x, y] = GetWorldPosition();
+				walkingDownLeft->SetPosition(x, y);
+				walkingDownLeft->Draw(*camera, deltaTime);
+				walkingDownLeft->End();
+			}
+			else {
+				idleDownLeft->Begin();
+				auto [x, y] = GetWorldPosition();
+				idleDownLeft->SetPosition(x, y);
+				idleDownLeft->Draw(*camera, deltaTime);
+				idleDownLeft->End();
+			}
+		}
+							break;
+		case State::UpLeft: {
+			if (isWalking) {
+				walkingUpLeft->Begin();
+				auto [x, y] = GetWorldPosition();
+				walkingUpLeft->SetPosition(x, y);
+				walkingUpLeft->Draw(*camera, deltaTime);
+				walkingUpLeft->End();
+			}
+			else {
+				idleUpLeft->Begin();
+				auto [x, y] = GetWorldPosition();
+				idleUpLeft->SetPosition(x, y);
+				idleUpLeft->Draw(*camera, deltaTime);
+				idleUpLeft->End();
 			}
 		}
 			break;

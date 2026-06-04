@@ -13,9 +13,8 @@ void Demo::KeyeEnemy::Init(DX9GF::GraphicsDevice* graphicsDevice, DX9GF::Camera*
     sprite->SetScale(2.f);
 
     projTexture = std::make_shared<DX9GF::Texture>(graphicsDevice);
-    projTexture->LoadTexture(L"assets/bossprojectile-Sheet.png");
+    projTexture->LoadTexture(L"assets/minionprojectile-Sheet.png");
     projFrames = DX9GF::Utils::CreateRectsHorizontal(0, 0, 32, 32, 5);
-
     SetGoldReward(static_cast<int>(std::round(GetMaxHealth())));
     InitCardSpawnTrigger(camera, 128.f, 128.f);
 }
@@ -53,7 +52,7 @@ void Demo::KeyeEnemy::StartAttack(std::shared_ptr<Player> player, std::vector<st
     if (dist(gen) == 1) PatternBoomerangCross(projDamage);
     else PatternRoundCircle(projDamage);
 
-    commandBuffer.PushCommand(std::make_shared<DX9GF::DelayCommand>(3.f));
+    //commandBuffer.PushCommand(std::make_shared<DX9GF::DelayCommand>(3.f));
 }
 
 void Demo::KeyeEnemy::PatternBoomerangCross(float projDamage) {

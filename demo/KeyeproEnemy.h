@@ -15,6 +15,9 @@ namespace Demo {
         void PatternTargetedSniping(float projDamage);
         void PatternEcholocation(float projDamage);
         void PatternSwoopBite(float projDamage);
+        void PatternSpiralBloom(float projDamage);
+        void PatternCrossfireSweep(float projDamage);
+        void PatternHomingConstellation(float projDamage);
     public:
         using IEnemy::IEnemy;
         void Init(DX9GF::GraphicsDevice* graphicsDevice, DX9GF::Camera* camera);

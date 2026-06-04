@@ -196,6 +196,8 @@
     <Image Include="assets\bossprojectile-Sheet.png" />
     <Image Include="assets\minion-Sheet.png" />
     <Image Include="assets\icon.ico" />
+    <Image Include="assets\shardprojectile.png" />
+    <Image Include="assets\minionprojectile-Sheet.png" />
   </ItemGroup>
   <ItemGroup>
     <Font Include="assets\arcade-among-2-r46pv.ttf" />

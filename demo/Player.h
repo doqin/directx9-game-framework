@@ -12,7 +12,11 @@ namespace Demo {
 			Left,
 			Right,
 			Up,
-			Down
+			Down,
+			UpLeft,
+			UpRight,
+			DownLeft,
+			DownRight
 		};
 		// Constants
         const float MAX_HEALTH = 50;
@@ -38,6 +42,14 @@ namespace Demo {
 		std::shared_ptr<DX9GF::StaticSprite> idleUp;
 		std::shared_ptr<DX9GF::StaticSprite> idleRight;
 		std::shared_ptr<DX9GF::StaticSprite> idleLeft;
+		std::shared_ptr<DX9GF::StaticSprite> idleDownLeft;
+		std::shared_ptr<DX9GF::StaticSprite> idleDownRight;
+		std::shared_ptr<DX9GF::StaticSprite> idleUpLeft;
+		std::shared_ptr<DX9GF::StaticSprite> idleUpRight;
+		std::shared_ptr<DX9GF::AnimatedSprite> walkingDownLeft;
+		std::shared_ptr<DX9GF::AnimatedSprite> walkingDownRight;
+		std::shared_ptr<DX9GF::AnimatedSprite> walkingUpLeft;
+		std::shared_ptr<DX9GF::AnimatedSprite> walkingUpRight;
 		std::shared_ptr<DX9GF::AnimatedSprite> walkingDown;
 		std::shared_ptr<DX9GF::AnimatedSprite> walkingUp;
 		std::shared_ptr<DX9GF::AnimatedSprite> walkingRight;
