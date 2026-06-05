@@ -14,7 +14,7 @@ namespace Demo {
 	protected:
 		std::vector<std::weak_ptr<IStatementCard>> statementCards;
 	public:
-       inline IBlockCard(std::weak_ptr<DX9GF::TransformManager> transformManager)
+		inline IBlockCard(std::weak_ptr<DX9GF::TransformManager> transformManager)
 			: IGameObject(transformManager), ICard(transformManager), IContainer(transformManager) {}
 		inline IBlockCard(
 			std::weak_ptr<DX9GF::TransformManager> transformManager,
@@ -46,7 +46,7 @@ namespace Demo {
 		void StartExecution();
 		void ExecuteIteratively(unsigned long long deltaTime);
 		bool IsExecuting() const;
-      std::shared_ptr<IStatementCard> GetCurrentExecutingCard() const;
+		std::shared_ptr<IStatementCard> GetCurrentExecutingCard() const;
 		void ResetExecution();
 	};
 }

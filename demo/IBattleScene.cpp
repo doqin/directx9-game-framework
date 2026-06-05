@@ -20,9 +20,14 @@ namespace {
 		if (!card) {
 			return;
 		}
-		if (auto parent = card->GetParent(); parent.has_value()) {
-			dynamic_pointer_cast<Demo::IDraggable>(card)->DetachParent();
+		auto draggable = dynamic_pointer_cast<Demo::IDraggable>(card);
+		if (draggable) {
+			if (auto parent = card->GetParent(); parent.has_value()) {
+				draggable->DetachParent();
+			}
+			draggable->SetHidden(true);
 		}
+		
 		card->SetLocalPosition(HiddenPileX, HiddenPileY);
 	}
 
@@ -140,7 +145,11 @@ void Demo::IBattleScene::DrawCards(size_t count)
 		auto card = drawPile.back();
 		drawPile.pop_back();
 		card->SetOwner(battlePlayer.get());
-		dynamic_pointer_cast<IDraggable>(card)->DetachParent();
+		auto draggable = dynamic_pointer_cast<IDraggable>(card);
+		if (draggable) {
+			draggable->DetachParent();
+			draggable->SetHidden(false);
+		}
 		y += 30;
 		std::vector<std::shared_ptr<DX9GF::ICommand>> commands = {
 			std::make_shared<DX9GF::SetPositionCommand>(card, -static_cast<float>(screenWidth), y),

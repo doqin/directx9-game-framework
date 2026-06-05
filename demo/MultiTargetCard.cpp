@@ -78,6 +78,9 @@ namespace Demo {
 		IStatementCard::Draw(deltaTime);
 		for (auto& draggable : draggableManager->GetDraggingDraggables()) {
 			if (auto draggedEnemyCard = std::dynamic_pointer_cast<EnemyCard>(draggable); draggableManager->GetDraggingDraggables().size() == 1 && draggedEnemyCard) {
+				auto [draggedX, draggedY] = draggedEnemyCard->GetWorldPosition();
+				auto draggedWidth = draggedEnemyCard->GetWidth();
+				auto draggedHeight = draggedEnemyCard->GetHeight();
 				auto width = GetWidth();
 				auto height = GetHeight();
 				auto thisX = GetWorldX();
@@ -92,7 +95,8 @@ namespace Demo {
 						}
 					}
 				}
-				draggableManager->QueueDraw(std::make_shared<DX9GF::CustomCommand>([&, width, height, thisX, thisY](std::function<void(void)> markFinished) {
+				draggableManager->QueueDraw(std::make_shared<DX9GF::CustomCommand>([&, width, height, thisX, thisY, draggedX, draggedY, draggedWidth, draggedHeight](std::function<void(void)> markFinished) {
+					graphicsDevice->SetAlphaBlending(true);
 					Demo::DrawAnimatedDashedRectangle(
 						graphicsDevice,
 						*camera,
@@ -110,6 +114,26 @@ namespace Demo {
 						40.f,
 						GetTickCount64()
 					);
+					//Demo::DrawAnimatedDashedArrow(
+					//	graphicsDevice,
+					//	*camera,
+					//	draggedX + draggedWidth / 2.0f,
+					//	draggedY + draggedHeight / 2.0f,
+					//	thisX + GetWidth() / 2.0f,
+					//	thisY + GetHeight() / 2.0f,
+					//	3.f,
+					//	0x80FFFFFF,
+					//	false,
+					//	10.f,
+					//	0xFFFFFFFF,
+					//	20.f,
+					//	10.f,
+					//	40.f,
+					//	GetTickCount64(),
+					//	10.f,
+					//	10.f
+					//);
+					graphicsDevice->SetAlphaBlending(false);
 					markFinished();
 				}));
 				return;

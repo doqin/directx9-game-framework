@@ -153,7 +153,7 @@ void Demo::DebugScene::Draw(unsigned long long deltaTime)
 			btn->Draw(gd, deltaTime);
 		}
 
-		Demo::DrawAnimatedDashedLine(gd, camera, 0, 0, 200, 200, 4, 0xFFFF0000, true, 2, 0xFFFFFFFF, 20, 10, 50.f, GetTickCount64());
+		//Demo::DrawAnimatedDashedLine(gd, camera, 0, 0, 200, 200, 4, 0xFFFF0000, true, 2, 0xFFFFFFFF, 20, 10, 50.f, GetTickCount64());
 		Demo::DrawAnimatedDashedRectangle(
 			gd,
 			camera,
@@ -170,6 +170,25 @@ void Demo::DebugScene::Draw(unsigned long long deltaTime)
 			10.f,
 			40.f,
 			GetTickCount64()
+		);
+		Demo::DrawAnimatedDashedArrow(
+			gd,
+			camera,
+			0,
+			0,
+			200,
+			200,
+			3.f,
+			0xFFFFFFFF,
+			false,
+			10.f,
+			0xFFFFFFFF,
+			20.f,
+			10.f,
+			40.f,
+			GetTickCount64(),
+			10.f,
+			10.f
 		);
 
 		if (myFontSprite) {

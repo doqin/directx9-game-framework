@@ -161,24 +161,26 @@ void Demo::DraggableManager::Draw(unsigned long long deltaTime)
 						goto skipDraw; // Skip drawing if this object is being dragged or is following a dragged object
 					}
 				}
-				lock->Draw(deltaTime);
+				if (!lock->IsHidden()) {
+					lock->Draw(deltaTime);
+				}
 			skipDraw:
 				continue;
 			}
 		}
 	}
 	for (auto& draggable : isDraggingDraggables) {
-		draggable->Draw(deltaTime);
+		if (!draggable->IsHidden()) {
+			draggable->Draw(deltaTime);
+		}
 	}
 	isDraggingDraggables.clear();
-	while(drawBuffer.IsBusy()) {
-		drawBuffer.Update(deltaTime);
-	}
+	drawBuffer.Update(deltaTime);
 }
 
 void Demo::DraggableManager::QueueDraw(std::shared_ptr<DX9GF::ICommand> cmd)
 {
-	drawBuffer.PushCommand(std::move(cmd));
+	drawBuffer.StackCommand(std::move(cmd));
 }
 
 bool Demo::DraggableManager::IsQueueBusy()
@@ -395,4 +397,14 @@ std::weak_ptr<DX9GF::RectangleTrigger> Demo::IDraggable::GetTrigger()
 bool Demo::IDraggable::IsDragging() const
 {
 	return isDragging;
+}
+
+bool Demo::IDraggable::IsHidden() const
+{
+	return isHidden;
+}
+
+void Demo::IDraggable::SetHidden(bool hidden)
+{
+	isHidden = hidden;
 }

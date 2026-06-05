@@ -41,6 +41,48 @@ namespace Demo {
 		float animationSpeed,
 		unsigned long long tick);
 
+	/// <summary>
+	/// Draws an animated dashed arrow from the first position toward the last position.
+	/// </summary>
+	/// <param name="tick">Elapsed animation time in milliseconds.</param>
+	/// <param name="animationSpeed">Dash movement speed in pixels per second.</param>
+	void DrawAnimatedDashedArrow(
+		DX9GF::GraphicsDevice* graphicsDevice,
+		float firstX,
+		float firstY,
+		float lastX,
+		float lastY,
+		float lineThickness,
+		D3DCOLOR lineColor,
+		bool drawOutline,
+		float outlineThickness,
+		D3DCOLOR outlineColor,
+		float dashLength,
+		float dashDistance,
+		float animationSpeed,
+		unsigned long long tick,
+		float headLength,
+		float headWidth);
+
+	void DrawAnimatedDashedArrow(
+		DX9GF::GraphicsDevice* graphicsDevice,
+		DX9GF::Camera& camera,
+		float firstX,
+		float firstY,
+		float lastX,
+		float lastY,
+		float lineThickness,
+		D3DCOLOR lineColor,
+		bool drawOutline,
+		float outlineThickness,
+		D3DCOLOR outlineColor,
+		float dashLength,
+		float dashDistance,
+		float animationSpeed,
+		unsigned long long tick,
+		float headLength,
+		float headWidth);
+
 	void DrawAnimatedDashedRectangle(
 		DX9GF::GraphicsDevice* graphicsDevice,
 		float x,

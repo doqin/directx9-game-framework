@@ -20,6 +20,7 @@ namespace Demo {
 		bool isDragging = false;
 		RECT scissorRect;
 		bool isCropped = false;
+		bool isHidden = false;
 	public:
 		inline static bool debug = false;
 		inline IDraggable(std::weak_ptr<DX9GF::TransformManager> transformManager) : IGameObject(transformManager), dragAreaWidth(0), dragAreaHeight(0) { 
@@ -69,6 +70,8 @@ namespace Demo {
 		std::weak_ptr<DraggableManager> GetDraggableManager();
 		std::weak_ptr<DX9GF::RectangleTrigger> GetTrigger();
 		bool IsDragging() const;
+		bool IsHidden() const;
+		void SetHidden(bool hidden);
 	};
 
 	class DraggableManager final {
