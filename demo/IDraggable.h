@@ -80,6 +80,7 @@ namespace Demo {
 		std::vector<std::weak_ptr<IDraggable>> hierarchy;
 		std::vector<LevelBatch> levels;
 		std::unordered_map<std::string, std::shared_ptr<IDraggable>> objectMap;
+		std::vector<std::shared_ptr<IDraggable>> isDraggingDraggables;
 		DX9GF::CommandBuffer drawBuffer;
 	public:
 		void RebuildHierarchy();
@@ -90,5 +91,7 @@ namespace Demo {
 		void Update(unsigned long long deltaTime);
 		void Draw(unsigned long long deltaTime);
 		void QueueDraw(std::shared_ptr<DX9GF::ICommand> cmd);
+		bool IsQueueBusy();
+		std::vector<std::shared_ptr<IDraggable>> GetDraggingDraggables() const;
 	};
 }

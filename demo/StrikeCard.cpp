@@ -1,5 +1,6 @@
 #include "pch.h"
 #include "StrikeCard.h"
+#include "DrawUtils.h"
 
 bool Demo::StrikeCard::OnDrop(std::shared_ptr<IDraggable> other)
 {
@@ -69,15 +70,46 @@ void Demo::StrikeCard::Draw(unsigned long long deltaTime)
 		strikeSprite = std::make_shared<DX9GF::StaticSprite>(strikeTexture.get());
 		strikeSprite->SetSrcRect({ .left = 0, .top = 288, .right = 80, .bottom = 304 });
 	}
+	auto thisX = GetWorldX();
+	auto thisY = GetWorldY();
 	if (strikeSprite) {
 		strikeSprite->Begin();
-		strikeSprite->SetPosition(GetWorldX(), GetWorldY());
+		strikeSprite->SetPosition(thisX, thisY);
 		strikeSprite->SetScale(2.f, 2.f);
 		strikeSprite->Draw(*camera, deltaTime);
 		strikeSprite->End();
 	}
 	if (isCropped) {
 		graphicsDevice->SetScissorTest(false);
+	}
+	for (auto& draggable : draggableManager->GetDraggingDraggables()) {
+		if (auto draggedEnemyCard = std::dynamic_pointer_cast<EnemyCard>(draggable); draggableManager->GetDraggingDraggables().size() == 1 && draggedEnemyCard) {
+			if (!enemyCard.lock()) {
+				auto width = GetWidth();
+				auto height = GetHeight();
+				draggableManager->QueueDraw(std::make_shared<DX9GF::CustomCommand>([&, width, height, thisX, thisY](std::function<void(void)> markFinished) {
+					Demo::DrawAnimatedDashedRectangle(
+						graphicsDevice,
+						*camera,
+						thisX,
+						thisY,
+						width,
+						height,
+						3.f,
+						0xFFFFFFFF,
+						false,
+						1.f,
+						0xFFFFFFFF,
+						20.f,
+						10.f,
+						40.f,
+						GetTickCount64()
+					);
+					markFinished();
+				}));
+				return;
+			}
+		}
 	}
 	//if (!nameFont) {
 	//	nameFont = std::make_shared<DX9GF::Font>(graphicsDevice, L"StatusPlz", 16);

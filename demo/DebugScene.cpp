@@ -1,6 +1,7 @@
 ﻿#include "pch.h"
 #include "DebugScene.h"
 #include "TestBattleScene.h"
+#include "DrawUtils.h"
 
 Demo::DebugScene::DebugScene(Game* game, int sw, int sh) : IScene(sw, sh), game(game), uiCamera(sw, sh)
 {
@@ -151,6 +152,25 @@ void Demo::DebugScene::Draw(unsigned long long deltaTime)
 		{
 			btn->Draw(gd, deltaTime);
 		}
+
+		Demo::DrawAnimatedDashedLine(gd, camera, 0, 0, 200, 200, 4, 0xFFFF0000, true, 2, 0xFFFFFFFF, 20, 10, 50.f, GetTickCount64());
+		Demo::DrawAnimatedDashedRectangle(
+			gd,
+			camera,
+			0,
+			0,
+			500,
+			500,
+			6.f,
+			0xFFFF00FF,
+			true,
+			4.f,
+			0xFFFFFFFF,
+			20.f,
+			10.f,
+			40.f,
+			GetTickCount64()
+		);
 
 		if (myFontSprite) {
 			myFontSprite->Begin();

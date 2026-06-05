@@ -8,6 +8,7 @@
     <ClCompile Include="DauDauNPC.cpp" />
     <ClCompile Include="DebugScene.cpp" />
     <ClCompile Include="DemonEyeEnemy.cpp" />
+    <ClCompile Include="DrawUtils.cpp" />
     <ClCompile Include="Game.cpp" />
     <ClCompile Include="GameItems.cpp" />
     <ClCompile Include="HandContainer.cpp" />
@@ -79,6 +80,7 @@
     <ClInclude Include="DebugScene.h" />
     <ClInclude Include="DemonEyeEnemy.h" />
     <ClInclude Include="DialogueLine.h" />
+    <ClInclude Include="DrawUtils.h" />
     <ClInclude Include="EnemyCard.h" />
     <ClInclude Include="Game.h" />
     <ClInclude Include="GameItems.h" />
