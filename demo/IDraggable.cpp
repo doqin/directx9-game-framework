@@ -124,11 +124,6 @@ void Demo::DraggableManager::Update(unsigned long long deltaTime)
 			}
 		}
 	}
-}
-
-void Demo::DraggableManager::Draw(unsigned long long deltaTime)
-{
-	std::vector<std::shared_ptr<IDraggable>> isDraggingDraggables;
 	for (size_t i = 0; i < levels.size(); ++i) {
 		for (size_t j = levels[i].startIdx; j < levels[i].endIdx; ++j) {
 			if (auto lock = hierarchy[j].lock()) {
@@ -151,21 +146,51 @@ void Demo::DraggableManager::Draw(unsigned long long deltaTime)
 					isDraggingDraggables.push_back(lock);
 					continue;
 				}
-				lock->Draw(deltaTime);
+			}
+		}
+	}
+}
+
+void Demo::DraggableManager::Draw(unsigned long long deltaTime)
+{
+	for (size_t i = 0; i < levels.size(); ++i) {
+		for (size_t j = levels[i].startIdx; j < levels[i].endIdx; ++j) {
+			if (auto lock = hierarchy[j].lock()) {
+				for (auto& draggable : isDraggingDraggables) {
+					if (draggable.get() == lock.get()) {
+						goto skipDraw; // Skip drawing if this object is being dragged or is following a dragged object
+					}
+				}
+				if (!lock->IsHidden()) {
+					lock->Draw(deltaTime);
+				}
+			skipDraw:
+				continue;
 			}
 		}
 	}
 	for (auto& draggable : isDraggingDraggables) {
-		draggable->Draw(deltaTime);
+		if (!draggable->IsHidden()) {
+			draggable->Draw(deltaTime);
+		}
 	}
-	while(drawBuffer.IsBusy()) {
-		drawBuffer.Update(deltaTime);
-	}
+	isDraggingDraggables.clear();
+	drawBuffer.Update(deltaTime);
 }
 
 void Demo::DraggableManager::QueueDraw(std::shared_ptr<DX9GF::ICommand> cmd)
 {
-	drawBuffer.PushCommand(std::move(cmd));
+	drawBuffer.StackCommand(std::move(cmd));
+}
+
+bool Demo::DraggableManager::IsQueueBusy()
+{
+	return drawBuffer.IsBusy();
+}
+
+std::vector<std::shared_ptr<Demo::IDraggable>> Demo::DraggableManager::GetDraggingDraggables() const
+{
+	return isDraggingDraggables;
 }
 
 void Demo::IDraggable::Init(std::shared_ptr<DraggableManager> manager, DX9GF::GraphicsDevice* graphicsDevice, DX9GF::Camera* camera)
@@ -372,4 +397,14 @@ std::weak_ptr<DX9GF::RectangleTrigger> Demo::IDraggable::GetTrigger()
 bool Demo::IDraggable::IsDragging() const
 {
 	return isDragging;
+}
+
+bool Demo::IDraggable::IsHidden() const
+{
+	return isHidden;
+}
+
+void Demo::IDraggable::SetHidden(bool hidden)
+{
+	isHidden = hidden;
 }

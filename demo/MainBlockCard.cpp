@@ -1,5 +1,7 @@
 #include "pch.h"
 #include "MainBlockCard.h"
+#include "IStatementCard.h"
+#include "DrawUtils.h"
 
 void Demo::MainBlockCard::Draw(unsigned long long deltaTime)
 {
@@ -35,4 +37,42 @@ void Demo::MainBlockCard::Draw(unsigned long long deltaTime)
         pointerSprite->End();
     }
     //nameFontSprite->End();
+    for (auto& draggable : draggableManager->GetDraggingDraggables()) {
+		if (auto lock = draggable->GetParent(); lock.has_value()) {
+			if (auto parentLock = lock.value().lock()) {
+				if (parentLock.get() == this) {
+					continue;
+				}
+			}
+		}
+		if (auto draggedStatementCard = std::dynamic_pointer_cast<Demo::IStatementCard>(draggable)) {
+            auto thisX = GetWorldX();
+            auto thisY = GetWorldY() + GetHeight() + GetHeightOfChildren();
+			auto width = (std::max)(this->GetMaxWidthOfChildren(), GetWidth());
+			auto height = 32.f;
+			draggableManager->QueueDraw(std::make_shared<DX9GF::CustomCommand>([&, width, height, thisX, thisY](std::function<void(void)> markFinished) {
+				graphicsDevice->SetAlphaBlending(true);
+				Demo::DrawAnimatedDashedRectangle(
+					graphicsDevice,
+					*camera,
+					thisX,
+					thisY,
+					width,
+					height,
+					3.f,
+					0xFFFFFFFF,
+					false,
+					4.f,
+					0xFFFFFFFF,
+					20.f,
+					10.f,
+					40.f,
+					GetTickCount64()
+				);
+				graphicsDevice->SetAlphaBlending(false);
+				markFinished();
+				}));
+            return;
+        }
+    }
 }
