@@ -129,5 +129,7 @@ namespace Demo {
 		//
 		void SetOnVictoryCallback(std::function<void()> cb) { onVictoryCallback = cb; }
 		void SetCustomBGM(const std::string& name) { customBGMName = name; }
+		int GetAvailableEnergy() const { return energy - usedEnergy; }
+		void QueuePopUpMessage(const std::wstring& msg) { if (popUpMessage) popUpMessage->QueueMessage(&commandBuffer, msg); }
 	};
 }

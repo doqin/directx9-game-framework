@@ -1,5 +1,6 @@
 #include "pch.h"
 #include "IBlockCard.h"
+#include "IBattleScene.h"
 
 bool Demo::IBlockCard::OnDrop(std::shared_ptr<IDraggable> other)
 {
@@ -7,6 +8,15 @@ bool Demo::IBlockCard::OnDrop(std::shared_ptr<IDraggable> other)
 	if (!statementCard) {
 		return false;
 	}
+
+	if (battleScene) {
+		int cost = static_cast<int>(statementCard->GetCost());
+		if (battleScene->GetAvailableEnergy() < 0) {
+			battleScene->QueuePopUpMessage(L"Not enough energy");
+			return false;
+		}
+	}
+
 	if (IContainer::OnDrop(other)) {
 		statementCards.push_back(statementCard);
 		return true;
@@ -17,6 +27,9 @@ bool Demo::IBlockCard::OnDrop(std::shared_ptr<IDraggable> other)
 void Demo::IBlockCard::Update(unsigned long long deltaTime)
 {
 	IContainer::Update(deltaTime);
+
+	timeSinceLastEnergyPopUp += deltaTime / 1000.f;
+
 	// Removes invalid cards
 	for (size_t i = 0; i < statementCards.size(); ++i) {
 		auto lock = statementCards[i].lock();
