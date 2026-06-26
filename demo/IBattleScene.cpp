@@ -27,7 +27,7 @@ namespace {
 			}
 			draggable->SetHidden(true);
 		}
-		
+
 		card->SetLocalPosition(HiddenPileX, HiddenPileY);
 	}
 
@@ -327,25 +327,47 @@ void Demo::IBattleScene::RemoveEnemyCardsInRemoveArea()
 
 void Demo::IBattleScene::RefreshItemMenu()
 {
-	buffItems.clear();
+	buffItems.clear(); // Xóa sạch nút trang cũ
+
 	auto& inventory = player->GetInventoryItems().GetSlots();
 
-	int columns = std::floor((BG_W - PADDING_X) / (ITEM_W + PADDING_X));
-	if (columns < 1) columns = 1;
+	std::vector<int> validIndices;
+	for (int i = 0; i < inventory.size(); i++) {
+		if (inventory[i].quantity > 0 && Demo::ItemData::GetInstance()->GetItemBlueprint(inventory[i].itemID)) {
+			validIndices.push_back(i);
+		}
+	}
 
+
+	float targetWidth = itemMenuBackground->GetTargetWidth();
+	float targetHeight = itemMenuBackground->GetTargetHeight();
+
+	// CHỪA 40PX Ở TRÊN (CHO MÔ TẢ) VÀ 50PX Ở DƯỚI (CHO PHÂN TRANG)
+	int columns = std::floor((targetWidth - PADDING_X * 2.0f) / (ITEM_W + PADDING_X));
+	int rows = std::floor((targetHeight - PADDING_Y * 2.0f - 90.0f) / (ITEM_H + PADDING_Y));
+	if (columns < 1) columns = 1;
+	if (rows < 1) rows = 1;
+
+	int itemsPerPage = columns * rows;
+
+	maxItemPage = validIndices.empty() ? 0 : (validIndices.size() - 1) / itemsPerPage;
+	if (currentItemPage > maxItemPage) currentItemPage = maxItemPage;
+	if (currentItemPage < 0) currentItemPage = 0;
+
+	int startIndex = currentItemPage * itemsPerPage;
+	int endIndex = std::min(static_cast<int>(validIndices.size()), startIndex + itemsPerPage);
+
+	// Lưới căn giữa tuyệt đối
 	float totalGridWidth = (columns * ITEM_W) + ((columns - 1) * PADDING_X);
-	float startX = -HALF_BG_W + (BG_W - totalGridWidth) / 2.0f;
-	float startY = -HALF_BG_H + PADDING_Y;
+	float startX = -totalGridWidth / 2.0f;
+	float startY = -targetHeight / 2.0f + PADDING_Y + 40.0f; // Đẩy xuống 40px tránh mô tả
 
 	int displayIndex = 0;
-	for (int i = 0; i < inventory.size(); i++)
+	for (int i = startIndex; i < endIndex; i++)
 	{
-		auto slot = inventory[i];
-
-		if (slot.quantity <= 0) continue;
-
-		const auto* blueprint = Demo::ItemData::GetInstance()->GetItemBlueprint(slot.itemID);
-		if (!blueprint) continue;
+		int originalIndex = validIndices[i];
+		auto slot = inventory[originalIndex];
+		auto blueprint = Demo::ItemData::GetInstance()->GetItemBlueprint(slot.itemID);
 
 		int col = displayIndex % columns;
 		int row = displayIndex / columns;
@@ -361,11 +383,9 @@ void Demo::IBattleScene::RefreshItemMenu()
 
 		btn->SetSpriteRects({ blueprint->GetItemRect() });
 
-		btn->SetOnReleaseLeft([&, slot, blueprint](DX9GF::ITrigger* thisObj) {
-			commandBuffer.PushCommand(std::make_shared<DX9GF::CustomCommand>([&, slot, blueprint](std::function<void(void)> markFinished) {
-
+		btn->SetOnReleaseLeft([this, slot, blueprint](DX9GF::ITrigger* thisObj) {
+			commandBuffer.PushCommand(std::make_shared<DX9GF::CustomCommand>([this, slot, blueprint](std::function<void(void)> markFinished) {
 				if (player->GetInventoryItems().ConsumeItem(slot.itemID)) {
-
 					for (auto& buff : blueprint->GetBuffs()) {
 						if (buff.type == Demo::ItemBuffType::HealHP) {
 							battlePlayer->Heal(buff.value);
@@ -374,7 +394,6 @@ void Demo::IBattleScene::RefreshItemMenu()
 							battlePlayer->AddActiveBuff(buff);
 						}
 					}
-
 					std::wstring msg = L"Used " + blueprint->GetName() + L"!";
 					popUpMessage->QueueMessage(&commandBuffer, msg);
 
@@ -388,6 +407,12 @@ void Demo::IBattleScene::RefreshItemMenu()
 		buffItems.push_back(btn);
 		displayIndex++;
 	}
+
+	// Đặt 2 nút lật trang nằm ở dưới cùng của bảng
+	float btnY = targetHeight / 2.0f - PADDING_Y - 15.0f;
+	btnPrevPage->SetLocalPosition(-targetWidth / 2.0f + PADDING_X, btnY);
+	btnNextPage->SetLocalPosition(targetWidth / 2.0f - PADDING_X - btnNextPage->GetWidth(), btnY);
+
 	transformManager->RebuildHierarchy();
 	transformManager->UpdateAll();
 }
@@ -551,14 +576,20 @@ void Demo::IBattleScene::QueueToEnemyAttack(unsigned long long deltaTime)
 
 void Demo::IBattleScene::PlayerOpenItemsUpdate(unsigned long long deltaTime)
 {
+	float targetWidth = itemMenuBackground->GetTargetWidth();
+	float targetHeight = itemMenuBackground->GetTargetHeight();
 
-	float closeX = -BG_W + 50.f + closeItemMenuButton->GetWidth();
-	float closeY = BG_H - 50.f - closeItemMenuButton->GetHeight();
-
+	// Dời nút Close ra NGÒAI bảng và CĂN GIỮA
+	float closeX = -closeItemMenuButton->GetWidth() / 2.0f;
+	float closeY = targetHeight / 2.0f + 15.0f; // Cách mép dưới bảng 15px
 	closeItemMenuButton->SetLocalPosition(closeX, closeY);
 
 	if (!isTransitioning) {
 		closeItemMenuButton->Update(deltaTime);
+
+		if (currentItemPage > 0) btnPrevPage->Update(deltaTime);
+		if (currentItemPage < maxItemPage) btnNextPage->Update(deltaTime);
+
 		for (auto& btn : buffItems) {
 			btn->Update(deltaTime);
 		}
@@ -697,50 +728,90 @@ void Demo::IBattleScene::PlayerOpenItemsDraw(unsigned long long deltaTime)
 	auto& inventory = player->GetInventoryItems().GetSlots();
 	std::wstring hoverDescription = L"";
 
-	fontSprite->Begin();
+	std::vector<int> validIndices;
+	for (int i = 0; i < inventory.size(); i++) {
+		if (inventory[i].quantity > 0 && Demo::ItemData::GetInstance()->GetItemBlueprint(inventory[i].itemID)) {
+			validIndices.push_back(i);
+		}
+	}
+
+	float targetWidth = itemMenuBackground->GetTargetWidth();
+	float targetHeight = itemMenuBackground->GetTargetHeight();
+
+	// ĐỒNG BỘ CÔNG THỨC VỚI REFRESH Lưới
+	int columns = std::floor((targetWidth - PADDING_X * 2.0f) / (ITEM_W + PADDING_X));
+	int rows = std::floor((targetHeight - PADDING_Y * 2.0f - 90.0f) / (ITEM_H + PADDING_Y));
+	if (columns < 1) columns = 1;
+	if (rows < 1) rows = 1;
+
+	int itemsPerPage = columns * rows;
+	int startIndex = currentItemPage * itemsPerPage;
+	int endIndex = std::min(static_cast<int>(validIndices.size()), startIndex + itemsPerPage);
 
 	int displayIndex = 0;
-	for (int i = 0; i < inventory.size(); i++) {
+	for (int i = startIndex; i < endIndex; i++) {
+		auto btn = buffItems[displayIndex];
+		btn->Draw(game->GetGraphicsDevice(), deltaTime);
+		displayIndex++;
+	}
 
-		if (inventory[i].quantity <= 0) continue;
+	if (currentItemPage > 0) {
+		btnPrevPage->Draw(game->GetGraphicsDevice(), deltaTime);
+	}
+	if (currentItemPage < maxItemPage) {
+		btnNextPage->Draw(game->GetGraphicsDevice(), deltaTime);
+	}
 
+	fontSprite->Begin();
+
+	displayIndex = 0;
+	for (int i = startIndex; i < endIndex; i++) {
+		int originalIndex = validIndices[i];
+		auto slot = inventory[originalIndex];
 		auto btn = buffItems[displayIndex];
 
-		btn->Draw(game->GetGraphicsDevice(), deltaTime);
-
-		float textX = btn->GetWorldX() + (ITEM_W / 2.0f) - 10.0f;
-		float textY = btn->GetWorldY() + ITEM_H + 5.0f;
-
-		fontSprite->SetPosition(textX, textY);
-		fontSprite->SetColor(0xFFFFFFFF);
-		fontSprite->SetOutline(true, 0xFF000000, 3.f);
-		fontSprite->SetText(L"x" + std::to_wstring(inventory[i].quantity));
-		fontSprite->Draw(camera, deltaTime);
-
 		if (btn->GetTrigger()->IsHovering(deltaTime)) {
-			auto blueprint = Demo::ItemData::GetInstance()->GetItemBlueprint(inventory[i].itemID);
+			auto blueprint = Demo::ItemData::GetInstance()->GetItemBlueprint(slot.itemID);
 			if (blueprint) {
 				hoverDescription = blueprint->GetDescription();
 			}
 		}
-
 		displayIndex++;
 	}
 
-	fontSprite->End();
+	// Đặt chữ <, > vào đúng TÂM của nút
+	if (currentItemPage > 0) {
+		fontSprite->SetPosition(btnPrevPage->GetWorldX() + btnPrevPage->GetWidth() / 2.0f - 1.5f, btnPrevPage->GetWorldY());
+		fontSprite->SetText(L"<");
+		fontSprite->Draw(camera, deltaTime);
+	}
 
+	if (currentItemPage < maxItemPage) {
+		fontSprite->SetPosition(btnNextPage->GetWorldX() + btnNextPage->GetWidth() / 2.0f - 1.5f, btnNextPage->GetWorldY());
+		fontSprite->SetText(L">");
+		fontSprite->Draw(camera, deltaTime);
+	}
+
+	// Căn giữa dòng chữ Page ở dưới cùng, ngang hàng với 2 mũi tên
+	if (maxItemPage > 0) {
+		std::wstring pageText = L"Page " + std::to_wstring(currentItemPage + 1) + L"/" + std::to_wstring(maxItemPage + 1);
+		fontSprite->SetPosition(-35.0f, targetHeight / 2.0f - PADDING_Y - 9.0f);
+		fontSprite->SetText(std::move(pageText));
+		fontSprite->Draw(camera, deltaTime);
+	}
+
+	// Dời text mô tả lên SÁT MÉP TRÊN (Top-Left)
 	if (!hoverDescription.empty()) {
-		fontSprite->Begin();
-
-		float descX = -HALF_BG_W + PADDING_X;
-		float descY = HALF_BG_H - 40.0f;
+		float descX = -targetWidth / 2.0f + PADDING_X;
+		float descY = -targetHeight / 2.0f + 15.0f;
 
 		fontSprite->SetPosition(descX, descY);
 		fontSprite->SetText(std::move(hoverDescription));
 		fontSprite->Draw(camera, deltaTime);
-		fontSprite->End();
 	}
-	fontSprite->SetOutline(false);
+
+	fontSprite->End();
+	fontSprite->SetOutline(true);
 }
 
 void Demo::IBattleScene::EnemyAttackDraw(unsigned long long deltaTime)
@@ -1095,6 +1166,29 @@ void Demo::IBattleScene::Init()
 		});
 	closeItemMenuButton->SetSpriteScale(2.f, 2.f);
 
+	// KHỞI TẠO NÚT PREV/NEXT: Sửa kích thước Box va chạm thành 30x30 cho khớp với Scale
+	btnPrevPage = std::make_shared<IconButton>(transformManager, 0, 0, 30.0f, 30.0f, uiSheetTex);
+	btnPrevPage->SetSpriteRects({ {0, 0, 15, 15}, {0, 17, 15, 31}, {0, 35, 15, 47} });
+	btnPrevPage->SetSpriteScale(2.0f, 2.0f); // 15x2 = 30px
+	btnPrevPage->SetOnReleaseLeft([&](DX9GF::ITrigger* thisObj) {
+		if (currentItemPage > 0) {
+			currentItemPage--;
+			RefreshItemMenu();
+		}
+		});
+	btnPrevPage->Init(&camera);
+
+	btnNextPage = std::make_shared<IconButton>(transformManager, 0, 0, 30.0f, 30.0f, uiSheetTex);
+	btnNextPage->SetSpriteRects({ {0, 0, 15, 15}, {0, 17, 15, 31}, {0, 35, 15, 47} });
+	btnNextPage->SetSpriteScale(2.0f, 2.0f);
+	btnNextPage->SetOnReleaseLeft([&](DX9GF::ITrigger* thisObj) {
+		if (currentItemPage < maxItemPage) {
+			currentItemPage++;
+			RefreshItemMenu();
+		}
+		});
+	btnNextPage->Init(&camera);
+
 	// Init buttons
 	attackButton->Init(&camera);
 	itemsButton->Init(&camera);
@@ -1105,7 +1199,7 @@ void Demo::IBattleScene::Init()
 
 	// Init sprite
 	fontSprite = std::make_shared<DX9GF::FontSprite>(font.get());
-	fontSprite->SetColor(0xFF000000);
+	fontSprite->SetColor(0xFFFFFFFF);
 	energyIcon = std::make_shared<DX9GF::StaticSprite>(uiSheetTex.get());
 	energyIcon->SetSrcRect({
 		.left = 96,
@@ -1130,33 +1224,17 @@ void Demo::IBattleScene::Init()
 		8, 8, 8, 8
 	);
 
-	// 2. Co giãn theo màn hình:
+	// 2. Co giãn theo màn hình (TĂNG CHIỀU CAO LÊN 65% CHO RỘNG RÃI)
 	auto app = DX9GF::Application::GetInstance();
 	float screenW = (float)app->GetScreenWidth();
 	float screenH = (float)app->GetScreenHeight();
 
-	// Giả sử sếp muốn bảng này rộng bằng 80% màn hình, cao 50% màn hình
 	float targetWidth = screenW * 0.8f;
-	float targetHeight = screenH * 0.5f;
+	float targetHeight = screenH * 0.65f; // Tăng từ 0.5 lên 0.65
 
-	// Ép khung viền bung ra theo kích thước đích
 	itemMenuBackground->SetTargetSize(targetWidth, targetHeight);
-
-	// 3. Căn tâm tuyệt đối: Set Origin bằng đúng 1 nửa Target Size
 	itemMenuBackground->SetOrigin(targetWidth / 2.0f, targetHeight / 2.0f);
-
-	// Đặt vị trí ra giữa màn hình (hoặc bất kỳ tọa độ nào sếp muốn)
 	itemMenuBackground->SetPosition(0.0f, 0.0f);
-
-	//itemMenuBackground = std::make_shared<DX9GF::StaticSprite>(tempTex.get());
-	//itemMenuBackground->SetSrcRect({
-	//	.left = 312,
-	//	.top = 0,
-	//	.right = 504,
-	//	.bottom = 128 });
-	//itemMenuBackground->SetOrigin(95.5f, 63.5f);
-	//itemMenuBackground->SetScale(3.0f, 3.0f);
-
 
 	// Fetch Deck
 	const auto& deckCards = player->GetDeck();

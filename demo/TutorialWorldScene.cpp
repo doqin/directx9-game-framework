@@ -424,17 +424,17 @@ void Demo::TutorialWorldScene::RestoreSaveData(const nlohmann::json& inData)
 
 void Demo::TutorialWorldScene::GiveTestItems()
 {
-	ItemInventory& testItems = this->player->GetInventoryItems();
-	testItems.InitFixedInventory(12);
+	//ItemInventory& testItems = this->player->GetInventoryItems();
+	//testItems.InitFixedInventory(12);
 
-	testItems.AddItem(0, 5);
-	testItems.AddItem(1, 3);
-	testItems.AddItem(2, 2);
-	testItems.AddItem(3, 1);
-	testItems.AddItem(4, 1);
-	testItems.AddItem(5, 1);
-	testItems.AddItem(6, 1);
-	testItems.AddItem(7, 1);
-	testItems.AddItem(8, 1);
-	testItems.AddItem(9, 1);
+	//testItems.AddItem(0, 5);
+	//testItems.AddItem(1, 3);
+	//testItems.AddItem(2, 2);
+	//testItems.AddItem(3, 1);
+	//testItems.AddItem(4, 1);
+	//testItems.AddItem(5, 1);
+	//testItems.AddItem(6, 1);
+	//testItems.AddItem(7, 1);
+	//testItems.AddItem(8, 1);
+	//testItems.AddItem(9, 1);
 }
