@@ -17,7 +17,7 @@ namespace Demo
 		std::map<std::string, int> keybinds;
 
 		std::string configFilePath;
-
+		bool isFullscreen;
 	public:
 		static SettingsManager* GetInstance()
 		{
@@ -46,5 +46,7 @@ namespace Demo
 		void SetKeybind(std::string actionName, int keyCode);
 		int GetKeybind(std::string actionName);
 
+		void SetFullscreen(bool fs);
+		bool GetFullscreen() { return isFullscreen; }
 	};
 }

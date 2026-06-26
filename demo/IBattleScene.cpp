@@ -850,8 +850,10 @@ void Demo::IBattleScene::Init()
 	// Initialize texture sheet
 	uiSheetTex = std::make_shared<DX9GF::Texture>(game->GetGraphicsDevice());
 	uiSheetTex->LoadTexture(L"assets/ui.png");
+
 	tempTex = std::make_shared<DX9GF::Texture>(game->GetGraphicsDevice());
-	tempTex->LoadTexture(L"assets/TempTex.png");
+	tempTex->LoadTexture(L"assets/All-borders.png");
+
 	itemsTex = std::make_shared<DX9GF::Texture>(game->GetGraphicsDevice());
 	itemsTex->LoadTexture(L"assets/items.png");
 	attackBuffIcon = std::make_shared<DX9GF::StaticSprite>(uiSheetTex.get());
@@ -1122,14 +1124,39 @@ void Demo::IBattleScene::Init()
 	hourglassIcon->SetScale(2.f);
 
 
-	itemMenuBackground = std::make_shared<DX9GF::StaticSprite>(tempTex.get());
-	itemMenuBackground->SetSrcRect({
-		.left = 312,
-		.top = 0,
-		.right = 504,
-		.bottom = 128 });
-	itemMenuBackground->SetOrigin(95.5f, 63.5f);
-	itemMenuBackground->SetScale(3.0f, 3.0f);
+	itemMenuBackground = std::make_shared<DX9GF::NineSliceSprite>(
+		tempTex.get(),
+		RECT{ 0, 0, 45, 45 },
+		8, 8, 8, 8
+	);
+
+	// 2. Co giãn theo màn hình:
+	auto app = DX9GF::Application::GetInstance();
+	float screenW = (float)app->GetScreenWidth();
+	float screenH = (float)app->GetScreenHeight();
+
+	// Giả sử sếp muốn bảng này rộng bằng 80% màn hình, cao 50% màn hình
+	float targetWidth = screenW * 0.8f;
+	float targetHeight = screenH * 0.5f;
+
+	// Ép khung viền bung ra theo kích thước đích
+	itemMenuBackground->SetTargetSize(targetWidth, targetHeight);
+
+	// 3. Căn tâm tuyệt đối: Set Origin bằng đúng 1 nửa Target Size
+	itemMenuBackground->SetOrigin(targetWidth / 2.0f, targetHeight / 2.0f);
+
+	// Đặt vị trí ra giữa màn hình (hoặc bất kỳ tọa độ nào sếp muốn)
+	itemMenuBackground->SetPosition(0.0f, 0.0f);
+
+	//itemMenuBackground = std::make_shared<DX9GF::StaticSprite>(tempTex.get());
+	//itemMenuBackground->SetSrcRect({
+	//	.left = 312,
+	//	.top = 0,
+	//	.right = 504,
+	//	.bottom = 128 });
+	//itemMenuBackground->SetOrigin(95.5f, 63.5f);
+	//itemMenuBackground->SetScale(3.0f, 3.0f);
+
 
 	// Fetch Deck
 	const auto& deckCards = player->GetDeck();
@@ -1319,5 +1346,5 @@ void Demo::IBattleScene::Draw(unsigned long long deltaTime)
 		inpMan->DrawCursor(&camera, deltaTime);
 		gd->EndDraw();
 	}
-	gd->Present();
+	//gd->Present();
 }

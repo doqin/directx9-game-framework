@@ -392,7 +392,7 @@ void Demo::SecretPuzzleScene::Draw(unsigned long long deltaTime)
 		DX9GF::InputManager::GetInstance()->DrawCursor(&this->uiCamera, deltaTime);
 		gd->EndDraw();
 	}
-	gd->Present();
+	//gd->Present();
 }
 
 void Demo::SecretPuzzleScene::DrawBackground(DX9GF::GraphicsDevice* gd, unsigned long long deltaTime)

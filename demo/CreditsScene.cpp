@@ -325,6 +325,6 @@ namespace Demo
 			DX9GF::InputManager::GetInstance()->DrawCursor(&this->camera, deltaTime);
 			gd->EndDraw();
 		}
-		gd->Present();
+		//gd->Present();
 	}
 }

@@ -200,6 +200,7 @@
     <Image Include="assets\icon.ico" />
     <Image Include="assets\shardprojectile.png" />
     <Image Include="assets\minionprojectile-Sheet.png" />
+    <Image Include="assets\All-borders.png" />
   </ItemGroup>
   <ItemGroup>
     <Font Include="assets\arcade-among-2-r46pv.ttf" />

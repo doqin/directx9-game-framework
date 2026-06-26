@@ -34,5 +34,5 @@ void Demo::World1Scene::Draw(unsigned long long deltaTime)
 		player->Draw(deltaTime);
 		gd->EndDraw();
 	}
-	gd->Present();
+	//gd->Present();
 }

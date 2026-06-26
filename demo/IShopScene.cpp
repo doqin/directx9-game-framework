@@ -13,9 +13,7 @@ void Demo::IShopScene::Init()
 	transformManager = std::make_shared<DX9GF::TransformManager>();
     myFont = std::make_shared<DX9GF::Font>(game->GetGraphicsDevice(), L"StatusPlz", 24);
 	myFontSprite = std::make_shared<DX9GF::FontSprite>(myFont.get());
-	backBufferTexture = std::make_shared<DX9GF::Texture>(game->GetGraphicsDevice());
-	backBufferTexture->CaptureCurrentBackBuffer();
-	backBufferSprite = std::make_shared<DX9GF::StaticSprite>(backBufferTexture.get());
+	
 	uiSheetTex = std::make_shared<DX9GF::Texture>(game->GetGraphicsDevice()); 
     uiSheetTex->LoadTexture(L"assets/ui.png"); // load here
 	LoadItems();
@@ -112,7 +110,6 @@ void Demo::IShopScene::Update(unsigned long long deltaTime)
 void Demo::IShopScene::Draw(unsigned long long deltaTime)
 {
 	auto gd = game->GetGraphicsDevice();
-	gd->Clear();
 	auto [sw, sh] = uiCamera.GetScreenResolution();
 	float centerX = 0.0f;
 	float leftEdge = -sw / 2.0f;
@@ -120,13 +117,6 @@ void Demo::IShopScene::Draw(unsigned long long deltaTime)
 	float bottomEdge = sh / 2.0f;
 
 	if (SUCCEEDED(gd->BeginDraw())) {
-		if (backBufferSprite) {
-			backBufferSprite->Begin();
-			backBufferSprite->SetPosition(0.0f, 0.0f);
-			backBufferSprite->Draw(uiCamera, deltaTime);
-			backBufferSprite->End();
-		}
-
 		gd->SetAlphaBlending(true);
 		gd->DrawRectangle(uiCamera, 0, 0, sw, sh, 0, 1, 1, 0, 0, D3DXCOLOR(0, 0, 0, 0.65f), true);
 		gd->DrawRectangle(uiCamera, sw * 0.08f, sh * 0.14f, sw * 0.84f, sh * 0.72f, 0, 1, 1, 0, 0, D3DXCOLOR(0.12f, 0.12f, 0.16f, 0.95f), true);
@@ -187,5 +177,5 @@ void Demo::IShopScene::Draw(unsigned long long deltaTime)
 		DX9GF::InputManager::GetInstance()->DrawCursor(&cursorCam, deltaTime);
 		gd->EndDraw();
 	}
-	gd->Present();
+	//gd->Present();
 }

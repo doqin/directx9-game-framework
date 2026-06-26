@@ -206,5 +206,5 @@ void Demo::DebugScene::Draw(unsigned long long deltaTime)
 
 		gd->EndDraw();
 	}
-	gd->Present();
+	//gd->Present();
 }

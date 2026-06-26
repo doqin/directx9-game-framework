@@ -150,16 +150,62 @@ void DX9GF::InputManager::ReadMouse(unsigned long long deltaTime)
     for (int i = 0; i < 4; i++) {
         mouseBuffer[i] = diMouseState.rgbButtons[i];
     }
-    GetCursorPos(&mousePos);
-    ScreenToClient(DX9GF::Application::GetInstance()->GetHWnd(), &mousePos);
-	if (!hasMousePos) {
-		lastMousePos = mousePos;
-		relativeMousePos = { 0, 0 };
-		hasMousePos = true;
-	} else {
-		relativeMousePos = { mousePos.x - lastMousePos.x, mousePos.y - lastMousePos.y };
-		lastMousePos = mousePos;
-	}
+
+    // ==========================================
+    // BẮT ĐẦU INVERSE TRANSFORM TỌA ĐỘ CHUỘT
+    // ==========================================
+    auto app = DX9GF::Application::GetInstance();
+    HWND hwnd = app->GetHWnd();
+
+    POINT rawMousePos;
+    GetCursorPos(&rawMousePos);
+    ScreenToClient(hwnd, &rawMousePos);
+
+    // Lấy kích thước vật lý thật của cửa sổ Windows
+    RECT clientRect;
+    GetClientRect(hwnd, &clientRect);
+    float currentWidth = static_cast<float>(clientRect.right - clientRect.left);
+    float currentHeight = static_cast<float>(clientRect.bottom - clientRect.top);
+
+    // Kích thước ảo của game (ví dụ: 960x720)
+    float virtualWidth = static_cast<float>(app->GetScreenWidth());
+    float virtualHeight = static_cast<float>(app->GetScreenHeight());
+
+    // Tính tỷ lệ Scale và Offset giống hệt Letterboxing
+    float scaleX = currentWidth / virtualWidth;
+    float scaleY = currentHeight / virtualHeight;
+    float scale = (std::min)(scaleX, scaleY);
+
+    float finalW = virtualWidth * scale;
+    float finalH = virtualHeight * scale;
+
+    float offsetX = (currentWidth - finalW) / 2.0f;
+    float offsetY = (currentHeight - finalH) / 2.0f;
+
+    // Dịch ngược tọa độ: Trừ phần viền đen và chia cho tỷ lệ Scale
+    mousePos.x = static_cast<LONG>((rawMousePos.x - offsetX) / scale);
+    mousePos.y = static_cast<LONG>((rawMousePos.y - offsetY) / scale);
+
+    // CLAMP: Bức tường tàng hình chặn chuột không cho đi vào dải viền đen
+    if (mousePos.x < 0) mousePos.x = 0;
+    if (mousePos.x > static_cast<LONG>(virtualWidth)) mousePos.x = static_cast<LONG>(virtualWidth);
+    if (mousePos.y < 0) mousePos.y = 0;
+    if (mousePos.y > static_cast<LONG>(virtualHeight)) mousePos.y = static_cast<LONG>(virtualHeight);
+
+    // ==========================================
+    // KẾT THÚC INVERSE TRANSFORM
+    // ==========================================
+
+    if (!hasMousePos) {
+        lastMousePos = mousePos;
+        relativeMousePos = { 0, 0 };
+        hasMousePos = true;
+    }
+    else {
+        relativeMousePos = { mousePos.x - lastMousePos.x, mousePos.y - lastMousePos.y };
+        lastMousePos = mousePos;
+    }
+
     HRESULT result = diMouse->GetDeviceState(sizeof(diMouseState), (LPVOID)&diMouseState);
     while (result != DI_OK && (result == DIERR_INPUTLOST || result == DIERR_NOTACQUIRED)) {
         result = diMouse->Acquire();
@@ -273,12 +319,12 @@ void DX9GF::InputManager::DrawCursor(DX9GF::Camera* uiCamera, unsigned long long
     float hY = hotspotsY[currentCursorType];
 
     auto app = DX9GF::Application::GetInstance();
-    POINT mousePos;
-    GetCursorPos(&mousePos);
-    ScreenToClient(app->GetHWnd(), &mousePos);
 
-    float drawX = (float)mousePos.x - (app->GetScreenWidth() / 2.0f) - hX;
-    float drawY = (float)mousePos.y - (app->GetScreenHeight() / 2.0f) - hY;
+    // LẤY TỌA ĐỘ ĐÃ ĐƯỢC CHUYỂN ĐỔI CHUẨN XÁC TỪ READ MOUSE
+    POINT mappedMousePos = this->GetAbsoluteMousePos();
+
+    float drawX = (float)mappedMousePos.x - (app->GetScreenWidth() / 2.0f) - hX;
+    float drawY = (float)mappedMousePos.y - (app->GetScreenHeight() / 2.0f) - hY;
 
     activeSprite->SetPosition(drawX, drawY);
     activeSprite->Begin();
@@ -287,11 +333,10 @@ void DX9GF::InputManager::DrawCursor(DX9GF::Camera* uiCamera, unsigned long long
 
     //auto reset state for next frame
     if (GetAsyncKeyState(VK_LBUTTON) & 0x8000)//check hold left mouse
-
     {
         this->currentCursorType = CursorType::GRAB;
     }
-    else 
+    else
     {
         this->currentCursorType = CursorType::CURSOR;
     }

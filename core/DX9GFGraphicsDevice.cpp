@@ -1,4 +1,4 @@
-#include "pch.h"
+﻿#include "pch.h"
 #include "DX9GFGraphicsDevice.h"
 #include <vector>
 #include <algorithm>
@@ -6,6 +6,7 @@
 #include <d3dx9math.h>
 #include "DX9GFApplication.h"
 #include "DX9GFUtils.h"
+#include "DX9GFTexture.h"
 
 struct Vertex {
 	float x, y, z, rhw; // rhw is reciprocal of homogenous w
@@ -313,4 +314,20 @@ void DX9GF::GraphicsDevice::DrawEllipse(const DX9GF::Camera& camera, float x, fl
 	d3ddev->SetFVF(D3DFVF_XYZRHW | D3DFVF_DIFFUSE);
 	D3DPRIMITIVETYPE primitiveType = isFilled ? D3DPT_TRIANGLEFAN : D3DPT_LINESTRIP;
 	d3ddev->DrawPrimitiveUP(primitiveType, SAMPLES, vertices.data(), sizeof(Vertex));
+}
+HRESULT DX9GF::GraphicsDevice::SetRenderTarget(Texture* renderTarget)
+{
+	if (renderTarget == nullptr) return E_POINTER;
+	IDirect3DSurface9* surface = renderTarget->GetSurface();
+	HRESULT hr = d3ddev->SetRenderTarget(0, surface);
+
+	// COM object tự tăng Reference Count khi gọi GetSurfaceLevel, phải Release sau khi dùng
+	if (surface != nullptr) surface->Release();
+	return hr;
+}
+
+HRESULT DX9GF::GraphicsDevice::RestoreRenderTarget()
+{
+	// Trả luồng vẽ về lại màn hình thật
+	return d3ddev->SetRenderTarget(0, backbuffer);
 }

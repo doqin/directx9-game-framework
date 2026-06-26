@@ -410,7 +410,7 @@ void Demo::ThreadAlleyScene::Draw(unsigned long long deltaTime)
 		DX9GF::InputManager::GetInstance()->DrawCursor(&this->uiCamera, deltaTime);
 		gd->EndDraw();
 	}
-	gd->Present();
+	//gd->Present();
 }
 
 std::string Demo::ThreadAlleyScene::GetSaveID() const

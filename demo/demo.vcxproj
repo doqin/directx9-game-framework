@@ -399,6 +399,9 @@
     </None>
   </ItemGroup>
   <ItemGroup>
+    <Image Include="assets\All-borders.png">
+      <DeploymentContent>true</DeploymentContent>
+    </Image>
     <Image Include="assets\arrow.png">
       <DeploymentContent>true</DeploymentContent>
     </Image>

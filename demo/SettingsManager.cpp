@@ -14,6 +14,7 @@ namespace Demo
 		this->SetMusicVolume(1.0f);
 		this->SetSfxVolume(1.0f);
 		this->SetMasterVolume(1.0f);
+		this->SetFullscreen(false); // Mặc định là chơi cửa sổ
 
 		keybinds["MOVE_LEFT"] = DIK_A;
 		keybinds["MOVE_UP"] = DIK_W;
@@ -60,6 +61,9 @@ namespace Demo
 			{
 				this->SetSfxVolume(std::stof(value));
 			}
+			else if (key == "FULLSCREEN") {
+				this->SetFullscreen(std::stoi(value));
+			}
 			else 
 			{
 				this->keybinds[key] = std::stoi(value);
@@ -77,7 +81,7 @@ namespace Demo
 		file << "MASTER_VOL=" << masterVolume << "\n";
 		file << "MUSIC_VOL=" << musicVolume << "\n";
 		file << "SFX_VOL=" << sfxVolume << "\n";
-
+		file << "FULLSCREEN=" << isFullscreen << "\n";
 		for (const auto& pair : keybinds)
 		{
 			file << pair.first << "=" << pair.second << "\n";
@@ -119,5 +123,13 @@ namespace Demo
 			return it->second;
 		}
 		return 0;
+	}
+	void SettingsManager::SetFullscreen(bool fs)
+	{
+		this->isFullscreen = fs;
+		auto app = DX9GF::Application::GetInstance();
+		if (app && app->GetHWnd()) {
+			app->SetFullscreen(fs);
+		}
 	}
 }

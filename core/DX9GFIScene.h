@@ -14,6 +14,8 @@ namespace DX9GF {
 		IScene(int screenWidth, int screenHeight) : camera(screenWidth, screenHeight) {}
 		virtual ~IScene();
 		Camera& GetCamera();
+
+		virtual bool IsOverlay() const { return false; }
 		/// <summary>
 		/// Initializes the object.
 		/// </summary>

@@ -129,9 +129,9 @@ unsigned int DX9GF::Application::GetScreenHeight() const
 }
 
 void DX9GF::Application::OnResize(UINT width, UINT height)
-{
-	this->screenWidth = width;
-	this->screenHeight = height;
+{// Tuyệt đối không ghi đè Virtual Size bằng Physical Size
+	//this->screenWidth = width;
+	//this->screenHeight = height;
 }
 
 void DX9GF::Application::AttachGame(IGame* game)
@@ -211,4 +211,36 @@ ATOM DX9GF::Application::AppRegisterClass()
 	wc.hIconSm = hIcon;
 
 	return RegisterClassEx(&wc);
+}
+
+void DX9GF::Application::SetFullscreen(bool fullscreen)
+{
+	if (this->isFullscreen == fullscreen) return;
+	this->isFullscreen = fullscreen;
+
+	DWORD style = GetWindowLong(hwnd, GWL_STYLE);
+
+	if (fullscreen) {
+		// Lưu lại kích thước cửa sổ cũ trước khi phóng to
+		GetWindowPlacement(hwnd, &wpPrev);
+		MONITORINFO mi = { sizeof(mi) };
+		if (GetMonitorInfo(MonitorFromWindow(hwnd, MONITOR_DEFAULTTOPRIMARY), &mi)) {
+			// Chém bay cái viền cửa sổ
+			SetWindowLong(hwnd, GWL_STYLE, style & ~WS_OVERLAPPEDWINDOW);
+			// Ép kích thước to bằng màn hình thật
+			SetWindowPos(hwnd, HWND_TOP,
+				mi.rcMonitor.left, mi.rcMonitor.top,
+				mi.rcMonitor.right - mi.rcMonitor.left,
+				mi.rcMonitor.bottom - mi.rcMonitor.top,
+				SWP_NOOWNERZORDER | SWP_FRAMECHANGED);
+		}
+	}
+	else {
+		// Trả lại viền cửa sổ
+		SetWindowLong(hwnd, GWL_STYLE, style | WS_OVERLAPPEDWINDOW);
+		// Trả lại kích thước cũ
+		SetWindowPlacement(hwnd, &wpPrev);
+		SetWindowPos(hwnd, NULL, 0, 0, 0, 0,
+			SWP_NOMOVE | SWP_NOSIZE | SWP_NOZORDER | SWP_NOOWNERZORDER | SWP_FRAMECHANGED);
+	}
 }

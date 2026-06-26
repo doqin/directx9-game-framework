@@ -35,6 +35,7 @@ namespace Demo
         std::shared_ptr<DX9GF::Texture> uiSheetTex;
         std::vector<std::shared_ptr<Demo::IButton>> uiButtons;
         std::shared_ptr<IconButton> backButton;
+        std::shared_ptr<Demo::IconButton> btnFullscreen;
 
         bool isGoingBack = false;
 

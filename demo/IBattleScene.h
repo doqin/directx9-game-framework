@@ -86,7 +86,7 @@ namespace Demo {
 		std::shared_ptr<PopUpMessage> popUpMessage;
 		std::shared_ptr<DX9GF::StaticSprite> energyIcon;
 		std::shared_ptr<DX9GF::StaticSprite> hourglassIcon;
-		std::shared_ptr<DX9GF::StaticSprite> itemMenuBackground;
+		std::shared_ptr<DX9GF::NineSliceSprite> itemMenuBackground; //
 		std::shared_ptr<DX9GF::StaticSprite> attackBuffIcon;
 		std::shared_ptr<DX9GF::StaticSprite> defenseBuffIcon;
 		//

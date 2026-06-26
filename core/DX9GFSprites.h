@@ -66,4 +66,23 @@ namespace DX9GF {
 		void Draw(const Camera& camera, unsigned long long deltaTime) override;
 		void End() override;
 	};
+
+	class NineSliceSprite : public ISprite {
+	private:
+		Texture* texture;
+		RECT srcRect;
+		int leftMargin, topMargin, rightMargin, bottomMargin;
+		float targetWidth, targetHeight;
+	public:
+		NineSliceSprite(Texture* texture, RECT srcRect, int left, int top, int right, int bottom);
+		~NineSliceSprite();
+
+		void SetTargetSize(float width, float height);
+		float GetTargetWidth() const { return targetWidth; }
+		float GetTargetHeight() const { return targetHeight; }
+
+		void Begin() override;
+		void Draw(const Camera& camera, unsigned long long deltaTime) override;
+		void End() override;
+	};
 };

@@ -47,5 +47,5 @@ void Demo::IntroScene::Draw(unsigned long long deltaTime) {
         DX9GF::InputManager::GetInstance()->DrawCursor(&uiCamera, deltaTime);
         gd->EndDraw();
     }
-    gd->Present();
+    //gd->Present();
 }

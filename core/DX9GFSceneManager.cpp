@@ -1,4 +1,4 @@
-#include "pch.h"
+﻿#include "pch.h"
 #include "DX9GFSceneManager.h"
 #include "DX9GFIScene.h"
 #include <stdexcept>
@@ -66,7 +66,19 @@ void DX9GF::SceneManager::Draw(unsigned long long deltaTime)
 	if (scenes.empty()) {
 		throw std::runtime_error("No scene to draw!");
 	}
-	scenes[index]->Draw(deltaTime);
+
+	// 1. Dò ngược từ Scene hiện tại xuống dưới để tìm Scene Nền (Scene đặc gần nhất)
+	int startIndex = index;
+	while (startIndex > 0 && scenes[startIndex]->IsOverlay()) {
+		startIndex--;
+	}
+
+	// 2. Vẽ xếp lớp từ dưới lên trên
+	// Ví dụ: Đang ở Game (Index 0, đặc) -> Mở Shop (Index 1, Overlay)
+	// Vòng lặp sẽ vẽ Index 0 trước, rồi vẽ Index 1 đè lên.
+	for (int i = startIndex; i <= index; ++i) {
+		scenes[i]->Draw(deltaTime);
+	}
 }
 
 void DX9GF::SceneManager::OnResize(int width, int height)

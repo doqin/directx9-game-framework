@@ -106,9 +106,7 @@ namespace Demo {
 		if (isOpen) {
 			RefreshItemsUI();
 			DX9GF::AudioManager::GetInstance()->Play("open_inv");
-			backBufferTexture = std::make_shared<DX9GF::Texture>(game->GetGraphicsDevice());
-			backBufferTexture->CaptureCurrentBackBuffer();
-			backBufferSprite = std::make_shared<DX9GF::StaticSprite>(backBufferTexture.get());
+		
 			for (auto& cardId : player->GetDeck()) {
 				auto dragCard = std::dynamic_pointer_cast<IDraggable>(ICard::CreateCard(cardId, transformManager, draggableManager, game->GetGraphicsDevice(), uiCamera));
 				if (dragCard) deckContainer->AddChildProgrammatically(dragCard);
@@ -211,13 +209,6 @@ namespace Demo {
 		float leftEdge = -sw / 2.0f;
 		float topEdge = -sh / 2.0f;
 		float bottomEdge = sh / 2.0f;
-
-		if (backBufferSprite) {
-			backBufferSprite->Begin();
-			backBufferSprite->SetPosition(leftEdge, topEdge);
-			backBufferSprite->Draw(*uiCamera, deltaTime);
-			backBufferSprite->End();
-		}
 
 		gd->SetAlphaBlending(true);
 		gd->DrawRectangle(*uiCamera, leftEdge, topEdge, sw, sh, 0, 1, 1, 0, 0, D3DXCOLOR(0, 0, 0, 0.65f), true);

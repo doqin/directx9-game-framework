@@ -35,9 +35,6 @@ namespace Demo {
 		std::vector<std::shared_ptr<Demo::IButton>> uiButtons;
 		std::vector<std::shared_ptr<Demo::IconButton>> buyButtons;
 
-		std::shared_ptr<DX9GF::Texture> backBufferTexture;
-		std::shared_ptr<DX9GF::StaticSprite> backBufferSprite;
-
 		std::string statusMessage = "";
 		float messageTimer = 0.0f;
 		std::string shopTitle;
@@ -52,6 +49,7 @@ namespace Demo {
 
 		virtual void LoadItems() = 0;
 
+		bool IsOverlay() const override { return true; }
 		void Init() override;
 		void Update(unsigned long long deltaTime) override;
 		void Draw(unsigned long long deltaTime) override;

@@ -171,11 +171,11 @@ namespace Demo
 		SetVolumeRowPosition(trackSFX, trackSFXFill, btnSFXDec, btnSFXInc, startY + SPACING_Y * 2);
 
 		backButton->SetLocalPosition(-screenW / 2.0f + 32.f, -screenH / 2.0f + 32.f);
-
-		btnUp->SetLocalPosition(SLIDER_COLUMN_X, startY + SPACING_Y * 3.5f - 3.0f);
-		btnDown->SetLocalPosition(SLIDER_COLUMN_X, startY + SPACING_Y * 5.0f - 3.0f);
-		btnLeft->SetLocalPosition(SLIDER_COLUMN_X, startY + SPACING_Y * 6.5f - 3.0f);
-		btnRight->SetLocalPosition(SLIDER_COLUMN_X, startY + SPACING_Y * 8.0f - 3.0f);
+		btnFullscreen->SetLocalPosition(SLIDER_COLUMN_X, startY + SPACING_Y * 3.5f - 3.0f);
+		btnUp->SetLocalPosition(SLIDER_COLUMN_X, startY + SPACING_Y * 5.0f - 3.0f);
+		btnDown->SetLocalPosition(SLIDER_COLUMN_X, startY + SPACING_Y * 6.5f - 3.0f);
+		btnLeft->SetLocalPosition(SLIDER_COLUMN_X, startY + SPACING_Y * 8.0f - 3.0f);
+		btnRight->SetLocalPosition(SLIDER_COLUMN_X, startY + SPACING_Y * 9.5f - 3.0f);
 	}
 
 	void SettingsScene::Init()
@@ -241,6 +241,15 @@ namespace Demo
 		backButton->SetOnReleaseLeft([this](DX9GF::ITrigger*) { this->isGoingBack = true; });
 		backButton->SetSpriteScale(2.f, 2.f);
 
+		btnFullscreen = std::make_shared<Demo::IconButton>(transformManager, 0, 0, 32, 32, uiSheetTex, 3);
+		btnFullscreen->SetSpriteRects(DX9GF::Utils::CreateRectsVertical(0, 0, 16, 16, 3));
+		btnFullscreen->SetOnReleaseLeft([](DX9GF::ITrigger*) {
+			auto sm = SettingsManager::GetInstance();
+			sm->SetFullscreen(!sm->GetFullscreen()); // Đảo ngược trạng thái
+			sm->SaveSettings();
+			});
+		btnFullscreen->SetSpriteScale(2.f, 2.f);
+
 		//Use the same placeholder image for all control buttons for now.
 		btnUp = std::make_shared<Demo::IconButton>(transformManager, 0, 0, 32, 32, uiSheetTex, 3);
 		btnUp->SetSpriteRects(DX9GF::Utils::CreateRectsVertical(0, 0, 16, 16, 3));
@@ -279,7 +288,7 @@ namespace Demo
 		btnRight->SetSpriteScale(2.f, 2.f);
 
 		// Active Buttons
-		std::shared_ptr<Demo::IButton> buttons[] = { backButton, btnUp, btnDown, btnLeft,btnRight, btnMasterDec, btnMasterInc, btnMusicDec, btnMusicInc, btnSFXDec, btnSFXInc };
+		std::shared_ptr<Demo::IButton> buttons[] = { backButton,btnFullscreen, btnUp, btnDown, btnLeft,btnRight, btnMasterDec, btnMasterInc, btnMusicDec, btnMusicInc, btnSFXDec, btnSFXInc };
 		for (auto& btn : buttons)
 		{
 			if (btn)
@@ -365,10 +374,11 @@ namespace Demo
 			DrawString(L"Master Volume", LABEL_COLUMN_X, startY, 0xFFFFFFFF);
 			DrawString(L"Music Volume", LABEL_COLUMN_X, startY + SPACING_Y, 0xFFFFFFFF);
 			DrawString(L"Sfx Volume", LABEL_COLUMN_X, startY + SPACING_Y * 2, 0xFFFFFFFF);
-			DrawString(L"Move up", LABEL_COLUMN_X, startY + SPACING_Y * 3.5f, 0xFFFFFFFF);
-			DrawString(L"Move down", LABEL_COLUMN_X, startY + SPACING_Y * 5.0f, 0xFFFFFFFF);
-			DrawString(L"Move left", LABEL_COLUMN_X, startY + SPACING_Y * 6.5f, 0xFFFFFFFF);
-			DrawString(L"Move right", LABEL_COLUMN_X, startY + SPACING_Y * 8.0f, 0xFFFFFFFF);
+			DrawString(L"Fullscreen", LABEL_COLUMN_X, startY + SPACING_Y * 3.5f, 0xFFFFFFFF);
+			DrawString(L"Move up", LABEL_COLUMN_X, startY + SPACING_Y * 5.0f, 0xFFFFFFFF);
+			DrawString(L"Move down", LABEL_COLUMN_X, startY + SPACING_Y * 6.5f, 0xFFFFFFFF);
+			DrawString(L"Move left", LABEL_COLUMN_X, startY + SPACING_Y * 8.0f, 0xFFFFFFFF);
+			DrawString(L"Move right", LABEL_COLUMN_X, startY + SPACING_Y * 9.5f, 0xFFFFFFFF);
 
 			//draw tracks
 			auto sm = SettingsManager::GetInstance();
@@ -384,12 +394,12 @@ namespace Demo
 			DrawKeybindButton("MOVE_DOWN", btnDown, isListeningDown);
 			DrawKeybindButton("MOVE_LEFT", btnLeft, isListeningLeft);
 			DrawKeybindButton("MOVE_RIGHT", btnRight, isListeningRight);
-
+			DrawString(sm->GetFullscreen() ? L"ON" : L"OFF", SLIDER_COLUMN_X + 6.f, startY + SPACING_Y * 3.5f, 0xFF000000);
 			//remember to call drawcursor if want to use custom cursor
 			DX9GF::InputManager::GetInstance()->DrawCursor(&this->camera, deltaTime);
 
 			gd->EndDraw();
 		}
-		gd->Present();
+		//gd->Present();
 	}
 }
