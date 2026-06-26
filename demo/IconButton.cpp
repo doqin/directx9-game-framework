@@ -68,8 +68,22 @@ void Demo::IconButton::Draw(DX9GF::GraphicsDevice* gd, unsigned long long deltaT
 
 	this->sprite->SetSrcRect(this->buttonRects[finalIndex]);
 	this->sprite->Begin();
-	this->sprite->SetPosition(GetWorldX(), GetWorldY());
+	// CỘNG THÊM OFFSET ĐỂ ẢNH KHÔNG BỊ VĂNG KHỎI BOX VA CHẠM SAU KHI ĐỔI TÂM
+	this->sprite->SetPosition(GetWorldX() + spriteOffsetX, GetWorldY() + spriteOffsetY);
 	this->sprite->Draw(*uiCamera, deltaTime);
 	this->sprite->End();
 
+}
+
+void Demo::IconButton::SetSpriteRotation(float radians) {
+	if (this->sprite) this->sprite->SetRotation(radians);
+}
+
+void Demo::IconButton::SetSpriteOrigin(float x, float y) {
+	if (this->sprite) this->sprite->SetOrigin(x, y);
+}
+
+void Demo::IconButton::SetSpriteOffset(float dx, float dy) {
+	this->spriteOffsetX = dx;
+	this->spriteOffsetY = dy;
 }

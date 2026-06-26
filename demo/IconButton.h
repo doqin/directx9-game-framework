@@ -11,6 +11,8 @@ namespace Demo
 	private:
 		std::shared_ptr<DX9GF::StaticSprite> sprite;
 		std::vector<RECT> buttonRects;
+		float spriteOffsetX = 0.0f;
+		float spriteOffsetY = 0.0f;
 	public:
 
 		IconButton(std::shared_ptr<DX9GF::TransformManager> tm, float displayX, float displayY, int imgW, int imgH,
@@ -22,5 +24,8 @@ namespace Demo
 		void Init(DX9GF::Camera* cam) override;
 		void SetSpriteScale(float scaleX, float scaleY);
 		void Draw(DX9GF::GraphicsDevice* gd, unsigned long long deltaTime) override;
+		void SetSpriteRotation(float radians);
+		void SetSpriteOrigin(float x, float y);
+		void SetSpriteOffset(float dx, float dy);
 	};
 }

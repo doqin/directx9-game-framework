@@ -12,6 +12,7 @@ void Demo::Game::Init()
 	srand(static_cast<unsigned int>(time(NULL)));
 	IGame::Init();
 	SettingsManager::GetInstance()->LoadSettings();
+	SettingsManager::GetInstance()->ApplyResolution();
 
 	auto audio = DX9GF::AudioManager::GetInstance();
 	audio->Init();

@@ -7,7 +7,19 @@
 namespace Demo
 {
 	SettingsManager* SettingsManager::instance = nullptr;
-	SettingsManager::SettingsManager() {}
+	SettingsManager::SettingsManager() {
+		// Nhét Fullscreen vào làm Option cuối cùng (Kích thước 0x0 vì Fullscreen tự bắt resolution màn hình)
+		supportedResolutions = {
+			{ 800, 600, "800x600", false },
+			{ 960, 720, "960x720 (Native)", false },
+			{ 1024, 768, "1024x768", false },
+			{ 1280, 960, "1280x960", false },
+			{ 1440, 1080, "1440x1080", false },
+			{ 0, 0, "Fullscreen", true }
+		};
+		// Mặc định là 960x720 (index 1)
+		currentResIndex = 1;
+	}
 
 	void SettingsManager::SetDefaultSettings()
 	{
@@ -64,6 +76,9 @@ namespace Demo
 			else if (key == "FULLSCREEN") {
 				this->SetFullscreen(std::stoi(value));
 			}
+			else if (key == "RESOLUTION_INDEX") {
+				this->SetResolutionIndex(std::stoi(value));
+			}
 			else 
 			{
 				this->keybinds[key] = std::stoi(value);
@@ -82,6 +97,7 @@ namespace Demo
 		file << "MUSIC_VOL=" << musicVolume << "\n";
 		file << "SFX_VOL=" << sfxVolume << "\n";
 		file << "FULLSCREEN=" << isFullscreen << "\n";
+		file << "RESOLUTION_INDEX=" << currentResIndex << "\n";
 		for (const auto& pair : keybinds)
 		{
 			file << pair.first << "=" << pair.second << "\n";
@@ -130,6 +146,60 @@ namespace Demo
 		auto app = DX9GF::Application::GetInstance();
 		if (app && app->GetHWnd()) {
 			app->SetFullscreen(fs);
+		}
+	}
+
+	void SettingsManager::SetResolutionIndex(int index) {
+		if (index >= 0 && index < supportedResolutions.size()) {
+			currentResIndex = index;
+		}
+	}
+
+	void SettingsManager::ApplyResolution() {
+		auto app = DX9GF::Application::GetInstance();
+		if (!app || !app->GetHWnd()) return;
+
+		auto res = supportedResolutions[currentResIndex];
+
+		if (res.isFullScreenMode) {
+			// Bật Fullscreen
+			app->SetFullscreen(true);
+			this->SetFullscreen(true); // Cập nhật biến gốc của bạn nếu cần
+		}
+		else {
+			// 1. QUAN TRỌNG NHẤT: Phải tắt Fullscreen để Windows cấp lại thanh Title Bar
+			app->SetFullscreen(false);
+			this->SetFullscreen(false);
+
+			// 2. Lấy Style SAU KHI đã tắt Fullscreen
+			HWND hwnd = app->GetHWnd();
+			DWORD style = GetWindowLong(hwnd, GWL_STYLE);
+
+			// 3. Tính toán kích thước (lúc này AdjustWindowRect mới biết là có viền để cộng thêm)
+			RECT windowRect = { 0, 0, static_cast<LONG>(res.width), static_cast<LONG>(res.height) };
+			AdjustWindowRect(&windowRect, style, FALSE);
+
+			int windowWidth = windowRect.right - windowRect.left;
+			int windowHeight = windowRect.bottom - windowRect.top;
+
+			// 4. Lấy thông tin màn hình rcWork
+			MONITORINFO mi = { sizeof(mi) };
+			GetMonitorInfo(MonitorFromWindow(hwnd, MONITOR_DEFAULTTOPRIMARY), &mi);
+
+			int workWidth = mi.rcWork.right - mi.rcWork.left;
+			int workHeight = mi.rcWork.bottom - mi.rcWork.top;
+
+			// 5. Căn giữa X và neo Y an toàn
+			int posX = mi.rcWork.left + (workWidth - windowWidth) / 2;
+			int idealPosY = mi.rcWork.top + (workHeight - windowHeight) / 3;
+			int safePosY = mi.rcWork.top + 10;
+			int posY = (std::max)(idealPosY, safePosY);
+
+			// 6. Áp dụng
+			SetWindowPos(hwnd, HWND_TOP, posX, posY,
+				windowWidth,
+				windowHeight,
+				SWP_NOZORDER | SWP_NOOWNERZORDER | SWP_FRAMECHANGED);
 		}
 	}
 }

@@ -4,6 +4,13 @@
 
 namespace Demo
 {
+	struct Resolution {
+		int width;
+		int height;
+		std::string label;
+		bool isFullScreenMode; // Cờ nhận diện chế độ
+	};
+
 	class SettingsManager
 	{
 	private:
@@ -18,6 +25,9 @@ namespace Demo
 
 		std::string configFilePath;
 		bool isFullscreen;
+
+		std::vector<Resolution> supportedResolutions;
+		int currentResIndex;
 	public:
 		static SettingsManager* GetInstance()
 		{
@@ -48,5 +58,12 @@ namespace Demo
 
 		void SetFullscreen(bool fs);
 		bool GetFullscreen() { return isFullscreen; }
+
+		const std::vector<Resolution>& GetSupportedResolutions() const { return supportedResolutions; }
+		int GetCurrentResolutionIndex() const { return currentResIndex; }
+		void SetResolutionIndex(int index);
+
+		// Hàm phụ trợ để áp dụng ngay lập tức
+		void ApplyResolution();
 	};
 }

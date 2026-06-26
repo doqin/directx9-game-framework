@@ -65,9 +65,7 @@ void DX9GF::Application::Init(HINSTANCE hInstance, std::wstring appTitle, UINT s
 	AppRegisterClass();
 
     DWORD windowStyle = WS_VISIBLE | WS_OVERLAPPEDWINDOW;
-	if (!resizable) {
-		windowStyle &= ~(WS_THICKFRAME | WS_MAXIMIZEBOX);
-	}
+	windowStyle &= ~(WS_THICKFRAME | WS_MAXIMIZEBOX);
 
 	RECT windowRect = { 0, 0, static_cast<LONG>(screenWidth), static_cast<LONG>(screenHeight) };
 	AdjustWindowRect(&windowRect, windowStyle, FALSE);
@@ -236,8 +234,10 @@ void DX9GF::Application::SetFullscreen(bool fullscreen)
 		}
 	}
 	else {
-		// Trả lại viền cửa sổ
-		SetWindowLong(hwnd, GWL_STYLE, style | WS_OVERLAPPEDWINDOW);
+		// Trả lại viền cửa sổ nhưng kiên quyết không cho resize
+		DWORD windowedStyle = (style | WS_OVERLAPPEDWINDOW) & ~(WS_THICKFRAME | WS_MAXIMIZEBOX);
+		SetWindowLong(hwnd, GWL_STYLE, windowedStyle);
+
 		// Trả lại kích thước cũ
 		SetWindowPlacement(hwnd, &wpPrev);
 		SetWindowPos(hwnd, NULL, 0, 0, 0, 0,
