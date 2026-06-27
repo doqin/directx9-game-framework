@@ -1240,6 +1240,7 @@ void Demo::IBattleScene::Init()
 	mainBlockCard = std::make_shared<MainBlockCard>(transformManager, -100.f, -140.f);
 	mainBlockCard->Init(draggableManager, game->GetGraphicsDevice(), &camera);
 	mainBlockCard->SetMaxHeight(sh * 0.5f);
+	mainBlockCard->SetBattleScene(this);
 	handContainer = std::make_shared<HandContainer>(transformManager, 180, 40, -250.f, -200.f);
 	handContainer->Init(draggableManager, game->GetGraphicsDevice(), &camera, &playedPile);
 	handContainer->SetMaxHeight(sh * 0.5f);
