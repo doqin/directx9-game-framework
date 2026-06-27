@@ -1220,7 +1220,7 @@ void Demo::IBattleScene::Init()
 	float screenH = (float)app->GetScreenHeight();
 
 	float targetWidth = screenW * 0.8f;
-	float targetHeight = screenH * 0.65f
+	float targetHeight = screenH * 0.65f;
 
 	itemMenuBackground->SetTargetSize(targetWidth, targetHeight);
 	itemMenuBackground->SetOrigin(targetWidth / 2.0f, targetHeight / 2.0f);
