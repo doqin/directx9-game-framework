@@ -321,13 +321,13 @@ HRESULT DX9GF::GraphicsDevice::SetRenderTarget(Texture* renderTarget)
 	IDirect3DSurface9* surface = renderTarget->GetSurface();
 	HRESULT hr = d3ddev->SetRenderTarget(0, surface);
 
-	// COM object tự tăng Reference Count khi gọi GetSurfaceLevel, phải Release sau khi dùng
+	// COM object automatically increments its reference count when calling GetSurfaceLevel; must Release after use
 	if (surface != nullptr) surface->Release();
 	return hr;
 }
 
 HRESULT DX9GF::GraphicsDevice::RestoreRenderTarget()
 {
-	// Trả luồng vẽ về lại màn hình thật
+	// Restore the render target back to the actual screen
 	return d3ddev->SetRenderTarget(0, backbuffer);
 }

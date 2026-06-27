@@ -341,11 +341,11 @@ void DX9GF::NineSliceSprite::Draw(const Camera& camera, unsigned long long delta
 	auto matWorld = GetTransformMatrix();
 	auto matCamera = camera.GetTransformMatrix();
 
-	// Tính toán 4 mốc tọa độ cắt trên ảnh gốc
+	// Calculate the 4 clipping coordinates on the source image
 	float srcX[4] = { (float)srcRect.left, (float)srcRect.left + leftMargin, (float)srcRect.right - rightMargin, (float)srcRect.right };
 	float srcY[4] = { (float)srcRect.top, (float)srcRect.top + topMargin, (float)srcRect.bottom - bottomMargin, (float)srcRect.bottom };
 
-	// Tính toán 4 mốc tọa độ vẽ trên màn hình đích
+	// Calculate the 4 drawing coordinates on the target screen
 	float dstX[4] = { 0.0f, (float)leftMargin, targetWidth - rightMargin, targetWidth };
 	float dstY[4] = { 0.0f, (float)topMargin, targetHeight - bottomMargin, targetHeight };
 
@@ -358,7 +358,7 @@ void DX9GF::NineSliceSprite::Draw(const Camera& camera, unsigned long long delta
 			float dW = dstX[col + 1] - dstX[col];
 			float dH = dstY[row + 1] - dstY[row];
 
-			// Bỏ qua nếu mảng cắt bị vô hiệu hoặc kích thước đích bị bóp quá nhỏ
+			// Skip if the clipping array is invalid or the target size is too small
 			if (sW <= 0.0f || sH <= 0.0f || dW <= 0.0f || dH <= 0.0f) continue;
 
 			RECT pSrc = { (LONG)srcX[col], (LONG)srcY[row], (LONG)srcX[col + 1], (LONG)srcY[row + 1] };

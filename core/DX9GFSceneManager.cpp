@@ -67,15 +67,13 @@ void DX9GF::SceneManager::Draw(unsigned long long deltaTime)
 		throw std::runtime_error("No scene to draw!");
 	}
 
-	// 1. Dò ngược từ Scene hiện tại xuống dưới để tìm Scene Nền (Scene đặc gần nhất)
+	//Backtrack from the current scene to find the nearest opaque scene
 	int startIndex = index;
 	while (startIndex > 0 && scenes[startIndex]->IsOverlay()) {
 		startIndex--;
 	}
 
-	// 2. Vẽ xếp lớp từ dưới lên trên
-	// Ví dụ: Đang ở Game (Index 0, đặc) -> Mở Shop (Index 1, Overlay)
-	// Vòng lặp sẽ vẽ Index 0 trước, rồi vẽ Index 1 đè lên.
+	//Render layers from bottom to top
 	for (int i = startIndex; i <= index; ++i) {
 		scenes[i]->Draw(deltaTime);
 	}

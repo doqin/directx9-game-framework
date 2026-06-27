@@ -327,7 +327,7 @@ void Demo::IBattleScene::RemoveEnemyCardsInRemoveArea()
 
 void Demo::IBattleScene::RefreshItemMenu()
 {
-	buffItems.clear(); // Xóa sạch nút trang cũ
+	buffItems.clear();
 
 	auto& inventory = player->GetInventoryItems().GetSlots();
 
@@ -342,7 +342,6 @@ void Demo::IBattleScene::RefreshItemMenu()
 	float targetWidth = itemMenuBackground->GetTargetWidth();
 	float targetHeight = itemMenuBackground->GetTargetHeight();
 
-	// CHỪA 40PX Ở TRÊN (CHO MÔ TẢ) VÀ 50PX Ở DƯỚI (CHO PHÂN TRANG)
 	int columns = std::floor((targetWidth - PADDING_X * 2.0f) / (ITEM_W + PADDING_X));
 	int rows = std::floor((targetHeight - PADDING_Y * 2.0f - 90.0f) / (ITEM_H + PADDING_Y));
 	if (columns < 1) columns = 1;
@@ -357,10 +356,9 @@ void Demo::IBattleScene::RefreshItemMenu()
 	int startIndex = currentItemPage * itemsPerPage;
 	int endIndex = std::min(static_cast<int>(validIndices.size()), startIndex + itemsPerPage);
 
-	// Lưới căn giữa tuyệt đối
 	float totalGridWidth = (columns * ITEM_W) + ((columns - 1) * PADDING_X);
 	float startX = -totalGridWidth / 2.0f;
-	float startY = -targetHeight / 2.0f + PADDING_Y + 40.0f; // Đẩy xuống 40px tránh mô tả
+	float startY = -targetHeight / 2.0f + PADDING_Y + 40.0f;
 
 	int displayIndex = 0;
 	for (int i = startIndex; i < endIndex; i++)
@@ -408,7 +406,6 @@ void Demo::IBattleScene::RefreshItemMenu()
 		displayIndex++;
 	}
 
-	// Đặt 2 nút lật trang nằm ở dưới cùng của bảng
 	float btnY = targetHeight / 2.0f - PADDING_Y - 15.0f;
 	btnPrevPage->SetLocalPosition(-targetWidth / 2.0f + PADDING_X, btnY);
 	btnNextPage->SetLocalPosition(targetWidth / 2.0f - PADDING_X - btnNextPage->GetWidth(), btnY);
@@ -579,9 +576,8 @@ void Demo::IBattleScene::PlayerOpenItemsUpdate(unsigned long long deltaTime)
 	float targetWidth = itemMenuBackground->GetTargetWidth();
 	float targetHeight = itemMenuBackground->GetTargetHeight();
 
-	// Dời nút Close ra NGÒAI bảng và CĂN GIỮA
 	float closeX = -closeItemMenuButton->GetWidth() / 2.0f;
-	float closeY = targetHeight / 2.0f + 15.0f; // Cách mép dưới bảng 15px
+	float closeY = targetHeight / 2.0f + 15.0f;
 	closeItemMenuButton->SetLocalPosition(closeX, closeY);
 
 	if (!isTransitioning) {
@@ -738,7 +734,6 @@ void Demo::IBattleScene::PlayerOpenItemsDraw(unsigned long long deltaTime)
 	float targetWidth = itemMenuBackground->GetTargetWidth();
 	float targetHeight = itemMenuBackground->GetTargetHeight();
 
-	// ĐỒNG BỘ CÔNG THỨC VỚI REFRESH Lưới
 	int columns = std::floor((targetWidth - PADDING_X * 2.0f) / (ITEM_W + PADDING_X));
 	int rows = std::floor((targetHeight - PADDING_Y * 2.0f - 90.0f) / (ITEM_H + PADDING_Y));
 	if (columns < 1) columns = 1;
@@ -779,7 +774,6 @@ void Demo::IBattleScene::PlayerOpenItemsDraw(unsigned long long deltaTime)
 		displayIndex++;
 	}
 
-	// Đặt chữ <, > vào đúng TÂM của nút
 	if (currentItemPage > 0) {
 		fontSprite->SetPosition(btnPrevPage->GetWorldX() + btnPrevPage->GetWidth() / 2.0f - 1.5f, btnPrevPage->GetWorldY());
 		fontSprite->SetText(L"<");
@@ -792,7 +786,6 @@ void Demo::IBattleScene::PlayerOpenItemsDraw(unsigned long long deltaTime)
 		fontSprite->Draw(camera, deltaTime);
 	}
 
-	// Căn giữa dòng chữ Page ở dưới cùng, ngang hàng với 2 mũi tên
 	if (maxItemPage > 0) {
 		std::wstring pageText = L"Page " + std::to_wstring(currentItemPage + 1) + L"/" + std::to_wstring(maxItemPage + 1);
 		fontSprite->SetPosition(-35.0f, targetHeight / 2.0f - PADDING_Y - 9.0f);
@@ -800,7 +793,6 @@ void Demo::IBattleScene::PlayerOpenItemsDraw(unsigned long long deltaTime)
 		fontSprite->Draw(camera, deltaTime);
 	}
 
-	// Dời text mô tả lên SÁT MÉP TRÊN (Top-Left)
 	if (!hoverDescription.empty()) {
 		float descX = -targetWidth / 2.0f + PADDING_X;
 		float descY = -targetHeight / 2.0f + 15.0f;
@@ -1166,10 +1158,9 @@ void Demo::IBattleScene::Init()
 		});
 	closeItemMenuButton->SetSpriteScale(2.f, 2.f);
 
-	// KHỞI TẠO NÚT PREV/NEXT: Sửa kích thước Box va chạm thành 30x30 cho khớp với Scale
 	btnPrevPage = std::make_shared<IconButton>(transformManager, 0, 0, 30.0f, 30.0f, uiSheetTex);
 	btnPrevPage->SetSpriteRects({ {0, 0, 15, 15}, {0, 17, 15, 31}, {0, 35, 15, 47} });
-	btnPrevPage->SetSpriteScale(2.0f, 2.0f); // 15x2 = 30px
+	btnPrevPage->SetSpriteScale(2.0f, 2.0f);
 	btnPrevPage->SetOnReleaseLeft([&](DX9GF::ITrigger* thisObj) {
 		if (currentItemPage > 0) {
 			currentItemPage--;
@@ -1224,13 +1215,12 @@ void Demo::IBattleScene::Init()
 		8, 8, 8, 8
 	);
 
-	// 2. Co giãn theo màn hình (TĂNG CHIỀU CAO LÊN 65% CHO RỘNG RÃI)
 	auto app = DX9GF::Application::GetInstance();
 	float screenW = (float)app->GetScreenWidth();
 	float screenH = (float)app->GetScreenHeight();
 
 	float targetWidth = screenW * 0.8f;
-	float targetHeight = screenH * 0.65f; // Tăng từ 0.5 lên 0.65
+	float targetHeight = screenH * 0.65f
 
 	itemMenuBackground->SetTargetSize(targetWidth, targetHeight);
 	itemMenuBackground->SetOrigin(targetWidth / 2.0f, targetHeight / 2.0f);

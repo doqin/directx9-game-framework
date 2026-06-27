@@ -127,7 +127,7 @@ unsigned int DX9GF::Application::GetScreenHeight() const
 }
 
 void DX9GF::Application::OnResize(UINT width, UINT height)
-{// Tuyệt đối không ghi đè Virtual Size bằng Physical Size
+{
 	//this->screenWidth = width;
 	//this->screenHeight = height;
 }
@@ -219,13 +219,13 @@ void DX9GF::Application::SetFullscreen(bool fullscreen)
 	DWORD style = GetWindowLong(hwnd, GWL_STYLE);
 
 	if (fullscreen) {
-		// Lưu lại kích thước cửa sổ cũ trước khi phóng to
+		// Save the previous window dimensions before maximizing
 		GetWindowPlacement(hwnd, &wpPrev);
 		MONITORINFO mi = { sizeof(mi) };
 		if (GetMonitorInfo(MonitorFromWindow(hwnd, MONITOR_DEFAULTTOPRIMARY), &mi)) {
-			// Chém bay cái viền cửa sổ
+			// Strip away the window borders
 			SetWindowLong(hwnd, GWL_STYLE, style & ~WS_OVERLAPPEDWINDOW);
-			// Ép kích thước to bằng màn hình thật
+			// Force the window size to match the actual screen dimensions
 			SetWindowPos(hwnd, HWND_TOP,
 				mi.rcMonitor.left, mi.rcMonitor.top,
 				mi.rcMonitor.right - mi.rcMonitor.left,
@@ -234,11 +234,11 @@ void DX9GF::Application::SetFullscreen(bool fullscreen)
 		}
 	}
 	else {
-		// Trả lại viền cửa sổ nhưng kiên quyết không cho resize
+		// Restore the window borders but strictly disable resizing
 		DWORD windowedStyle = (style | WS_OVERLAPPEDWINDOW) & ~(WS_THICKFRAME | WS_MAXIMIZEBOX);
 		SetWindowLong(hwnd, GWL_STYLE, windowedStyle);
 
-		// Trả lại kích thước cũ
+		// Revert to the original size
 		SetWindowPlacement(hwnd, &wpPrev);
 		SetWindowPos(hwnd, NULL, 0, 0, 0, 0,
 			SWP_NOMOVE | SWP_NOSIZE | SWP_NOZORDER | SWP_NOOWNERZORDER | SWP_FRAMECHANGED);

@@ -48,22 +48,18 @@ void DX9GF::IGame::Draw(unsigned long long deltaTime)
 		}
 	}
 
-	// ==========================================
-	// BƯỚC 1: TRỎ LUỒNG VẼ VÀO TEXTURE ẢO
-	// ==========================================
+	// Redirect the drawing pipeline to the virtual texture
 	graphicsDevice->SetRenderTarget(renderTargetTex.get());
 
-	// ÉP VIEWPORT VỀ KÍCH THƯỚC ẢO (960x720)
+	// Force the viewport to the virtual dimensions (960x720)
 	graphicsDevice->SetViewport(0, 0, SCREEN_WIDTH, SCREEN_HEIGHT, 0.0f, 1.0f);
 
 	sceneManager->Draw(deltaTime);
 
-	// ==========================================
-	// BƯỚC 2: VẼ TEXTURE ĐÓ RA MÀN HÌNH THẬT (LETTERBOXING)
-	// ==========================================
+	// Render that texture to the physical screen (letterboxing)
 	graphicsDevice->RestoreRenderTarget();
 
-	// TRẢ VIEWPORT VỀ LẠI KÍCH THƯỚC VẬT LÝ CỦA MÀN HÌNH THẬT
+	// Restore the viewport to the physical dimensions of the actual screen
 	graphicsDevice->SetViewport(0, 0, d3dpp.BackBufferWidth, d3dpp.BackBufferHeight, 0.0f, 1.0f);
 
 	graphicsDevice->Clear(0xFF000000);
@@ -72,7 +68,7 @@ void DX9GF::IGame::Draw(unsigned long long deltaTime)
 		float currentWidth = static_cast<float>(d3dpp.BackBufferWidth);
 		float currentHeight = static_cast<float>(d3dpp.BackBufferHeight);
 
-		// Tính toán tỷ lệ duy trì khung hình gốc 4:3
+		//4:3
 		float scaleX = currentWidth / static_cast<float>(SCREEN_WIDTH);
 		float scaleY = currentHeight / static_cast<float>(SCREEN_HEIGHT);
 		float scale = (std::min)(scaleX, scaleY);
@@ -80,13 +76,10 @@ void DX9GF::IGame::Draw(unsigned long long deltaTime)
 		float finalW = SCREEN_WIDTH * scale;
 		float finalH = SCREEN_HEIGHT * scale;
 
-		// Căn giữa màn hình (Tạo viền đen)
 		float offsetX = (currentWidth - finalW) / 2.0f;
 		float offsetY = (currentHeight - finalH) / 2.0f;
 
-		// --- BÍ QUYẾT TRIỆT TIÊU ĐỘ LỆCH TÂM CỦA CAMERA ---
-		// Bằng cách set Position của camera đúng bằng một nửa màn hình, 
-		// phép tịnh tiến -Position sẽ triệt tiêu hoàn toàn phép tịnh tiến +ScreenCenter
+		// Eliminate the camera offset
 		defaultCamera.SetScreenResolution(static_cast<int>(currentWidth), static_cast<int>(currentHeight));
 		defaultCamera.SetPosition(currentWidth / 2.0f, currentHeight / 2.0f);
 
@@ -100,9 +93,7 @@ void DX9GF::IGame::Draw(unsigned long long deltaTime)
 		graphicsDevice->EndDraw();
 	}
 
-	// ==========================================
-	// BƯỚC 3: CHỐT HẠ KHUNG HÌNH (RẤT QUAN TRỌNG)
-	// ==========================================
+	// Finalize the frame
 	graphicsDevice->Present();
 }
 
@@ -111,7 +102,7 @@ void DX9GF::IGame::Init()
 	d3d = Direct3DCreate9(D3D_SDK_VERSION);
 	if (d3d == NULL) throw std::runtime_error("Error initializing Direct3D");
 
-	ZeroMemory(&d3dpp, sizeof(d3dpp)); // Xóa mọi thứ về 0 trước khi sử dụng
+	ZeroMemory(&d3dpp, sizeof(d3dpp));
 
 	d3dpp.Windowed = TRUE;
 	d3dpp.SwapEffect = D3DSWAPEFFECT_DISCARD;
@@ -125,12 +116,12 @@ void DX9GF::IGame::Init()
 	sceneManager = new SceneManager();
 	// Create Direct3D device
 	d3d->CreateDevice(
-		D3DADAPTER_DEFAULT, // Dùng card màn hình mặc định
-		D3DDEVTYPE_HAL, // Vẽ bằng phần cứng (bằng card màn hình thay vì giả lập)
-		hwnd, // Cửa sổ ứng dụng
+		D3DADAPTER_DEFAULT,
+		D3DDEVTYPE_HAL,
+		hwnd,
 		D3DCREATE_SOFTWARE_VERTEXPROCESSING,
-		&d3dpp, // Các tham số thể hiện của thiết bị
-		&graphicsDevice->GetDevice() // đối tượng dev được tạo ra
+		&d3dpp,
+		&graphicsDevice->GetDevice()
 	);
 
 	if (graphicsDevice->GetDevice() == NULL) throw std::runtime_error("Error creating Direct3D device");
@@ -138,9 +129,9 @@ void DX9GF::IGame::Init()
 	// create pointer to the back buffer
 	graphicsDevice->GetDevice()->GetBackBuffer(0, 0, D3DBACKBUFFER_TYPE_MONO, &graphicsDevice->GetBackBuffer());
 
-	// --- BỔ SUNG LETTERBOXING: KHỞI TẠO MÀN HÌNH ẢO ---
+	// Add letterboxing: initialize the virtual screen
 	renderTargetTex = std::make_shared<DX9GF::Texture>(graphicsDevice);
-	renderTargetTex->CreateRenderTarget(SCREEN_WIDTH, SCREEN_HEIGHT); // Luôn là kích thước chuẩn 960x720
+	renderTargetTex->CreateRenderTarget(SCREEN_WIDTH, SCREEN_HEIGHT);
 	renderTargetSprite = std::make_shared<DX9GF::StaticSprite>(renderTargetTex.get());
 }
 
@@ -169,7 +160,7 @@ bool DX9GF::IGame::TryResetDevice(UINT width, UINT height)
 		graphicsDevice->GetBackBuffer() = nullptr;
 	}
 
-	// --- CHỐNG CRASH: Xóa Render Target khỏi VRAM trước khi Reset ---
+	// Release the Render Target from VRAM before resetting
 	if (renderTargetTex != nullptr) {
 		renderTargetTex->ReleaseRawTexture();
 	}
@@ -186,7 +177,7 @@ bool DX9GF::IGame::TryResetDevice(UINT width, UINT height)
 	graphicsDevice->GetDevice()->GetBackBuffer(0, 0, D3DBACKBUFFER_TYPE_MONO, &graphicsDevice->GetBackBuffer());
 	graphicsDevice->SetViewport(0, 0, width, height, 0.0f, 1.0f);
 
-	// --- SAU KHI RESET THÀNH CÔNG: Phục hồi lại Render Target ---
+	// After a successful reset: Restore the Render Target
 	if (renderTargetTex != nullptr) {
 		renderTargetTex->CreateRenderTarget(SCREEN_WIDTH, SCREEN_HEIGHT);
 	}

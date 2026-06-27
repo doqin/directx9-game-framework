@@ -84,11 +84,11 @@ namespace Demo
 			bg->Draw(camera, deltaTime);
 			bg->End();
 		}
-		// Chỉ vẽ thanh fill nếu volume > 0 để tránh vỡ hình
+		//Only draw the fill bar if volume > 0 to prevent visual glitches
 		if (fill && bg && vol > 0.001f)
 		{
 			float fillWidth = SLIDER_DESIRED_WIDTH * vol;
-			fill->SetTargetSize(fillWidth, 7.0f); // Tự động co giãn 9 mảnh theo Volume
+			fill->SetTargetSize(fillWidth, 7.0f);
 
 			fill->Begin();
 			fill->Draw(camera, deltaTime);
@@ -146,7 +146,7 @@ namespace Demo
 
 		//UI Elements
 		float startY = -screenH / 2.f + 64.f;
-		float rowSpacing = SPACING_Y * 1.5f; // Định bước nhảy đồng bộ cho toàn bộ các dòng
+		float rowSpacing = SPACING_Y * 1.5f;
 
 		//LOCAL FUNCTION to set Row Slider positions to keep the code clean
 		auto SetVolumeRowPosition = [&](std::shared_ptr<DX9GF::NineSliceSprite> track, std::shared_ptr<DX9GF::NineSliceSprite> fill,
@@ -154,7 +154,7 @@ namespace Demo
 			{
 				float gap = 5.0f;
 				float btnWidth = 12.0f;
-				float trackAlignY = y + 5.0f; // Hạ độ cao thanh slide xuống một chút để khớp tâm chữ bên trái
+				float trackAlignY = y + 5.0f;
 
 				if (track)
 				{
@@ -164,7 +164,6 @@ namespace Demo
 
 				if (fill) fill->SetPosition(SLIDER_COLUMN_X, trackAlignY);
 
-				// Toán học căn tâm nút bấm theo chiều dọc của thanh slide (Slide cao 7px, nút cao 11px)
 				if (btnD) btnD->SetLocalPosition(SLIDER_COLUMN_X - btnWidth - gap, trackAlignY + (7.0f - btnD->GetHeight()) / 2.0f);
 				if (btnI) btnI->SetLocalPosition(SLIDER_COLUMN_X + SLIDER_DESIRED_WIDTH + gap, trackAlignY + (7.0f - btnI->GetHeight()) / 2.0f);
 			};
@@ -176,7 +175,7 @@ namespace Demo
 		backButton->SetLocalPosition(-screenW / 2.0f + 32.f, -screenH / 2.0f + 32.f);
 
 		float resRowY = startY + rowSpacing * 3.5f;
-		float fineTuneY = -6.0f; // Biến điều chỉnh để nâng nút lên khớp hoàn hảo với chữ
+		float fineTuneY = -6.0f;
 
 		btnResPrev->SetLocalPosition(SLIDER_COLUMN_X, resRowY + fineTuneY);
 		btnResNext->SetLocalPosition(SLIDER_COLUMN_X + 180.f, resRowY + fineTuneY);
@@ -214,7 +213,6 @@ namespace Demo
 
 		//LOCAL FUNCTION to init track and trackfill
 		auto InitTrack = [&](std::shared_ptr<DX9GF::NineSliceSprite>& track, std::shared_ptr<DX9GF::NineSliceSprite>& fill, RECT trackR, RECT fillR) {
-			// Chiều cao gốc là 7px (490 - 483). Ta chẻ viền Trái=4, Trên=2, Phải=4, Dưới=2
 			track = std::make_shared<DX9GF::NineSliceSprite>(placeholderTex.get(), trackR, 4, 2, 4, 2);
 			fill = std::make_shared<DX9GF::NineSliceSprite>(placeholderTex.get(), fillR, 4, 2, 4, 2);
 			};
@@ -251,13 +249,12 @@ namespace Demo
 		backButton->SetOnReleaseLeft([this](DX9GF::ITrigger*) { this->isGoingBack = true; });
 		backButton->SetSpriteScale(2.f, 2.f);
 
-		// Khởi tạo nút <
 		btnResPrev = std::make_shared<Demo::IconButton>(transformManager, 0, 0, 32, 32, uiSheetTex, 3);
-		btnResPrev->SetSpriteCoords(240, 96, 16, 16, 0); // Lấy frame ngang
+		btnResPrev->SetSpriteCoords(240, 96, 16, 16, 0);
 		btnResPrev->SetSpriteScale(2.f, 2.f);
-		btnResPrev->SetSpriteOrigin(8.f, 8.f); // Tâm giữa của ảnh 16x16
-		btnResPrev->SetSpriteRotation(1.5708f); // Xoay -90 độ thành mũi tên chĩa trái
-		btnResPrev->SetSpriteOffset(16.f, 16.f); // Đẩy ảnh lại vào giữa vùng va chạm 32x32
+		btnResPrev->SetSpriteOrigin(8.f, 8.f); //center of sprite
+		btnResPrev->SetSpriteRotation(1.5708f);
+		btnResPrev->SetSpriteOffset(16.f, 16.f);
 		btnResPrev->SetOnReleaseLeft([this](DX9GF::ITrigger*) {
 			auto sm = SettingsManager::GetInstance();
 			int idx = sm->GetCurrentResolutionIndex();
@@ -269,12 +266,11 @@ namespace Demo
 			});
 		btnResPrev->Init(&camera);
 
-		// Khởi tạo nút >
 		btnResNext = std::make_shared<Demo::IconButton>(transformManager, 0, 0, 32, 32, uiSheetTex, 3);
 		btnResNext->SetSpriteCoords(240, 112, 16, 16, 0);
 		btnResNext->SetSpriteScale(2.f, 2.f);
 		btnResNext->SetSpriteOrigin(8.f, 8.f);
-		btnResNext->SetSpriteRotation(1.5708f); // Xoay 90 độ thành mũi tên chĩa phải
+		btnResNext->SetSpriteRotation(1.5708f);
 		btnResNext->SetSpriteOffset(16.f, 16.f);
 		btnResNext->SetOnReleaseLeft([this](DX9GF::ITrigger*) {
 			auto sm = SettingsManager::GetInstance();
@@ -286,6 +282,7 @@ namespace Demo
 			}
 			});
 		btnResNext->Init(&camera);
+
 		//Use the same placeholder image for all control buttons for now.
 		btnUp = std::make_shared<Demo::IconButton>(transformManager, 0, 0, 32, 32, uiSheetTex, 3);
 		btnUp->SetSpriteRects(DX9GF::Utils::CreateRectsVertical(0, 0, 16, 16, 3));
@@ -408,7 +405,7 @@ namespace Demo
 			gd->SetAlphaBlending(false);
 
 			float startY = -lastScreenHeight / 2.f + 64.f;
-			float rowSpacing = SPACING_Y * 1.5f; // Đồng bộ bước nhảy hiển thị text nhãn bên trái
+			float rowSpacing = SPACING_Y * 1.5f;
 
 			//Draw label
 			DrawString(L"Master Volume", LABEL_COLUMN_X, startY, 0xFFFFFFFF);
@@ -435,25 +432,18 @@ namespace Demo
 			DrawKeybindButton("MOVE_LEFT", btnLeft, isListeningLeft);
 			DrawKeybindButton("MOVE_RIGHT", btnRight, isListeningRight);
 
-			//VẼ LOGIC HIỂN THỊ ĐỘ PHÂN GIẢI
 			int resIdx = sm->GetCurrentResolutionIndex();
 			auto resList = sm->GetSupportedResolutions();
-
-			float fineTuneY = -6.0f; // Đồng bộ biến điều chỉnh từ UpdateLayout
-			float resRowY = startY + rowSpacing * 3.5f + fineTuneY; // Cộng thẳng fineTuneY vào đây
-
-			// Chỉ gọi vẽ chữ < nếu chưa chạm đáy
+			float fineTuneY = -6.0f;
+			float resRowY = startY + rowSpacing * 3.5f + fineTuneY;
 			if (resIdx > 0)
 				btnResPrev->Draw(gd, deltaTime);
-
-			// Vẽ chữ kích thước phân giải ở giữa hai nút
+			//draw resolution text
 			std::string resStr = resList[resIdx].label;
-			fontSprite->SetPosition(SLIDER_COLUMN_X + 45.f, resRowY + 8.f); // Bây giờ resRowY đã chứa độ lệch -6.0f
+			fontSprite->SetPosition(SLIDER_COLUMN_X + 45.f, resRowY + 8.f);
 			fontSprite->SetColor(0xFFFFFFFF);
 			fontSprite->SetText(ToWString(resStr));
 			fontSprite->Begin(); fontSprite->Draw(camera, 0); fontSprite->End();
-
-			// Chỉ gọi vẽ chữ > nếu chưa chạm nóc
 			if (resIdx < resList.size() - 1)
 				btnResNext->Draw(gd, deltaTime);
 

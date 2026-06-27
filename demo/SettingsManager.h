@@ -8,7 +8,7 @@ namespace Demo
 		int width;
 		int height;
 		std::string label;
-		bool isFullScreenMode; // Cờ nhận diện chế độ
+		bool isFullScreenMode;
 	};
 
 	class SettingsManager
@@ -63,7 +63,7 @@ namespace Demo
 		int GetCurrentResolutionIndex() const { return currentResIndex; }
 		void SetResolutionIndex(int index);
 
-		// Hàm phụ trợ để áp dụng ngay lập tức
+		// Helper function to apply immediately
 		void ApplyResolution();
 	};
 }

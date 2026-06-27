@@ -12,7 +12,7 @@ namespace DX9GF {
 	class IGame
 	{
 	private:
-		LPDIRECT3D9 d3d = nullptr; // Biến "tổng" của toàn bộ thư viện Direct3D
+		LPDIRECT3D9 d3d = nullptr;
 		HWND hwnd = NULL;
 		D3DPRESENT_PARAMETERS d3dpp;
 		bool pendingDeviceReset = false;
@@ -23,7 +23,7 @@ namespace DX9GF {
 		//LETTERBOXING
 		std::shared_ptr<DX9GF::Texture> renderTargetTex;
 		std::shared_ptr<DX9GF::StaticSprite> renderTargetSprite;
-		DX9GF::Camera defaultCamera; // Camera gốc cố định ở tọa độ 0,0
+		DX9GF::Camera defaultCamera;
 	protected:
 		const UINT SCREEN_WIDTH;
 		const UINT SCREEN_HEIGHT;
@@ -34,7 +34,7 @@ namespace DX9GF {
 		IGame(HWND hwnd, const UINT screenWidth, const UINT screenHeight)
 			: hwnd(hwnd), SCREEN_WIDTH(screenWidth), SCREEN_HEIGHT(screenHeight),
 			defaultCamera(screenWidth, screenHeight) {
-		} // Khởi tạo camera ảo
+		}
 		virtual ~IGame();
 
 		HWND GetHwnd() const;

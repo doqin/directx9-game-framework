@@ -68,7 +68,7 @@ void Demo::IconButton::Draw(DX9GF::GraphicsDevice* gd, unsigned long long deltaT
 
 	this->sprite->SetSrcRect(this->buttonRects[finalIndex]);
 	this->sprite->Begin();
-	// CỘNG THÊM OFFSET ĐỂ ẢNH KHÔNG BỊ VĂNG KHỎI BOX VA CHẠM SAU KHI ĐỔI TÂM
+	//Add offset to prevent the sprite from shifting out of the collision box after changing the pivot
 	this->sprite->SetPosition(GetWorldX() + spriteOffsetX, GetWorldY() + spriteOffsetY);
 	this->sprite->Draw(*uiCamera, deltaTime);
 	this->sprite->End();

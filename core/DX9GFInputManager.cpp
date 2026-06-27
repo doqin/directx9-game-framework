@@ -151,9 +151,7 @@ void DX9GF::InputManager::ReadMouse(unsigned long long deltaTime)
         mouseBuffer[i] = diMouseState.rgbButtons[i];
     }
 
-    // ==========================================
-    // BẮT ĐẦU INVERSE TRANSFORM TỌA ĐỘ CHUỘT
-    // ==========================================
+    // BEGIN MOUSE COORDINATE INVERSE TRANSFORM
     auto app = DX9GF::Application::GetInstance();
     HWND hwnd = app->GetHWnd();
 
@@ -161,17 +159,17 @@ void DX9GF::InputManager::ReadMouse(unsigned long long deltaTime)
     GetCursorPos(&rawMousePos);
     ScreenToClient(hwnd, &rawMousePos);
 
-    // Lấy kích thước vật lý thật của cửa sổ Windows
+    // Get the actual physical size of the window
     RECT clientRect;
     GetClientRect(hwnd, &clientRect);
     float currentWidth = static_cast<float>(clientRect.right - clientRect.left);
     float currentHeight = static_cast<float>(clientRect.bottom - clientRect.top);
 
-    // Kích thước ảo của game (ví dụ: 960x720)
+    // Virtual game dimensions (e.g., 960x720)
     float virtualWidth = static_cast<float>(app->GetScreenWidth());
     float virtualHeight = static_cast<float>(app->GetScreenHeight());
 
-    // Tính tỷ lệ Scale và Offset giống hệt Letterboxing
+    // Calculate the scale and offset exactly like letterboxing
     float scaleX = currentWidth / virtualWidth;
     float scaleY = currentHeight / virtualHeight;
     float scale = (std::min)(scaleX, scaleY);
@@ -182,19 +180,17 @@ void DX9GF::InputManager::ReadMouse(unsigned long long deltaTime)
     float offsetX = (currentWidth - finalW) / 2.0f;
     float offsetY = (currentHeight - finalH) / 2.0f;
 
-    // Dịch ngược tọa độ: Trừ phần viền đen và chia cho tỷ lệ Scale
+    // Inverse transform coordinates: Subtract the black bars and divide by the scale factor
     mousePos.x = static_cast<LONG>((rawMousePos.x - offsetX) / scale);
     mousePos.y = static_cast<LONG>((rawMousePos.y - offsetY) / scale);
 
-    // CLAMP: Bức tường tàng hình chặn chuột không cho đi vào dải viền đen
+    // CLAMP: Invisible wall preventing the mouse from entering the black bars
     if (mousePos.x < 0) mousePos.x = 0;
     if (mousePos.x > static_cast<LONG>(virtualWidth)) mousePos.x = static_cast<LONG>(virtualWidth);
     if (mousePos.y < 0) mousePos.y = 0;
     if (mousePos.y > static_cast<LONG>(virtualHeight)) mousePos.y = static_cast<LONG>(virtualHeight);
 
-    // ==========================================
-    // KẾT THÚC INVERSE TRANSFORM
-    // ==========================================
+    // END INVERSE TRANSFORM
 
     if (!hasMousePos) {
         lastMousePos = mousePos;
