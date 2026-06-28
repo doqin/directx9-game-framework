@@ -36,6 +36,11 @@ namespace Demo {
 		bool isTransitioning = false;
 		bool enemyAttackStartPending = false;
 		bool isFleeing = false;
+		bool isAttackCountdownActive = false;
+		int attackCountdownNumber = 3;
+		float attackCountdownTimer = 0.f;
+		const float ATTACK_COUNTDOWN_STEP_SECONDS = 0.7f;
+		std::shared_ptr<std::vector<std::shared_ptr<IEnemy>>> countdownAttackingEnemies;
 		size_t initialEnemyCount = 0;
 		int battleGoldReward = 0;
 		bool isBattleEnding = false;
@@ -114,6 +119,9 @@ namespace Demo {
 		bool EnemyAttackUpdate(unsigned long long deltaTime);
 		void QueueEnemyLayoutTransition(State targetState);
 		void RemoveEnemyCardsInRemoveArea();
+		void StartAttackCountdown(std::shared_ptr<std::vector<std::shared_ptr<IEnemy>>> attackingEnemies);
+		bool UpdateAttackCountdown(unsigned long long deltaTime);
+		void DrawAttackCountdown(unsigned long long deltaTime);
 		// Draws
 		void PlayerStandByDraw(unsigned long long deltaTime);
 		void PlayerAttackDraw(unsigned long long deltaTime);
