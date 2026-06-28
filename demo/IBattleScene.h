@@ -87,7 +87,7 @@ namespace Demo {
 		std::shared_ptr<IconButton> btnNextPage;
 		std::shared_ptr<IconButton> btnPrevPage;
 		int currentItemPage = 0;
-		int maxItemPage = 0; // Để Draw lấy thông tin vẽ text "Page 1/2"
+		int maxItemPage = 0;
 
 		std::shared_ptr<PopUpMessage> popUpMessage;
 		std::shared_ptr<DX9GF::StaticSprite> energyIcon;
@@ -130,7 +130,8 @@ namespace Demo {
 		IBattleScene(Game* game, std::shared_ptr<Player> player, int screenWidth, int screenHeight) : IScene(screenWidth, screenHeight), game(game), player(player) {}
 		virtual void Init() override;
 		void Update(unsigned long long deltaTime) override;
-		void Draw(unsigned long long deltaTime) override;
+		void DrawWorld(unsigned long long deltaTime) override;
+		void DrawUI(unsigned long long deltaTime) override;
 		void SetCustomBackgroundDraw(std::function<void(DX9GF::GraphicsDevice*, unsigned long long)> drawFunc) { customBackgroundDraw = drawFunc; }
 		//
 		void SetOnVictoryCallback(std::function<void()> cb) { onVictoryCallback = cb; }

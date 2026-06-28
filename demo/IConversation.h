@@ -11,7 +11,8 @@ namespace Demo {
 	private:
 		std::queue<DialogueLine> dialogueQueue;
 		std::shared_ptr<DX9GF::FontSprite> fontSprite;
-		DX9GF::Camera fixedCamera; 
+		float virtualWidth;
+		float virtualHeight;
 		std::wstring displayedContent;
 		size_t currentCharIndex = 0;
 		unsigned long long timer = 0;
@@ -25,7 +26,7 @@ namespace Demo {
 
 		void Execute(unsigned long long deltaTime) override;
 
-		void Draw(DX9GF::GraphicsDevice* gd, unsigned long long deltaTime);
+		void Draw(DX9GF::GraphicsDevice* gd, DX9GF::Camera* uiCamera, unsigned long long deltaTime);
 	};
 }
 

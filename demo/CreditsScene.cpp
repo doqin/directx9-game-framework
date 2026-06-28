@@ -8,46 +8,34 @@
 
 namespace Demo
 {
-	void CreditsScene::UpdateLayout(int screenW, int screenH)
+	void CreditsScene::UpdateLayout()
 	{
-		//BACKGROUND - use aspect fill
-		//float bgImageW = (float)bgTex->GetWidth();
-		//float bgImageH = (float)bgTex->GetHeight();
+		float sw = static_cast<float>(game->GetVirtualWidth());
+		float sh = static_cast<float>(game->GetVirtualHeight());
 
-		//if (!bgSprite)
-		//{
-		//	bgSprite = std::make_shared<DX9GF::StaticSprite>(bgTex.get());
-		//	bgSprite->SetSrcRect({ 0, 0, (LONG)bgImageW, (LONG)bgImageH });
-		//}
-
-		//float bgScaleX = screenW / bgImageW;
-		//float bgScaleY = screenH / bgImageH;
-		//float bgFinalScale = std::max(bgScaleX, bgScaleY);
-
-		//bgSprite->SetScale(bgFinalScale);
-		//bgSprite->SetOrigin(bgImageW / 2.0f, bgImageH / 2.0f);
-		//bgSprite->SetPosition(0, 0);
-
-		backButton->SetLocalPosition(-screenW / 2.0f + 32.f, -screenH / 2.0f + 32.f);
-		float bottomY = screenH / 2.0f - 64.f;
+		backButton->SetLocalPosition(-sw / 2.0f + 32.f, -sh / 2.0f + 32.f);
+		float bottomY = sh / 2.0f - 64.f;
 		btnPrevPage->SetLocalPosition(-160.f - 18.f, bottomY);
 		btnNextPage->SetLocalPosition(160.f - 18.f, bottomY);
 	}
 
 	void CreditsScene::DrawBackground(unsigned long long deltaTime)
 	{
-		const D3DCOLOR polyColor = 0xFF9cdb43;
-		auto [screenWidth, screenHeight] = camera.GetScreenResolution();
+		float sw = static_cast<float>(game->GetVirtualWidth());
+		float sh = static_cast<float>(game->GetVirtualHeight());
 
-		//shared static timer variable for background processes
+		game->GetGraphicsDevice()->DrawRectangle(0.0f, 0.0f, sw, sh, 0xFF000000, true);
+
+		const D3DCOLOR polyColor = 0xFF9cdb43;
+
 		static float timeAcc = 0.0f;
 		timeAcc += static_cast<float>(deltaTime) * 0.001f;
 
 		for (int i = 0; i < 15; ++i) {
 			float size = 100.0f + (i % 3) * 50.0f;
 			float margin = size * 2.0f;
-			float bx = std::fmod((i * 123.0f) + timeAcc * 10.0f, static_cast<float>(screenWidth) + margin * 2.0f) - margin;
-			float by = std::fmod((i * 456.0f) + timeAcc * 5.0f, static_cast<float>(screenHeight) + margin * 2.0f) - margin;
+			float bx = std::fmod((i * 123.0f) + timeAcc * 10.0f, sw + margin * 2.0f) - margin;
+			float by = std::fmod((i * 456.0f) + timeAcc * 5.0f, sh + margin * 2.0f) - margin;
 			float angle = timeAcc * 0.1f + i;
 
 			float glitchSize = size + std::sinf(timeAcc * 2.0f + i) * 5.0f;
@@ -64,17 +52,17 @@ namespace Demo
 				prevX = vx;
 				prevY = vy;
 			}
-
 		}
 	}
 
 	void CreditsScene::DrawOverlay(unsigned long long deltaTime)
 	{
 		auto gd = game->GetGraphicsDevice();
-		DrawBackground(deltaTime);
+		float sw = static_cast<float>(game->GetVirtualWidth());
+		float sh = static_cast<float>(game->GetVirtualHeight());
 
 		gd->SetAlphaBlending(true);
-		gd->DrawRectangle(camera, -lastScreenWidth / 2.f, -lastScreenHeight / 2.f, lastScreenWidth, lastScreenHeight, D3DCOLOR_ARGB(200, 0, 0, 0), true);
+		gd->DrawRectangle(uiCamera, -sw / 2.f, -sh / 2.f, sw, sh, D3DCOLOR_ARGB(200, 0, 0, 0), true);
 		gd->SetAlphaBlending(false);
 	}
 
@@ -82,10 +70,12 @@ namespace Demo
 	{
 		if (creditsPages.empty() || currentPage < 0 || currentPage >= creditsPages.size()) return;
 
+		float sh = static_cast<float>(game->GetVirtualHeight());
+
 		fontSprite->Begin();
 		fontSprite->SetOutline(true, 0xFF000000, 2.f);
 
-		float currentY = -lastScreenHeight * 0.42f; //start y
+		float currentY = -sh * 0.42f; //start y
 		const auto& lines = creditsPages[currentPage];
 
 		for (size_t i = 0; i < lines.size(); i++)
@@ -110,7 +100,7 @@ namespace Demo
 			else fontSprite->SetColor(0xFFFFFFFF);
 
 			fontSprite->SetPosition(xPos, currentY);
-			fontSprite->Draw(camera, deltaTime);
+			fontSprite->Draw(uiCamera, deltaTime);
 
 			float padding = isTitle ? 32.f : 16.f;
 			currentY += textHeight + padding;
@@ -120,6 +110,8 @@ namespace Demo
 
 	void CreditsScene::DrawPagination(unsigned long long deltaTime)
 	{
+		float sh = static_cast<float>(game->GetVirtualHeight());
+
 		fontSprite->Begin();
 		fontSprite->SetScale(1.5f, 1.5f);
 		std::wstring pageText = L"Page " + std::to_wstring(currentPage + 1) + L" / " + std::to_wstring(creditsPages.size());
@@ -127,19 +119,18 @@ namespace Demo
 
 		float pWidth = fontSprite->GetWidth() * 1.5f;
 		float pHeight = fontSprite->GetHeight() * 1.5f;
-		float bottomY = lastScreenHeight / 2.0f - 48.f;
+		float bottomY = sh / 2.0f - 48.f;
 
 		fontSprite->SetPosition(-pWidth / 2.f, bottomY - pHeight / 2.f + 16.f);
-		fontSprite->Draw(camera, deltaTime);
+		fontSprite->Draw(uiCamera, deltaTime);
 		fontSprite->End();
 	}
 
 	void CreditsScene::Init()
 	{
 		transformManager = std::make_shared<DX9GF::TransformManager>();
-		auto app = DX9GF::Application::GetInstance();
-		lastScreenWidth = app->GetScreenWidth();
-		lastScreenHeight = app->GetScreenHeight();
+		lastScreenWidth = game->GetVirtualWidth();
+		lastScreenHeight = game->GetVirtualHeight();
 
 		// Load Assets
 		font = std::make_shared<DX9GF::Font>(game->GetGraphicsDevice(), L"StatusPlz", 16);
@@ -183,7 +174,7 @@ namespace Demo
 		{
 			if (btn)
 			{
-				btn->Init(&camera);
+				btn->Init(&uiCamera);
 				uiButtons.push_back(btn);
 			}
 		}
@@ -268,7 +259,7 @@ namespace Demo
 			L"",
 			L"You guys, for playing this game!"
 			});
-		UpdateLayout(lastScreenWidth, lastScreenHeight);
+		UpdateLayout();
 		transformManager->RebuildHierarchy();
 	}
 
@@ -278,27 +269,17 @@ namespace Demo
 		inpMan->ReadMouse(deltaTime);
 		inpMan->ReadKeyboard(deltaTime);
 
-		auto app = DX9GF::Application::GetInstance();
-		if (app->GetScreenWidth() != lastScreenWidth || app->GetScreenHeight() != lastScreenHeight)
-		{
-			lastScreenWidth = app->GetScreenWidth();
-			lastScreenHeight = app->GetScreenHeight();
-			UpdateLayout(lastScreenWidth, lastScreenHeight);
-		}
-
 		for (auto& button : uiButtons) button->Update(deltaTime);
 
-		//keyboard navigation for page switching
-		if (inpMan->KeyDown(DIK_UP) || inpMan->KeyDown(DIK_W) || inpMan->KeyDown(DIK_LEFT) || inpMan->KeyDown(DIK_A)) {
+		if (inpMan->KeyPress(DIK_UP) || inpMan->KeyPress(DIK_W) || inpMan->KeyPress(DIK_LEFT) || inpMan->KeyPress(DIK_A)) {
 			if (currentPage > 0) currentPage--;
 		}
-		if (inpMan->KeyDown(DIK_DOWN) || inpMan->KeyDown(DIK_S) || inpMan->KeyDown(DIK_RIGHT) || inpMan->KeyDown(DIK_D)) {
+		if (inpMan->KeyPress(DIK_DOWN) || inpMan->KeyPress(DIK_S) || inpMan->KeyPress(DIK_RIGHT) || inpMan->KeyPress(DIK_D)) {
 			if (currentPage < creditsPages.size() - 1) currentPage++;
 		}
 
 		transformManager->UpdateAll();
 		camera.Update();
-
 
 		if (this->isGoingBack)
 		{
@@ -309,10 +290,19 @@ namespace Demo
 		}
 	}
 
-	void CreditsScene::Draw(unsigned long long deltaTime)
+	void CreditsScene::DrawWorld(unsigned long long deltaTime)
 	{
 		auto gd = game->GetGraphicsDevice();
-		gd->Clear(0xFF000000);
+
+		if (SUCCEEDED(gd->BeginDraw())) {
+			DrawBackground(deltaTime);
+			gd->EndDraw();
+		}
+	}
+
+	void CreditsScene::DrawUI(unsigned long long deltaTime)
+	{
+		auto gd = game->GetGraphicsDevice();
 
 		if (SUCCEEDED(gd->BeginDraw())) {
 			DrawOverlay(deltaTime);
@@ -322,9 +312,8 @@ namespace Demo
 			DrawCreditsText(deltaTime);
 			DrawPagination(deltaTime);
 
-			DX9GF::InputManager::GetInstance()->DrawCursor(&this->camera, deltaTime);
+			DX9GF::InputManager::GetInstance()->DrawCursor(&this->uiCamera, deltaTime);
 			gd->EndDraw();
 		}
-		//gd->Present();
 	}
 }

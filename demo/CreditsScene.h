@@ -1,4 +1,4 @@
-#pragma once
+﻿#pragma once
 #include "DX9GF.h"
 #include "DX9GFExtras.h"
 #include "DX9GFIScene.h"
@@ -45,11 +45,12 @@ namespace Demo
 
 		void Init() override;
 		void Update(unsigned long long deltaTime) override;
-		void Draw(unsigned long long deltaTime) override;
+		void DrawWorld(unsigned long long deltaTime) override;
+		void DrawUI(unsigned long long deltaTime) override;
 		void DrawBackground(unsigned long long deltaTime);
 		void DrawOverlay(unsigned long long deltaTime);
 		void DrawCreditsText(unsigned long long deltaTime);
 		void DrawPagination(unsigned long long deltaTime);
-		void UpdateLayout(int width, int height);
+		void UpdateLayout();
 	};
 }

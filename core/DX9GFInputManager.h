@@ -91,10 +91,13 @@ namespace DX9GF {
 		long GetAbsoluteMouseY() const;
 		POINT GetAbsoluteMousePos() const;
 		long GetMouseScroll() const;
+		std::tuple<float, float> GetVirtualAbsoluteMousePos(const DX9GF::Camera* camera) const;
+		std::tuple<float, float> GetVirtualRelativeMousePos(const DX9GF::Camera* camera) const;
 		void AddCursor(CursorType type, DX9GF::GraphicsDevice* gd, const std::wstring& path, float scale, float hX, float hY);
 		void SwitchCursor(CursorType type);
 		void EnableCustomCursor(bool enable);
 		void DrawCursor(DX9GF::Camera* uiCamera, unsigned long long deltaTime);
 		void Dispose();
+
 	};
 }

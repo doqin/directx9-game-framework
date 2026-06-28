@@ -25,7 +25,6 @@ namespace Demo {
 		Game* game;
 		Player* player;
 
-		DX9GF::Camera uiCamera;
 		std::shared_ptr<DX9GF::TransformManager> transformManager;
 
 		std::shared_ptr<DX9GF::Font> myFont;
@@ -52,8 +51,8 @@ namespace Demo {
 		bool IsOverlay() const override { return true; }
 		void Init() override;
 		void Update(unsigned long long deltaTime) override;
-		void Draw(unsigned long long deltaTime) override;
-
+		void DrawWorld(unsigned long long deltaTime) override;
+		void DrawUI(unsigned long long deltaTime) override;
 		void ShowMessage(std::string msg);
 	};
 }

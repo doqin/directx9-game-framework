@@ -3,6 +3,7 @@
 #include <stdexcept>
 #include <DxErr.h>
 #include "DX9GFApplication.h"
+#include "DX9GF.h"
 
 DX9GF::InputManager* DX9GF::InputManager::instance = nullptr;
 
@@ -151,7 +152,6 @@ void DX9GF::InputManager::ReadMouse(unsigned long long deltaTime)
         mouseBuffer[i] = diMouseState.rgbButtons[i];
     }
 
-    // BEGIN MOUSE COORDINATE INVERSE TRANSFORM
     auto app = DX9GF::Application::GetInstance();
     HWND hwnd = app->GetHWnd();
 
@@ -159,38 +159,31 @@ void DX9GF::InputManager::ReadMouse(unsigned long long deltaTime)
     GetCursorPos(&rawMousePos);
     ScreenToClient(hwnd, &rawMousePos);
 
-    // Get the actual physical size of the window
     RECT clientRect;
     GetClientRect(hwnd, &clientRect);
     float currentWidth = static_cast<float>(clientRect.right - clientRect.left);
     float currentHeight = static_cast<float>(clientRect.bottom - clientRect.top);
 
-    // Virtual game dimensions (e.g., 960x720)
     float virtualWidth = static_cast<float>(app->GetScreenWidth());
     float virtualHeight = static_cast<float>(app->GetScreenHeight());
 
-    // Calculate the scale and offset exactly like letterboxing
     float scaleX = currentWidth / virtualWidth;
     float scaleY = currentHeight / virtualHeight;
     float scale = (std::min)(scaleX, scaleY);
 
     float finalW = virtualWidth * scale;
     float finalH = virtualHeight * scale;
-
     float offsetX = (currentWidth - finalW) / 2.0f;
     float offsetY = (currentHeight - finalH) / 2.0f;
 
-    // Inverse transform coordinates: Subtract the black bars and divide by the scale factor
-    mousePos.x = static_cast<LONG>((rawMousePos.x - offsetX) / scale);
-    mousePos.y = static_cast<LONG>((rawMousePos.y - offsetY) / scale);
+    //Mouse Clamp
+    if (rawMousePos.x < offsetX) rawMousePos.x = static_cast<LONG>(offsetX);
+    if (rawMousePos.x > offsetX + finalW) rawMousePos.x = static_cast<LONG>(offsetX + finalW);
+    if (rawMousePos.y < offsetY) rawMousePos.y = static_cast<LONG>(offsetY);
+    if (rawMousePos.y > offsetY + finalH) rawMousePos.y = static_cast<LONG>(offsetY + finalH);
 
-    // CLAMP: Invisible wall preventing the mouse from entering the black bars
-    if (mousePos.x < 0) mousePos.x = 0;
-    if (mousePos.x > static_cast<LONG>(virtualWidth)) mousePos.x = static_cast<LONG>(virtualWidth);
-    if (mousePos.y < 0) mousePos.y = 0;
-    if (mousePos.y > static_cast<LONG>(virtualHeight)) mousePos.y = static_cast<LONG>(virtualHeight);
-
-    // END INVERSE TRANSFORM
+    mousePos.x = rawMousePos.x;
+    mousePos.y = rawMousePos.y;
 
     if (!hasMousePos) {
         lastMousePos = mousePos;
@@ -207,6 +200,36 @@ void DX9GF::InputManager::ReadMouse(unsigned long long deltaTime)
         result = diMouse->Acquire();
     }
     firstMouseCheck = true;
+}
+
+void DX9GF::InputManager::DrawCursor(DX9GF::Camera* uiCamera, unsigned long long deltaTime)
+{
+    if (!isCustomCursorActive || !uiCamera || !cursorSprites.count(currentCursorType)) return;
+
+    auto activeSprite = cursorSprites[currentCursorType];
+    float hX = hotspotsX[currentCursorType];
+    float hY = hotspotsY[currentCursorType];
+
+    POINT windowMousePos = this->GetAbsoluteMousePos();
+    // Inverse transform screen coordinates to get world coordinates
+    auto [worldX, worldY] = DX9GF::Utils::WindowToWorldCoords(*uiCamera, (float)windowMousePos.x, (float)windowMousePos.y);
+
+    float drawX = worldX - hX;
+    float drawY = worldY - hY;
+
+    activeSprite->SetPosition(drawX, drawY);
+    activeSprite->Begin();
+    activeSprite->Draw(*uiCamera, deltaTime);
+    activeSprite->End();
+
+    if (GetAsyncKeyState(VK_LBUTTON) & 0x8000)
+    {
+        this->currentCursorType = CursorType::GRAB;
+    }
+    else
+    {
+        this->currentCursorType = CursorType::CURSOR;
+    }
 }
 
 bool DX9GF::InputManager::MousePress(MouseButton button)
@@ -306,38 +329,6 @@ void DX9GF::InputManager::SwitchCursor(CursorType type)
     }
 }
 
-void DX9GF::InputManager::DrawCursor(DX9GF::Camera* uiCamera, unsigned long long deltaTime)
-{
-    if (!isCustomCursorActive || !uiCamera || !cursorSprites.count(currentCursorType)) return;
-
-    auto activeSprite = cursorSprites[currentCursorType];
-    float hX = hotspotsX[currentCursorType];
-    float hY = hotspotsY[currentCursorType];
-
-    auto app = DX9GF::Application::GetInstance();
-
-    // LẤY TỌA ĐỘ ĐÃ ĐƯỢC CHUYỂN ĐỔI CHUẨN XÁC TỪ READ MOUSE
-    POINT mappedMousePos = this->GetAbsoluteMousePos();
-
-    float drawX = (float)mappedMousePos.x - (app->GetScreenWidth() / 2.0f) - hX;
-    float drawY = (float)mappedMousePos.y - (app->GetScreenHeight() / 2.0f) - hY;
-
-    activeSprite->SetPosition(drawX, drawY);
-    activeSprite->Begin();
-    activeSprite->Draw(*uiCamera, deltaTime);
-    activeSprite->End();
-
-    //auto reset state for next frame
-    if (GetAsyncKeyState(VK_LBUTTON) & 0x8000)//check hold left mouse
-    {
-        this->currentCursorType = CursorType::GRAB;
-    }
-    else
-    {
-        this->currentCursorType = CursorType::CURSOR;
-    }
-}
-
 void DX9GF::InputManager::Dispose()
 {
     if (diKeyboard != nullptr) {
@@ -354,4 +345,71 @@ void DX9GF::InputManager::Dispose()
         dinput->Release();
         dinput = nullptr;
     }
+}
+
+std::tuple<float, float> DX9GF::InputManager::GetVirtualAbsoluteMousePos(const DX9GF::Camera* camera) const
+{
+    float mouseX = static_cast<float>(this->GetAbsoluteMouseX());
+    float mouseY = static_cast<float>(this->GetAbsoluteMouseY());
+
+    if (!camera) return { mouseX, mouseY };
+
+    auto app = DX9GF::Application::GetInstance();
+    float virtualW = static_cast<float>(app->GetScreenWidth());
+    float virtualH = static_cast<float>(app->GetScreenHeight());
+    auto [camW, camH] = camera->GetScreenResolution();
+
+    if (camW == virtualW && camH == virtualH) {
+        HWND hwnd = app->GetHWnd();
+        RECT clientRect;
+        GetClientRect(hwnd, &clientRect);
+        float currentWidth = static_cast<float>(clientRect.right - clientRect.left);
+        float currentHeight = static_cast<float>(clientRect.bottom - clientRect.top);
+
+        if (currentWidth > 0.0f && currentHeight > 0.0f) {
+            float scaleX = currentWidth / virtualW;
+            float scaleY = currentHeight / virtualH;
+            float scale = (std::min)(scaleX, scaleY);
+
+            float finalW = virtualW * scale;
+            float finalH = virtualH * scale;
+            float offsetX = (currentWidth - finalW) / 2.0f;
+            float offsetY = (currentHeight - finalH) / 2.0f;
+
+            mouseX = (mouseX - offsetX) / scale;
+            mouseY = (mouseY - offsetY) / scale;
+        }
+    }
+    return { mouseX, mouseY };
+}
+
+std::tuple<float, float> DX9GF::InputManager::GetVirtualRelativeMousePos(const DX9GF::Camera* camera) const
+{
+    float dX = static_cast<float>(this->GetRelativeMouseX());
+    float dY = static_cast<float>(this->GetRelativeMouseY());
+
+    if (!camera) return { dX, dY };
+
+    auto app = DX9GF::Application::GetInstance();
+    float virtualW = static_cast<float>(app->GetScreenWidth());
+    float virtualH = static_cast<float>(app->GetScreenHeight());
+    auto [camW, camH] = camera->GetScreenResolution();
+
+    if (camW == virtualW && camH == virtualH) {
+        HWND hwnd = app->GetHWnd();
+        RECT clientRect;
+        GetClientRect(hwnd, &clientRect);
+        float currentWidth = static_cast<float>(clientRect.right - clientRect.left);
+        float currentHeight = static_cast<float>(clientRect.bottom - clientRect.top);
+
+        if (currentWidth > 0.0f && currentHeight > 0.0f) {
+            float scaleX = currentWidth / virtualW;
+            float scaleY = currentHeight / virtualH;
+            float scale = (std::min)(scaleX, scaleY);
+
+            dX /= scale;
+            dY /= scale;
+        }
+    }
+    return { dX, dY };
 }

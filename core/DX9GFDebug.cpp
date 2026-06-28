@@ -46,7 +46,6 @@ void DX9GF::Debug::DrawAxis(const Camera& camera, int range, int step, D3DCOLOR 
 			coordinateCache[i] = std::to_wstring(i);
 		}
 
-		// Vẽ nhãn trên trục X
 		debugSprite->SetPosition((float)i, 0.0f);
 		debugSprite->SetText(coordinateCache[i].c_str());
 		debugSprite->Draw(camera, color);
@@ -152,7 +151,6 @@ void DX9GF::Debug::DrawAxis(const Camera& camera, int range, int step, D3DCOLOR 
 	//		coordinateCache[i] = std::to_wstring(i);
 	//	}
 
-	//	// Vẽ nhãn trên trục X
 	//	debugSprite->SetPosition((float)i, 0.0f);
 	//	debugSprite->SetText(coordinateCache[i].c_str());
 	//	debugSprite->Draw(camera, color);

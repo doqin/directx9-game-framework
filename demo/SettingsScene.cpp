@@ -40,14 +40,17 @@ namespace Demo
 		fontSprite->SetColor(color);
 		fontSprite->SetPosition(x, y);
 		fontSprite->SetText(std::move(text));
-		fontSprite->Draw(camera, 0); // deltaTime is not really used for anything :P
+		fontSprite->Draw(uiCamera, 0);
 		fontSprite->End();
 	}
 
 	void SettingsScene::DrawBackground(unsigned long long deltaTime)
 	{
-		const D3DCOLOR polyColor = 0xFF9cdb43;
 		auto [screenWidth, screenHeight] = camera.GetScreenResolution();
+
+		game->GetGraphicsDevice()->DrawRectangle(0.0f, 0.0f, static_cast<float>(screenWidth), static_cast<float>(screenHeight), 0xFF000000, true);
+
+		const D3DCOLOR polyColor = 0xFF9cdb43;
 
 		static float timeAcc = 0.0f;
 		timeAcc += static_cast<float>(deltaTime) * 0.001f;
@@ -81,7 +84,7 @@ namespace Demo
 		if (bg)
 		{
 			bg->Begin();
-			bg->Draw(camera, deltaTime);
+			bg->Draw(uiCamera, deltaTime);
 			bg->End();
 		}
 		//Only draw the fill bar if volume > 0 to prevent visual glitches
@@ -91,7 +94,7 @@ namespace Demo
 			fill->SetTargetSize(fillWidth, 7.0f);
 
 			fill->Begin();
-			fill->Draw(camera, deltaTime);
+			fill->Draw(uiCamera, deltaTime);
 			fill->End();
 		}
 	}
@@ -116,7 +119,7 @@ namespace Demo
 		fontSprite->SetPosition(x, y);
 		fontSprite->SetColor(color);
 
-		fontSprite->Draw(camera, 0);
+		fontSprite->Draw(uiCamera, 0);
 		fontSprite->End();
 	}
 
@@ -189,9 +192,9 @@ namespace Demo
 	void SettingsScene::Init()
 	{
 		transformManager = std::make_shared<DX9GF::TransformManager>();
-		auto app = DX9GF::Application::GetInstance();
-		lastScreenWidth = app->GetScreenWidth();
-		lastScreenHeight = app->GetScreenHeight();
+		auto [camW, camH] = camera.GetScreenResolution();
+		lastScreenWidth = camW;
+		lastScreenHeight = camH;
 
 		//Load assets
 		font = std::make_shared<DX9GF::Font>(game->GetGraphicsDevice(), L"StatusPlz", 16);
@@ -264,7 +267,7 @@ namespace Demo
 				sm->ApplyResolution();
 			}
 			});
-		btnResPrev->Init(&camera);
+		btnResPrev->Init(&uiCamera);
 
 		btnResNext = std::make_shared<Demo::IconButton>(transformManager, 0, 0, 32, 32, uiSheetTex, 3);
 		btnResNext->SetSpriteCoords(240, 112, 16, 16, 0);
@@ -281,7 +284,7 @@ namespace Demo
 				sm->ApplyResolution();
 			}
 			});
-		btnResNext->Init(&camera);
+		btnResNext->Init(&uiCamera);
 
 		//Use the same placeholder image for all control buttons for now.
 		btnUp = std::make_shared<Demo::IconButton>(transformManager, 0, 0, 32, 32, uiSheetTex, 3);
@@ -326,7 +329,7 @@ namespace Demo
 		{
 			if (btn)
 			{
-				btn->Init(&camera);
+				btn->Init(&uiCamera);
 				uiButtons.push_back(btn);
 			}
 		}
@@ -340,14 +343,6 @@ namespace Demo
 		auto inpMan = DX9GF::InputManager::GetInstance();
 		inpMan->ReadMouse(deltaTime);
 		inpMan->ReadKeyboard(deltaTime);
-
-		auto app = DX9GF::Application::GetInstance();
-		if (app->GetScreenWidth() != lastScreenWidth || app->GetScreenHeight() != lastScreenHeight)
-		{
-			lastScreenWidth = app->GetScreenWidth();
-			lastScreenHeight = app->GetScreenHeight();
-			UpdateLayout(lastScreenWidth, lastScreenHeight);
-		}
 
 		for (auto& button : uiButtons) button->Update(deltaTime);
 		int resIdx = SettingsManager::GetInstance()->GetCurrentResolutionIndex();
@@ -393,15 +388,22 @@ namespace Demo
 		}
 	}
 
-	void SettingsScene::Draw(unsigned long long deltaTime)
+	void SettingsScene::DrawWorld(unsigned long long deltaTime)
 	{
 		auto gd = game->GetGraphicsDevice();
-		gd->Clear(0xFF000000);
 		if (SUCCEEDED(gd->BeginDraw())) {
 			DrawBackground(deltaTime);
+			gd->EndDraw();
+		}
+	}
+
+	void SettingsScene::DrawUI(unsigned long long deltaTime)
+	{
+		auto gd = game->GetGraphicsDevice();
+		if (SUCCEEDED(gd->BeginDraw())) {
 
 			gd->SetAlphaBlending(true);
-			gd->DrawRectangle(camera, -lastScreenWidth / 2.f, -lastScreenHeight / 2.f, lastScreenWidth, lastScreenHeight, D3DCOLOR_ARGB(200, 0, 0, 0), true);
+			gd->DrawRectangle(uiCamera, -lastScreenWidth / 2.f, -lastScreenHeight / 2.f, lastScreenWidth, lastScreenHeight, D3DCOLOR_ARGB(200, 0, 0, 0), true);
 			gd->SetAlphaBlending(false);
 
 			float startY = -lastScreenHeight / 2.f + 64.f;
@@ -443,13 +445,12 @@ namespace Demo
 			fontSprite->SetPosition(SLIDER_COLUMN_X + 45.f, resRowY + 8.f);
 			fontSprite->SetColor(0xFFFFFFFF);
 			fontSprite->SetText(ToWString(resStr));
-			fontSprite->Begin(); fontSprite->Draw(camera, 0); fontSprite->End();
+			fontSprite->Begin(); fontSprite->Draw(uiCamera, 0); fontSprite->End();
 			if (resIdx < resList.size() - 1)
 				btnResNext->Draw(gd, deltaTime);
-
-
-			DX9GF::InputManager::GetInstance()->DrawCursor(&this->camera, deltaTime);
+			DX9GF::InputManager::GetInstance()->DrawCursor(&this->uiCamera, deltaTime);
 			gd->EndDraw();
 		}
 	}
+
 }

@@ -1,11 +1,10 @@
-#include "pch.h"
+﻿#include "pch.h"
 #include "IShopScene.h"
 #include "IconButton.h"
 
 Demo::IShopScene::IShopScene(Game* game, Player* player, int sw, int sh, std::string title)
-	: IScene(sw, sh), game(game), player(player), uiCamera(sw, sh), shopTitle(title)
+	: IScene(sw, sh), game(game), player(player), shopTitle(title)
 {
-	uiCamera.SetPosition(sw / 2.0f, sh / 2.0f);
 }
 
 void Demo::IShopScene::Init()
@@ -25,55 +24,60 @@ void Demo::IShopScene::Init()
 
 void Demo::IShopScene::BuildUI()
 {
-	auto [sw, sh] = uiCamera.GetScreenResolution();
+	float sw = static_cast<float>(game->GetVirtualWidth());
+	float sh = static_cast<float>(game->GetVirtualHeight());
+
+	float leftEdge = -sw / 2.0f;
+	float topEdge = -sh / 2.0f;
+
 	float leftPadding = sw * 0.12f;
 	float rightPadding = sw * 0.12f;
-	float listStartY = sh * 0.28f;
+	float listStartY = topEdge + (sh * 0.28f);
 	float rowHeight = 70.0f;
-	float buyButtonW = 64.0f; 
-	float buyButtonX = sw - rightPadding - buyButtonW;
+	float buyButtonW = 64.0f;
+	float buyButtonX = leftEdge + sw - rightPadding - buyButtonW; 
 
 	for (size_t i = 0; i < itemsForSale.size(); ++i) {
 		auto item = itemsForSale[i];
 
 		auto buyBtn = std::make_shared<Demo::IconButton>(
 			transformManager,
-            buyButtonX, listStartY + (i * rowHeight), 64, 64,
+			buyButtonX, listStartY + (i * rowHeight), 64, 64,
 			uiSheetTex, 3
 		);
-        buyBtn->SetSpriteCoords(0, 240, 32, 32, 0, false);
+		buyBtn->SetSpriteCoords(0, 240, 32, 32, 0, false);
 		buyBtn->SetSpriteScale(2, 2);
-        buyBtn->SetOnReleaseLeft([this, item](DX9GF::ITrigger* t) {
-            if (this->player->GetGold() >= item.cost) {
-                this->player->AddGold(-item.cost);
+		buyBtn->SetOnReleaseLeft([this, item](DX9GF::ITrigger* t) {
+			if (this->player->GetGold() >= item.cost) {
+				this->player->AddGold(-item.cost);
 
-                if (item.onBuyAction) {
-                    item.onBuyAction();
-                }
+				if (item.onBuyAction) {
+					item.onBuyAction();
+				}
 
 				DX9GF::AudioManager::GetInstance()->Play("shop_buy", false, 0.8f);
-                this->ShowMessage("Bought " + item.name + "!");
-            }
-            else {
+				this->ShowMessage("Bought " + item.name + "!");
+			}
+			else {
 				DX9GF::AudioManager::GetInstance()->Play("error", false, 0.3f);
-                this->ShowMessage("Not enough gold!");
-            }
-        });
+				this->ShowMessage("Not enough gold!");
+			}
+			});
 		buyBtn->Init(&uiCamera);
-        uiButtons.push_back(buyBtn);
+		uiButtons.push_back(buyBtn);
 		buyButtons.push_back(buyBtn);
 	}
 
 	auto leaveBtn = std::make_shared<Demo::IconButton>(
 		transformManager,
-        leftPadding, sh * 0.15f, 96, 64,
+		leftEdge + leftPadding, topEdge + (sh * 0.15f), 96, 64,
 		uiSheetTex, 3
 	);
-    leaveBtn->SetSpriteCoords(144, 240, 48, 32, 0, false);
-    leaveBtn->SetSpriteScale(2, 2);
-    leaveBtn->SetOnReleaseLeft([this](DX9GF::ITrigger* t) {
-        this->shouldLeave = true;
-    });
+	leaveBtn->SetSpriteCoords(144, 240, 48, 32, 0, false);
+	leaveBtn->SetSpriteScale(2, 2);
+	leaveBtn->SetOnReleaseLeft([this](DX9GF::ITrigger* t) {
+		this->shouldLeave = true;
+		});
 	leaveBtn->Init(&uiCamera);
 	uiButtons.push_back(leaveBtn);
 }
@@ -107,19 +111,25 @@ void Demo::IShopScene::Update(unsigned long long deltaTime)
 	}
 }
 
-void Demo::IShopScene::Draw(unsigned long long deltaTime)
+void Demo::IShopScene::DrawWorld(unsigned long long deltaTime)
+{
+}
+
+void Demo::IShopScene::DrawUI(unsigned long long deltaTime)
 {
 	auto gd = game->GetGraphicsDevice();
-	auto [sw, sh] = uiCamera.GetScreenResolution();
-	float centerX = 0.0f;
+	float sw = static_cast<float>(game->GetVirtualWidth());
+	float sh = static_cast<float>(game->GetVirtualHeight());
 	float leftEdge = -sw / 2.0f;
 	float topEdge = -sh / 2.0f;
-	float bottomEdge = sh / 2.0f;
 
 	if (SUCCEEDED(gd->BeginDraw())) {
 		gd->SetAlphaBlending(true);
-		gd->DrawRectangle(uiCamera, 0, 0, sw, sh, 0, 1, 1, 0, 0, D3DXCOLOR(0, 0, 0, 0.65f), true);
-		gd->DrawRectangle(uiCamera, sw * 0.08f, sh * 0.14f, sw * 0.84f, sh * 0.72f, 0, 1, 1, 0, 0, D3DXCOLOR(0.12f, 0.12f, 0.16f, 0.95f), true);
+
+		gd->DrawRectangle(uiCamera, leftEdge, topEdge, sw, sh, D3DCOLOR_ARGB(165, 0, 0, 0), true);
+
+		gd->DrawRectangle(uiCamera, leftEdge + sw * 0.08f, topEdge + sh * 0.14f, sw * 0.84f, sh * 0.72f, D3DCOLOR_ARGB(242, 30, 30, 40), true);
+
 		gd->SetAlphaBlending(false);
 
 		for (auto& btn : uiButtons) {
@@ -128,28 +138,30 @@ void Demo::IShopScene::Draw(unsigned long long deltaTime)
 
 		if (myFontSprite) {
 			myFontSprite->Begin();
-			myFontSprite->SetPosition(sw - 170.0f, sh * 0.15f);
+
+			myFontSprite->SetPosition(leftEdge + sw - 170.0f, topEdge + sh * 0.15f);
 			myFontSprite->SetColor(0xFFFFD700);
 			myFontSprite->SetScale(1.5f, 1.5f);
-            myFontSprite->SetText(std::to_wstring(player->GetGold()) + L"G");
+			myFontSprite->SetText(std::to_wstring(player->GetGold()) + L"G");
 			myFontSprite->Draw(uiCamera, deltaTime);
 			myFontSprite->SetScale(1.0f, 1.0f);
 
 			myFontSprite->SetColor(0xFFFFFFFF);
 			myFontSprite->SetText(std::wstring(shopTitle.begin(), shopTitle.end()));
 			auto width = myFontSprite->GetWidth();
-			myFontSprite->SetPosition(sw * 0.5f - width * 0.5f, sh * 0.15f);
+			myFontSprite->SetPosition(leftEdge + sw * 0.5f - width * 0.5f, topEdge + sh * 0.15f);
 			myFontSprite->Draw(uiCamera, deltaTime);
 
-          myFontSprite->SetPosition(sw * 0.5f - 180.0f, sh * 0.82f);
+			// Status Message
+			myFontSprite->SetPosition(leftEdge + sw * 0.5f - 180.0f, topEdge + sh * 0.82f);
 			myFontSprite->SetColor(0xFF00FFFF);
 			myFontSprite->SetText(std::wstring(statusMessage.begin(), statusMessage.end()));
 			myFontSprite->Draw(uiCamera, deltaTime);
 
 			std::wstring hoverDescription;
-			float startY = sh * 0.29f;
+			float startY = topEdge + sh * 0.29f;
 			for (size_t i = 0; i < itemsForSale.size(); ++i) {
-				myFontSprite->SetPosition(sw * 0.14f, startY + (i * 70.0f));
+				myFontSprite->SetPosition(leftEdge + sw * 0.14f, startY + (i * 70.0f));
 				myFontSprite->SetColor(0xFFFFFFFF);
 
 				std::string itemText = itemsForSale[i].name + "  " + std::to_string(itemsForSale[i].cost) + "G";
@@ -164,18 +176,18 @@ void Demo::IShopScene::Draw(unsigned long long deltaTime)
 				}
 			}
 
+			// Hover Text
 			if (!hoverDescription.empty()) {
-				myFontSprite->SetPosition(sw * 0.08f + 32, sh * 0.78f);
+				myFontSprite->SetPosition(leftEdge + sw * 0.08f + 32, topEdge + sh * 0.78f);
 				myFontSprite->SetColor(0xFFFFFFFF);
-                myFontSprite->SetText(std::move(hoverDescription));
+				myFontSprite->SetText(std::move(hoverDescription));
 				myFontSprite->Draw(uiCamera, deltaTime);
 			}
 
 			myFontSprite->End();
 		}
-		DX9GF::Camera cursorCam(sw, sh);
-		DX9GF::InputManager::GetInstance()->DrawCursor(&cursorCam, deltaTime);
+
+		DX9GF::InputManager::GetInstance()->DrawCursor(&uiCamera, deltaTime);
 		gd->EndDraw();
 	}
-	//gd->Present();
 }

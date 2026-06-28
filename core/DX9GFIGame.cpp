@@ -1,6 +1,7 @@
-#include "pch.h"
+﻿#include "pch.h"
 #include "DX9GFIGame.h"
 #include "DX9GFSceneManager.h"
+#include "DX9GFIScene.h"
 #include "DX9GFGraphicsDevice.h"
 #include "DX9GFTexture.h"
 #include "DX9GFSprites.h"
@@ -48,18 +49,16 @@ void DX9GF::IGame::Draw(unsigned long long deltaTime)
 		}
 	}
 
-	// Redirect the drawing pipeline to the virtual texture
+	//RENDER INTO VIRTUAL TEXTURE (WORLD)
 	graphicsDevice->SetRenderTarget(renderTargetTex.get());
-
-	// Force the viewport to the virtual dimensions (960x720)
 	graphicsDevice->SetViewport(0, 0, SCREEN_WIDTH, SCREEN_HEIGHT, 0.0f, 1.0f);
 
-	sceneManager->Draw(deltaTime);
+	graphicsDevice->Clear(0xFF000000);
 
-	// Render that texture to the physical screen (letterboxing)
+	sceneManager->DrawWorld(deltaTime);
+
+	// Render to actual screen and draw UI
 	graphicsDevice->RestoreRenderTarget();
-
-	// Restore the viewport to the physical dimensions of the actual screen
 	graphicsDevice->SetViewport(0, 0, d3dpp.BackBufferWidth, d3dpp.BackBufferHeight, 0.0f, 1.0f);
 
 	graphicsDevice->Clear(0xFF000000);
@@ -68,18 +67,22 @@ void DX9GF::IGame::Draw(unsigned long long deltaTime)
 		float currentWidth = static_cast<float>(d3dpp.BackBufferWidth);
 		float currentHeight = static_cast<float>(d3dpp.BackBufferHeight);
 
-		//4:3
 		float scaleX = currentWidth / static_cast<float>(SCREEN_WIDTH);
 		float scaleY = currentHeight / static_cast<float>(SCREEN_HEIGHT);
 		float scale = (std::min)(scaleX, scaleY);
 
 		float finalW = SCREEN_WIDTH * scale;
 		float finalH = SCREEN_HEIGHT * scale;
-
 		float offsetX = (currentWidth - finalW) / 2.0f;
 		float offsetY = (currentHeight - finalH) / 2.0f;
 
-		// Eliminate the camera offset
+		auto currentScene = sceneManager->GetCurrentScene();
+		if (currentScene) {
+			currentScene->GetUICamera().SetScreenResolution(static_cast<int>(currentWidth), static_cast<int>(currentHeight));
+			currentScene->GetUICamera().SetZoom(scale);
+			currentScene->GetUICamera().SetPosition(0.0f, 0.0f);
+		}
+
 		defaultCamera.SetScreenResolution(static_cast<int>(currentWidth), static_cast<int>(currentHeight));
 		defaultCamera.SetPosition(currentWidth / 2.0f, currentHeight / 2.0f);
 
@@ -93,7 +96,8 @@ void DX9GF::IGame::Draw(unsigned long long deltaTime)
 		graphicsDevice->EndDraw();
 	}
 
-	// Finalize the frame
+	sceneManager->DrawUI(deltaTime);
+
 	graphicsDevice->Present();
 }
 

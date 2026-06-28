@@ -20,7 +20,6 @@ namespace Demo {
 		bool isGamePaused = false;
 		bool isTransitioning = false;
 		Game* game;
-		DX9GF::Camera uiCamera;
 		std::shared_ptr<DX9GF::ColliderManager> colliderManager;
 		std::shared_ptr<DX9GF::TransformManager> transformManager;
 		std::shared_ptr<Demo::DraggableManager> draggableManager;
@@ -45,11 +44,13 @@ namespace Demo {
 
 		std::vector<std::shared_ptr<TreasureChestNPC>> treasureChests;
 	public:
-		TutorialWorldScene(Game* game, std::shared_ptr<DX9GF::SaveManager> sm, UINT sw, UINT sh) : IScene(sw, sh), game(game), saveManager(sm), uiCamera(sw, sh) {}
+		TutorialWorldScene(Game* game, std::shared_ptr<DX9GF::SaveManager> sm, UINT sw, UINT sh)
+			: IScene(sw, sh), game(game), saveManager(sm) {
+		}
 		void Init() override;
 		void Update(unsigned long long deltaTime) override;
-		void Draw(unsigned long long deltaTime) override;
-
+		void DrawWorld(unsigned long long deltaTime) override;
+		void DrawUI(unsigned long long deltaTime) override;
 		void DrawBackground(DX9GF::GraphicsDevice* gd, unsigned long long deltaTime);
 
 		// Inherited via ISaveable

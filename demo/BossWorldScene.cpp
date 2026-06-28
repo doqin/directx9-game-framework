@@ -33,12 +33,11 @@ void Demo::BossWorldScene::Init() {
 		{"VampireBatEnemy", 40},
 		{"WarlockEnemy", 30},
 		//i removed the mimic here
-		}, drawBuffer, commandBuffer, &isGamePaused, [this](DX9GF::GraphicsDevice* gd, unsigned long long deltaTime) { DrawBackground(gd, deltaTime, currentIslandID); }));
+		}, drawBuffer, commandBuffer, &isGamePaused, & this->uiCamera, [this](DX9GF::GraphicsDevice* gd, unsigned long long deltaTime) { DrawBackground(gd, deltaTime, currentIslandID); }));
 
 	//dialogue with NPC, rambles about lore regarding the optional battle to get the key, and hints at the correct color sequence for hacking the terminal
 	npcHint = std::make_shared<DauDauNPC>(transformManager, -950.0f, -220.0f);
-	npcHint->Init(game->GetGraphicsDevice(), player, colliderManager, font, drawBuffer);
-
+	npcHint->Init(game->GetGraphicsDevice(), &camera, player, colliderManager, font, drawBuffer);
 	npcHint->AddLine(L"Veteran Debugger", L"Halt, traveler. You shouldn't be here.");
 	npcHint->AddLine(L"Veteran Debugger", L"This sector is deeply corrupted-a graveyard of unresolved bugs and dead code.");
 	npcHint->AddLine(L"Player", L"What exactly happened here?");
@@ -59,23 +58,23 @@ void Demo::BossWorldScene::Init() {
 	auto hackCallback = std::bind(&BossWorldScene::OnTerminalHacked, this, std::placeholders::_1);
 
 	auto machine1 = std::make_shared<HackTerminal>(transformManager, 1500, -620, 1, "M1");
-	machine1->Init(game->GetGraphicsDevice(), &camera, player, colliderManager, font, drawBuffer, hackCallback);
+	machine1->Init(game->GetGraphicsDevice(), &camera, player, colliderManager, font, hackCallback);
 	hackMachines.push_back(machine1);
 
 	auto machine2 = std::make_shared<HackTerminal>(transformManager, -480, 60, 2, "M2");
-	machine2->Init(game->GetGraphicsDevice(), &camera, player, colliderManager, font, drawBuffer, hackCallback);
+	machine2->Init(game->GetGraphicsDevice(), &camera, player, colliderManager, font, hackCallback);
 	hackMachines.push_back(machine2);
 
 	auto machine3 = std::make_shared<HackTerminal>(transformManager, -590, -200, 3, "M3");
-	machine3->Init(game->GetGraphicsDevice(), &camera, player, colliderManager, font, drawBuffer, hackCallback);
+	machine3->Init(game->GetGraphicsDevice(), &camera, player, colliderManager, font, hackCallback);
 	hackMachines.push_back(machine3);
 
 	auto machine4 = std::make_shared<HackTerminal>(transformManager, 2440, 395, 4, "M4");
-	machine4->Init(game->GetGraphicsDevice(), &camera, player, colliderManager, font, drawBuffer, hackCallback);
+	machine4->Init(game->GetGraphicsDevice(), &camera, player, colliderManager, font, hackCallback);
 	hackMachines.push_back(machine4);
 
 	mainTerminal = std::make_shared<HackTerminal>(transformManager, 780, -200, 99, "Main");
-	mainTerminal->Init(game->GetGraphicsDevice(), &camera, player, colliderManager, font, drawBuffer, hackCallback);
+	mainTerminal->Init(game->GetGraphicsDevice(), &camera, player, colliderManager, font, hackCallback);
 
 	for (auto& m : hackMachines) m->SetVisible(true);
 	mainTerminal->SetVisible(true);
@@ -87,12 +86,12 @@ void Demo::BossWorldScene::Init() {
 
 	//chest
 	rustyChest = std::make_shared<RustyChestNPC>(transformManager, 690.f, -208.f);
-	rustyChest->Init(game->GetGraphicsDevice(), player, colliderManager, font, drawBuffer);
+	rustyChest->Init(game->GetGraphicsDevice(), &camera, player, colliderManager, font, drawBuffer);
 
 	//TreasureChest
 	auto addChest = [&](float tx, float ty, std::vector<ChestReward> rewards, bool randomPick = false) {
 		auto c = std::make_shared<TreasureChestNPC>(transformManager, tx * 16, ty * 16, rewards, randomPick);
-		c->Init(game->GetGraphicsDevice(), player, colliderManager, font, drawBuffer);
+		c->Init(game->GetGraphicsDevice(), &camera, player, colliderManager, font, drawBuffer);
 		treasureChests.push_back(c);
 		};
 
@@ -113,15 +112,15 @@ void Demo::BossWorldScene::Init() {
 
 	//save
 	savePoints.push_back(std::make_shared<SavePoint>(transformManager, 192.f, 320.f));
-	savePoints.back()->Init(game->GetGraphicsDevice(), &camera, player, colliderManager, saveManager, font, drawBuffer);
+	savePoints.back()->Init(game->GetGraphicsDevice(), &camera, &uiCamera, player, colliderManager, saveManager, font, drawBuffer);
 	savePoints.back()->SetVisible(true);
 
 	savePoints.push_back(std::make_shared<SavePoint>(transformManager, -304.f, -160.f));
-	savePoints.back()->Init(game->GetGraphicsDevice(), &camera, player, colliderManager, saveManager, font, drawBuffer);
+	savePoints.back()->Init(game->GetGraphicsDevice(), &camera, &uiCamera, player, colliderManager, saveManager, font, drawBuffer);
 	savePoints.back()->SetVisible(true);
 
 	savePoints.push_back(std::make_shared<SavePoint>(transformManager, 704.f, -96.f));
-	savePoints.back()->Init(game->GetGraphicsDevice(), &camera, player, colliderManager, saveManager, font, drawBuffer);
+	savePoints.back()->Init(game->GetGraphicsDevice(), &camera, &uiCamera, player, colliderManager, saveManager, font, drawBuffer);
 	savePoints.back()->SetVisible(true);
 
 	//shop
@@ -199,7 +198,7 @@ void Demo::BossWorldScene::Init() {
 				this->isGamePaused = true; markFinished();
 				}));
 
-			auto transitionInCommand = std::make_shared<TransitionCommand>(this->game->GetGraphicsDevice(), 1.f, true);
+			auto transitionInCommand = std::make_shared<TransitionCommand>(game->GetGraphicsDevice(), &this->uiCamera, 1.f, true);
 			drawBuffer->StackCommand(transitionInCommand);
 
 			commandBuffer->PushCommand(std::make_shared<DX9GF::CustomCommand>([sceMan, transitionInCommand, this](std::function<void()> markFinished) {
@@ -207,7 +206,7 @@ void Demo::BossWorldScene::Init() {
 				sceMan->GoToNext(); markFinished();
 				}));
 
-			drawBuffer->PushCommand(std::make_shared<TransitionCommand>(this->game->GetGraphicsDevice(), 1.f, false));
+			drawBuffer->PushCommand(std::make_shared<TransitionCommand>(game->GetGraphicsDevice(), &this->uiCamera, 1.f, false));
 
 			drawBuffer->PushCommand(std::make_shared<DX9GF::CustomCommand>([this](std::function<void()> markFinished) {
 				this->isGamePaused = false;
@@ -231,7 +230,7 @@ void Demo::BossWorldScene::Init() {
 			new OutroScene(this->game, app->GetScreenWidth(), app->GetScreenHeight())
 		);
 		isTransitioning = true;
-		auto transitionInCommand = std::make_shared<TransitionCommand>(game->GetGraphicsDevice(), 1.f, true);
+		auto transitionInCommand = std::make_shared<TransitionCommand>(game->GetGraphicsDevice(), &this->uiCamera, 1.f, true);
 		drawBuffer->PushCommand(transitionInCommand);
 		commandBuffer->PushCommand(std::make_shared<DX9GF::CustomCommand>([this, transitionInCommand, sceMan](std::function<void(void)> markFinished) {
 			if (!transitionInCommand->IsFinished()) {
@@ -243,8 +242,8 @@ void Demo::BossWorldScene::Init() {
 			sceMan->GoToNext();
 			markFinished();
 			}));
-		drawBuffer->PushCommand(std::make_shared<TransitionCommand>(game->GetGraphicsDevice(), 1.f, false));
-	});
+		drawBuffer->PushCommand(std::make_shared<TransitionCommand>(game->GetGraphicsDevice(), &this->uiCamera, 1.f, false));
+		});
 
 	map->SetAreaUpdateHandler("trigger_spec_item", [this](const DX9GF::Map::ObjectArea& area) {
 		if (!this->hasGottenUselessItem) {
@@ -284,7 +283,7 @@ void Demo::BossWorldScene::Init() {
 	gateSprite->SetPosition(46 * 16, -15 * 16);
 
 	transformManager->RebuildHierarchy();
-	drawBuffer->PushCommand(std::make_shared<Demo::TransitionCommand>(game->GetGraphicsDevice(), 1.f, false));
+	drawBuffer->PushCommand(std::make_shared<TransitionCommand>(game->GetGraphicsDevice(), &this->uiCamera, 1.f, false));
 }
 
 void Demo::BossWorldScene::OnTerminalHacked(int terminalID) {
@@ -384,12 +383,6 @@ void Demo::BossWorldScene::Update(unsigned long long deltaTime) {
 			std::make_shared<DX9GF::FontSprite>(font.get()), sw, sh);
 		currentConversation->AddLine({ .name = L"Treasure Chest", .content = msg });
 		};
-
-	auto [currentWidth, currentHeight] = camera.GetScreenResolution();
-	auto [lastWidth, lastHeight] = uiCamera.GetScreenResolution();
-	if (currentWidth != lastWidth || currentHeight != lastHeight) {
-		uiCamera.SetScreenResolution(currentWidth, currentHeight);
-	}
 
 	auto inpMan = DX9GF::InputManager::GetInstance();
 	inpMan->ReadMouse(deltaTime);
@@ -496,7 +489,7 @@ void Demo::BossWorldScene::Update(unsigned long long deltaTime) {
 		player->Update(deltaTime);
 		camera.Update();
 	}
-
+	this->uiCamera.Update();
 	transformManager->UpdateAll();
 	if (!isGamePaused) map->UpdateAreas(player->GetWorldX(), player->GetWorldY());
 
@@ -513,19 +506,14 @@ void Demo::BossWorldScene::Update(unsigned long long deltaTime) {
 	}
 	commandBuffer->Update(deltaTime);
 }
-
-void Demo::BossWorldScene::Draw(unsigned long long deltaTime) {
+void Demo::BossWorldScene::DrawWorld(unsigned long long deltaTime) {
 	auto gd = game->GetGraphicsDevice();
 
-	D3DCOLOR bgColor = 0xFF05101a;
-	if (currentIslandID == 2) bgColor = 0xFF051105;
-	else if (currentIslandID == 3) bgColor = 0xFF1c0d02;
-	else if (currentIslandID == 4) bgColor = 0xFF1a0505;
-
-	gd->Clear(bgColor);
 	if (SUCCEEDED(gd->BeginDraw())) {
+
 		DrawBackground(gd, deltaTime, currentIslandID);
 		map->Draw(camera);
+
 		if (!isBossDoorUnlocked) {
 			gateSprite->Begin();
 			gateSprite->Draw(camera, deltaTime);
@@ -537,27 +525,49 @@ void Demo::BossWorldScene::Draw(unsigned long long deltaTime) {
 
 		if (npcHint) npcHint->Draw(camera, deltaTime);
 		if (rustyChest) rustyChest->Draw(camera, deltaTime);
-
 		for (auto& savePoint : savePoints) savePoint->Draw(camera, deltaTime);
 		for (auto& shopPoint : shopPoints) shopPoint->Draw(camera, deltaTime);
 		for (auto& healPoint : healingPoints) healPoint->Draw(camera, deltaTime);
-
-		for (auto& chest : treasureChests)
-			chest->Draw(camera, deltaTime);
+		for (auto& chest : treasureChests) chest->Draw(camera, deltaTime);
 
 		player->Draw(deltaTime);
 
-		if (drawBuffer) drawBuffer->Update(deltaTime);
+		gd->EndDraw();
+	}
+}
+
+void Demo::BossWorldScene::DrawUI(unsigned long long deltaTime)
+{
+	auto gd = game->GetGraphicsDevice();
+	if (SUCCEEDED(gd->BeginDraw())) {
+
+		if (npcHint) npcHint->DrawUI(&this->uiCamera, deltaTime);
+		if (rustyChest) rustyChest->DrawUI(&this->uiCamera, deltaTime);
+		for (auto& savePoint : savePoints) savePoint->DrawUI(&this->uiCamera, deltaTime);
+		for (auto& shopPoint : shopPoints) shopPoint->DrawUI(&this->uiCamera, deltaTime);
+		for (auto& healPoint : healingPoints) healPoint->DrawUI(&this->uiCamera, deltaTime);
+		for (auto& chest : treasureChests) chest->DrawUI(&this->uiCamera, deltaTime);
+
+		for (auto& m : hackMachines) m->DrawUI(&this->uiCamera, deltaTime);
+		mainTerminal->DrawUI(&this->uiCamera, deltaTime);
+
 		if (inventoryMenu) inventoryMenu->Draw(gd, deltaTime);
 		if (draggableManager && inventoryMenu && inventoryMenu->IsOpen() && inventoryMenu->GetCurrentTab() == Demo::InventoryMenu::Tab::DECK) {
 			draggableManager->Draw(deltaTime);
 		}
 
-		if (currentConversation) currentConversation->Draw(gd, deltaTime);
+		if (currentConversation) {
+			currentConversation->Draw(gd, &this->uiCamera, deltaTime);
+		}
+
+		if (drawBuffer) {
+			drawBuffer->Update(deltaTime);
+		}
+
 		DX9GF::InputManager::GetInstance()->DrawCursor(&this->uiCamera, deltaTime);
+
 		gd->EndDraw();
 	}
-	gd->Present();
 }
 
 std::string Demo::BossWorldScene::GetSaveID() const {
@@ -622,7 +632,12 @@ void Demo::BossWorldScene::RestoreSaveData(const nlohmann::json& inData) {
 void Demo::BossWorldScene::DrawBackground(DX9GF::GraphicsDevice* gd, unsigned long long deltaTime, int islandID)
 {
 	auto [screenWidth, screenHeight] = camera.GetScreenResolution();
+	D3DCOLOR bgColor = 0xFF05101a;
+	if (islandID == 2) bgColor = 0xFF051105;
+	else if (islandID == 3) bgColor = 0xFF1c0d02;
+	else if (islandID == 4) bgColor = 0xFF1a0505;
 
+	gd->DrawRectangle(0.0f, 0.0f, static_cast<float>(screenWidth), static_cast<float>(screenHeight), bgColor, true);
 	//shared static timer variable for background processes
 	static float timeAcc = 0.0f;
 	timeAcc += static_cast<float>(deltaTime) * 0.001f;

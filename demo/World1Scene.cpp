@@ -22,10 +22,9 @@ void Demo::World1Scene::Update(unsigned long long deltaTime)
 	camera.Update();
 }
 
-void Demo::World1Scene::Draw(unsigned long long deltaTime)
+void Demo::World1Scene::DrawWorld(unsigned long long deltaTime)
 {
 	auto gd = game->GetGraphicsDevice();
-	gd->Clear();
 	if (SUCCEEDED(gd->BeginDraw())) {
 		auto app = DX9GF::Application::GetInstance();
 		if (DX9GF::Debug::drawGrid) {
@@ -34,5 +33,7 @@ void Demo::World1Scene::Draw(unsigned long long deltaTime)
 		player->Draw(deltaTime);
 		gd->EndDraw();
 	}
-	//gd->Present();
+}
+void Demo::World1Scene::DrawUI(unsigned long long deltaTime)
+{
 }

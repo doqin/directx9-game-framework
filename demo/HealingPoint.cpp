@@ -1,4 +1,4 @@
-#include "pch.h"
+﻿#include "pch.h"
 #include "HealingPoint.h"
 #include <cmath>
 
@@ -9,6 +9,7 @@ namespace Demo {
 
     void HealingPoint::Init(DX9GF::GraphicsDevice* gd, DX9GF::Camera* camera, std::shared_ptr<Player> p, std::shared_ptr<DX9GF::ColliderManager> cm, std::shared_ptr<DX9GF::Font> font, std::shared_ptr<DX9GF::CommandBuffer> drawBuffer) {
         player = p;
+        this->worldCamera = camera;
         fontSprite = std::make_shared<DX9GF::FontSprite>(font.get());
         this->drawBuffer = drawBuffer;
         this->gd = gd;
@@ -60,45 +61,51 @@ namespace Demo {
 
     void HealingPoint::Draw(const DX9GF::Camera& camera, unsigned long long deltaTime) {
         if (!isVisible) return;
-
-        auto [x, y] = GetWorldPosition();
-
         sprite->Begin();
         sprite->Draw(camera, deltaTime);
         sprite->End();
+    }
 
-        if (fontSprite) {
-            if (!statusMessage.empty()) {
-                if (auto bufferLock = drawBuffer.lock()) {
-                    const auto statusText = statusMessage;
-                    bufferLock->StackCommand(std::make_shared<DX9GF::CustomCommand>([this, statusText, x, y, &camera, deltaTime](std::function<void(void)> markFinished) {
-                        fontSprite->Begin();
-                        fontSprite->SetText(std::wstring(statusText.begin(), statusText.end()));
-                        fontSprite->SetScale(0.8f);
-                        fontSprite->SetColor(0xFF55FF55);
-                        fontSprite->SetPosition(x - fontSprite->GetWidth() * 0.8f / 2.f, y - 45.f - fontSprite->GetHeight() / 2.f);
-                        fontSprite->SetOutline(true, 0xFF000000);
-                        fontSprite->Draw(camera, deltaTime);
-                        fontSprite->End();
-                        markFinished();
-                    }));
-                }
-            }
-            else if (isPlayerNear) {
-                if (auto bufferLock = drawBuffer.lock()) {
-                    bufferLock->StackCommand(std::make_shared<DX9GF::CustomCommand>([this, x, y, &camera, deltaTime](std::function<void(void)> markFinished) {
-                        fontSprite->Begin();
-                        fontSprite->SetText(L"E");
-                        fontSprite->SetScale(1.f);
-                        fontSprite->SetColor(0xFFFFFFFF);
-                        fontSprite->SetPosition(x - fontSprite->GetWidth() / 2.f, y - 30.f - fontSprite->GetHeight() / 2.f);
-                        fontSprite->SetOutline(true, 0xFF000000);
-                        fontSprite->Draw(camera, deltaTime);
-                        fontSprite->End();
-                        markFinished();
-                    }));
-                }
-            }
+    void HealingPoint::DrawUI(DX9GF::Camera* uiCamera, unsigned long long deltaTime) {
+        if (!isVisible || !uiCamera || !fontSprite || !worldCamera) return;
+
+        auto [x, y] = GetWorldPosition();
+        float zoom = worldCamera->GetZoom();
+
+        float uiX = (x - worldCamera->GetPosition().x) * zoom;
+        float uiY = (y - worldCamera->GetPosition().y) * zoom;
+
+        if (!statusMessage.empty()) {
+            float scale = 0.8f * zoom;
+
+            fontSprite->Begin();
+            fontSprite->SetText(std::wstring(statusMessage.begin(), statusMessage.end()));
+            fontSprite->SetScale(scale);
+            fontSprite->SetColor(0xFF55FF55);
+
+            float textW = fontSprite->GetWidth() * scale;
+            float textH = fontSprite->GetHeight() * scale;
+
+            fontSprite->SetPosition(uiX - textW / 2.f, uiY - 45.f * zoom - textH / 2.f);
+            fontSprite->SetOutline(true, 0xFF000000);
+            fontSprite->Draw(*uiCamera, deltaTime);
+            fontSprite->End();
+        }
+        else if (isPlayerNear) {
+            float scale = 1.0f * zoom;
+
+            fontSprite->Begin();
+            fontSprite->SetText(L"E");
+            fontSprite->SetScale(scale);
+            fontSprite->SetColor(0xFFFFFFFF);
+
+            float textW = fontSprite->GetWidth() * scale;
+            float textH = fontSprite->GetHeight() * scale;
+
+            fontSprite->SetPosition(uiX - textW / 2.f, uiY - 30.f * zoom - textH / 2.f);
+            fontSprite->SetOutline(true, 0xFF000000);
+            fontSprite->Draw(*uiCamera, deltaTime);
+            fontSprite->End();
         }
     }
 }

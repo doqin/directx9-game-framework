@@ -5,7 +5,8 @@ void Demo::OutroScene::Init() {
     font = std::make_shared<DX9GF::Font>(game->GetGraphicsDevice(), L"StatusPlz", 16);
     fontSprite = std::make_shared<DX9GF::FontSprite>(font.get());
 
-    auto [sw, sh] = uiCamera.GetScreenResolution();
+    float sw = game->GetVirtualWidth();
+    float sh = game->GetVirtualHeight();
     conversation = std::make_shared<IConversation>(fontSprite, sw, sh);
 
     conversation->AddLine({ .name = L"Player", .content = L"Did I... actually make it out?" });
@@ -36,17 +37,28 @@ void Demo::OutroScene::Update(unsigned long long deltaTime) {
         audio->PlayBGM_Fade("bgm_sky", 0.9f, 1.5f);
         game->GetSceneManager()->GoToScene(0);
     }
+
+    this->uiCamera.Update();
 }
 
-void Demo::OutroScene::Draw(unsigned long long deltaTime) {
+void Demo::OutroScene::DrawWorld(unsigned long long deltaTime) {
     auto gd = game->GetGraphicsDevice();
-    gd->Clear(0xFF000000);
     if (SUCCEEDED(gd->BeginDraw())) {
-        if (conversation) {
-            conversation->Draw(gd, deltaTime);
-        }
-        DX9GF::InputManager::GetInstance()->DrawCursor(&uiCamera, deltaTime);
         gd->EndDraw();
     }
-    //gd->Present();
+}
+
+void Demo::OutroScene::DrawUI(unsigned long long deltaTime)
+{
+    auto gd = game->GetGraphicsDevice();
+    if (SUCCEEDED(gd->BeginDraw())) {
+
+        if (conversation) {
+            conversation->Draw(gd, &this->uiCamera, deltaTime);
+        }
+
+        DX9GF::InputManager::GetInstance()->DrawCursor(&this->uiCamera, deltaTime);
+
+        gd->EndDraw();
+    }
 }

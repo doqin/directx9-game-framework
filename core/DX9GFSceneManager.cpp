@@ -61,32 +61,26 @@ void DX9GF::SceneManager::Update(unsigned long long deltaTime)
 	scenes[index]->Update(deltaTime);
 }
 
-void DX9GF::SceneManager::Draw(unsigned long long deltaTime)
+void DX9GF::SceneManager::DrawWorld(unsigned long long deltaTime)
 {
-	if (scenes.empty()) {
-		throw std::runtime_error("No scene to draw!");
-	}
-
-	//Backtrack from the current scene to find the nearest opaque scene
+	if (scenes.empty()) throw std::runtime_error("No scene to draw!");
 	int startIndex = index;
-	while (startIndex > 0 && scenes[startIndex]->IsOverlay()) {
-		startIndex--;
-	}
+	while (startIndex > 0 && scenes[startIndex]->IsOverlay()) startIndex--;
+	for (int i = startIndex; i <= index; ++i) scenes[i]->DrawWorld(deltaTime);
+}
 
-	//Render layers from bottom to top
-	for (int i = startIndex; i <= index; ++i) {
-		scenes[i]->Draw(deltaTime);
-	}
+void DX9GF::SceneManager::DrawUI(unsigned long long deltaTime)
+{
+	if (scenes.empty()) throw std::runtime_error("No scene to draw!");
+	int startIndex = index;
+	while (startIndex > 0 && scenes[startIndex]->IsOverlay()) startIndex--;
+	for (int i = startIndex; i <= index; ++i) scenes[i]->DrawUI(deltaTime);
 }
 
 void DX9GF::SceneManager::OnResize(int width, int height)
 {
 	for (auto& scene : scenes) {
-		auto [cameraWidth, cameraHeight] = scene->GetCamera().GetScreenResolution();
-		auto app = DX9GF::Application::GetInstance();
-		auto previousWidth = app->GetScreenWidth();
-		auto previousHeight = app->GetScreenHeight();
-		scene->GetCamera().SetScreenResolution(cameraWidth * width / previousWidth, cameraHeight * height / previousHeight);
+		scene->GetUICamera().SetScreenResolution(width, height);
 	}
 }
 
