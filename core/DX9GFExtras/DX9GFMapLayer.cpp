@@ -75,10 +75,12 @@ void DX9GF::MapLayer::Create(Map* map, std::uint32_t layerIndex)
 					const auto tileX = idIndex % tileCountX;
 					const auto tileY = idIndex / tileCountX;
 
-					float u0 = (static_cast<float>(tileMargin + tileX * (tileSetTileSize.x + tileSpacing)) + 0.5f) / textureSizeX;
-					float v0 = (static_cast<float>(tileMargin + tileY * (tileSetTileSize.y + tileSpacing)) + 0.5f) / textureSizeY;
-					float u1 = (static_cast<float>(tileMargin + tileX * (tileSetTileSize.x + tileSpacing) + tileSetTileSize.x) - 0.5f) / textureSizeX;
-					float v1 = (static_cast<float>(tileMargin + tileY * (tileSetTileSize.y + tileSpacing) + tileSetTileSize.y) - 0.5f) / textureSizeY;
+					const float EPSILON = 0.00001f;
+
+					float u0 = (static_cast<float>(tileMargin + tileX * (tileSetTileSize.x + tileSpacing)) + EPSILON) / textureSizeX;
+					float v0 = (static_cast<float>(tileMargin + tileY * (tileSetTileSize.y + tileSpacing)) + EPSILON) / textureSizeY;
+					float u1 = (static_cast<float>(tileMargin + tileX * (tileSetTileSize.x + tileSpacing) + tileSetTileSize.x) - EPSILON) / textureSizeX;
+					float v1 = (static_cast<float>(tileMargin + tileY * (tileSetTileSize.y + tileSpacing) + tileSetTileSize.y) - EPSILON) / textureSizeY;
 
 					// default: 0:TopLeft, 1:TopRight, 2:BottomRight, 3:BottomLeft
 					struct UVCoord { float u, v; };
