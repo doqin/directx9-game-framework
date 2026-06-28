@@ -484,6 +484,76 @@ void Demo::IBattleScene::PlayerAttackUpdate(unsigned long long deltaTime)
 	}
 }
 
+void Demo::IBattleScene::StartAttackCountdown(std::shared_ptr<std::vector<std::shared_ptr<IEnemy>>> attackingEnemies)
+{
+	isAttackCountdownActive = true;
+	attackCountdownNumber = 3;
+	attackCountdownTimer = ATTACK_COUNTDOWN_STEP_SECONDS;
+	countdownAttackingEnemies = attackingEnemies;
+}
+
+bool Demo::IBattleScene::UpdateAttackCountdown(unsigned long long deltaTime)
+{
+	if (!isAttackCountdownActive) {
+		return false;
+	}
+
+	attackCountdownTimer -= deltaTime / 1000.0f;
+	if (attackCountdownTimer <= 0.f) {
+		attackCountdownNumber--;
+		if (attackCountdownNumber <= 0) {
+			isAttackCountdownActive = false;
+			return true;
+		}
+		attackCountdownTimer = ATTACK_COUNTDOWN_STEP_SECONDS;
+	}
+	return false;
+}
+
+void Demo::IBattleScene::DrawAttackCountdown(unsigned long long deltaTime)
+{
+	if (!isAttackCountdownActive) {
+		return;
+	}
+
+	float progress = 1.f - (attackCountdownTimer / ATTACK_COUNTDOWN_STEP_SECONDS);
+	if (progress < 0.f) progress = 0.f;
+	if (progress > 1.f) progress = 1.f;
+
+	const float startScale = 4.5f;
+	const float endScale = 3.0f;
+	const float pulseT = (std::min)(1.f, progress / 0.35f);
+	const float ease = 1.f - (1.f - pulseT) * (1.f - pulseT);
+	const float scale = startScale - (startScale - endScale) * ease;
+
+	float alpha = 1.f;
+	if (progress > 0.75f) {
+		alpha = 1.f - (progress - 0.75f) / 0.25f;
+	}
+	const int alphaByte = static_cast<int>((std::max)(0.f, (std::min)(1.f, alpha)) * 255.f);
+
+	std::wstring text = std::to_wstring(attackCountdownNumber);
+
+	fontSprite->Begin();
+	fontSprite->SetScale(scale);
+	fontSprite->SetBold(true);
+	fontSprite->SetOutline(true, D3DCOLOR_ARGB(alphaByte, 0, 0, 0), 4.f);
+	fontSprite->SetColor(D3DCOLOR_ARGB(alphaByte, 255, 60, 60));
+	fontSprite->SetText(std::move(text));
+
+	const float textWidth = fontSprite->GetWidth();
+	const float textHeight = fontSprite->GetHeight();
+
+	fontSprite->SetPosition(-textWidth / 2.f, -textHeight / 2.f);
+
+	fontSprite->Draw(this->uiCamera, deltaTime);
+
+	fontSprite->SetBold(false);
+	fontSprite->SetScale(1.f);
+	fontSprite->SetOutline(false);
+	fontSprite->End();
+}
+
 void Demo::IBattleScene::QueueToEnemyAttack(unsigned long long deltaTime)
 {
 	isTransitioning = true;
@@ -546,14 +616,6 @@ void Demo::IBattleScene::QueueToEnemyAttack(unsigned long long deltaTime)
 				}
 			}
 
-			this->state = State::EnemyAttack;
-			this->QueueEnemyLayoutTransition(State::EnemyAttack);
-			for (auto& enemy : this->enemies) {
-				enemy->SetState(true);
-			}
-			for (auto& enemy : *attackingEnemies) {
-				enemy->StartAttack(this->battlePlayer, &this->enemies, this->popUpMessage, game->GetGraphicsDevice(), &this->camera);
-			}
 			this->CollectDeadEnemies();
 			if (this->enemies.empty()) {
 				this->OnAllEnemiesDefeated();
@@ -561,8 +623,27 @@ void Demo::IBattleScene::QueueToEnemyAttack(unsigned long long deltaTime)
 				markFinished();
 				return;
 			}
+
+			if (attackingEnemies->empty()) {
+				this->BeginNextTurn();
+				this->state = State::PlayerStandBy;
+				this->QueueEnemyLayoutTransition(State::PlayerStandBy);
+				this->lastEnemyLayoutState = State::PlayerStandBy;
+				this->enemyLayoutInitialized = true;
+				this->isTransitioning = false;
+				markFinished();
+				return;
+			}
+
+			this->state = State::EnemyAttack;
+			this->QueueEnemyLayoutTransition(State::EnemyAttack);
+			for (auto& enemy : this->enemies) {
+				enemy->SetState(true);
+			}
+
 			this->battlePlayer->SetLocalPosition(0, 0);
-			this->EnemyAttackUpdate(deltaTime);
+			this->StartAttackCountdown(attackingEnemies);
+
 			this->isTransitioning = false;
 			markFinished();
 			})
@@ -614,7 +695,9 @@ bool Demo::IBattleScene::EnemyAttackUpdate(unsigned long long deltaTime)
 		}
 		return false;
 	}
-	battlePlayer->Update(deltaTime);
+	if (!isAttackCountdownActive) {       
+		battlePlayer->Update(deltaTime); 
+	}
 	if (battlePlayer->IsDead()) {
 		isDefeatSequence = true;
 		defeatElapsedMs = 0.f;
@@ -646,6 +729,9 @@ bool Demo::IBattleScene::EnemyAttackUpdate(unsigned long long deltaTime)
 	for (auto& enemy : enemies) {
 		enemy->Update(deltaTime);
 		isDoneAttacking &= enemy->IsDoneAttacking();
+	}
+	if (isAttackCountdownActive) {
+		isDoneAttacking = false;
 	}
 	if (isDoneAttacking) {
 		CollectDeadEnemies();
@@ -1279,6 +1365,7 @@ void Demo::IBattleScene::Update(unsigned long long deltaTime)
 	inpMan->ReadKeyboard(deltaTime);
 	this->camera.Update();
 	this->uiCamera.Update();
+
 	if (isDefeatSequence) {
 		if (!EnemyAttackUpdate(deltaTime)) {
 			DamageTextManager::GetInstance()->Update(deltaTime);
@@ -1287,6 +1374,27 @@ void Demo::IBattleScene::Update(unsigned long long deltaTime)
 			return;
 		}
 		return;
+	}
+	if (isAttackCountdownActive) {
+		bool countdownFinished = UpdateAttackCountdown(deltaTime);
+		if (countdownFinished) {
+			if (countdownAttackingEnemies) {
+				for (auto& enemy : *countdownAttackingEnemies) {
+					if (enemy->IsDead()) {
+						continue;
+					}
+					enemy->StartAttack(this->battlePlayer, &this->enemies, this->popUpMessage, game->GetGraphicsDevice(), &this->camera);
+				}
+				countdownAttackingEnemies.reset();
+			}
+			CollectDeadEnemies();
+			if (enemies.empty()) {
+				OnAllEnemiesDefeated();
+			}
+			else {
+				battlePlayer->SetLocalPosition(0, 0);
+			}
+		}
 	}
 	if (!enemyLayoutInitialized || lastEnemyLayoutState != state) {
 		if (state == State::PlayerStandBy || state == State::PlayerAttack) {
@@ -1434,6 +1542,7 @@ void Demo::IBattleScene::DrawUI(unsigned long long deltaTime)
 			gd->DrawRectangle(uiCamera, -w / 2.f, -h / 2.f, w, h, D3DCOLOR_ARGB(alpha, 0, 0, 0), true);
 			gd->SetAlphaBlending(false);
 		}
+		DrawAttackCountdown(deltaTime);
 
 		drawBuffer->Update(deltaTime);
 
