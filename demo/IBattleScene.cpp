@@ -1139,6 +1139,14 @@ void Demo::IBattleScene::Init()
 			DX9GF::AudioManager::GetInstance()->Play("error", false, 0.8f);
 		}
 		else if (mainBlockCard && !mainBlockCard->IsExecuting()) {
+			if (!mainBlockCard->HasAllRequiredTargets()) {
+				if (timeSinceLastTargetPopUp >= targetPopUpCooldown) {
+					popUpMessage->QueueMessage(&commandBuffer, L"Some cards are missing a target!");
+					DX9GF::AudioManager::GetInstance()->Play("error", false, 0.8f);
+					timeSinceLastTargetPopUp = 0.f;
+				}
+				return;
+			}
 			commandBuffer.Clear();
 			popUpMessage->Reset(); // Really bad hack, please never do this in a production game lol
 			isExecutingAttacks = true;
@@ -1281,6 +1289,7 @@ void Demo::IBattleScene::Update(unsigned long long deltaTime)
 	auto inpMan = DX9GF::InputManager::GetInstance();
 	inpMan->ReadMouse(deltaTime);
 	inpMan->ReadKeyboard(deltaTime);
+	timeSinceLastTargetPopUp += deltaTime / 1000.f;
 	if (isDefeatSequence) {
 		if (!EnemyAttackUpdate(deltaTime)) {
 			DamageTextManager::GetInstance()->Update(deltaTime);
