@@ -1398,19 +1398,6 @@ void Demo::IBattleScene::DrawWorld(unsigned long long deltaTime)
 
 		popUpMessage->Draw(deltaTime);
 		DamageTextManager::GetInstance()->Draw(this->camera, deltaTime);
-
-		if (isDefeatSequence && defeatElapsedMs >= 1000.f) {
-			auto [camW, camH] = uiCamera.GetScreenResolution();
-			float w = static_cast<float>(camW);
-			float h = static_cast<float>(camH);
-			const int alpha = static_cast<int>((std::min)(1.0f, defeatFadeAlpha) * 255.f);
-
-			gd->SetAlphaBlending(true);
-			gd->DrawRectangle(uiCamera, -w / 2.f, -h / 2.f, w, h, D3DCOLOR_ARGB(alpha, 0, 0, 0), true);
-			gd->SetAlphaBlending(false);
-		}
-
-		drawBuffer->Update(deltaTime);
 		gd->EndDraw();
 	}
 }
@@ -1436,6 +1423,19 @@ void Demo::IBattleScene::DrawUI(unsigned long long deltaTime)
 			DrawHealthAndDefenseBar(y, gd);
 			break;
 		}
+
+		if (isDefeatSequence && defeatElapsedMs >= 1000.f) {
+			auto [camW, camH] = uiCamera.GetScreenResolution();
+			float w = static_cast<float>(camW);
+			float h = static_cast<float>(camH);
+			const int alpha = static_cast<int>((std::min)(1.0f, defeatFadeAlpha) * 255.f);
+
+			gd->SetAlphaBlending(true);
+			gd->DrawRectangle(uiCamera, -w / 2.f, -h / 2.f, w, h, D3DCOLOR_ARGB(alpha, 0, 0, 0), true);
+			gd->SetAlphaBlending(false);
+		}
+
+		drawBuffer->Update(deltaTime);
 
 		DX9GF::InputManager::GetInstance()->DrawCursor(&this->uiCamera, deltaTime);
 		gd->EndDraw();
