@@ -12,7 +12,10 @@ bool Demo::IBlockCard::OnDrop(std::shared_ptr<IDraggable> other)
 	if (battleScene) {
 		int cost = static_cast<int>(statementCard->GetCost());
 		if (battleScene->GetAvailableEnergy() < 0) {
-			battleScene->QueuePopUpMessage(L"Not enough energy");
+			if (timeSinceLastEnergyPopUp >= energyPopUpCooldown) {
+				battleScene->QueuePopUpMessage(L"Not enough energy");
+				timeSinceLastEnergyPopUp = 0.f;
+			}
 			return false;
 		}
 	}
@@ -104,4 +107,16 @@ void Demo::IBlockCard::ResetExecution()
 	executeIndex = 0;
 	isExecuting = false;
 	currentExecutingCard.reset();
+}
+
+bool Demo::IBlockCard::HasAllRequiredTargets() const
+{
+	for (auto& card : statementCards) {
+		if (auto lock = card.lock()) {
+			if (!lock->HasRequiredTargets()) {
+				return false;
+			}
+		}
+	}
+	return true;
 }

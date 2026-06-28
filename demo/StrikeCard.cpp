@@ -42,6 +42,11 @@ void Demo::StrikeCard::ResetExecution()
 	isDone = false;
 }
 
+bool Demo::StrikeCard::HasRequiredTargets() const
+{
+	return enemyCard.lock() != nullptr;
+}
+
 void Demo::StrikeCard::Update(unsigned long long deltaTime)
 {
 	IDraggable::Update(deltaTime);
