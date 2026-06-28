@@ -39,7 +39,7 @@ namespace Demo {
 		virtual void ResetExecution() {}
 
 		virtual std::wstring GetInputsDescription() const { return L"None"; }
-
+		virtual bool HasRequiredTargets() const { return true; }
 	protected:
 		std::shared_ptr<DX9GF::Font> descFont;
 		std::shared_ptr<DX9GF::FontSprite> descFontSprite;

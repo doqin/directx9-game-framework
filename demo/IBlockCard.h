@@ -54,5 +54,6 @@ namespace Demo {
 		std::shared_ptr<IStatementCard> GetCurrentExecutingCard() const;
 		void ResetExecution();
 		void SetBattleScene(IBattleScene* scene) { battleScene = scene; }
+		bool HasAllRequiredTargets() const;
 	};
 }

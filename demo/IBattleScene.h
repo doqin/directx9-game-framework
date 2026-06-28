@@ -36,6 +36,8 @@ namespace Demo {
 		bool isTransitioning = false;
 		bool enemyAttackStartPending = false;
 		bool isFleeing = false;
+		float timeSinceLastTargetPopUp = 999.f;
+		const float targetPopUpCooldown = 3.f;
 		bool isAttackCountdownActive = false;
 		int attackCountdownNumber = 3;
 		float attackCountdownTimer = 0.f;
