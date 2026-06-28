@@ -617,6 +617,7 @@ void Demo::IBattleScene::QueueToEnemyAttack(unsigned long long deltaTime)
 				enemy->SetState(true);
 			}
 
+			this->battlePlayer->SetLocalPosition(0, 0);
 			this->StartAttackCountdown(attackingEnemies);
 
 			this->isTransitioning = false;
@@ -665,7 +666,9 @@ bool Demo::IBattleScene::EnemyAttackUpdate(unsigned long long deltaTime)
 		}
 		return false;
 	}
-	battlePlayer->Update(deltaTime);
+	if (!isAttackCountdownActive) {       
+		battlePlayer->Update(deltaTime); 
+	}
 	if (battlePlayer->IsDead()) {
 		isDefeatSequence = true;
 		defeatElapsedMs = 0.f;
