@@ -29,7 +29,6 @@ namespace DX9GF {
 
 	void GoToCommand::Execute(unsigned long long deltaTime) {
 		auto obj = targetObject.lock();
-		// N?u object dã b? xóa gi?a ch?ng, k?t thúc l?nh luôn d? tránh k?t Cutscene
 		if (!obj) {
 			MarkFinished();
 			return;

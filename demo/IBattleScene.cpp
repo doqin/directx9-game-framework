@@ -27,7 +27,7 @@ namespace {
 			}
 			draggable->SetHidden(true);
 		}
-		
+
 		card->SetLocalPosition(HiddenPileX, HiddenPileY);
 	}
 
@@ -106,7 +106,7 @@ void Demo::IBattleScene::OnAllEnemiesDefeated()
 		onVictoryCallback();
 	}
 
-	auto transitionInCommand = std::make_shared<TransitionCommand>(game->GetGraphicsDevice(), 1.f, true);
+	auto transitionInCommand = std::make_shared<TransitionCommand>(game->GetGraphicsDevice(), &this->uiCamera, 1.f, true);
 	drawBuffer->PushCommand(std::make_shared<DX9GF::DelayCommand>(2.5f));
 	drawBuffer->PushCommand(transitionInCommand);
 	commandBuffer.PushCommand(std::make_shared<DX9GF::CustomCommand>([this, transitionInCommand](std::function<void(void)> markFinished) {
@@ -131,8 +131,8 @@ void Demo::IBattleScene::OnAllEnemiesDefeated()
 void Demo::IBattleScene::DrawCards(size_t count)
 {
 	auto app = DX9GF::Application::GetInstance();
-	auto screenWidth = app->GetScreenWidth();
-	auto screenHeight = app->GetScreenHeight();
+	float screenWidth = static_cast<float>(app->GetScreenWidth());
+	float screenHeight = static_cast<float>(app->GetScreenHeight());
 	auto x = -static_cast<float>(screenWidth) / 2.f + 20.f;
 	auto y = -static_cast<float>(screenHeight) / 2.f + 20.f;
 	for (size_t i = 0; i < count; ++i) {
@@ -328,24 +328,44 @@ void Demo::IBattleScene::RemoveEnemyCardsInRemoveArea()
 void Demo::IBattleScene::RefreshItemMenu()
 {
 	buffItems.clear();
+
 	auto& inventory = player->GetInventoryItems().GetSlots();
 
-	int columns = std::floor((BG_W - PADDING_X) / (ITEM_W + PADDING_X));
+	std::vector<int> validIndices;
+	for (int i = 0; i < inventory.size(); i++) {
+		if (inventory[i].quantity > 0 && Demo::ItemData::GetInstance()->GetItemBlueprint(inventory[i].itemID)) {
+			validIndices.push_back(i);
+		}
+	}
+
+
+	float targetWidth = itemMenuBackground->GetTargetWidth();
+	float targetHeight = itemMenuBackground->GetTargetHeight();
+
+	int columns = std::floor((targetWidth - PADDING_X * 2.0f) / (ITEM_W + PADDING_X));
+	int rows = std::floor((targetHeight - PADDING_Y * 2.0f - 90.0f) / (ITEM_H + PADDING_Y));
 	if (columns < 1) columns = 1;
+	if (rows < 1) rows = 1;
+
+	int itemsPerPage = columns * rows;
+
+	maxItemPage = validIndices.empty() ? 0 : (validIndices.size() - 1) / itemsPerPage;
+	if (currentItemPage > maxItemPage) currentItemPage = maxItemPage;
+	if (currentItemPage < 0) currentItemPage = 0;
+
+	int startIndex = currentItemPage * itemsPerPage;
+	int endIndex = std::min(static_cast<int>(validIndices.size()), startIndex + itemsPerPage);
 
 	float totalGridWidth = (columns * ITEM_W) + ((columns - 1) * PADDING_X);
-	float startX = -HALF_BG_W + (BG_W - totalGridWidth) / 2.0f;
-	float startY = -HALF_BG_H + PADDING_Y;
+	float startX = -totalGridWidth / 2.0f;
+	float startY = -targetHeight / 2.0f + PADDING_Y + 40.0f;
 
 	int displayIndex = 0;
-	for (int i = 0; i < inventory.size(); i++)
+	for (int i = startIndex; i < endIndex; i++)
 	{
-		auto slot = inventory[i];
-
-		if (slot.quantity <= 0) continue;
-
-		const auto* blueprint = Demo::ItemData::GetInstance()->GetItemBlueprint(slot.itemID);
-		if (!blueprint) continue;
+		int originalIndex = validIndices[i];
+		auto slot = inventory[originalIndex];
+		auto blueprint = Demo::ItemData::GetInstance()->GetItemBlueprint(slot.itemID);
 
 		int col = displayIndex % columns;
 		int row = displayIndex / columns;
@@ -354,18 +374,16 @@ void Demo::IBattleScene::RefreshItemMenu()
 		float baseY = startY + row * (ITEM_H + PADDING_Y);
 
 		auto btn = std::make_shared<IconButton>(transformManager, 0, 0, ITEM_W, ITEM_H, itemsTex, 1);
-		btn->Init(&camera);
+		btn->Init(&uiCamera);
 		btn->SetSpriteScale(MENU_SCALE, MENU_SCALE);
 		btn->SetLocalPosition(baseX, baseY);
 		btn->Update(0);
 
 		btn->SetSpriteRects({ blueprint->GetItemRect() });
 
-		btn->SetOnReleaseLeft([&, slot, blueprint](DX9GF::ITrigger* thisObj) {
-			commandBuffer.PushCommand(std::make_shared<DX9GF::CustomCommand>([&, slot, blueprint](std::function<void(void)> markFinished) {
-
+		btn->SetOnReleaseLeft([this, slot, blueprint](DX9GF::ITrigger* thisObj) {
+			commandBuffer.PushCommand(std::make_shared<DX9GF::CustomCommand>([this, slot, blueprint](std::function<void(void)> markFinished) {
 				if (player->GetInventoryItems().ConsumeItem(slot.itemID)) {
-
 					for (auto& buff : blueprint->GetBuffs()) {
 						if (buff.type == Demo::ItemBuffType::HealHP) {
 							battlePlayer->Heal(buff.value);
@@ -374,7 +392,6 @@ void Demo::IBattleScene::RefreshItemMenu()
 							battlePlayer->AddActiveBuff(buff);
 						}
 					}
-
 					std::wstring msg = L"Used " + blueprint->GetName() + L"!";
 					popUpMessage->QueueMessage(&commandBuffer, msg);
 
@@ -388,6 +405,11 @@ void Demo::IBattleScene::RefreshItemMenu()
 		buffItems.push_back(btn);
 		displayIndex++;
 	}
+
+	float btnY = targetHeight / 2.0f - PADDING_Y - 15.0f;
+	btnPrevPage->SetLocalPosition(-targetWidth / 2.0f + PADDING_X, btnY);
+	btnNextPage->SetLocalPosition(targetWidth / 2.0f - PADDING_X - btnNextPage->GetWidth(), btnY);
+
 	transformManager->RebuildHierarchy();
 	transformManager->UpdateAll();
 }
@@ -418,8 +440,8 @@ void Demo::IBattleScene::PlayerStandByUpdate(unsigned long long deltaTime)
 void Demo::IBattleScene::PlayerAttackUpdate(unsigned long long deltaTime)
 {
 	auto app = DX9GF::Application::GetInstance();
-	const float screenWidth = static_cast<float>(app->GetScreenWidth());
-	const float screenHeight = static_cast<float>(app->GetScreenHeight());
+	float screenWidth = static_cast<float>(app->GetScreenWidth());
+	float screenHeight = static_cast<float>(app->GetScreenHeight());
 	handContainer->SetLocalPosition(-screenWidth / 2.f + 20.f, -screenHeight / 2.f + 20.f);
 	usedEnergy = 0;
 	for (auto& card : cardHand) {
@@ -521,8 +543,10 @@ void Demo::IBattleScene::DrawAttackCountdown(unsigned long long deltaTime)
 
 	const float textWidth = fontSprite->GetWidth();
 	const float textHeight = fontSprite->GetHeight();
+
 	fontSprite->SetPosition(-textWidth / 2.f, -textHeight / 2.f);
-	fontSprite->Draw(camera, deltaTime);
+
+	fontSprite->Draw(this->uiCamera, deltaTime);
 
 	fontSprite->SetBold(false);
 	fontSprite->SetScale(1.f);
@@ -630,14 +654,19 @@ void Demo::IBattleScene::QueueToEnemyAttack(unsigned long long deltaTime)
 
 void Demo::IBattleScene::PlayerOpenItemsUpdate(unsigned long long deltaTime)
 {
+	float targetWidth = itemMenuBackground->GetTargetWidth();
+	float targetHeight = itemMenuBackground->GetTargetHeight();
 
-	float closeX = -BG_W + 50.f + closeItemMenuButton->GetWidth();
-	float closeY = BG_H - 50.f - closeItemMenuButton->GetHeight();
-
+	float closeX = -closeItemMenuButton->GetWidth() / 2.0f;
+	float closeY = targetHeight / 2.0f + 15.0f;
 	closeItemMenuButton->SetLocalPosition(closeX, closeY);
 
 	if (!isTransitioning) {
 		closeItemMenuButton->Update(deltaTime);
+
+		if (currentItemPage > 0) btnPrevPage->Update(deltaTime);
+		if (currentItemPage < maxItemPage) btnNextPage->Update(deltaTime);
+
 		for (auto& btn : buffItems) {
 			btn->Update(deltaTime);
 		}
@@ -725,16 +754,16 @@ void Demo::IBattleScene::PlayerStandByDraw(unsigned long long deltaTime)
 	fleeButton->Draw(game->GetGraphicsDevice(), deltaTime);
 	itemsButton->Draw(game->GetGraphicsDevice(), deltaTime);
 	attackButton->Draw(game->GetGraphicsDevice(), deltaTime);
-	auto app = DX9GF::Application::GetInstance();
+
 	auto gd = game->GetGraphicsDevice();
-	const float y = app->GetScreenHeight() / 2.f - 128;
+	const float y = game->GetVirtualHeight() / 2.f - 128;
 	DrawHealthAndDefenseBar(y, gd);
 }
 
 void Demo::IBattleScene::PlayerAttackDraw(unsigned long long deltaTime)
 {
 	game->GetGraphicsDevice()->DrawRectangle(
-		camera,
+		this->uiCamera,
 		enemyCardRemoveAreaX,
 		enemyCardRemoveAreaY,
 		enemyCardRemoveAreaWidth,
@@ -746,34 +775,40 @@ void Demo::IBattleScene::PlayerAttackDraw(unsigned long long deltaTime)
 	fontSprite->SetColor(0xFFFFFFFF);
 	fontSprite->SetPosition(enemyCardRemoveAreaX + 8.f, enemyCardRemoveAreaY + 8.f);
 	fontSprite->SetText(L"Discard Enemy Card Here");
-	fontSprite->Draw(camera, deltaTime);
+	fontSprite->Draw(this->uiCamera, deltaTime);
+
 	fontSprite->SetOutline(true, 0xFF000000, 2.f);
 	fontSprite->SetPosition(backButton->GetWorldX() + 32.f, backButton->GetWorldY() - 30.f);
 	fontSprite->SetText(std::to_wstring(energy - usedEnergy) + L"/" + std::to_wstring(MAX_ENERGY));
-	fontSprite->Draw(camera, deltaTime);
+	fontSprite->Draw(this->uiCamera, deltaTime);
+
 	fontSprite->SetPosition(executeButton->GetWorldX() + 32.f, executeButton->GetWorldY() - 30.f);
 	fontSprite->SetText(std::to_wstring(3 - (currentTurn - 1) % 3) + L" turns left before program clears");
-	fontSprite->Draw(camera, deltaTime);
+	fontSprite->Draw(this->uiCamera, deltaTime);
 	fontSprite->End();
+
 	energyIcon->SetPosition(backButton->GetWorldX(), backButton->GetWorldY() - 36.f);
 	energyIcon->Begin();
-	energyIcon->Draw(camera, deltaTime);
+	energyIcon->Draw(this->uiCamera, deltaTime);
 	energyIcon->End();
+
 	hourglassIcon->Begin();
 	hourglassIcon->SetPosition(executeButton->GetWorldX(), executeButton->GetWorldY() - 36.f);
-	hourglassIcon->Draw(camera, deltaTime);
+	hourglassIcon->Draw(this->uiCamera, deltaTime);
 	hourglassIcon->End();
+
 	if (!mainBlockCard->IsExecuting() && !isTransitioning) {
 		if (energy - usedEnergy == MAX_ENERGY) backButton->Draw(game->GetGraphicsDevice(), deltaTime);
 		executeButton->Draw(game->GetGraphicsDevice(), deltaTime);
 	}
-	draggableManager->Draw(deltaTime);
+
+
 }
 
 void Demo::IBattleScene::PlayerOpenItemsDraw(unsigned long long deltaTime)
 {
 	itemMenuBackground->Begin();
-	itemMenuBackground->Draw(camera, deltaTime);
+	itemMenuBackground->Draw(this->uiCamera, deltaTime);
 	itemMenuBackground->End();
 
 	closeItemMenuButton->Draw(game->GetGraphicsDevice(), deltaTime);
@@ -781,68 +816,94 @@ void Demo::IBattleScene::PlayerOpenItemsDraw(unsigned long long deltaTime)
 	auto& inventory = player->GetInventoryItems().GetSlots();
 	std::wstring hoverDescription = L"";
 
-	fontSprite->Begin();
+	std::vector<int> validIndices;
+	for (int i = 0; i < inventory.size(); i++) {
+		if (inventory[i].quantity > 0 && Demo::ItemData::GetInstance()->GetItemBlueprint(inventory[i].itemID)) {
+			validIndices.push_back(i);
+		}
+	}
+
+	float targetWidth = itemMenuBackground->GetTargetWidth();
+	float targetHeight = itemMenuBackground->GetTargetHeight();
+
+	int columns = std::floor((targetWidth - PADDING_X * 2.0f) / (ITEM_W + PADDING_X));
+	int rows = std::floor((targetHeight - PADDING_Y * 2.0f - 90.0f) / (ITEM_H + PADDING_Y));
+	if (columns < 1) columns = 1;
+	if (rows < 1) rows = 1;
+
+	int itemsPerPage = columns * rows;
+	int startIndex = currentItemPage * itemsPerPage;
+	int endIndex = std::min(static_cast<int>(validIndices.size()), startIndex + itemsPerPage);
 
 	int displayIndex = 0;
-	for (int i = 0; i < inventory.size(); i++) {
+	for (int i = startIndex; i < endIndex; i++) {
+		auto btn = buffItems[displayIndex];
+		btn->Draw(game->GetGraphicsDevice(), deltaTime);
+		displayIndex++;
+	}
 
-		if (inventory[i].quantity <= 0) continue;
+	if (currentItemPage > 0) {
+		btnPrevPage->Draw(game->GetGraphicsDevice(), deltaTime);
+	}
+	if (currentItemPage < maxItemPage) {
+		btnNextPage->Draw(game->GetGraphicsDevice(), deltaTime);
+	}
 
+	fontSprite->Begin();
+
+	displayIndex = 0;
+	for (int i = startIndex; i < endIndex; i++) {
+		int originalIndex = validIndices[i];
+		auto slot = inventory[originalIndex];
 		auto btn = buffItems[displayIndex];
 
-		btn->Draw(game->GetGraphicsDevice(), deltaTime);
-
-		float textX = btn->GetWorldX() + (ITEM_W / 2.0f) - 10.0f;
-		float textY = btn->GetWorldY() + ITEM_H + 5.0f;
-
-		fontSprite->SetPosition(textX, textY);
-		fontSprite->SetColor(0xFFFFFFFF);
-		fontSprite->SetOutline(true, 0xFF000000, 3.f);
-		fontSprite->SetText(L"x" + std::to_wstring(inventory[i].quantity));
-		fontSprite->Draw(camera, deltaTime);
-
 		if (btn->GetTrigger()->IsHovering(deltaTime)) {
-			auto blueprint = Demo::ItemData::GetInstance()->GetItemBlueprint(inventory[i].itemID);
+			auto blueprint = Demo::ItemData::GetInstance()->GetItemBlueprint(slot.itemID);
 			if (blueprint) {
 				hoverDescription = blueprint->GetDescription();
 			}
 		}
-
 		displayIndex++;
 	}
 
-	fontSprite->End();
+	if (currentItemPage > 0) {
+		fontSprite->SetPosition(btnPrevPage->GetWorldX() + btnPrevPage->GetWidth() / 2.0f - 1.5f, btnPrevPage->GetWorldY());
+		fontSprite->SetText(L"<");
+		fontSprite->Draw(this->uiCamera, deltaTime);
+	}
+
+	if (currentItemPage < maxItemPage) {
+		fontSprite->SetPosition(btnNextPage->GetWorldX() + btnNextPage->GetWidth() / 2.0f - 1.5f, btnNextPage->GetWorldY());
+		fontSprite->SetText(L">");
+		fontSprite->Draw(this->uiCamera, deltaTime);
+	}
+
+	if (maxItemPage > 0) {
+		std::wstring pageText = L"Page " + std::to_wstring(currentItemPage + 1) + L"/" + std::to_wstring(maxItemPage + 1);
+		fontSprite->SetPosition(-35.0f, targetHeight / 2.0f - PADDING_Y - 9.0f);
+		fontSprite->SetText(std::move(pageText));
+		fontSprite->Draw(this->uiCamera, deltaTime);
+	}
 
 	if (!hoverDescription.empty()) {
-		fontSprite->Begin();
-
-		float descX = -HALF_BG_W + PADDING_X;
-		float descY = HALF_BG_H - 40.0f;
+		float descX = -targetWidth / 2.0f + PADDING_X;
+		float descY = -targetHeight / 2.0f + 15.0f;
 
 		fontSprite->SetPosition(descX, descY);
 		fontSprite->SetText(std::move(hoverDescription));
-		fontSprite->Draw(camera, deltaTime);
-		fontSprite->End();
+		fontSprite->Draw(this->uiCamera, deltaTime);
 	}
-	fontSprite->SetOutline(false);
+
+	fontSprite->End();
+	fontSprite->SetOutline(true);
 }
 
 void Demo::IBattleScene::EnemyAttackDraw(unsigned long long deltaTime)
 {
-	auto app = DX9GF::Application::GetInstance();
 	auto gd = game->GetGraphicsDevice();
 	const float battleHalfSize = battleBoxSize * 0.5f;
 	gd->SetAlphaBlending(true);
-	gd->DrawRectangle(camera, -battleHalfSize, -battleHalfSize, battleBoxSize, battleBoxSize, 0xEE6d758d, true);
-	gd->DrawRectangle(camera, -battleHalfSize, -battleHalfSize, battleBoxSize, battleBoxSize, 0xFF000000, false);
-	const int outlineThickness = 4;
-	for (int i = 1; i < outlineThickness; ++i) {
-		gd->DrawRectangle(camera, -battleHalfSize - i, -battleHalfSize - i, battleBoxSize + 2 * i, battleBoxSize + 2 * i, 0xFFdae0ea, false);
-	}
-	gd->DrawRectangle(camera, -battleHalfSize - outlineThickness, -battleHalfSize - outlineThickness, battleBoxSize + 2 * outlineThickness, battleBoxSize + 2 * outlineThickness, 0xFF000000, false);
-	gd->SetAlphaBlending(false);
-	battlePlayer->Draw(deltaTime);
-	const float y = app->GetScreenHeight() / 2.f - 40;
+	const float y = game->GetVirtualHeight() / 2.f - 40.f;
 	DrawHealthAndDefenseBar(y, gd);
 }
 
@@ -854,63 +915,53 @@ void Demo::IBattleScene::DrawHealthAndDefenseBar(const float y, DX9GF::GraphicsD
 	const float w_ = battlePlayer->GetHealth() * spacing;
 	const float x = -w / 2;
 	const float defenseY = y - 24.f;
-	// Defense bar
-	gd->DrawRectangle(camera, x, defenseY, w, 16, 0xFF808080, true);
-	gd->DrawRectangle(camera, x, defenseY, defenseW, 16, 0xFFD0D0D0, true);
-	// Black border
-	gd->DrawRectangle(camera, x, defenseY, w, 16, 0xFF000000, false);
 
-	// Health bar
-	// Red background
-	gd->DrawRectangle(camera, x, y, w, 20, 0xFFb4202a, true);
-	// Red highlight
-	gd->DrawRectangle(camera, x, y, w, 10, 0xFFdf3e23, true);
+	gd->DrawRectangle(this->uiCamera, x, defenseY, w, 16, 0xFF808080, true);
+	gd->DrawRectangle(this->uiCamera, x, defenseY, defenseW, 16, 0xFFD0D0D0, true);
+	gd->DrawRectangle(this->uiCamera, x, defenseY, w, 16, 0xFF000000, false);
 
-	// Green foreground
-	gd->DrawRectangle(camera, x, y, w_, 20, 0xFF59c135, true);
-	// Green highlight
-	gd->DrawRectangle(camera, x, y, w_, 10, 0xFF9cdb43, true);
+	gd->DrawRectangle(this->uiCamera, x, y, w, 20, 0xFFb4202a, true);
+	gd->DrawRectangle(this->uiCamera, x, y, w, 10, 0xFFdf3e23, true);
+	gd->DrawRectangle(this->uiCamera, x, y, w_, 20, 0xFF59c135, true);
+	gd->DrawRectangle(this->uiCamera, x, y, w_, 10, 0xFF9cdb43, true);
+	gd->DrawRectangle(this->uiCamera, x, y, w, 20, 0xFF000000, false);
 
-	// Black border
-	gd->DrawRectangle(camera, x, y, w, 20, 0xFF000000, false);
 	auto buffs = battlePlayer->GetActiveBuffs();
 	auto buffY = y - 48.f;
 	for (auto buff : buffs) {
 		int value = buff.value;
 		auto turnsLeft = buff.turnsLeft;
 		if (buff.type == ItemBuffType::BuffDamage || buff.type == ItemBuffType::BuffDefense) {
-			if (buff.type == ItemBuffType::BuffDamage) {
-				fontSprite->SetColor(0xFFfa6a0a);
-			}
-			else {
-				fontSprite->SetColor(0xFF588dbe);
-			}
+			if (buff.type == ItemBuffType::BuffDamage) fontSprite->SetColor(0xFFfa6a0a);
+			else fontSprite->SetColor(0xFF588dbe);
+
 			fontSprite->SetOutline(true, 0xFF000000, 3.f);
 			fontSprite->SetPosition(x, buffY);
 			fontSprite->SetText(std::to_wstring(value));
 			fontSprite->Begin();
-			fontSprite->Draw(camera, 0);
+			fontSprite->Draw(this->uiCamera, 0);
 			fontSprite->End();
+
 			auto textWidth = fontSprite->GetWidth();
 			if (buff.type == ItemBuffType::BuffDamage) {
 				attackBuffIcon->SetPosition(x + textWidth, buffY - 8.f);
 				attackBuffIcon->SetScale(2.f, 2.f);
 				attackBuffIcon->Begin();
-				attackBuffIcon->Draw(camera, 0);
+				attackBuffIcon->Draw(this->uiCamera, 0);
 				attackBuffIcon->End();
 			}
 			else {
 				defenseBuffIcon->SetPosition(x + textWidth, buffY - 8.f);
 				defenseBuffIcon->SetScale(2.f, 2.f);
 				defenseBuffIcon->Begin();
-				defenseBuffIcon->Draw(camera, 0);
+				defenseBuffIcon->Draw(this->uiCamera, 0);
 				defenseBuffIcon->End();
 			}
 			fontSprite->SetColor(0xFFFFFFFF);
 			fontSprite->SetPosition(x + textWidth + 32.f, buffY);
 			fontSprite->SetText(std::to_wstring(turnsLeft) + L" turns");
 			fontSprite->Begin();
-			fontSprite->Draw(camera, 0);
+			fontSprite->Draw(this->uiCamera, 0);
 			fontSprite->End();
 			buffY -= 32.f;
 		}
@@ -934,8 +985,10 @@ void Demo::IBattleScene::Init()
 	// Initialize texture sheet
 	uiSheetTex = std::make_shared<DX9GF::Texture>(game->GetGraphicsDevice());
 	uiSheetTex->LoadTexture(L"assets/ui.png");
+
 	tempTex = std::make_shared<DX9GF::Texture>(game->GetGraphicsDevice());
-	tempTex->LoadTexture(L"assets/TempTex.png");
+	tempTex->LoadTexture(L"assets/All-borders.png");
+
 	itemsTex = std::make_shared<DX9GF::Texture>(game->GetGraphicsDevice());
 	itemsTex->LoadTexture(L"assets/items.png");
 	attackBuffIcon = std::make_shared<DX9GF::StaticSprite>(uiSheetTex.get());
@@ -1021,7 +1074,7 @@ void Demo::IBattleScene::Init()
 			std::uniform_int_distribution<> dis(0, 1);
 			if (dis(gen) == 0) {
 				popUpMessage->QueueMessage(&commandBuffer, L"You successfully fled!");
-				auto transitionInCommand = std::make_shared<TransitionCommand>(game->GetGraphicsDevice(), 1.f, true);
+				auto transitionInCommand = std::make_shared<TransitionCommand>(game->GetGraphicsDevice(), &this->uiCamera, 1.f, true);
 				drawBuffer->PushCommand(std::make_shared<DX9GF::DelayCommand>(1.5f));
 				drawBuffer->PushCommand(transitionInCommand);
 				commandBuffer.PushCommand(std::make_shared<DX9GF::CustomCommand>([this, transitionInCommand](std::function<void(void)> markFinished2) {
@@ -1185,17 +1238,39 @@ void Demo::IBattleScene::Init()
 		});
 	closeItemMenuButton->SetSpriteScale(2.f, 2.f);
 
+	btnPrevPage = std::make_shared<IconButton>(transformManager, 0, 0, 30.0f, 30.0f, uiSheetTex);
+	btnPrevPage->SetSpriteRects({ {0, 0, 15, 15}, {0, 17, 15, 31}, {0, 35, 15, 47} });
+	btnPrevPage->SetSpriteScale(2.0f, 2.0f);
+	btnPrevPage->SetOnReleaseLeft([&](DX9GF::ITrigger* thisObj) {
+		if (currentItemPage > 0) {
+			currentItemPage--;
+			RefreshItemMenu();
+		}
+		});
+
+	btnNextPage = std::make_shared<IconButton>(transformManager, 0, 0, 30.0f, 30.0f, uiSheetTex);
+	btnNextPage->SetSpriteRects({ {0, 0, 15, 15}, {0, 17, 15, 31}, {0, 35, 15, 47} });
+	btnNextPage->SetSpriteScale(2.0f, 2.0f);
+	btnNextPage->SetOnReleaseLeft([&](DX9GF::ITrigger* thisObj) {
+		if (currentItemPage < maxItemPage) {
+			currentItemPage++;
+			RefreshItemMenu();
+		}
+		});
+
 	// Init buttons
-	attackButton->Init(&camera);
-	itemsButton->Init(&camera);
-	fleeButton->Init(&camera);
-	backButton->Init(&camera);
-	executeButton->Init(&camera);
-	closeItemMenuButton->Init(&camera);
+	attackButton->Init(&this->uiCamera);
+	itemsButton->Init(&this->uiCamera);
+	fleeButton->Init(&this->uiCamera);
+	backButton->Init(&this->uiCamera);
+	executeButton->Init(&this->uiCamera);
+	closeItemMenuButton->Init(&this->uiCamera);
+	btnPrevPage->Init(&this->uiCamera);
+	btnNextPage->Init(&this->uiCamera);
 
 	// Init sprite
 	fontSprite = std::make_shared<DX9GF::FontSprite>(font.get());
-	fontSprite->SetColor(0xFF000000);
+	fontSprite->SetColor(0xFFFFFFFF);
 	energyIcon = std::make_shared<DX9GF::StaticSprite>(uiSheetTex.get());
 	energyIcon->SetSrcRect({
 		.left = 96,
@@ -1214,14 +1289,21 @@ void Demo::IBattleScene::Init()
 	hourglassIcon->SetScale(2.f);
 
 
-	itemMenuBackground = std::make_shared<DX9GF::StaticSprite>(tempTex.get());
-	itemMenuBackground->SetSrcRect({
-		.left = 312,
-		.top = 0,
-		.right = 504,
-		.bottom = 128 });
-	itemMenuBackground->SetOrigin(95.5f, 63.5f);
-	itemMenuBackground->SetScale(3.0f, 3.0f);
+	itemMenuBackground = std::make_shared<DX9GF::NineSliceSprite>(
+		tempTex.get(),
+		RECT{ 0, 0, 45, 45 },
+		8, 8, 8, 8
+	);
+
+	auto app = DX9GF::Application::GetInstance();
+	float screenW = static_cast<float>(app->GetScreenWidth());
+	float screenH = static_cast<float>(app->GetScreenHeight());
+	float targetWidth = screenW * 0.8f;
+	float targetHeight = screenH * 0.65f;
+
+	itemMenuBackground->SetTargetSize(targetWidth, targetHeight);
+	itemMenuBackground->SetOrigin(targetWidth / 2.0f, targetHeight / 2.0f);
+	itemMenuBackground->SetPosition(0.0f, 0.0f);
 
 	// Fetch Deck
 	const auto& deckCards = player->GetDeck();
@@ -1281,7 +1363,7 @@ void Demo::IBattleScene::Init()
 	transformManager->RebuildHierarchy();
 	DamageTextManager::GetInstance()->Init(this->game);
 	ItemData::GetInstance()->LoadData();
-	drawBuffer->PushCommand(std::make_shared<TransitionCommand>(game->GetGraphicsDevice(), 1.f, false));
+	drawBuffer->PushCommand(std::make_shared<TransitionCommand>(game->GetGraphicsDevice(), &this->uiCamera, 1.f, false)); 
 }
 
 void Demo::IBattleScene::Update(unsigned long long deltaTime)
@@ -1289,7 +1371,9 @@ void Demo::IBattleScene::Update(unsigned long long deltaTime)
 	auto inpMan = DX9GF::InputManager::GetInstance();
 	inpMan->ReadMouse(deltaTime);
 	inpMan->ReadKeyboard(deltaTime);
-	timeSinceLastTargetPopUp += deltaTime / 1000.f;
+	this->camera.Update();
+	this->uiCamera.Update();
+
 	if (isDefeatSequence) {
 		if (!EnemyAttackUpdate(deltaTime)) {
 			DamageTextManager::GetInstance()->Update(deltaTime);
@@ -1348,18 +1432,20 @@ void Demo::IBattleScene::Update(unsigned long long deltaTime)
 	commandBuffer.Update(deltaTime);
 }
 
-void Demo::IBattleScene::Draw(unsigned long long deltaTime)
+void Demo::IBattleScene::DrawWorld(unsigned long long deltaTime)
 {
 	auto gd = game->GetGraphicsDevice();
-	auto inpMan = DX9GF::InputManager::GetInstance();
-	gd->Clear(0xFF403353);
+
 	if (SUCCEEDED(gd->BeginDraw())) {
 		if (customBackgroundDraw) {
 			customBackgroundDraw(gd, deltaTime);
 		}
 		else {
 			/* Cool wave grid effect */
-			auto [screenWidth, screenHeight] = camera.GetScreenResolution();
+			auto app = DX9GF::Application::GetInstance();
+			float screenWidth = static_cast<float>(app->GetScreenWidth());
+			float screenHeight = static_cast<float>(app->GetScreenHeight());
+
 			const int spacingX = 32;
 			const int spacingY = 32;
 			const float segmentLength = 16.0f;
@@ -1388,55 +1474,87 @@ void Demo::IBattleScene::Draw(unsigned long long deltaTime)
 			}
 			/* End of cool wave grid effect */
 		}
+
 		switch (state) {
 		case State::PlayerStandBy:
+		case State::PlayerOpenItems:
 			for (auto& enemy : enemies) {
-				enemy->Draw(game->GetGraphicsDevice(), &camera, deltaTime);
+				enemy->Draw(gd, &camera, deltaTime);
 			}
-			PlayerStandByDraw(deltaTime);
 			break;
 		case State::PlayerAttack:
 			for (auto& enemy : enemies) {
-				enemy->Draw(game->GetGraphicsDevice(), &camera, deltaTime);
+				enemy->Draw(gd, &camera, deltaTime);
 			}
+			draggableManager->Draw(deltaTime);
+			break;
+		case State::EnemyAttack:
+			// DRAW BATTLE BOUNDS
+			const float battleHalfSize = battleBoxSize * 0.5f;
+			gd->SetAlphaBlending(true);
+			gd->DrawRectangle(camera, -battleHalfSize, -battleHalfSize, battleBoxSize, battleBoxSize, 0xEE6d758d, true);
+			gd->DrawRectangle(camera, -battleHalfSize, -battleHalfSize, battleBoxSize, battleBoxSize, 0xFF000000, false);
+			const int outlineThickness = 4;
+			for (int i = 1; i < outlineThickness; ++i) {
+				gd->DrawRectangle(camera, -battleHalfSize - i, -battleHalfSize - i, battleBoxSize + 2 * i, battleBoxSize + 2 * i, 0xFFdae0ea, false);
+			}
+			gd->DrawRectangle(camera, -battleHalfSize - outlineThickness, -battleHalfSize - outlineThickness, battleBoxSize + 2 * outlineThickness, battleBoxSize + 2 * outlineThickness, 0xFF000000, false);
+			gd->SetAlphaBlending(false);
+
+			battlePlayer->Draw(deltaTime);
+			for (auto& enemy : enemies) {
+				enemy->Draw(gd, &camera, deltaTime);
+			}
+			break;
+		}
+
+		for (auto& card : queuedToDraw) {
+			dynamic_pointer_cast<IDraggable>(card)->Draw(deltaTime);
+		}
+
+		popUpMessage->Draw(deltaTime);
+		DamageTextManager::GetInstance()->Draw(this->camera, deltaTime);
+		gd->EndDraw();
+	}
+}
+
+void Demo::IBattleScene::DrawUI(unsigned long long deltaTime)
+{
+	auto gd = game->GetGraphicsDevice();
+
+	if (SUCCEEDED(gd->BeginDraw())) {
+
+		switch (state) {
+		case State::PlayerStandBy:
+			PlayerStandByDraw(deltaTime);
+			break;
+		case State::PlayerAttack:
 			PlayerAttackDraw(deltaTime);
 			break;
 		case State::PlayerOpenItems:
-			for (auto& enemy : enemies) {
-				enemy->Draw(game->GetGraphicsDevice(), &camera, deltaTime);
-			}
 			PlayerOpenItemsDraw(deltaTime);
 			break;
 		case State::EnemyAttack:
-			EnemyAttackDraw(deltaTime);
-			for (auto& enemy : enemies) {
-				enemy->Draw(game->GetGraphicsDevice(), &camera, deltaTime);
-			}
+			float y = game->GetVirtualHeight() / 2.f - 40.f;
+			DrawHealthAndDefenseBar(y, gd);
 			break;
-		default:
-			throw std::runtime_error("Unexpected state");
 		}
-		for (auto& card : queuedToDraw) {
-			dynamic_pointer_cast<IDraggable>(card)->Draw(deltaTime);
-		}
-		for (auto& card : queuedToDraw) {
-			dynamic_pointer_cast<IDraggable>(card)->Draw(deltaTime);
-		}
-		DrawAttackCountdown(deltaTime);
-		popUpMessage->Draw(deltaTime);
+
 		if (isDefeatSequence && defeatElapsedMs >= 1000.f) {
-			const auto app = DX9GF::Application::GetInstance();
-			const float screenWidth = static_cast<float>(app->GetScreenWidth());
-			const float screenHeight = static_cast<float>(app->GetScreenHeight());
+			auto [camW, camH] = uiCamera.GetScreenResolution();
+			float w = static_cast<float>(camW);
+			float h = static_cast<float>(camH);
 			const int alpha = static_cast<int>((std::min)(1.0f, defeatFadeAlpha) * 255.f);
+
 			gd->SetAlphaBlending(true);
-			gd->DrawRectangle(camera, -screenWidth / 2.f, -screenHeight / 2.f, screenWidth, screenHeight, D3DCOLOR_ARGB(alpha, 0, 0, 0), true);
+			gd->DrawRectangle(uiCamera, -w / 2.f, -h / 2.f, w, h, D3DCOLOR_ARGB(alpha, 0, 0, 0), true);
 			gd->SetAlphaBlending(false);
 		}
-		DamageTextManager::GetInstance()->Draw(this->camera, deltaTime);
+		DrawAttackCountdown(deltaTime);
+
 		drawBuffer->Update(deltaTime);
-		inpMan->DrawCursor(&camera, deltaTime);
+
+		DX9GF::InputManager::GetInstance()->DrawCursor(&this->uiCamera, deltaTime);
 		gd->EndDraw();
 	}
-	gd->Present();
 }

@@ -1,11 +1,11 @@
-#include "pch.h"
+﻿#include "pch.h"
 #include "IntroScene.h"
 
 void Demo::IntroScene::Init() {
     font = std::make_shared<DX9GF::Font>(game->GetGraphicsDevice(), L"StatusPlz", 16);
     fontSprite = std::make_shared<DX9GF::FontSprite>(font.get());
 
-    auto [sw, sh] = uiCamera.GetScreenResolution();
+    auto [sw, sh] = camera.GetScreenResolution();
     conversation = std::make_shared<IConversation>(fontSprite, sw, sh);
 
     conversation->AddLine({ .name = L"???", .content = L"Ugh... where... where am I?" });
@@ -37,15 +37,26 @@ void Demo::IntroScene::Update(unsigned long long deltaTime) {
     }
 }
 
-void Demo::IntroScene::Draw(unsigned long long deltaTime) {
+void Demo::IntroScene::DrawWorld(unsigned long long deltaTime) {
     auto gd = game->GetGraphicsDevice();
-    gd->Clear(0xFF000000);
+
     if (SUCCEEDED(gd->BeginDraw())) {
-        if (conversation) {
-            conversation->Draw(gd, deltaTime);
-        }
-        DX9GF::InputManager::GetInstance()->DrawCursor(&uiCamera, deltaTime);
         gd->EndDraw();
     }
-    gd->Present();
+}
+
+void Demo::IntroScene::DrawUI(unsigned long long deltaTime)
+{
+    auto gd = game->GetGraphicsDevice();
+
+    if (SUCCEEDED(gd->BeginDraw())) {
+
+        if (conversation) {
+            conversation->Draw(gd, &this->uiCamera, deltaTime);
+        }
+
+        DX9GF::InputManager::GetInstance()->DrawCursor(&this->uiCamera, deltaTime);
+
+        gd->EndDraw();
+    }
 }

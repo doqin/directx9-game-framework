@@ -32,7 +32,9 @@ namespace Demo {
 
 	void InventoryMenu::Init()
 	{
-		auto [sw, sh] = uiCamera->GetScreenResolution();
+		float sw = static_cast<float>(game->GetVirtualWidth());
+		float sh = static_cast<float>(game->GetVirtualHeight());
+
 		float centerX = 0.0f;
 		float topY = -sh / 2.0f;
 		float bottomY = sh / 2.0f;
@@ -77,8 +79,8 @@ namespace Demo {
 		btnOptions->SetSpriteRects(DX9GF::Utils::CreateRectsHorizontal(0, 208, 48, 32, 3));
 		btnOptions->SetOnReleaseLeft([this, sw, sh](DX9GF::ITrigger* t) {
 			auto sceMan = this->game->GetSceneManager();
-				sceMan->InsertScene(sceMan->GetIndex() + 1, new SettingsScene(this->game, sw, sh));
-				sceMan->GoToNext();
+			sceMan->InsertScene(sceMan->GetIndex() + 1, new SettingsScene(this->game, sw, sh));
+			sceMan->GoToNext();
 			});
 		btnOptions->SetSpriteScale(2.f, 2.f);
 		btnOptions->Init(uiCamera);
@@ -86,7 +88,7 @@ namespace Demo {
 		btnLeaveGame = std::make_shared<IconButton>(transformManager, leaveX, bottomY - 50.0f, 48.0f * 2, 32.0f * 2, uiTex);
 		btnLeaveGame->SetSpriteRects(DX9GF::Utils::CreateRectsHorizontal(144, 208, 48, 32, 3));
 		btnLeaveGame->SetOnReleaseLeft([this](DX9GF::ITrigger* t) {
-				this->pendingLeave = true;
+			this->pendingLeave = true;
 			});
 		btnLeaveGame->SetSpriteScale(2.f, 2.f);
 		btnLeaveGame->Init(uiCamera);
@@ -95,7 +97,7 @@ namespace Demo {
 		deckContainer->Init(draggableManager, game->GetGraphicsDevice(), uiCamera);
 		deckContainer->SetMaxHeight(sh * 0.5f);
 
-        inventoryContainer = std::make_shared<IContainer>(transformManager, containerW, 40.0f, rightContainerX, containerY);
+		inventoryContainer = std::make_shared<IContainer>(transformManager, containerW, 40.0f, rightContainerX, containerY);
 		inventoryContainer->Init(draggableManager, game->GetGraphicsDevice(), uiCamera);
 		inventoryContainer->SetMaxHeight(sh * 0.5f);
 	}
@@ -106,9 +108,7 @@ namespace Demo {
 		if (isOpen) {
 			RefreshItemsUI();
 			DX9GF::AudioManager::GetInstance()->Play("open_inv");
-			backBufferTexture = std::make_shared<DX9GF::Texture>(game->GetGraphicsDevice());
-			backBufferTexture->CaptureCurrentBackBuffer();
-			backBufferSprite = std::make_shared<DX9GF::StaticSprite>(backBufferTexture.get());
+		
 			for (auto& cardId : player->GetDeck()) {
 				auto dragCard = std::dynamic_pointer_cast<IDraggable>(ICard::CreateCard(cardId, transformManager, draggableManager, game->GetGraphicsDevice(), uiCamera));
 				if (dragCard) deckContainer->AddChildProgrammatically(dragCard);
@@ -155,7 +155,9 @@ namespace Demo {
 	{
 		if (!isOpen) return;
 
-		auto [sw, sh] = uiCamera->GetScreenResolution();
+		float sw = static_cast<float>(game->GetVirtualWidth());
+		float sh = static_cast<float>(game->GetVirtualHeight());
+
 		float centerX = 0.0f;
 		float topY = -sh / 2.0f;
 		float bottomY = sh / 2.0f;
@@ -194,7 +196,7 @@ namespace Demo {
 		}
 		else if (currentTab == Tab::ITEMS) {
 			btnTabItems->SetState(Demo::IButton::ButtonState::CLICKED);
-			if (isItemsDirty) RefreshItemsUI(); //only refresh items when needed
+			if (isItemsDirty) RefreshItemsUI();
 
 			for (auto& btn : buffItems) {
 				btn->Update(deltaTime);
@@ -206,21 +208,17 @@ namespace Demo {
 	{
 		if (!isOpen) return;
 
-		auto [sw, sh] = uiCamera->GetScreenResolution();
+		float sw = static_cast<float>(game->GetVirtualWidth());
+		float sh = static_cast<float>(game->GetVirtualHeight());
+
 		float centerX = 0.0f;
 		float leftEdge = -sw / 2.0f;
 		float topEdge = -sh / 2.0f;
 		float bottomEdge = sh / 2.0f;
 
-		if (backBufferSprite) {
-			backBufferSprite->Begin();
-			backBufferSprite->SetPosition(leftEdge, topEdge);
-			backBufferSprite->Draw(*uiCamera, deltaTime);
-			backBufferSprite->End();
-		}
-
 		gd->SetAlphaBlending(true);
-		gd->DrawRectangle(*uiCamera, leftEdge, topEdge, sw, sh, 0, 1, 1, 0, 0, D3DXCOLOR(0, 0, 0, 0.65f), true);
+		// Use D3DCOLOR_ARGB instead of D3DXCOLOR for the best compatibility with DrawRectangle
+		gd->DrawRectangle(*uiCamera, leftEdge, topEdge, sw, sh, D3DCOLOR_ARGB(165, 0, 0, 0), true);
 		gd->SetAlphaBlending(false);
 
 		btnTabItems->Draw(gd, deltaTime);
@@ -235,7 +233,7 @@ namespace Demo {
 		fontSprite->SetOutline(true, 0xFF000000, 3.f);
 		fontSprite->SetPosition(leftEdge + 30.0f, bottomEdge - 95.0f);
 
-        fontSprite->SetText(std::to_wstring(player->GetGold()) + L"G");
+		fontSprite->SetText(std::to_wstring(player->GetGold()) + L"G");
 		fontSprite->Draw(*uiCamera, deltaTime);
 
 		fontSprite->SetPosition(leftEdge + 30.0f, bottomEdge - 60.0f);
@@ -244,7 +242,7 @@ namespace Demo {
 		fontSprite->End();
 		fontSprite->SetOutline(false);
 
-		if (currentTab == Tab::ITEMS) 
+		if (currentTab == Tab::ITEMS)
 		{
 			auto& inventory = player->GetInventoryItems().GetSlots();
 			hoverDescription = L"";
@@ -311,7 +309,7 @@ namespace Demo {
 			fontSprite->Draw(*uiCamera, deltaTime);
 			fontSprite->SetText(L"Available Cards");
 			float rightContainerX = containerGap / 2.0f + containerW / 2.f - fontSprite->GetWidth() / 2.f;
-            fontSprite->SetPosition(rightContainerX + 10.0f, topEdge + 120.0f);
+			fontSprite->SetPosition(rightContainerX + 10.0f, topEdge + 120.0f);
 			fontSprite->Draw(*uiCamera, deltaTime);
 			fontSprite->End();
 

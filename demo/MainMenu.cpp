@@ -15,9 +15,7 @@ namespace Demo
 	std::shared_ptr<SaveGameState> MainMenu::gameSaveState = nullptr;
 	void MainMenu::UpdateLayout(int screenW, int screenH)
 	{
-		camera.SetPosition({ screenW / 2.f, 0 });
-
-		//BACKGROUND - use aspect fill
+		// BACKGROUND - use aspect fill
 		float bgImageW = (float)bgTex->GetWidth();
 		float bgImageH = (float)bgTex->GetHeight();
 
@@ -35,38 +33,39 @@ namespace Demo
 		bgSprite->SetOrigin(bgImageW / 2.0f, bgImageH / 2.0f);
 		bgSprite->SetPosition(0, 0);
 
-		//spacing between buttons
+		// Draw UI: Anchor to the left edge of the virtual screen to keep it clear of the black bars
 		float spacingY = 10.0f;
-		//start drawing from 40% of the screen height
 		float startY = -screenH * 0.10f;
+		float currentY = startY;
+
+		// -screenW / 2.f is the left edge of the gameplay area, +64.f offsets it inward
+		float leftAnchorX = -screenW / 2.f + 64.f;
 
 		std::shared_ptr<Demo::IButton> buttons[] = { continueButton, newGameButton, optionsButton, creditsButton, quitButton };
-		float currentY = startY;
 
 		for (auto& btn : buttons)
 		{
 			if (btn)
 			{
-				//center X
-				float posX = 64.f;
-				btn->SetLocalPosition(posX, currentY);
-
-				//button spacing
+				btn->SetLocalPosition(leftAnchorX, currentY);
 				currentY += btn->GetHeight() + spacingY;
 			}
 		}
 
-		//TITLE
+		// TITLE
 		auto [_, y] = continueButton->GetLocalPosition();
 		auto height = fontSprite->GetHeight();
-		fontSprite->SetPosition(64.f, y - height * 3 * 2.f - 32.f);
+		fontSprite->SetPosition(leftAnchorX, y - height * 3 * 2.f - 32.f);
 	}
 
 	void MainMenu::DrawBackground(unsigned long long deltaTime)
 	{
+		auto [screenWidth, screenHeight] = camera.GetScreenResolution();
+
+		game->GetGraphicsDevice()->DrawRectangle(0.0f, 0.0f, static_cast<float>(screenWidth), static_cast<float>(screenHeight), 0xFF242234, true);
+
 		const D3DCOLOR polyColor = 0xFF9cdb43;
 		//const D3DCOLOR crackColor = 0xFF9cdb43;
-		auto [screenWidth, screenHeight] = camera.GetScreenResolution();
 
 		//shared static timer variable for background processes
 		static float timeAcc = 0.0f;
@@ -93,12 +92,6 @@ namespace Demo
 				prevX = vx;
 				prevY = vy;
 			}
-
-			//if (static_cast<int>(timeAcc * 2.0f + i) % 7 == 0) {
-			//	float crackX = bx + (rand() % static_cast<int>(size)) - size / 2.0f;
-			//	float crackY = by + (rand() % static_cast<int>(size)) - size / 2.0f;
-			//	game->GetGraphicsDevice()->DrawLine(crackX - 20, crackY - 20, crackX + 20, crackY + 20, crackColor);
-			//}
 		}
 	}
 
@@ -110,9 +103,9 @@ namespace Demo
 		saveManager = std::make_shared<DX9GF::SaveManager>();
 		gameSaveState = std::make_shared<SaveGameState>(game, saveManager);
 
-		auto app = DX9GF::Application::GetInstance();
-		lastScreenWidth = app->GetScreenWidth();
-		lastScreenHeight = app->GetScreenHeight();
+		auto [camW, camH] = camera.GetScreenResolution();
+		lastScreenWidth = camW;
+		lastScreenHeight = camH;
 
 		//load textures
 		buttonSheetTex = std::make_shared<DX9GF::Texture>(game->GetGraphicsDevice());
@@ -150,7 +143,7 @@ namespace Demo
 		continueButton->SetOnReleaseLeft([this](DX9GF::ITrigger* t) {
 			if (isTransitioning) return;
 			isTransitioning = true;
-			auto transitionInCommand = std::make_shared<TransitionCommand>(game->GetGraphicsDevice(), 1.f, true);
+			auto transitionInCommand = std::make_shared<TransitionCommand>(game->GetGraphicsDevice(), &this->uiCamera, 1.f, true);
 			drawBuffer->PushCommand(transitionInCommand);
 			commandBuffer->PushCommand(std::make_shared<DX9GF::CustomCommand>([this, transitionInCommand](std::function<void(void)> markFinished) {
 				if (!transitionInCommand->IsFinished()) {
@@ -160,8 +153,7 @@ namespace Demo
 				isTransitioning = false;
 				markFinished();
 				}));
-			drawBuffer->PushCommand(std::make_shared<TransitionCommand>(game->GetGraphicsDevice(), 1.f, false));
-			});
+			drawBuffer->PushCommand(std::make_shared<TransitionCommand>(game->GetGraphicsDevice(), &this->uiCamera, 1.f, false));			});
 
 		//New Game Button
 		newGameButton = std::make_shared<Demo::IconButton>(transformManager, 0, 0, 96, 32, buttonSheetTex, 3);
@@ -169,7 +161,8 @@ namespace Demo
 		newGameButton->SetOnReleaseLeft([this](DX9GF::ITrigger* t) {
 			if (isTransitioning) return;
 			isTransitioning = true;
-			auto transitionInCommand = std::make_shared<TransitionCommand>(game->GetGraphicsDevice(), 1.f, true);
+			auto transitionInCommand = std::make_shared<TransitionCommand>(game->GetGraphicsDevice(), &this->uiCamera, 1.f, true);
+			drawBuffer->PushCommand(transitionInCommand);
 			drawBuffer->PushCommand(transitionInCommand);
 			commandBuffer->PushCommand(std::make_shared<DX9GF::CustomCommand>([this, transitionInCommand](std::function<void(void)> markFinished) {
 				if (!transitionInCommand->IsFinished()) {
@@ -188,10 +181,10 @@ namespace Demo
 					}
 					f.close();
 					markFinished1();
-				}));
+					}));
 				markFinished();
 				}));
-			drawBuffer->PushCommand(std::make_shared<TransitionCommand>(game->GetGraphicsDevice(), 1.f, false));
+			drawBuffer->PushCommand(std::make_shared<TransitionCommand>(game->GetGraphicsDevice(), &this->uiCamera, 1.f, false));
 			});
 		newGameButton->SetSpriteScale(2.f, 2.f);
 
@@ -234,7 +227,7 @@ namespace Demo
 		{
 			if (btn)
 			{
-				btn->Init(&camera);
+				btn->Init(&uiCamera);
 				uiButtons.push_back(btn);
 			}
 		}
@@ -246,27 +239,16 @@ namespace Demo
 
 		//call it to setup the update layout
 		UpdateLayout(lastScreenWidth, lastScreenHeight);
-
 		transformManager->RebuildHierarchy();
 	}
 
 	void MainMenu::Update(unsigned long long deltaTime)
 	{
-		auto [currW, currH] = camera.GetScreenResolution();
-		auto [lastWidth, lastHeight] = uiCamera.GetScreenResolution();
-		if (currW != lastWidth || currH != lastHeight) {
-			uiCamera.SetScreenResolution(currW, currH);
-		}
 		auto inpMan = DX9GF::InputManager::GetInstance();
 		inpMan->ReadMouse(deltaTime);
 		inpMan->ReadKeyboard(deltaTime);
 
-		auto app = DX9GF::Application::GetInstance();
-		int currentWidth = app->GetScreenWidth();
-		int currentHeight = app->GetScreenHeight();
-
-		//i removed the timer check for savegame.json here becuz it keeps spamming the audio. i think init() did a good job checking on savegame already
-
+		auto [currW, currH] = camera.GetScreenResolution();
 		UpdateLayout(currW, currH);
 
 		for (auto& button : uiButtons)
@@ -280,32 +262,41 @@ namespace Demo
 		commandBuffer->Update(deltaTime);
 	}
 
-	void MainMenu::Draw(unsigned long long deltaTime)
+	void MainMenu::DrawWorld(unsigned long long deltaTime)
 	{
 		auto gd = game->GetGraphicsDevice();
-		gd->Clear(0xFF242234);
+
 		if (SUCCEEDED(gd->BeginDraw())) {
-			//if (bgSprite)
-			//{
-			//	bgSprite->Begin();
-			//	bgSprite->Draw(camera, deltaTime);
-			//	bgSprite->End();
-			//}
 			DrawBackground(deltaTime);
+			gd->EndDraw();
+		}
+	}
+
+	void MainMenu::DrawUI(unsigned long long deltaTime)
+	{
+		auto gd = game->GetGraphicsDevice();
+
+		if (SUCCEEDED(gd->BeginDraw())) {
+
 			fontSprite->Begin();
 			fontSprite->SetScale(2.f, 2.f);
 			auto prevPos = fontSprite->GetPosition();
 			auto height = fontSprite->GetHeight() * 2.f;
+
 			fontSprite->SetColor(0xFFFFFFFF);
 			fontSprite->SetOutline(true, 0xFF000000, 2.0f);
+
 			fontSprite->SetText(L"Toi, sinh vien nam 6 UIT,");
-			fontSprite->Draw(camera, deltaTime);
+			fontSprite->Draw(uiCamera, deltaTime);
+
 			fontSprite->SetPosition(prevPos.x, prevPos.y + height);
 			fontSprite->SetText(L"bi hut vao cyberspace");
-			fontSprite->Draw(camera, deltaTime);
+			fontSprite->Draw(uiCamera, deltaTime);
+
 			fontSprite->SetPosition(prevPos.x, prevPos.y + height * 2);
 			fontSprite->SetText(L"vi click vao link doc");
-			fontSprite->Draw(camera, deltaTime);
+			fontSprite->Draw(uiCamera, deltaTime);
+
 			fontSprite->SetPosition(prevPos.x, prevPos.y);
 			fontSprite->End();
 
@@ -313,11 +304,14 @@ namespace Demo
 			{
 				btn->Draw(gd, deltaTime);
 			}
+
 			drawBuffer->Update(deltaTime);
+
 			DX9GF::InputManager::GetInstance()->DrawCursor(&this->uiCamera, deltaTime);
+
 			gd->EndDraw();
 		}
-		gd->Present();
 	}
+
 
 }

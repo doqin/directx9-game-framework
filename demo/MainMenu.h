@@ -20,7 +20,6 @@ namespace Demo
 		std::shared_ptr<DX9GF::StaticSprite> bgSprite;
 		std::shared_ptr<DX9GF::Texture> bgTex;
 		std::shared_ptr<DX9GF::Texture> titleTex;
-		DX9GF::Camera uiCamera;
 
 		//button component
 		std::shared_ptr<DX9GF::Texture> buttonSheetTex;
@@ -47,10 +46,12 @@ namespace Demo
 
 		MainMenu(Game* game, int screenWidth, int screenHeight)
 			: IScene(screenWidth, screenHeight),
-			game(game), uiCamera(screenWidth, screenHeight) {}
+			game(game) {
+		}
 		void Init() override;
 		void Update(unsigned long long deltaTime) override;
-		void Draw(unsigned long long deltaTime) override;
+		void DrawWorld(unsigned long long deltaTime) override;
+		void DrawUI(unsigned long long deltaTime) override;
 		void UpdateLayout(int width, int height);
 		void DrawBackground(unsigned long long deltaTime);
 	};

@@ -21,5 +21,9 @@ namespace DX9GF {
 		UINT GetHeight() const;
 		std::tuple<UINT, UINT> GetSize() const;
 		GraphicsDevice* GetGraphicsDevice();
+		void CreateRenderTarget(UINT width, UINT height);
+		IDirect3DSurface9* GetSurface();
+		void ReleaseRawTexture();
+
 	};
 }

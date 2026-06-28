@@ -1,4 +1,4 @@
-#pragma once
+﻿#pragma once
 #include "DX9GF.h"
 #include "DX9GFExtras.h"
 #include "Player.h"
@@ -89,11 +89,17 @@ namespace Demo {
 		std::shared_ptr<IconButton> backButton;
 		std::shared_ptr<IconButton> executeButton;
 		std::shared_ptr<IconButton> closeItemMenuButton;
+
 		std::vector<std::shared_ptr<IconButton>> buffItems;
+		std::shared_ptr<IconButton> btnNextPage;
+		std::shared_ptr<IconButton> btnPrevPage;
+		int currentItemPage = 0;
+		int maxItemPage = 0;
+
 		std::shared_ptr<PopUpMessage> popUpMessage;
 		std::shared_ptr<DX9GF::StaticSprite> energyIcon;
 		std::shared_ptr<DX9GF::StaticSprite> hourglassIcon;
-		std::shared_ptr<DX9GF::StaticSprite> itemMenuBackground;
+		std::shared_ptr<DX9GF::NineSliceSprite> itemMenuBackground; //
 		std::shared_ptr<DX9GF::StaticSprite> attackBuffIcon;
 		std::shared_ptr<DX9GF::StaticSprite> defenseBuffIcon;
 		//
@@ -134,7 +140,8 @@ namespace Demo {
 		IBattleScene(Game* game, std::shared_ptr<Player> player, int screenWidth, int screenHeight) : IScene(screenWidth, screenHeight), game(game), player(player) {}
 		virtual void Init() override;
 		void Update(unsigned long long deltaTime) override;
-		void Draw(unsigned long long deltaTime) override;
+		void DrawWorld(unsigned long long deltaTime) override;
+		void DrawUI(unsigned long long deltaTime) override;
 		void SetCustomBackgroundDraw(std::function<void(DX9GF::GraphicsDevice*, unsigned long long)> drawFunc) { customBackgroundDraw = drawFunc; }
 		//
 		void SetOnVictoryCallback(std::function<void()> cb) { onVictoryCallback = cb; }

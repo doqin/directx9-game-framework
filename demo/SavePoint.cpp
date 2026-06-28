@@ -1,4 +1,4 @@
-#include "pch.h"
+﻿#include "pch.h"
 #include "SavePoint.h"
 #include <cmath>
 
@@ -7,8 +7,9 @@ namespace Demo {
         : IGameObject(tm, x, y), transformManager(tm) {
     }
 
-    void SavePoint::Init(DX9GF::GraphicsDevice* gd, DX9GF::Camera* camera, std::shared_ptr<Player> p, std::shared_ptr<DX9GF::ColliderManager> cm, std::shared_ptr<DX9GF::SaveManager> sm, std::shared_ptr<DX9GF::Font> font, std::shared_ptr<DX9GF::CommandBuffer> drawBuffer) {
+    void SavePoint::Init(DX9GF::GraphicsDevice* gd, DX9GF::Camera* worldCamera, DX9GF::Camera* uiCamera, std::shared_ptr<Player> p, std::shared_ptr<DX9GF::ColliderManager> cm, std::shared_ptr<DX9GF::SaveManager> sm, std::shared_ptr<DX9GF::Font> font, std::shared_ptr<DX9GF::CommandBuffer> drawBuffer) {
         player = p;
+        this->worldCamera = worldCamera;
         saveManager = sm;
         fontSprite = std::make_shared<DX9GF::FontSprite>(font.get());
         this->drawBuffer = drawBuffer;
@@ -41,7 +42,7 @@ namespace Demo {
             ->SetTextColors(0xFF000000, 0xFFFFFFFF, 0xFFFFFFFF)
             ->SetOutline(1.f, D3DXCOLOR(0xFF000000), D3DXCOLOR(0xFF000000), D3DXCOLOR(0xFF000000))
             ->SetPadding(4.f, 4.f);
-        btnYes->Init(camera);
+        btnYes->Init(uiCamera);
 
         btnNo = std::make_shared<Demo::TextButton>(
             transformManager.lock(), x + 20.f, y - 10.f, 30.f, 20.f, "No", font.get(),
@@ -55,12 +56,25 @@ namespace Demo {
             ->SetTextColors(0xFF000000, 0xFFFFFFFF, 0xFFFFFFFF)
             ->SetOutline(1.f, D3DXCOLOR(0xFF000000), D3DXCOLOR(0xFF000000), D3DXCOLOR(0xFF000000))
             ->SetPadding(4.f, 4.f);
-        btnNo->Init(camera);
+        btnNo->Init(uiCamera);
     }
 
     void SavePoint::Update(unsigned long long deltaTime) {
         if (!isVisible) return;
 
+        if (worldCamera) {
+            auto [worldX, worldY] = GetWorldPosition();
+            float zoom = worldCamera->GetZoom();
+
+            float uiX = (worldX - worldCamera->GetPosition().x) * zoom;
+            float uiY = (worldY - worldCamera->GetPosition().y) * zoom;
+
+            btnYes->SetLocalScale(0.5f * zoom, 0.5f * zoom);
+            btnNo->SetLocalScale(0.5f * zoom, 0.5f * zoom);
+
+            btnYes->SetLocalPosition(uiX - 50.f * zoom, uiY - 10.f * zoom);
+            btnNo->SetLocalPosition(uiX + 20.f * zoom, uiY - 10.f * zoom);
+        }
         auto inpMan = DX9GF::InputManager::GetInstance();
 
         if (isSaveMenuOpen) {
@@ -95,71 +109,72 @@ namespace Demo {
 
     void SavePoint::Draw(const DX9GF::Camera& camera, unsigned long long deltaTime) {
         if (!isVisible) return;
-
-        auto [x, y] = GetWorldPosition();
-
         sprite->Begin();
-		sprite->Draw(camera, deltaTime);
+        sprite->Draw(camera, deltaTime);
         sprite->End();
+    }
 
-        if (fontSprite) {
+    void SavePoint::DrawUI(DX9GF::Camera* uiCamera, unsigned long long deltaTime) {
+        if (!isVisible || !uiCamera || !worldCamera) return;
+
+        auto [worldX, worldY] = GetWorldPosition();
+        float zoom = worldCamera->GetZoom();
+        float uiX = (worldX - worldCamera->GetPosition().x) * zoom;
+        float uiY = (worldY - worldCamera->GetPosition().y) * zoom;
+
+        if (isSaveMenuOpen) {
+            float padding = 10.f * zoom;
+            float promptY = uiY - 30.f * zoom;
+            float scale = 0.5f * zoom;
+
             fontSprite->Begin();
-            if (isSaveMenuOpen) {
-                if (auto bufferLock = drawBuffer.lock()) {
-                    bufferLock->StackCommand(std::make_shared<DX9GF::CustomCommand>([this, x, y, &camera, deltaTime](std::function<void(void)> markFinished) {
-                        const auto padding = 10.f;
-                        const auto promptY = y - 30.f;
-                        fontSprite->SetText(L"Do you want to save the game?");
-                        fontSprite->SetPosition(x - fontSprite->GetWidth() / 4.f, promptY - fontSprite->GetHeight() / 4.f);
-                        if (gd) {
-                            gd->DrawRectangle(
-                                camera,
-                                x - fontSprite->GetWidth() / 4.f - padding,
-                                promptY - fontSprite->GetHeight() / 4.f - padding,
-                                fontSprite->GetWidth() / 2.f + 2 * padding,
-                                fontSprite->GetHeight() / 2.f + 2 * padding,
-                                0xFFE0E0E0, true
-                            );
-                            gd->DrawRectangle(
-                                camera,
-                                x - fontSprite->GetWidth() / 4.f - padding,
-                                promptY - fontSprite->GetHeight() / 4.f - padding,
-                                fontSprite->GetWidth() / 2.f + 2 * padding,
-                                fontSprite->GetHeight() / 2.f + 2 * padding,
-                                0xFF000000, false
-                            );
-                        }
-                        fontSprite->SetColor(0xFF000000);
-                        fontSprite->SetOutline(false);
-                        fontSprite->SetScale(0.5f);
-                        fontSprite->Draw(camera, deltaTime);
-                        fontSprite->End();
+            fontSprite->SetText(L"Do you want to save the game?");
+            float textW = fontSprite->GetWidth() * scale;
+            float textH = fontSprite->GetHeight() * scale;
 
-                        btnYes->Draw(gd, deltaTime);
-                        btnNo->Draw(gd, deltaTime);
-                        markFinished();
-                        }));
-                }
+            fontSprite->SetPosition(uiX - textW / 2.f, promptY - textH / 2.f);
+
+            if (gd) {
+                gd->DrawRectangle(
+                    *uiCamera,
+                    uiX - textW / 2.f - padding,
+                    promptY - textH / 2.f - padding,
+                    textW + 2 * padding,
+                    textH + 2 * padding,
+                    0xFFE0E0E0, true
+                );
+                gd->DrawRectangle(
+                    *uiCamera,
+                    uiX - textW / 2.f - padding,
+                    promptY - textH / 2.f - padding,
+                    textW + 2 * padding,
+                    textH + 2 * padding,
+                    0xFF000000, false
+                );
             }
-            else if (isPlayerNear) {
-                fontSprite->End();
-                if (auto bufferLock = drawBuffer.lock()) {
-                    bufferLock->StackCommand(std::make_shared<DX9GF::CustomCommand>([this, x, y, &camera, deltaTime](std::function<void(void)> markFinished) {
-                        fontSprite->Begin();
-                        fontSprite->SetText(L"E");
-                        fontSprite->SetScale(1.f);
-                        fontSprite->SetColor(0xFFFFFFFF);
-                        fontSprite->SetPosition(x - fontSprite->GetWidth() / 2.f, y - 30.f - fontSprite->GetHeight() / 2.f);
-                        fontSprite->SetOutline(true, 0xFF000000);
-                        fontSprite->Draw(camera, deltaTime);
-                        fontSprite->End();
-                        markFinished();
-                    }));
-                }
-            }
-            else {
-                fontSprite->End();
-            }
+
+            fontSprite->SetColor(0xFF000000);
+            fontSprite->SetOutline(false);
+            fontSprite->SetScale(scale);
+            fontSprite->Draw(*uiCamera, deltaTime);
+            fontSprite->End();
+
+            btnYes->Draw(gd, deltaTime);
+            btnNo->Draw(gd, deltaTime);
+        }
+        else if (isPlayerNear) {
+            float scale = 1.0f * zoom;
+            fontSprite->Begin();
+            fontSprite->SetText(L"E");
+            float textW = fontSprite->GetWidth() * scale;
+            float textH = fontSprite->GetHeight() * scale;
+
+            fontSprite->SetScale(scale);
+            fontSprite->SetColor(0xFFFFFFFF);
+            fontSprite->SetPosition(uiX - textW / 2.f, uiY - 30.f * zoom - textH / 2.f);
+            fontSprite->SetOutline(true, 0xFF000000);
+            fontSprite->Draw(*uiCamera, deltaTime);
+            fontSprite->End();
         }
     }
 }

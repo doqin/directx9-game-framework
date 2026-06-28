@@ -370,3 +370,33 @@ DX9GF::GraphicsDevice* DX9GF::Texture::GetGraphicsDevice()
 {
 	return graphicsDevice;
 }
+
+void DX9GF::Texture::CreateRenderTarget(UINT width, UINT height)
+{
+	SafeRelease(texture);
+	HRESULT hr = graphicsDevice->GetDevice()->CreateTexture(
+		width, height, 1,
+		D3DUSAGE_RENDERTARGET,
+		D3DFMT_A8R8G8B8,
+		D3DPOOL_DEFAULT,
+		&texture,
+		nullptr
+	);
+	if (FAILED(hr)) {
+		throw MakeDxError(hr);
+	}
+	this->width = width;
+	this->height = height;
+}
+
+IDirect3DSurface9* DX9GF::Texture::GetSurface()
+{
+	if (texture == nullptr) return nullptr;
+	IDirect3DSurface9* surface = nullptr;
+	texture->GetSurfaceLevel(0, &surface);
+	return surface;
+}
+void DX9GF::Texture::ReleaseRawTexture()
+{
+	SafeRelease(texture);
+}

@@ -14,6 +14,7 @@ namespace Demo {
 		World1Scene(Game* game, int screenWidth, int screenHeight) : IScene(screenWidth, screenHeight), game(game) {}
 		void Init() override;
 		void Update(unsigned long long deltaTime) override;
-		void Draw(unsigned long long deltaTime) override;
+		void DrawWorld(unsigned long long deltaTime) override;
+		void DrawUI(unsigned long long deltaTime) override;
 	};
 }

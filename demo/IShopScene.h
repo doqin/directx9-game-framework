@@ -25,7 +25,6 @@ namespace Demo {
 		Game* game;
 		Player* player;
 
-		DX9GF::Camera uiCamera;
 		std::shared_ptr<DX9GF::TransformManager> transformManager;
 
 		std::shared_ptr<DX9GF::Font> myFont;
@@ -34,9 +33,6 @@ namespace Demo {
 		std::vector<ShopItem> itemsForSale;
 		std::vector<std::shared_ptr<Demo::IButton>> uiButtons;
 		std::vector<std::shared_ptr<Demo::IconButton>> buyButtons;
-
-		std::shared_ptr<DX9GF::Texture> backBufferTexture;
-		std::shared_ptr<DX9GF::StaticSprite> backBufferSprite;
 
 		std::string statusMessage = "";
 		float messageTimer = 0.0f;
@@ -52,10 +48,11 @@ namespace Demo {
 
 		virtual void LoadItems() = 0;
 
+		bool IsOverlay() const override { return true; }
 		void Init() override;
 		void Update(unsigned long long deltaTime) override;
-		void Draw(unsigned long long deltaTime) override;
-
+		void DrawWorld(unsigned long long deltaTime) override;
+		void DrawUI(unsigned long long deltaTime) override;
 		void ShowMessage(std::string msg);
 	};
 }

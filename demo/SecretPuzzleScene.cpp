@@ -1,4 +1,4 @@
-#include "pch.h"
+﻿#include "pch.h"
 #include "SecretPuzzleScene.h"
 #include "CustomBattleScene.h"
 #include "RandomEncounter.h"
@@ -22,11 +22,11 @@ void Demo::SecretPuzzleScene::Init()
 	map->SetAreaUpdateHandler("trigger_encounter", GetRandomEncounterFunc(game, player, {
 		{"VampireBatEnemy", 40},
 		{"DemonEyeEnemy", 35},
-		}, drawBuffer, commandBuffer, &isGamePaused, [this](DX9GF::GraphicsDevice* gd, unsigned long long deltaTime) { DrawBackground(gd, deltaTime); }));
+		}, drawBuffer, commandBuffer, &isGamePaused, & this->uiCamera, [this](DX9GF::GraphicsDevice* gd, unsigned long long deltaTime) { DrawBackground(gd, deltaTime); }));
 	map->SetAreaUpdateHandler("trigger_p_back", [this](const DX9GF::Map::ObjectArea& area) {
 		if (isTransitioning) return;
 		isTransitioning = true;
-		auto transitionInCommand = std::make_shared<TransitionCommand>(game->GetGraphicsDevice(), 1.f, true);
+		auto transitionInCommand = std::make_shared<TransitionCommand>(game->GetGraphicsDevice(), &this->uiCamera, 1.f, true);
 		drawBuffer->PushCommand(transitionInCommand);
 		commandBuffer->PushCommand(std::make_shared<DX9GF::CustomCommand>([this, transitionInCommand](std::function<void(void)> markFinished) {
 		if (!transitionInCommand->IsFinished()) {
@@ -44,12 +44,12 @@ void Demo::SecretPuzzleScene::Init()
 		isTransitioning = false;
 		markFinished();
 		}));
-		drawBuffer->PushCommand(std::make_shared<TransitionCommand>(game->GetGraphicsDevice(), 1.f, false));
+		drawBuffer->PushCommand(std::make_shared<TransitionCommand>(game->GetGraphicsDevice(), &this->uiCamera, 1.f, false));
 		});
 	map->SetAreaUpdateHandler("trigger_p_next_world", [this](const DX9GF::Map::ObjectArea& area) {
 		if (isTransitioning) return;
 		isTransitioning = true;
-		auto transitionInCommand = std::make_shared<TransitionCommand>(game->GetGraphicsDevice(), 1.f, true);
+		auto transitionInCommand = std::make_shared<TransitionCommand>(game->GetGraphicsDevice(), &this->uiCamera, 1.f, true);
 		drawBuffer->PushCommand(transitionInCommand);
 		commandBuffer->PushCommand(std::make_shared<DX9GF::CustomCommand>([this, transitionInCommand](std::function<void(void)> markFinished) {
 			if (!transitionInCommand->IsFinished()) {
@@ -66,8 +66,8 @@ void Demo::SecretPuzzleScene::Init()
 			isTransitioning = false;
 			markFinished();
 			}));
-		drawBuffer->PushCommand(std::make_shared<TransitionCommand>(game->GetGraphicsDevice(), 1.f, false));
-	});
+		drawBuffer->PushCommand(std::make_shared<TransitionCommand>(game->GetGraphicsDevice(), &this->uiCamera, 1.f, false));
+		});
 	map->SetAreaUpdateHandler("trigger_p_next", [this](const DX9GF::Map::ObjectArea& area) {
 		player->SetLocalPosition(31 * 16, 36 * 16);
 	});
@@ -98,7 +98,7 @@ void Demo::SecretPuzzleScene::Init()
 				markFinished();
 				}));
 
-			auto transitionInCommand = std::make_shared<TransitionCommand>(this->game->GetGraphicsDevice(), 1.f, true);
+			auto transitionInCommand = std::make_shared<TransitionCommand>(game->GetGraphicsDevice(), &this->uiCamera, 1.f, true);
 			drawBuffer->StackCommand(transitionInCommand);
 
 			commandBuffer->PushCommand(std::make_shared<DX9GF::CustomCommand>([sceMan, transitionInCommand, this](std::function<void()> markFinished) {
@@ -109,7 +109,7 @@ void Demo::SecretPuzzleScene::Init()
 				markFinished();
 				}));
 
-			drawBuffer->PushCommand(std::make_shared<TransitionCommand>(this->game->GetGraphicsDevice(), 1.f, false));
+			drawBuffer->PushCommand(std::make_shared<TransitionCommand>(game->GetGraphicsDevice(), &this->uiCamera, 1.f, false));
 
 			//check battle result and give key
 			drawBuffer->PushCommand(std::make_shared<DX9GF::CustomCommand>([this](std::function<void()> markFinished) {
@@ -126,19 +126,19 @@ void Demo::SecretPuzzleScene::Init()
 	font = std::make_shared<DX9GF::Font>(game->GetGraphicsDevice(), L"StatusPlz", 16);
 
 	savePoints.push_back(std::make_shared<SavePoint>(transformManager, -47.0f * 16, -43.0f * 16));
-	savePoints.back()->Init(game->GetGraphicsDevice(), &camera, player, colliderManager, saveManager, font, drawBuffer);
+	savePoints.back()->Init(game->GetGraphicsDevice(), &camera,&uiCamera, player, colliderManager, saveManager, font, drawBuffer);
 	savePoints.back()->SetVisible(true);
 	savePoints.push_back(std::make_shared<SavePoint>(transformManager, -42.0f * 16, 23.0f * 16));
-	savePoints.back()->Init(game->GetGraphicsDevice(), &camera, player, colliderManager, saveManager, font, drawBuffer);
+	savePoints.back()->Init(game->GetGraphicsDevice(), &camera, &uiCamera, player, colliderManager, saveManager, font, drawBuffer);
 	savePoints.back()->SetVisible(true);
 	savePoints.push_back(std::make_shared<SavePoint>(transformManager, 31.0f * 16, 47.0f * 16));
-	savePoints.back()->Init(game->GetGraphicsDevice(), &camera, player, colliderManager, saveManager, font, drawBuffer);
+	savePoints.back()->Init(game->GetGraphicsDevice(), &camera, &uiCamera, player, colliderManager, saveManager, font, drawBuffer);
 	savePoints.back()->SetVisible(true);
 	savePoints.push_back(std::make_shared<SavePoint>(transformManager, 64.0f * 16, 37.0f * 16));
-	savePoints.back()->Init(game->GetGraphicsDevice(), &camera, player, colliderManager, saveManager, font, drawBuffer);
+	savePoints.back()->Init(game->GetGraphicsDevice(), &camera, &uiCamera, player, colliderManager, saveManager, font, drawBuffer);
 	savePoints.back()->SetVisible(true);
 	savePoints.push_back(std::make_shared<SavePoint>(transformManager, 86.0f * 16, 58.0f * 16));
-	savePoints.back()->Init(game->GetGraphicsDevice(), &camera, player, colliderManager, saveManager, font, drawBuffer);
+	savePoints.back()->Init(game->GetGraphicsDevice(), &camera, &uiCamera, player, colliderManager, saveManager, font, drawBuffer);
 	savePoints.back()->SetVisible(true);
 
 	shopPoints.push_back(std::make_shared<ShopPoint>(transformManager, -58.0f * 16, -26.0f * 16));
@@ -180,7 +180,7 @@ void Demo::SecretPuzzleScene::Init()
 	//TreasureChest
 	auto addChest = [&](float tx, float ty, std::vector<ChestReward> rewards, bool randomPick = false) {
 		auto c = std::make_shared<TreasureChestNPC>(transformManager, tx * 16, ty * 16, rewards, randomPick);
-		c->Init(game->GetGraphicsDevice(), player, colliderManager, font, drawBuffer);
+		c->Init(game->GetGraphicsDevice(),&camera, player, colliderManager, font, drawBuffer);
 		treasureChests.push_back(c);
 		};
 	addChest(-32, 26, { ChestReward::Item(0,1), ChestReward::Item(1,1), ChestReward::Card("PoisonCard") }, true);
@@ -218,10 +218,10 @@ void Demo::SecretPuzzleScene::Init()
 	this->GiveTestItems();
 
 	transformManager->RebuildHierarchy();
-	drawBuffer->PushCommand(std::make_shared<Demo::TransitionCommand>(game->GetGraphicsDevice(), 1.f, false));
+	drawBuffer->PushCommand(std::make_shared<TransitionCommand>(game->GetGraphicsDevice(), &this->uiCamera, 1.f, false));
 
 	dauDau = std::make_shared<DauDauNPC>(transformManager, 1 * 16, -31.0f * 16);
-	dauDau->Init(game->GetGraphicsDevice(), player, colliderManager, font, drawBuffer);
+	dauDau->Init(game->GetGraphicsDevice(),&camera, player, colliderManager, font, drawBuffer);
 	dauDau->AddLine(L"Dau Dau", L"Watch out! This portal is a one-way trip to the invisible maze! Enter if you dare!"); 
 }
 
@@ -251,12 +251,6 @@ void Demo::SecretPuzzleScene::Update(unsigned long long deltaTime)
 			std::make_shared<DX9GF::FontSprite>(font.get()), sw, sh);
 		currentConversation->AddLine({ .name = L"Treasure Chest", .content = msg });
 		};
-
-	auto [currentWidth, currentHeight] = camera.GetScreenResolution();
-	auto [lastWidth, lastHeight] = uiCamera.GetScreenResolution();
-	if (currentWidth != lastWidth || currentHeight != lastHeight) {
-		uiCamera.SetScreenResolution(currentWidth, currentHeight);
-	}
 
 	auto inpMan = DX9GF::InputManager::GetInstance();
 	inpMan->ReadMouse(deltaTime);
@@ -336,7 +330,7 @@ void Demo::SecretPuzzleScene::Update(unsigned long long deltaTime)
 		player->Update(deltaTime);
 		camera.Update();
 	}
-
+	this->uiCamera.Update();
 	transformManager->UpdateAll();
 	if (!isGamePaused) map->UpdateAreas(player->GetWorldX(), player->GetWorldY());
 
@@ -354,51 +348,60 @@ void Demo::SecretPuzzleScene::Update(unsigned long long deltaTime)
 	commandBuffer->Update(deltaTime);
 }
 
-void Demo::SecretPuzzleScene::Draw(unsigned long long deltaTime)
+void Demo::SecretPuzzleScene::DrawWorld(unsigned long long deltaTime)
 {
 	auto gd = game->GetGraphicsDevice();
-	gd->Clear(0xFF403353);
 	if (SUCCEEDED(gd->BeginDraw())) {
-		/* Cool wave grid effect */
 		DrawBackground(gd, deltaTime);
-		/* End of cool wave grid effect */
-
 		map->Draw(camera);
-		for (auto& savePoint : savePoints) {
-			savePoint->Draw(camera, deltaTime);
-		}
-		for (auto& shopPoint : shopPoints) {
-			shopPoint->Draw(camera, deltaTime);
-		}
-		for (auto& healingPoint : healingPoints) {
-			healingPoint->Draw(camera, deltaTime);
-		}
 
-		for (auto& chest : treasureChests)
-			chest->Draw(camera, deltaTime);
+		for (auto& savePoint : savePoints) savePoint->Draw(camera, deltaTime);
+		for (auto& shopPoint : shopPoints) shopPoint->Draw(camera, deltaTime);
+		for (auto& healingPoint : healingPoints) healingPoint->Draw(camera, deltaTime);
+		for (auto& chest : treasureChests) chest->Draw(camera, deltaTime);
 
 		dauDau->Draw(camera, deltaTime);
-
 		player->Draw(deltaTime);
-		if (drawBuffer) {
-			drawBuffer->Update(deltaTime);
-		}
+
+		gd->EndDraw();
+	}
+}
+
+void Demo::SecretPuzzleScene::DrawUI(unsigned long long deltaTime)
+{
+	auto gd = game->GetGraphicsDevice();
+	if (SUCCEEDED(gd->BeginDraw())) {
+
+		for (auto& savePoint : savePoints) savePoint->DrawUI(&this->uiCamera, deltaTime);
+		for (auto& shopPoint : shopPoints) shopPoint->DrawUI(&this->uiCamera, deltaTime);
+		for (auto& healingPoint : healingPoints) healingPoint->DrawUI(&this->uiCamera, deltaTime);
+		for (auto& chest : treasureChests) chest->DrawUI(&this->uiCamera, deltaTime);
+		dauDau->DrawUI(&this->uiCamera, deltaTime);
+
 		if (inventoryMenu) inventoryMenu->Draw(gd, deltaTime);
 		if (draggableManager && inventoryMenu && inventoryMenu->IsOpen() && inventoryMenu->GetCurrentTab() == Demo::InventoryMenu::Tab::DECK) {
 			draggableManager->Draw(deltaTime);
 		}
 
-		if (currentConversation) currentConversation->Draw(gd, deltaTime);
+		if (currentConversation) {
+			currentConversation->Draw(gd, &this->uiCamera, deltaTime);
+		}
+
+		if (drawBuffer) {
+			drawBuffer->Update(deltaTime);
+		}
+
 		DX9GF::InputManager::GetInstance()->DrawCursor(&this->uiCamera, deltaTime);
+
 		gd->EndDraw();
 	}
-	gd->Present();
 }
 
 void Demo::SecretPuzzleScene::DrawBackground(DX9GF::GraphicsDevice* gd, unsigned long long deltaTime)
 {
 
 	auto [screenWidth, screenHeight] = camera.GetScreenResolution();
+	gd->DrawRectangle(0.0f, 0.0f, static_cast<float>(screenWidth), static_cast<float>(screenHeight), 0xFF403353, true);
 	const int spacingX = 32;
 	const int spacingY = 32;
 	const float segmentLength = 16.0f;

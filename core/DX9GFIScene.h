@@ -6,14 +6,17 @@ namespace DX9GF {
 	class IScene {
 	protected:
 		Camera camera;
+		Camera uiCamera;
 		/// <summary>
 		/// Releases all resources used by the object.
 		/// </summary>
 		virtual void Dispose();
 	public:
-		IScene(int screenWidth, int screenHeight) : camera(screenWidth, screenHeight) {}
-		virtual ~IScene();
+		IScene(int screenWidth, int screenHeight) : camera(screenWidth, screenHeight), uiCamera(screenWidth, screenHeight) {}		virtual ~IScene();
 		Camera& GetCamera();
+		Camera& GetUICamera();
+
+		virtual bool IsOverlay() const { return false; }
 		/// <summary>
 		/// Initializes the object.
 		/// </summary>
@@ -28,6 +31,7 @@ namespace DX9GF {
 		/// Draws the frame
 		/// </summary>
 		/// <param name="deltaTime">The time elapsed since the last frame in milliseconds</param>
-		virtual void Draw(unsigned long long deltaTime) = 0;
+		virtual void DrawWorld(unsigned long long deltaTime) = 0;
+		virtual void DrawUI(unsigned long long deltaTime) = 0;
 	};
 };

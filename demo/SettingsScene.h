@@ -35,6 +35,8 @@ namespace Demo
         std::shared_ptr<DX9GF::Texture> uiSheetTex;
         std::vector<std::shared_ptr<Demo::IButton>> uiButtons;
         std::shared_ptr<IconButton> backButton;
+        std::shared_ptr<Demo::IconButton> btnResPrev;
+        std::shared_ptr<Demo::IconButton> btnResNext;
 
         bool isGoingBack = false;
 
@@ -42,8 +44,8 @@ namespace Demo
         int lastScreenHeight;
 
         //volume UI
-        std::shared_ptr<DX9GF::StaticSprite> trackMaster, trackMusic, trackSFX;
-        std::shared_ptr<DX9GF::StaticSprite> trackMasterFill, trackMusicFill, trackSFXFill;
+        std::shared_ptr<DX9GF::NineSliceSprite> trackMaster, trackMusic, trackSFX;
+        std::shared_ptr<DX9GF::NineSliceSprite> trackMasterFill, trackMusicFill, trackSFXFill;
 
         std::shared_ptr<Demo::IconButton> btnMasterDec, btnMasterInc;
         std::shared_ptr<Demo::IconButton> btnMusicDec, btnMusicInc;
@@ -59,7 +61,7 @@ namespace Demo
 
         //helper methods
         void DrawBackground(unsigned long long deltaTime);
-        void DrawVolumeTrack(std::shared_ptr<DX9GF::StaticSprite> bg, std::shared_ptr<DX9GF::StaticSprite> fill, float vol, RECT originalRect, unsigned long long deltaTime);
+        void DrawVolumeTrack(std::shared_ptr<DX9GF::NineSliceSprite> bg, std::shared_ptr<DX9GF::NineSliceSprite> fill, float vol, RECT originalRect, unsigned long long deltaTime);
         void DrawKeybindButton(const std::string& action, std::shared_ptr<IconButton> btn, bool listening);
 
     public:
@@ -70,7 +72,8 @@ namespace Demo
 
         void Init() override;
         void Update(unsigned long long deltaTime) override;
-        void Draw(unsigned long long deltaTime) override;
+        void DrawWorld(unsigned long long deltaTime) override;
+        void DrawUI(unsigned long long deltaTime) override;
         void UpdateLayout(int width, int height);
         void DrawString(std::wstring text, float x, float y, D3DCOLOR color, DWORD format = DT_RIGHT);
         void ResetListening();

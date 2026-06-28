@@ -39,7 +39,6 @@ namespace DX9GF {
         tf::Executor executor;
         tf::Taskflow taskflow;
         taskflow.for_each(colliders.begin(), colliders.end(), [&](std::shared_ptr<ICollider> other) {
-            // B? qua chính nó
             if (other == target) {
                 return;
             }
@@ -50,7 +49,6 @@ namespace DX9GF {
                 x = finalX;
                 y = finalY;
             }
-            // Ki?m tra va ch?m và l?y v? trí dã du?c di?u ch?nh (n?u có)
             auto result = target->IsIntersecting(other, x, y);
             if (result.has_value()) {
                 auto& [correctedX, correctedY] = result.value();
@@ -96,13 +94,11 @@ namespace DX9GF {
                 dy = finalDy;
             }
 
-            // X? lý riêng tr?c X
             if (auto pos = target->IsIntersecting(other, currentX + dx, currentY); pos.has_value()) {
                 auto& [correctedX, correctedY] = pos.value();
                 finalDx = correctedX - currentX;
             }
 
-            // X? lý riêng tr?c Y
             if (auto pos = target->IsIntersecting(other, currentX, currentY + dy); pos.has_value()) {
                 auto& [correctedX, correctedY] = pos.value();
                 finalDy = correctedY - currentY;

@@ -1,8 +1,9 @@
 ﻿#pragma once
 #include <d3d9.h>
 #include "DX9GFCamera.h"
-
 namespace DX9GF {
+	class Texture;
+
 	class GraphicsDevice final {
 	private:
 		IDirect3DDevice9* d3ddev = NULL; // Đại diện cho card đồ họa máy tính
@@ -41,6 +42,9 @@ namespace DX9GF {
 		HRESULT Present();
 		HRESULT IsValid();
 
+		HRESULT SetRenderTarget(Texture* renderTarget);
+		HRESULT RestoreRenderTarget();
+
 		void SetAlphaBlending(bool enabled);
 		void SetScissorTest(bool enabled);
 		void SetScissorRect(const RECT& rect);
@@ -55,5 +59,6 @@ namespace DX9GF {
 		void DrawEllipse(const DX9GF::Camera& camera, float centerX, float centerY, float width, float height, D3DCOLOR color, bool isFilled);
 		void DrawEllipse(float x, float y, float width, float height, float rotation, float scaleX, float scaleY, float offsetX, float offsetY, D3DCOLOR color, bool isFilled);
 		void DrawEllipse(const DX9GF::Camera& camera, float x, float y, float width, float height, float rotation, float scaleX, float scaleY, float offsetX, float offsetY, D3DCOLOR color, bool isFilled);
+
 	};
 };

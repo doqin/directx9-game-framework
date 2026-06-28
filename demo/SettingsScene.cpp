@@ -40,14 +40,17 @@ namespace Demo
 		fontSprite->SetColor(color);
 		fontSprite->SetPosition(x, y);
 		fontSprite->SetText(std::move(text));
-		fontSprite->Draw(camera, 0); // deltaTime is not really used for anything :P
+		fontSprite->Draw(uiCamera, 0);
 		fontSprite->End();
 	}
 
 	void SettingsScene::DrawBackground(unsigned long long deltaTime)
 	{
-		const D3DCOLOR polyColor = 0xFF9cdb43;
 		auto [screenWidth, screenHeight] = camera.GetScreenResolution();
+
+		game->GetGraphicsDevice()->DrawRectangle(0.0f, 0.0f, static_cast<float>(screenWidth), static_cast<float>(screenHeight), 0xFF000000, true);
+
+		const D3DCOLOR polyColor = 0xFF9cdb43;
 
 		static float timeAcc = 0.0f;
 		timeAcc += static_cast<float>(deltaTime) * 0.001f;
@@ -76,22 +79,23 @@ namespace Demo
 		}
 	}
 
-	void SettingsScene::DrawVolumeTrack(std::shared_ptr<DX9GF::StaticSprite> bg, std::shared_ptr<DX9GF::StaticSprite> fill, float vol, RECT originalRect, unsigned long long deltaTime)
+	void SettingsScene::DrawVolumeTrack(std::shared_ptr<DX9GF::NineSliceSprite> bg, std::shared_ptr<DX9GF::NineSliceSprite> fill, float vol, RECT originalRect, unsigned long long deltaTime)
 	{
 		if (bg)
 		{
 			bg->Begin();
-			bg->Draw(camera, deltaTime);
+			bg->Draw(uiCamera, deltaTime);
 			bg->End();
 		}
-		if (fill && bg)
+		//Only draw the fill bar if volume > 0 to prevent visual glitches
+		if (fill && bg && vol > 0.001f)
 		{
-			RECT r = originalRect;
-			float fullWidth = (float)(originalRect.right - originalRect.left);
-			r.right = r.left + (LONG)(fullWidth * vol);
-			fill->SetSrcRect(r);
-			fill->SetScale(SLIDER_SCALE_X, 1.0f);
-			fill->Begin(); fill->Draw(camera, deltaTime); fill->End();
+			float fillWidth = SLIDER_DESIRED_WIDTH * vol;
+			fill->SetTargetSize(fillWidth, 7.0f);
+
+			fill->Begin();
+			fill->Draw(uiCamera, deltaTime);
+			fill->End();
 		}
 	}
 
@@ -115,7 +119,7 @@ namespace Demo
 		fontSprite->SetPosition(x, y);
 		fontSprite->SetColor(color);
 
-		fontSprite->Draw(camera, 0);
+		fontSprite->Draw(uiCamera, 0);
 		fontSprite->End();
 	}
 
@@ -145,45 +149,52 @@ namespace Demo
 
 		//UI Elements
 		float startY = -screenH / 2.f + 64.f;
+		float rowSpacing = SPACING_Y * 1.5f;
 
 		//LOCAL FUNCTION to set Row Slider positions to keep the code clean
-		auto SetVolumeRowPosition = [&](std::shared_ptr<DX9GF::StaticSprite> track, std::shared_ptr<DX9GF::StaticSprite> fill,
+		auto SetVolumeRowPosition = [&](std::shared_ptr<DX9GF::NineSliceSprite> track, std::shared_ptr<DX9GF::NineSliceSprite> fill,
 			std::shared_ptr<IconButton> btnD, std::shared_ptr<IconButton> btnI, float y)
 			{
-				float gap = 5.0f; //gap between track and inc,desc buttons
+				float gap = 5.0f;
 				float btnWidth = 12.0f;
+				float trackAlignY = y + 5.0f;
 
 				if (track)
 				{
-					track->SetPosition(SLIDER_COLUMN_X, y + ALIGN_OFFSET_Y);
-					track->SetScale(SLIDER_SCALE_X, 1.0f);
+					track->SetPosition(SLIDER_COLUMN_X, trackAlignY);
+					track->SetTargetSize(SLIDER_DESIRED_WIDTH, 7.0f);
 				}
 
-				if (fill) fill->SetPosition(SLIDER_COLUMN_X, y + ALIGN_OFFSET_Y);
+				if (fill) fill->SetPosition(SLIDER_COLUMN_X, trackAlignY);
 
-				if (btnD) btnD->SetLocalPosition(SLIDER_COLUMN_X - btnWidth - gap, y + ALIGN_OFFSET_Y - 2.0f);
-
-				if (btnI) btnI->SetLocalPosition(SLIDER_COLUMN_X + SLIDER_DESIRED_WIDTH + gap, y + ALIGN_OFFSET_Y - 2.0f);
+				if (btnD) btnD->SetLocalPosition(SLIDER_COLUMN_X - btnWidth - gap, trackAlignY + (7.0f - btnD->GetHeight()) / 2.0f);
+				if (btnI) btnI->SetLocalPosition(SLIDER_COLUMN_X + SLIDER_DESIRED_WIDTH + gap, trackAlignY + (7.0f - btnI->GetHeight()) / 2.0f);
 			};
 
 		SetVolumeRowPosition(trackMaster, trackMasterFill, btnMasterDec, btnMasterInc, startY);
-		SetVolumeRowPosition(trackMusic, trackMusicFill, btnMusicDec, btnMusicInc, startY + SPACING_Y);
-		SetVolumeRowPosition(trackSFX, trackSFXFill, btnSFXDec, btnSFXInc, startY + SPACING_Y * 2);
+		SetVolumeRowPosition(trackMusic, trackMusicFill, btnMusicDec, btnMusicInc, startY + rowSpacing);
+		SetVolumeRowPosition(trackSFX, trackSFXFill, btnSFXDec, btnSFXInc, startY + rowSpacing * 2);
 
 		backButton->SetLocalPosition(-screenW / 2.0f + 32.f, -screenH / 2.0f + 32.f);
 
-		btnUp->SetLocalPosition(SLIDER_COLUMN_X, startY + SPACING_Y * 3.5f - 3.0f);
-		btnDown->SetLocalPosition(SLIDER_COLUMN_X, startY + SPACING_Y * 5.0f - 3.0f);
-		btnLeft->SetLocalPosition(SLIDER_COLUMN_X, startY + SPACING_Y * 6.5f - 3.0f);
-		btnRight->SetLocalPosition(SLIDER_COLUMN_X, startY + SPACING_Y * 8.0f - 3.0f);
+		float resRowY = startY + rowSpacing * 3.5f;
+		float fineTuneY = -6.0f;
+
+		btnResPrev->SetLocalPosition(SLIDER_COLUMN_X, resRowY + fineTuneY);
+		btnResNext->SetLocalPosition(SLIDER_COLUMN_X + 180.f, resRowY + fineTuneY);
+
+		btnUp->SetLocalPosition(SLIDER_COLUMN_X, startY + rowSpacing * 5.0f + fineTuneY);
+		btnDown->SetLocalPosition(SLIDER_COLUMN_X, startY + rowSpacing * 6.5f + fineTuneY);
+		btnLeft->SetLocalPosition(SLIDER_COLUMN_X, startY + rowSpacing * 8.0f + fineTuneY);
+		btnRight->SetLocalPosition(SLIDER_COLUMN_X, startY + rowSpacing * 9.5f + fineTuneY);
 	}
 
 	void SettingsScene::Init()
 	{
 		transformManager = std::make_shared<DX9GF::TransformManager>();
-		auto app = DX9GF::Application::GetInstance();
-		lastScreenWidth = app->GetScreenWidth();
-		lastScreenHeight = app->GetScreenHeight();
+		auto [camW, camH] = camera.GetScreenResolution();
+		lastScreenWidth = camW;
+		lastScreenHeight = camH;
 
 		//Load assets
 		font = std::make_shared<DX9GF::Font>(game->GetGraphicsDevice(), L"StatusPlz", 16);
@@ -204,9 +215,9 @@ namespace Demo
 		//DX9GF::InputManager::GetInstance()->EnableCustomCursor(true);
 
 		//LOCAL FUNCTION to init track and trackfill
-		auto InitTrack = [&](std::shared_ptr<DX9GF::StaticSprite>& track, std::shared_ptr<DX9GF::StaticSprite>& fill, RECT trackR, RECT fillR) {
-			track = std::make_shared<DX9GF::StaticSprite>(placeholderTex.get()); track->SetSrcRect(trackR);
-			fill = std::make_shared<DX9GF::StaticSprite>(placeholderTex.get()); fill->SetSrcRect(fillR);
+		auto InitTrack = [&](std::shared_ptr<DX9GF::NineSliceSprite>& track, std::shared_ptr<DX9GF::NineSliceSprite>& fill, RECT trackR, RECT fillR) {
+			track = std::make_shared<DX9GF::NineSliceSprite>(placeholderTex.get(), trackR, 4, 2, 4, 2);
+			fill = std::make_shared<DX9GF::NineSliceSprite>(placeholderTex.get(), fillR, 4, 2, 4, 2);
 			};
 
 		InitTrack(trackMaster, trackMasterFill, { 113, 483, 160, 490 }, { 65, 483, 112, 490 });
@@ -240,6 +251,40 @@ namespace Demo
 		backButton->SetSpriteRects(DX9GF::Utils::CreateRectsVertical(96, 48, 48, 16, 3));
 		backButton->SetOnReleaseLeft([this](DX9GF::ITrigger*) { this->isGoingBack = true; });
 		backButton->SetSpriteScale(2.f, 2.f);
+
+		btnResPrev = std::make_shared<Demo::IconButton>(transformManager, 0, 0, 32, 32, uiSheetTex, 3);
+		btnResPrev->SetSpriteCoords(240, 96, 16, 16, 0);
+		btnResPrev->SetSpriteScale(2.f, 2.f);
+		btnResPrev->SetSpriteOrigin(8.f, 8.f); //center of sprite
+		btnResPrev->SetSpriteRotation(1.5708f);
+		btnResPrev->SetSpriteOffset(16.f, 16.f);
+		btnResPrev->SetOnReleaseLeft([this](DX9GF::ITrigger*) {
+			auto sm = SettingsManager::GetInstance();
+			int idx = sm->GetCurrentResolutionIndex();
+			if (idx > 0) {
+				sm->SetResolutionIndex(idx - 1);
+				sm->SaveSettings();
+				sm->ApplyResolution();
+			}
+			});
+		btnResPrev->Init(&uiCamera);
+
+		btnResNext = std::make_shared<Demo::IconButton>(transformManager, 0, 0, 32, 32, uiSheetTex, 3);
+		btnResNext->SetSpriteCoords(240, 112, 16, 16, 0);
+		btnResNext->SetSpriteScale(2.f, 2.f);
+		btnResNext->SetSpriteOrigin(8.f, 8.f);
+		btnResNext->SetSpriteRotation(1.5708f);
+		btnResNext->SetSpriteOffset(16.f, 16.f);
+		btnResNext->SetOnReleaseLeft([this](DX9GF::ITrigger*) {
+			auto sm = SettingsManager::GetInstance();
+			int idx = sm->GetCurrentResolutionIndex();
+			if (idx < sm->GetSupportedResolutions().size() - 1) {
+				sm->SetResolutionIndex(idx + 1);
+				sm->SaveSettings();
+				sm->ApplyResolution();
+			}
+			});
+		btnResNext->Init(&uiCamera);
 
 		//Use the same placeholder image for all control buttons for now.
 		btnUp = std::make_shared<Demo::IconButton>(transformManager, 0, 0, 32, 32, uiSheetTex, 3);
@@ -279,12 +324,12 @@ namespace Demo
 		btnRight->SetSpriteScale(2.f, 2.f);
 
 		// Active Buttons
-		std::shared_ptr<Demo::IButton> buttons[] = { backButton, btnUp, btnDown, btnLeft,btnRight, btnMasterDec, btnMasterInc, btnMusicDec, btnMusicInc, btnSFXDec, btnSFXInc };
+		std::shared_ptr<Demo::IButton> buttons[] = { backButton, btnUp, btnDown, btnLeft, btnRight, btnMasterDec, btnMasterInc, btnMusicDec, btnMusicInc, btnSFXDec, btnSFXInc };
 		for (auto& btn : buttons)
 		{
 			if (btn)
 			{
-				btn->Init(&camera);
+				btn->Init(&uiCamera);
 				uiButtons.push_back(btn);
 			}
 		}
@@ -299,16 +344,11 @@ namespace Demo
 		inpMan->ReadMouse(deltaTime);
 		inpMan->ReadKeyboard(deltaTime);
 
-		auto app = DX9GF::Application::GetInstance();
-		if (app->GetScreenWidth() != lastScreenWidth || app->GetScreenHeight() != lastScreenHeight)
-		{
-			lastScreenWidth = app->GetScreenWidth();
-			lastScreenHeight = app->GetScreenHeight();
-			UpdateLayout(lastScreenWidth, lastScreenHeight);
-		}
-
 		for (auto& button : uiButtons) button->Update(deltaTime);
-
+		int resIdx = SettingsManager::GetInstance()->GetCurrentResolutionIndex();
+		int maxIdx = SettingsManager::GetInstance()->GetSupportedResolutions().size() - 1;
+		if (resIdx > 0) btnResPrev->Update(deltaTime);
+		if (resIdx < maxIdx) btnResNext->Update(deltaTime);
 		transformManager->UpdateAll();
 		camera.Update();
 
@@ -348,27 +388,36 @@ namespace Demo
 		}
 	}
 
-	void SettingsScene::Draw(unsigned long long deltaTime)
+	void SettingsScene::DrawWorld(unsigned long long deltaTime)
 	{
 		auto gd = game->GetGraphicsDevice();
-		gd->Clear(0xFF000000);
 		if (SUCCEEDED(gd->BeginDraw())) {
 			DrawBackground(deltaTime);
+			gd->EndDraw();
+		}
+	}
+
+	void SettingsScene::DrawUI(unsigned long long deltaTime)
+	{
+		auto gd = game->GetGraphicsDevice();
+		if (SUCCEEDED(gd->BeginDraw())) {
 
 			gd->SetAlphaBlending(true);
-			gd->DrawRectangle(camera, -lastScreenWidth / 2.f, -lastScreenHeight / 2.f, lastScreenWidth, lastScreenHeight, D3DCOLOR_ARGB(200, 0, 0, 0), true);
+			gd->DrawRectangle(uiCamera, -lastScreenWidth / 2.f, -lastScreenHeight / 2.f, lastScreenWidth, lastScreenHeight, D3DCOLOR_ARGB(200, 0, 0, 0), true);
 			gd->SetAlphaBlending(false);
 
 			float startY = -lastScreenHeight / 2.f + 64.f;
+			float rowSpacing = SPACING_Y * 1.5f;
 
 			//Draw label
 			DrawString(L"Master Volume", LABEL_COLUMN_X, startY, 0xFFFFFFFF);
-			DrawString(L"Music Volume", LABEL_COLUMN_X, startY + SPACING_Y, 0xFFFFFFFF);
-			DrawString(L"Sfx Volume", LABEL_COLUMN_X, startY + SPACING_Y * 2, 0xFFFFFFFF);
-			DrawString(L"Move up", LABEL_COLUMN_X, startY + SPACING_Y * 3.5f, 0xFFFFFFFF);
-			DrawString(L"Move down", LABEL_COLUMN_X, startY + SPACING_Y * 5.0f, 0xFFFFFFFF);
-			DrawString(L"Move left", LABEL_COLUMN_X, startY + SPACING_Y * 6.5f, 0xFFFFFFFF);
-			DrawString(L"Move right", LABEL_COLUMN_X, startY + SPACING_Y * 8.0f, 0xFFFFFFFF);
+			DrawString(L"Music Volume", LABEL_COLUMN_X, startY + rowSpacing, 0xFFFFFFFF);
+			DrawString(L"Sfx Volume", LABEL_COLUMN_X, startY + rowSpacing * 2, 0xFFFFFFFF);
+			DrawString(L"Resolution", LABEL_COLUMN_X, startY + rowSpacing * 3.5f, 0xFFFFFFFF);
+			DrawString(L"Move up", LABEL_COLUMN_X, startY + rowSpacing * 5.0f, 0xFFFFFFFF);
+			DrawString(L"Move down", LABEL_COLUMN_X, startY + rowSpacing * 6.5f, 0xFFFFFFFF);
+			DrawString(L"Move left", LABEL_COLUMN_X, startY + rowSpacing * 8.0f, 0xFFFFFFFF);
+			DrawString(L"Move right", LABEL_COLUMN_X, startY + rowSpacing * 9.5f, 0xFFFFFFFF);
 
 			//draw tracks
 			auto sm = SettingsManager::GetInstance();
@@ -385,11 +434,23 @@ namespace Demo
 			DrawKeybindButton("MOVE_LEFT", btnLeft, isListeningLeft);
 			DrawKeybindButton("MOVE_RIGHT", btnRight, isListeningRight);
 
-			//remember to call drawcursor if want to use custom cursor
-			DX9GF::InputManager::GetInstance()->DrawCursor(&this->camera, deltaTime);
-
+			int resIdx = sm->GetCurrentResolutionIndex();
+			auto resList = sm->GetSupportedResolutions();
+			float fineTuneY = -6.0f;
+			float resRowY = startY + rowSpacing * 3.5f + fineTuneY;
+			if (resIdx > 0)
+				btnResPrev->Draw(gd, deltaTime);
+			//draw resolution text
+			std::string resStr = resList[resIdx].label;
+			fontSprite->SetPosition(SLIDER_COLUMN_X + 45.f, resRowY + 8.f);
+			fontSprite->SetColor(0xFFFFFFFF);
+			fontSprite->SetText(ToWString(resStr));
+			fontSprite->Begin(); fontSprite->Draw(uiCamera, 0); fontSprite->End();
+			if (resIdx < resList.size() - 1)
+				btnResNext->Draw(gd, deltaTime);
+			DX9GF::InputManager::GetInstance()->DrawCursor(&this->uiCamera, deltaTime);
 			gd->EndDraw();
 		}
-		gd->Present();
 	}
+
 }

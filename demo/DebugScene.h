@@ -27,7 +27,6 @@ namespace Demo {
 		std::vector<std::shared_ptr<IContainer>> containers;
 		std::vector<std::shared_ptr<IDraggable>> draggables;
 		std::shared_ptr<IConversation> activeConversation;
-		DX9GF::Camera uiCamera;
 		std::shared_ptr<Player> player;
 
 		//UI component
@@ -39,6 +38,7 @@ namespace Demo {
 		DebugScene(Game* game, int screenWidth, int screenHeight);
 		void Init() override;
 		void Update(unsigned long long deltaTime) override;
-		void Draw(unsigned long long deltaTime) override;
+		void DrawWorld(unsigned long long deltaTime) override;
+		void DrawUI(unsigned long long deltaTime) override;
 	};
 }
