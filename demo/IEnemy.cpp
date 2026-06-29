@@ -2,6 +2,7 @@
 #include "IEnemy.h"
 #include <cmath>
 #include <algorithm>
+#include "DrawUtils.h"
 
 void Demo::IEnemy::InitCardSpawnTrigger(DX9GF::Camera* camera, float width, float height)
 {
@@ -66,30 +67,106 @@ void Demo::IEnemy::Draw(DX9GF::GraphicsDevice* graphicsDevice, DX9GF::Camera* ca
     }
     this->graphicsDevice = graphicsDevice;
 
-    if (!isOnStandby && cardSpawnTrigger) {
-        bool isHovered = cardSpawnTrigger->IsHovering(deltaTime);
-        
-        // Blink logic
-        float blinkFreq = 1.0f; // blinks per second
-        float alphaMult = (sin(timeSinceStart * 0.001f * blinkFreq * 3.14159f) + 1.0f) * 0.5f; // 0 to 1
-        int alpha = isHovered ? 255 : (int)(64 * alphaMult); // 64 is ~25% of 255
-        
-        D3DCOLOR color = isHovered ? D3DCOLOR_ARGB(64, 255, 255, 255) : D3DCOLOR_ARGB(alpha, 128, 128, 128);
-        graphicsDevice->SetAlphaBlending(true);
-        graphicsDevice->DrawRectangle(
-            *camera, 
-            cardSpawnTrigger->GetWorldX() - cardSpawnTrigger->GetOriginX(), 
-            cardSpawnTrigger->GetWorldY() - cardSpawnTrigger->GetOriginY(), 
-            cardSpawnTrigger->GetWidth(), 
-            cardSpawnTrigger->GetHeight(), 
-            0, 1, 1, 0, 0, color, true);
-        graphicsDevice->SetAlphaBlending(false);
-    }
-
     if (!font) {
         font = std::make_shared<DX9GF::Font>(graphicsDevice, L"StatusPlz", 16);
         fontSprite = std::make_shared<DX9GF::FontSprite>(font.get());
     }
+
+    if (!isOnStandby && cardSpawnTrigger) {
+        bool isHovered = cardSpawnTrigger->IsHovering(deltaTime);
+
+        const float triggerLeft = cardSpawnTrigger->GetWorldX() - cardSpawnTrigger->GetOriginX();
+        const float triggerTop = cardSpawnTrigger->GetWorldY() - cardSpawnTrigger->GetOriginY();
+        const float triggerW = cardSpawnTrigger->GetWidth();
+        const float triggerH = cardSpawnTrigger->GetHeight();
+
+        // Blink logic (idle state, not hovered)
+        float blinkFreq = 1.0f; // blinks per second
+        float alphaMult = (sin(timeSinceStart * 0.001f * blinkFreq * 3.14159f) + 1.0f) * 0.5f; // 0 to 1
+        int idleAlpha = (int)(64 * alphaMult); // 64 is ~25% of 255
+
+        graphicsDevice->SetAlphaBlending(true);
+
+        if (isHovered) {
+            graphicsDevice->DrawRectangle(
+                *camera,
+                triggerLeft, triggerTop,
+                triggerW, triggerH,
+                0, 1, 1, 0, 0, D3DCOLOR_ARGB(80, 255, 240, 120), true);
+
+            Demo::DrawAnimatedDashedRectangle(
+                graphicsDevice,
+                *camera,
+                triggerLeft,
+                triggerTop,
+                triggerW,
+                triggerH,
+                3.f,
+                0xFFFFE678,
+                false,
+                4.f,
+                0xFFFFE678,
+                20.f,
+                10.f,
+                40.f,
+                GetTickCount64()
+            );
+
+            {
+                const float centerX = triggerLeft + triggerW / 2.f;
+                const float centerY = triggerTop + triggerH / 2.f;
+                const float plusLength = 40.f;
+                const float plusThickness = 10.f;
+
+                const float outlinePad = 3.f;
+                graphicsDevice->DrawRectangle(
+                    *camera,
+                    centerX - plusLength / 2.f - outlinePad, centerY - plusThickness / 2.f - outlinePad,
+                    plusLength + outlinePad * 2.f, plusThickness + outlinePad * 2.f,
+                    0xFF000000, true);
+                graphicsDevice->DrawRectangle(
+                    *camera,
+                    centerX - plusThickness / 2.f - outlinePad, centerY - plusLength / 2.f - outlinePad,
+                    plusThickness + outlinePad * 2.f, plusLength + outlinePad * 2.f,
+                    0xFF000000, true);
+
+                graphicsDevice->DrawRectangle(
+                    *camera,
+                    centerX - plusLength / 2.f, centerY - plusThickness / 2.f,
+                    plusLength, plusThickness,
+                    0xFFFFE678, true);
+                graphicsDevice->DrawRectangle(
+                    *camera,
+                    centerX - plusThickness / 2.f, centerY - plusLength / 2.f,
+                    plusThickness, plusLength,
+                    0xFFFFE678, true);
+            }
+        }
+        else {
+            D3DCOLOR color = D3DCOLOR_ARGB(idleAlpha, 128, 128, 128);
+            graphicsDevice->DrawRectangle(
+                *camera,
+                triggerLeft, triggerTop,
+                triggerW, triggerH,
+                0, 1, 1, 0, 0, color, true);
+
+            if (fontSprite) {
+                fontSprite->Begin();
+                fontSprite->SetOutline(true, 0xFF000000, 2.f);
+                fontSprite->SetColor(D3DCOLOR_ARGB((std::max)(idleAlpha, 140), 255, 230, 120));
+                std::wstring hintText = L"Click to get enemy card";
+                fontSprite->SetText(std::move(hintText));
+                float hintWidth = fontSprite->GetWidth();
+                fontSprite->SetPosition(GetWorldX() - hintWidth / 2.f, triggerTop - 24.f);
+                fontSprite->Draw(*camera, deltaTime);
+                fontSprite->SetOutline(false);
+                fontSprite->End();
+            }
+        }
+
+        graphicsDevice->SetAlphaBlending(false);
+    }
+
     if (cardSpawnTrigger) {
         cardSpawnTrigger->Draw(graphicsDevice, *camera);
     }
@@ -101,7 +178,7 @@ void Demo::IEnemy::Draw(DX9GF::GraphicsDevice* graphicsDevice, DX9GF::Camera* ca
     fontSprite->Begin();
 	fontSprite->SetOutline(true, 0xFF000000, 2.f);
     fontSprite->SetColor(0xFFFFFFFF);
-    fontSprite->SetPosition(GetWorldX(), GetWorldY() - 96.f);
+    fontSprite->SetPosition(GetWorldX(), GetWorldY() - 120.f);
     fontSprite->SetText(std::move(healthText));
     fontSprite->Draw(*camera, deltaTime);
 

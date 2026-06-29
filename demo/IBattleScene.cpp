@@ -256,7 +256,7 @@ void Demo::IBattleScene::QueueEnemyLayoutTransition(State targetState)
 	const auto app = DX9GF::Application::GetInstance();
 	const float centerLineY = -120.f;
 	const float horizontalSpacing = 120.f;
-	const float verticalSpacing = 160.f;
+	const float verticalSpacing = 240.f;
 	const float rightSideX = app->GetScreenWidth() / 2.f - 186.f;
 
 	bool hasQueued = false;
@@ -298,7 +298,17 @@ void Demo::IBattleScene::CreateEnemyCard(std::shared_ptr<IEnemy> enemy)
 	std::mt19937 gen(rd());
 	std::uniform_int_distribution<int> xdist(-10, 10);
 	std::uniform_int_distribution<int> ydist(-10, 10);
-	auto card = std::make_shared<EnemyCard>(transformManager, enemy, enemy->GetWorldX() - enemy->GetCardSpawnTrigger().lock()->GetWidth() * 1.5f + xdist(gen), enemy->GetWorldY() - 32 + ydist(gen));
+
+	auto trigger = enemy->GetCardSpawnTrigger().lock();
+	const float triggerHalfHeight = trigger ? trigger->GetHeight() * 0.5f : 32.f;
+	const float closeOffsetY = triggerHalfHeight + 10.f;
+
+	const float cardHalfWidth = 52.f;
+
+	const float spawnX = enemy->GetWorldX() - cardHalfWidth + xdist(gen);
+	const float spawnY = enemy->GetWorldY() + closeOffsetY + ydist(gen);
+
+	auto card = std::make_shared<EnemyCard>(transformManager, enemy, spawnX, spawnY);
 	card->Init(draggableManager, game->GetGraphicsDevice(), &camera);
 	enemyCards.push_back(card);
 }
