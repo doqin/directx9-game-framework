@@ -4,7 +4,6 @@
 #include "Player.h"
 #include "Game.h"
 #include "IDraggable.h"
-#include "TextButton.h"
 #include "IconButton.h"
 #include "MainBlockCard.h"
 #include "StrikeCard.h"
@@ -13,6 +12,7 @@
 #include "TestEnemy.h"
 #include "PopUpMessage.h"
 #include "AdvancedCards.h"	
+#include "TextIconButton.h"
 
 namespace Demo {
 	class IBattleScene : public DX9GF::IScene {
@@ -91,8 +91,8 @@ namespace Demo {
 		std::shared_ptr<IconButton> closeItemMenuButton;
 
 		std::vector<std::shared_ptr<IconButton>> buffItems;
-		std::shared_ptr<IconButton> btnNextPage;
-		std::shared_ptr<IconButton> btnPrevPage;
+		std::shared_ptr<TextIconButton> btnNextPage;
+		std::shared_ptr<TextIconButton> btnPrevPage;
 		int currentItemPage = 0;
 		int maxItemPage = 0;
 

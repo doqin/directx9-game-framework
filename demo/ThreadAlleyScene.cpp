@@ -8,6 +8,7 @@
 #include "SaveGameState.h"
 #include "TransitionCommand.h"
 #include "resource.h"
+#include "PopupManager.h"
 
 void Demo::ThreadAlleyScene::Init()
 {
@@ -77,50 +78,54 @@ void Demo::ThreadAlleyScene::Init()
 	);
 	shopPoints.back()->SetVisible(true);
 	  
-	//
+	auto borderTex = std::make_shared<DX9GF::Texture>(game->GetGraphicsDevice());
+	borderTex->LoadTexture(L"assets/popup-borders.png");
+
+	auto uiTex = std::make_shared<DX9GF::Texture>(game->GetGraphicsDevice());
+	uiTex->LoadTexture(L"assets/ui.png");
+
+	PopupManager::GetInstance()->Init(game->GetGraphicsDevice(), borderTex, uiTex, font);
 
 	savePoints.push_back(std::make_shared<SavePoint>(transformManager, -710, -554));
-	savePoints.back()->Init(game->GetGraphicsDevice(), &camera, &uiCamera, player, colliderManager, saveManager, font, drawBuffer);
+	savePoints.back()->Init(game->GetGraphicsDevice(), &camera, player, colliderManager, saveManager, font, drawBuffer);
 	savePoints.back()->SetVisible(true);
 
 	savePoints.push_back(std::make_shared<SavePoint>(transformManager, -474, -137));
-	savePoints.back()->Init(game->GetGraphicsDevice(), &camera, &uiCamera, player, colliderManager, saveManager, font, drawBuffer);
+	savePoints.back()->Init(game->GetGraphicsDevice(), &camera, player, colliderManager, saveManager, font, drawBuffer);
 	savePoints.back()->SetVisible(true);
 
 	savePoints.push_back(std::make_shared<SavePoint>(transformManager, -727, -1201));
-	savePoints.back()->Init(game->GetGraphicsDevice(), &camera, &uiCamera, player, colliderManager, saveManager, font, drawBuffer);
+	savePoints.back()->Init(game->GetGraphicsDevice(), &camera, player, colliderManager, saveManager, font, drawBuffer);
 	savePoints.back()->SetVisible(true);
 
 	savePoints.push_back(std::make_shared<SavePoint>(transformManager, -235, -1302));
-	savePoints.back()->Init(game->GetGraphicsDevice(), &camera, &uiCamera, player, colliderManager, saveManager, font, drawBuffer);
+	savePoints.back()->Init(game->GetGraphicsDevice(), &camera, player, colliderManager, saveManager, font, drawBuffer);
 	savePoints.back()->SetVisible(true);
 
 	savePoints.push_back(std::make_shared<SavePoint>(transformManager, 134, -1129));
-	savePoints.back()->Init(game->GetGraphicsDevice(), &camera, &uiCamera, player, colliderManager, saveManager, font, drawBuffer);
+	savePoints.back()->Init(game->GetGraphicsDevice(), &camera, player, colliderManager, saveManager, font, drawBuffer);
 	savePoints.back()->SetVisible(true);
 
 	savePoints.push_back(std::make_shared<SavePoint>(transformManager, 824, -969));
-	savePoints.back()->Init(game->GetGraphicsDevice(), &camera, &uiCamera, player, colliderManager, saveManager, font, drawBuffer);
+	savePoints.back()->Init(game->GetGraphicsDevice(), &camera, player, colliderManager, saveManager, font, drawBuffer);
 	savePoints.back()->SetVisible(true);
 
 	savePoints.push_back(std::make_shared<SavePoint>(transformManager, 582, -1036));
-	savePoints.back()->Init(game->GetGraphicsDevice(), &camera, &uiCamera, player, colliderManager, saveManager, font, drawBuffer);
+	savePoints.back()->Init(game->GetGraphicsDevice(), &camera, player, colliderManager, saveManager, font, drawBuffer);
 	savePoints.back()->SetVisible(true);
 
-	//savePoints.push_back(std::make_shared<SavePoint>(transformManager, 230, -392));
-	//savePoints.back()->Init(game->GetGraphicsDevice(), &camera, player, colliderManager, saveManager, font, drawBuffer);
-	//savePoints.back()->SetVisible(true);
-
+	savePoints.push_back(std::make_shared<SavePoint>(transformManager, 230, -392));
+	savePoints.back()->Init(game->GetGraphicsDevice(), &camera, player, colliderManager, saveManager, font, drawBuffer);
+	savePoints.back()->SetVisible(true);
 
 	savePoints.push_back(std::make_shared<SavePoint>(transformManager, 968, -216));
-	savePoints.back()->Init(game->GetGraphicsDevice(), &camera, &uiCamera, player, colliderManager, saveManager, font, drawBuffer);
+	savePoints.back()->Init(game->GetGraphicsDevice(), &camera, player, colliderManager, saveManager, font, drawBuffer);
 	savePoints.back()->SetVisible(true);
 
 	savePoints.push_back(std::make_shared<SavePoint>(transformManager, 1210, -91));
-	savePoints.back()->Init(game->GetGraphicsDevice(), &camera, &uiCamera, player, colliderManager, saveManager, font, drawBuffer);
+	savePoints.back()->Init(game->GetGraphicsDevice(), &camera, player, colliderManager, saveManager, font, drawBuffer);
 	savePoints.back()->SetVisible(true);
 
-	//
 
 	healingPoints.push_back(std::make_shared<HealingPoint>(transformManager, -328, -537));
 	healingPoints.back()->Init(game->GetGraphicsDevice(), &camera, player, colliderManager, font, drawBuffer);
@@ -253,6 +258,8 @@ void Demo::ThreadAlleyScene::Init()
 
 void Demo::ThreadAlleyScene::Update(unsigned long long deltaTime)
 {
+	PopupManager::GetInstance()->SetUICamera(&this->uiCamera);
+
 	auto OpenChestWithDialog = [&](std::shared_ptr<TreasureChestNPC>& chest) {
 		auto given = chest->Open(player.get());
 		if (given.empty()) return;
@@ -292,6 +299,11 @@ void Demo::ThreadAlleyScene::Update(unsigned long long deltaTime)
 
 	bool isGamePaused = this->isGamePaused;
 
+	if (PopupManager::GetInstance()->IsActive()) {
+		PopupManager::GetInstance()->Update(deltaTime, &this->uiCamera);
+		isGamePaused = true;
+	}
+
 	if (currentConversation) {
 		isGamePaused = true;
 		currentConversation->Execute(deltaTime);
@@ -300,7 +312,6 @@ void Demo::ThreadAlleyScene::Update(unsigned long long deltaTime)
 
 	for (auto& savePoint : savePoints) {
 		savePoint->Update(deltaTime);
-		if (savePoint->IsMenuOpen()) isGamePaused = true;
 	}
 
 	for (auto& shopPoint : shopPoints) {
@@ -410,6 +421,8 @@ void Demo::ThreadAlleyScene::DrawUI(unsigned long long deltaTime)
 		if (drawBuffer) {
 			drawBuffer->Update(deltaTime);
 		}
+
+		PopupManager::GetInstance()->DrawUI(deltaTime, &this->uiCamera);
 
 		DX9GF::InputManager::GetInstance()->DrawCursor(&this->uiCamera, deltaTime);
 

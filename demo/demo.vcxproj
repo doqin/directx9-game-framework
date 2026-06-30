@@ -246,6 +246,7 @@
       <PrecompiledHeader Condition="'$(Configuration)|$(Platform)'=='Release|x64'">Create</PrecompiledHeader>
     </ClCompile>
     <ClCompile Include="Player.cpp" />
+    <ClCompile Include="PopupManager.cpp" />
     <ClCompile Include="RandomEncounter.cpp" />
     <ClCompile Include="RustyChestNPC.cpp" />
     <ClCompile Include="SaveGameState.cpp" />
@@ -258,6 +259,7 @@
     <ClCompile Include="SineWaveProjectile.cpp" />
     <ClCompile Include="SpiralProjectile.cpp" />
     <ClCompile Include="TargetedProjectile.cpp" />
+    <ClCompile Include="TextIconButton.cpp" />
     <ClCompile Include="TextInputManager.cpp" />
     <ClCompile Include="PopUpMessage.cpp" />
     <ClCompile Include="RoundProjectile.cpp" />
@@ -322,6 +324,7 @@
     <ClInclude Include="MultiTargetCard.h" />
     <ClInclude Include="NPC1.h" />
     <ClInclude Include="Player.h" />
+    <ClInclude Include="PopupManager.h" />
     <ClInclude Include="PopUpMessage.h" />
     <ClInclude Include="RandomEncounter.h" />
     <ClInclude Include="resource.h" />
@@ -336,6 +339,7 @@
     <ClInclude Include="SineWaveProjectile.h" />
     <ClInclude Include="SpiralProjectile.h" />
     <ClInclude Include="TargetedProjectile.h" />
+    <ClInclude Include="TextIconButton.h" />
     <ClInclude Include="TextInputManager.h" />
     <ClInclude Include="RoundProjectile.h" />
     <ClInclude Include="StrikeCard.h" />
@@ -493,6 +497,9 @@
       <DeploymentContent>true</DeploymentContent>
     </Image>
     <Image Include="assets\pointer.png">
+      <DeploymentContent>true</DeploymentContent>
+    </Image>
+    <Image Include="assets\popup-borders.png">
       <DeploymentContent>true</DeploymentContent>
     </Image>
     <Image Include="assets\savepoint-Sheet.png">

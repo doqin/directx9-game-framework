@@ -99,30 +99,6 @@ namespace Demo
 		}
 	}
 
-	void SettingsScene::DrawKeybindButton(const std::string& action, std::shared_ptr<IconButton> btn, bool listening)
-	{
-		auto sm = SettingsManager::GetInstance();
-		std::wstring text = listening ? L"..." : ToWString(GetKeyName(sm->GetKeybind(action)));
-		D3DCOLOR color = listening ? D3DCOLOR_XRGB(5, 5, 5) : D3DCOLOR_XRGB(0, 0, 0);
-
-		fontSprite->SetText(std::move(text));
-		auto textWidth = fontSprite->GetWidth();
-		auto textHeight = fontSprite->GetHeight();
-		auto btnW = btn->GetWidth();
-		auto btnH = btn->GetHeight();
-		auto btnX = btn->GetLocalX();
-		auto btnY = btn->GetLocalY();
-		auto x = btnX + btnW / 2.f - textWidth / 2.f;
-		auto y = btnY + btnH / 2.f - textHeight / 1.25f;
-
-		fontSprite->Begin();
-		fontSprite->SetPosition(x, y);
-		fontSprite->SetColor(color);
-
-		fontSprite->Draw(uiCamera, 0);
-		fontSprite->End();
-	}
-
 	//Update functions for component
 	void SettingsScene::ResetListening()
 	{
@@ -286,42 +262,34 @@ namespace Demo
 			});
 		btnResNext->Init(&uiCamera);
 
-		//Use the same placeholder image for all control buttons for now.
-		btnUp = std::make_shared<Demo::IconButton>(transformManager, 0, 0, 32, 32, uiSheetTex, 3);
-		btnUp->SetSpriteRects(DX9GF::Utils::CreateRectsVertical(0, 0, 16, 16, 3));
-		btnUp->SetOnReleaseLeft([this](DX9GF::ITrigger*) {
-			this->ResetListening();
-			this->isListeningUp = true;
-			btnUp->SetState(Demo::IButton::ButtonState::LISTENING);
-			});
-		btnUp->SetSpriteScale(2.f, 2.f);
+		auto SetupKeybindBtn = [&](std::shared_ptr<Demo::TextIconButton>& btn, const std::string& action, bool& listeningFlag) {
+			btn = std::make_shared<Demo::TextIconButton>(transformManager, 0, 0, 32, 32, uiSheetTex, font.get(), L"", 3);
+			btn->SetSpriteRects(DX9GF::Utils::CreateRectsVertical(0, 0, 16, 16, 3));
+			btn->SetSpriteScale(2.f, 2.f);
 
-		btnDown = std::make_shared<Demo::IconButton>(transformManager, 0, 0, 32, 32, uiSheetTex, 3);
-		btnDown->SetSpriteRects(DX9GF::Utils::CreateRectsVertical(0, 0, 16, 16, 3));
-		btnDown->SetOnReleaseLeft([this](DX9GF::ITrigger*) {
-			this->ResetListening();
-			this->isListeningDown = true;
-			btnDown->SetState(Demo::IButton::ButtonState::LISTENING);
-			});
-		btnDown->SetSpriteScale(2.f, 2.f);
+			btn->SetTextScale(1.0f, 1.0f);
+			btn->SetTextColor(D3DCOLOR_XRGB(0, 0, 0));
 
-		btnLeft = std::make_shared<Demo::IconButton>(transformManager, 0, 0, 32, 32, uiSheetTex, 3);
-		btnLeft->SetSpriteRects(DX9GF::Utils::CreateRectsVertical(0, 0, 16, 16, 3));
-		btnLeft->SetOnReleaseLeft([this](DX9GF::ITrigger*) {
-			this->ResetListening();
-			this->isListeningLeft = true;
-			btnLeft->SetState(Demo::IButton::ButtonState::LISTENING);
-			});
-		btnLeft->SetSpriteScale(2.f, 2.f);
+			Demo::TextIconButton* rawBtn = btn.get();
 
-		btnRight = std::make_shared<Demo::IconButton>(transformManager, 0, 0, 32, 32, uiSheetTex, 3);
-		btnRight->SetSpriteRects(DX9GF::Utils::CreateRectsVertical(0, 0, 16, 16, 3));
-		btnRight->SetOnReleaseLeft([this](DX9GF::ITrigger*) {
-			this->ResetListening();
-			this->isListeningRight = true;
-			btnRight->SetState(Demo::IButton::ButtonState::LISTENING);
-			});
-		btnRight->SetSpriteScale(2.f, 2.f);
+			btn->SetDynamicTextGetter([rawBtn, sm, action]() {
+				if (rawBtn->GetState() == Demo::IButton::ButtonState::LISTENING) {
+					return std::wstring(L"...");
+				}
+				return ToWString(GetKeyName(sm->GetKeybind(action)));
+				});
+
+			btn->SetOnReleaseLeft([this, rawBtn, &listeningFlag](DX9GF::ITrigger*) {
+				this->ResetListening();
+				listeningFlag = true;
+				rawBtn->SetState(Demo::IButton::ButtonState::LISTENING);
+				});
+			};
+
+		SetupKeybindBtn(btnUp, "MOVE_UP", isListeningUp);
+		SetupKeybindBtn(btnDown, "MOVE_DOWN", isListeningDown);
+		SetupKeybindBtn(btnLeft, "MOVE_LEFT", isListeningLeft);
+		SetupKeybindBtn(btnRight, "MOVE_RIGHT", isListeningRight);
 
 		// Active Buttons
 		std::shared_ptr<Demo::IButton> buttons[] = { backButton, btnUp, btnDown, btnLeft, btnRight, btnMasterDec, btnMasterInc, btnMusicDec, btnMusicInc, btnSFXDec, btnSFXInc };
@@ -427,12 +395,6 @@ namespace Demo
 
 			//draw buttons
 			for (auto& btn : uiButtons) btn->Draw(gd, deltaTime);
-
-			//draw text onto keybind
-			DrawKeybindButton("MOVE_UP", btnUp, isListeningUp);
-			DrawKeybindButton("MOVE_DOWN", btnDown, isListeningDown);
-			DrawKeybindButton("MOVE_LEFT", btnLeft, isListeningLeft);
-			DrawKeybindButton("MOVE_RIGHT", btnRight, isListeningRight);
 
 			int resIdx = sm->GetCurrentResolutionIndex();
 			auto resList = sm->GetSupportedResolutions();

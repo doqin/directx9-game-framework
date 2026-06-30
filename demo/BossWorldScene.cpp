@@ -11,6 +11,7 @@
 #include <vector>
 #include <cmath>
 #include "resource.h"
+#include "PopupManager.h"
 
 void Demo::BossWorldScene::Init() {
 	camera.SetZoom(2.0f);
@@ -111,16 +112,25 @@ void Demo::BossWorldScene::Init() {
 	healingPoints.back()->SetVisible(true);
 
 	//save
+
+	auto borderTex = std::make_shared<DX9GF::Texture>(game->GetGraphicsDevice());
+	borderTex->LoadTexture(L"assets/popup-borders.png");
+
+	auto uiTex = std::make_shared<DX9GF::Texture>(game->GetGraphicsDevice());
+	uiTex->LoadTexture(L"assets/ui.png");
+
+	PopupManager::GetInstance()->Init(game->GetGraphicsDevice(), borderTex, uiTex, font);
+
 	savePoints.push_back(std::make_shared<SavePoint>(transformManager, 192.f, 320.f));
-	savePoints.back()->Init(game->GetGraphicsDevice(), &camera, &uiCamera, player, colliderManager, saveManager, font, drawBuffer);
+	savePoints.back()->Init(game->GetGraphicsDevice(), &camera, player, colliderManager, saveManager, font, drawBuffer);
 	savePoints.back()->SetVisible(true);
 
 	savePoints.push_back(std::make_shared<SavePoint>(transformManager, -304.f, -160.f));
-	savePoints.back()->Init(game->GetGraphicsDevice(), &camera, &uiCamera, player, colliderManager, saveManager, font, drawBuffer);
+	savePoints.back()->Init(game->GetGraphicsDevice(), &camera, player, colliderManager, saveManager, font, drawBuffer);
 	savePoints.back()->SetVisible(true);
 
 	savePoints.push_back(std::make_shared<SavePoint>(transformManager, 704.f, -96.f));
-	savePoints.back()->Init(game->GetGraphicsDevice(), &camera, &uiCamera, player, colliderManager, saveManager, font, drawBuffer);
+	savePoints.back()->Init(game->GetGraphicsDevice(), &camera, player, colliderManager, saveManager, font, drawBuffer);
 	savePoints.back()->SetVisible(true);
 
 	//shop
@@ -359,6 +369,8 @@ void Demo::BossWorldScene::OnTerminalHacked(int terminalID) {
 }
 
 void Demo::BossWorldScene::Update(unsigned long long deltaTime) {
+	PopupManager::GetInstance()->SetUICamera(&this->uiCamera);
+
 	auto OpenChestWithDialog = [&](std::shared_ptr<TreasureChestNPC>& chest) {
 		auto given = chest->Open(player.get());
 		if (given.empty()) return;
@@ -397,6 +409,11 @@ void Demo::BossWorldScene::Update(unsigned long long deltaTime) {
 	}
 
 	bool isGamePaused = this->isGamePaused;
+
+	if (PopupManager::GetInstance()->IsActive()) {
+		PopupManager::GetInstance()->Update(deltaTime, &this->uiCamera);
+		isGamePaused = true;
+	}
 
 	if (npcHint) {
 		npcHint->Update(deltaTime);
@@ -444,7 +461,6 @@ void Demo::BossWorldScene::Update(unsigned long long deltaTime) {
 
 	for (auto& savePoint : savePoints) {
 		savePoint->Update(deltaTime);
-		if (savePoint->IsMenuOpen()) isGamePaused = true;
 	}
 	for (auto& shopPoint : shopPoints) shopPoint->Update(deltaTime);
 	for (auto& healPoint : healingPoints) healPoint->Update(deltaTime);
@@ -563,6 +579,8 @@ void Demo::BossWorldScene::DrawUI(unsigned long long deltaTime)
 		if (drawBuffer) {
 			drawBuffer->Update(deltaTime);
 		}
+
+		PopupManager::GetInstance()->DrawUI(deltaTime, &this->uiCamera);
 
 		DX9GF::InputManager::GetInstance()->DrawCursor(&this->uiCamera, deltaTime);
 
