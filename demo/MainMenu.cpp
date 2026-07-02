@@ -171,12 +171,11 @@ namespace Demo
 		newGameButton->SetOnReleaseLeft([this](DX9GF::ITrigger* t) {
 			if (isTransitioning) return;
 
-			// Kiểm tra xem có file save không
+			//check save file
 			std::ifstream f("savegame.json");
 			bool hasSave = f.good();
 			f.close();
 
-			// GÓI GỌN LOGIC TẠO GAME MỚI VÀO LAMBDA ĐỂ TÁI SỬ DỤNG
 			auto startNewGameLogic = [this]() {
 				this->isTransitioning = true;
 				auto transitionInCommand = std::make_shared<TransitionCommand>(game->GetGraphicsDevice(), &this->uiCamera, 1.f, true);
@@ -202,13 +201,12 @@ namespace Demo
 				this->drawBuffer->PushCommand(std::make_shared<TransitionCommand>(game->GetGraphicsDevice(), &this->uiCamera, 1.f, false));
 				};
 
-			// QUYẾT ĐỊNH FLOW: CÓ SAVE THÌ POPUP, KHÔNG THÌ CHẠY LUÔN
 			if (hasSave) {
 				std::vector<std::pair<std::wstring, std::function<void()>>> popupBtns = {
-					{ L"Yes", startNewGameLogic }, // Bấm Yes thì chạy logic
-					{ L"No", []() {} }             // Bấm No thì bỏ qua, Popup tự tắt
+					{ L"Yes", startNewGameLogic },
+					{ L"No", []() {} }
 				};
-				PopupManager::GetInstance()->Show("basic_bluepurple", L"WARNING", L"Overwrite existing save?", popupBtns);
+				PopupManager::GetInstance()->Show("stepped_red", L"WARNING", L"Overwrite existing save?", popupBtns);
 			}
 			else {
 				startNewGameLogic();

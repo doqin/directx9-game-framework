@@ -33,6 +33,10 @@ namespace Demo {
         RegisterStyle("basic_bluepurple", { {32, 64, 64, 96},   2, 2, 2, 2, 0xFFFFFFFF, 0xFFFFFFFF, false, 0x00000000 });
         RegisterStyle("basic_contrastblue", { {64, 64, 96, 96},   2, 2, 2, 2, 0xFFFFFFFF, 0xFFFFFFFF, true,  0xFF000000 });
         RegisterStyle("basic_contrastred", { {96, 64, 128, 96},  2, 2, 2, 2, 0xFFFFFFFF, 0xFFFFFFFF, false, 0x00000000 });
+        RegisterStyle("stepped_white", { {32, 128, 64, 160},   6, 6, 6, 6, 0xFF000000, 0xFF000000, false, 0x00000000 });
+        RegisterStyle("stepped_red", { {64, 128, 96, 160},   6, 6, 6, 6, 0xFFFFFFFF, 0xFFFFFFFF, true,  0xFF000000 });
+        RegisterStyle("stepped_blue", { {96, 128, 128, 160},  6, 6, 6, 6, 0xFFFFFFFF, 0xFFFFFFFF, true,  0xFF000000 });
+        RegisterStyle("stepped_gold", { {128, 128, 160, 160}, 6, 6, 6, 6, 0xFF000000, 0xFF000000, true,  0xFFFFFFFF });
 
         btnRectsSmall = { {0, 0, 16, 16}, {0, 16, 16, 32}, {0, 32, 16, 48} };
         btnRectsMed = { {16, 0, 48, 16}, {16, 16, 48, 32}, {16, 32, 48, 48} };
@@ -89,6 +93,7 @@ namespace Demo {
             style.marginL, style.marginT, style.marginR, style.marginB
         );
         this->backgroundSprite->SetTargetSize(popupWidth, popupHeight);
+        this->backgroundSprite->SetScale(scale);
 
         for (const auto& btnData : buttons) {
 

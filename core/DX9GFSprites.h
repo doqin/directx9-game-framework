@@ -73,6 +73,7 @@ namespace DX9GF {
 		RECT srcRect;
 		int leftMargin, topMargin, rightMargin, bottomMargin;
 		float targetWidth, targetHeight;
+		float scale = 1.0f;
 	public:
 		NineSliceSprite(Texture* texture, RECT srcRect, int left, int top, int right, int bottom);
 		~NineSliceSprite();
@@ -80,6 +81,7 @@ namespace DX9GF {
 		void SetTargetSize(float width, float height);
 		float GetTargetWidth() const { return targetWidth; }
 		float GetTargetHeight() const { return targetHeight; }
+		void SetScale(float s) { scale = s; }
 
 		void Begin() override;
 		void Draw(const Camera& camera, unsigned long long deltaTime) override;

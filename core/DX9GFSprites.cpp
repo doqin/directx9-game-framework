@@ -346,8 +346,8 @@ void DX9GF::NineSliceSprite::Draw(const Camera& camera, unsigned long long delta
 	float srcY[4] = { (float)srcRect.top, (float)srcRect.top + topMargin, (float)srcRect.bottom - bottomMargin, (float)srcRect.bottom };
 
 	// Calculate the 4 drawing coordinates on the target screen
-	float dstX[4] = { 0.0f, (float)leftMargin, targetWidth - rightMargin, targetWidth };
-	float dstY[4] = { 0.0f, (float)topMargin, targetHeight - bottomMargin, targetHeight };
+	float dstX[4] = { 0.0f, leftMargin * scale, targetWidth - (rightMargin * scale), targetWidth };
+	float dstY[4] = { 0.0f, topMargin * scale, targetHeight - (bottomMargin * scale), targetHeight };
 
 	D3DXVECTOR3 zeroPos(0.0f, 0.0f, 0.0f);
 
