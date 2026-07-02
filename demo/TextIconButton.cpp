@@ -45,7 +45,7 @@ namespace Demo {
         fontSprite->SetText(std::wstring(currentText));
         fontSprite->SetScale(textScaleX, textScaleY);
         fontSprite->SetColor(textColor);
-        fontSprite->SetOutline(hasOutline, outlineColor, 1.5f);
+        fontSprite->SetOutline(hasOutline, outlineColor, 2.0f);
 
         float tw = fontSprite->GetWidth();
         float th = fontSprite->GetHeight();

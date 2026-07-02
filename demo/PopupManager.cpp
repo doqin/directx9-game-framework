@@ -169,7 +169,7 @@ namespace Demo {
         fontSprite->Begin();
         fontSprite->SetText(std::wstring(currentTitle));
         fontSprite->SetColor(style.titleColor);
-        fontSprite->SetOutline(style.hasOutline, style.outlineColor, 1.5f);
+        fontSprite->SetOutline(style.hasOutline, style.outlineColor, 2.0f);
 
         float titleW = fontSprite->GetWidth();
         float titleH = fontSprite->GetHeight();
