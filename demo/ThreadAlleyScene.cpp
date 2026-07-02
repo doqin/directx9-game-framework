@@ -226,6 +226,12 @@ void Demo::ThreadAlleyScene::Init()
 	inventoryMenu = std::make_shared<InventoryMenu>(game, player, transformManager, draggableManager, &uiCamera, font.get());
 	inventoryMenu->Init();
 
+	playerHUD = std::make_shared<PlayerHUD>(game, player, transformManager, &this->uiCamera, font.get());
+	playerHUD->SetOnInventoryOpen([this]() {
+		if (inventoryMenu && !inventoryMenu->IsOpen()) inventoryMenu->Toggle();
+		});
+	playerHUD->Init();
+
 	auto audio = DX9GF::AudioManager::GetInstance();
 
 	audio->Load("step_c1", IDR_STEP_C1);
@@ -344,6 +350,8 @@ void Demo::ThreadAlleyScene::Update(unsigned long long deltaTime)
 		inventoryMenu->Update(deltaTime);
 	}
 
+	if (playerHUD && !isGamePaused) playerHUD->Update(deltaTime);
+
 	if (!isGamePaused) {
 		player->Update(deltaTime);
 		camera.Update();
@@ -398,6 +406,7 @@ void Demo::ThreadAlleyScene::DrawUI(unsigned long long deltaTime)
 		for (auto& healPoint : healingPoints) healPoint->DrawUI(&this->uiCamera, deltaTime);
 		for (auto& shopPoint : shopPoints) shopPoint->DrawUI(&this->uiCamera, deltaTime);
 
+		if (playerHUD) playerHUD->Draw(gd, deltaTime);
 		if (inventoryMenu) inventoryMenu->Draw(gd, deltaTime);
 		if (draggableManager && inventoryMenu && inventoryMenu->IsOpen() && inventoryMenu->GetCurrentTab() == Demo::InventoryMenu::Tab::DECK) {
 			draggableManager->Draw(deltaTime);

@@ -256,6 +256,12 @@ void Demo::BossWorldScene::Init() {
 	inventoryMenu = std::make_shared<InventoryMenu>(game, player, transformManager, draggableManager, &uiCamera, font.get());
 	inventoryMenu->Init();
 
+	playerHUD = std::make_shared<PlayerHUD>(game, player, transformManager, &this->uiCamera, font.get());
+	playerHUD->SetOnInventoryOpen([this]() {
+		if (inventoryMenu && !inventoryMenu->IsOpen()) inventoryMenu->Toggle();
+		});
+	playerHUD->Init();
+
 	auto audio = DX9GF::AudioManager::GetInstance();
 
 	audio->Load("step_v1", IDR_STEP_V1);
@@ -482,6 +488,8 @@ void Demo::BossWorldScene::Update(unsigned long long deltaTime) {
 		inventoryMenu->Update(deltaTime);
 	}
 
+	if (playerHUD && !isGamePaused) playerHUD->Update(deltaTime);
+
 	if (!isGamePaused) {
 		for (auto& m : hackMachines) m->Update(deltaTime);
 		mainTerminal->Update(deltaTime);
@@ -551,6 +559,7 @@ void Demo::BossWorldScene::DrawUI(unsigned long long deltaTime)
 		for (auto& m : hackMachines) m->DrawUI(&this->uiCamera, deltaTime);
 		mainTerminal->DrawUI(&this->uiCamera, deltaTime);
 
+		if (playerHUD) playerHUD->Draw(gd, deltaTime);
 		if (inventoryMenu) inventoryMenu->Draw(gd, deltaTime);
 		if (draggableManager && inventoryMenu && inventoryMenu->IsOpen() && inventoryMenu->GetCurrentTab() == Demo::InventoryMenu::Tab::DECK) {
 			draggableManager->Draw(deltaTime);
