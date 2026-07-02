@@ -52,6 +52,8 @@ void DX9GF::IGame::Draw(unsigned long long deltaTime)
 	//RENDER INTO VIRTUAL TEXTURE (WORLD)
 	graphicsDevice->SetRenderTarget(renderTargetTex.get());
 	graphicsDevice->SetViewport(0, 0, SCREEN_WIDTH, SCREEN_HEIGHT, 0.0f, 1.0f);
+	// The virtual render target is 1:1 with virtual coordinates
+	graphicsDevice->ResetVirtualTransform();
 
 	graphicsDevice->Clear(0xFF000000);
 
@@ -63,19 +65,19 @@ void DX9GF::IGame::Draw(unsigned long long deltaTime)
 
 	graphicsDevice->Clear(0xFF000000);
 
+	float currentWidth = static_cast<float>(d3dpp.BackBufferWidth);
+	float currentHeight = static_cast<float>(d3dpp.BackBufferHeight);
+
+	float scaleX = currentWidth / static_cast<float>(SCREEN_WIDTH);
+	float scaleY = currentHeight / static_cast<float>(SCREEN_HEIGHT);
+	float scale = (std::min)(scaleX, scaleY);
+
+	float finalW = SCREEN_WIDTH * scale;
+	float finalH = SCREEN_HEIGHT * scale;
+	float offsetX = (currentWidth - finalW) / 2.0f;
+	float offsetY = (currentHeight - finalH) / 2.0f;
+
 	if (SUCCEEDED(graphicsDevice->BeginDraw())) {
-		float currentWidth = static_cast<float>(d3dpp.BackBufferWidth);
-		float currentHeight = static_cast<float>(d3dpp.BackBufferHeight);
-
-		float scaleX = currentWidth / static_cast<float>(SCREEN_WIDTH);
-		float scaleY = currentHeight / static_cast<float>(SCREEN_HEIGHT);
-		float scale = (std::min)(scaleX, scaleY);
-
-		float finalW = SCREEN_WIDTH * scale;
-		float finalH = SCREEN_HEIGHT * scale;
-		float offsetX = (currentWidth - finalW) / 2.0f;
-		float offsetY = (currentHeight - finalH) / 2.0f;
-
 		auto currentScene = sceneManager->GetCurrentScene();
 		if (currentScene) {
 			currentScene->GetUICamera().SetScreenResolution(static_cast<int>(currentWidth), static_cast<int>(currentHeight));
@@ -96,6 +98,9 @@ void DX9GF::IGame::Draw(unsigned long long deltaTime)
 		graphicsDevice->EndDraw();
 	}
 
+	// Camera-less (instant) draws during the UI phase take virtual coordinates,
+	// scaled and letterboxed onto the actual backbuffer
+	graphicsDevice->SetVirtualTransform(scale, offsetX, offsetY);
 	sceneManager->DrawUI(deltaTime);
 
 	graphicsDevice->Present();

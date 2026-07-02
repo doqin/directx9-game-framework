@@ -231,6 +231,7 @@
     <ClCompile Include="INPC.cpp" />
     <ClCompile Include="InventoryMenu.cpp" />
     <ClCompile Include="IStatementCard.cpp" />
+    <ClCompile Include="PlayerHUD.cpp" />
     <ClCompile Include="ItemShop.cpp" />
     <ClCompile Include="KeyeEnemy.cpp" />
     <ClCompile Include="OutroScene.cpp" />
@@ -309,6 +310,7 @@
     <ClInclude Include="INPC.h" />
     <ClInclude Include="InventoryMenu.h" />
     <ClInclude Include="ItemShop.h" />
+    <ClInclude Include="PlayerHUD.h" />
     <ClInclude Include="KeyeEnemy.h" />
     <ClInclude Include="OutroScene.h" />
     <ClInclude Include="KeyeproEnemy.h" />

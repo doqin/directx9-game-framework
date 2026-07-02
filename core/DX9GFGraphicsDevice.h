@@ -9,6 +9,11 @@ namespace DX9GF {
 		IDirect3DDevice9* d3ddev = NULL; // Đại diện cho card đồ họa máy tính
 		IDirect3DSurface9* backbuffer = NULL;
 		D3DVIEWPORT9 viewport;
+		// Virtual-to-backbuffer transform applied to the camera-less (instant) draw calls
+		float virtualScale = 1.0f;
+		float virtualOffsetX = 0.0f;
+		float virtualOffsetY = 0.0f;
+		void DrawLineInternal(float x1, float y1, float x2, float y2, D3DCOLOR color, float thickness);
 	public:
 		GraphicsDevice() {};
 		GraphicsDevice(IDirect3DDevice9* d3ddev, IDirect3DSurface9* backbuffer);
@@ -48,6 +53,15 @@ namespace DX9GF {
 		void SetAlphaBlending(bool enabled);
 		void SetScissorTest(bool enabled);
 		void SetScissorRect(const RECT& rect);
+
+		/// <summary>
+		/// Sets the transform mapping virtual screen coordinates to actual backbuffer
+		/// pixels for the camera-less (instant) draw calls. Set by IGame each frame so
+		/// instant drawing scales properly when the backbuffer resolution differs from
+		/// the virtual resolution; identity while rendering into the virtual render target.
+		/// </summary>
+		void SetVirtualTransform(float scale, float offsetX, float offsetY);
+		void ResetVirtualTransform();
 
 		void DrawLine(float x1, float y1, float x2, float y2, D3DCOLOR color, float thickness = 1.0f);
 		void DrawLine(const DX9GF::Camera& camera, float x1, float y1, float x2, float y2, D3DCOLOR color, float thickness = 1.0f);

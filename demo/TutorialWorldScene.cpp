@@ -144,6 +144,12 @@ void Demo::TutorialWorldScene::Init()
 	inventoryMenu = std::make_shared<InventoryMenu>(game, player, transformManager, draggableManager, &this->uiCamera, font.get());
 	inventoryMenu->Init();
 
+	playerHUD = std::make_shared<PlayerHUD>(game, player, transformManager, &this->uiCamera, font.get());
+	playerHUD->SetOnInventoryOpen([this]() {
+		if (inventoryMenu && !inventoryMenu->IsOpen()) inventoryMenu->Toggle();
+		});
+	playerHUD->Init();
+
 	player->SetBaseSurface("default");
 
 	map->SetAreaUpdateHandler("audio_zone_leaves", [this](const DX9GF::Map::ObjectArea&) {
@@ -299,6 +305,8 @@ void Demo::TutorialWorldScene::Update(unsigned long long deltaTime)
 		inventoryMenu->Update(deltaTime);
 	}
 
+	if (playerHUD && !isGamePaused) playerHUD->Update(deltaTime);
+
 	if (!isGamePaused) {
 		player->Update(deltaTime);
 		camera.Update();
@@ -369,6 +377,7 @@ void Demo::TutorialWorldScene::DrawUI(unsigned long long deltaTime)
 		if (npcExplainingHealingPoint) npcExplainingHealingPoint->DrawUI(&this->uiCamera, deltaTime);
 		if (npcExplainingEnemyEncounters) npcExplainingEnemyEncounters->DrawUI(&this->uiCamera, deltaTime);
 		if (npcExplainingPortal) npcExplainingPortal->DrawUI(&this->uiCamera, deltaTime);
+		if (playerHUD) playerHUD->Draw(gd, deltaTime);
 		if (inventoryMenu) inventoryMenu->Draw(gd, deltaTime);
 		if (draggableManager && inventoryMenu && inventoryMenu->IsOpen() && inventoryMenu->GetCurrentTab() == Demo::InventoryMenu::Tab::DECK) {
 			draggableManager->Draw(deltaTime);

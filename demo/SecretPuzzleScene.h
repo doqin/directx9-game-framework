@@ -15,6 +15,7 @@
 #include "CardShop.h"
 #include "ItemShop.h"
 #include "TreasureChestNPC.h"
+#include "PlayerHUD.h"
 
 
 namespace Demo {
@@ -28,6 +29,7 @@ namespace Demo {
 		std::shared_ptr<DX9GF::TransformManager> transformManager;
 		std::shared_ptr<Demo::DraggableManager> draggableManager;
 		std::shared_ptr<InventoryMenu> inventoryMenu;
+		std::shared_ptr<PlayerHUD> playerHUD;
 		std::shared_ptr<DX9GF::SaveManager> saveManager;
 
 		std::vector<std::shared_ptr<SavePoint>> savePoints;

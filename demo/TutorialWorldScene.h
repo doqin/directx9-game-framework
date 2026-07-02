@@ -15,6 +15,7 @@
 #include "NPC1.h"
 #include "CardShop.h"
 #include "ItemShop.h"
+#include "PlayerHUD.h"
 namespace Demo {
 	class TutorialWorldScene : public DX9GF::IScene, public DX9GF::ISaveable {
 		bool isGamePaused = false;
@@ -24,6 +25,7 @@ namespace Demo {
 		std::shared_ptr<DX9GF::TransformManager> transformManager;
 		std::shared_ptr<Demo::DraggableManager> draggableManager;
 		std::shared_ptr<InventoryMenu> inventoryMenu;
+		std::shared_ptr<PlayerHUD> playerHUD;
 		std::shared_ptr<DX9GF::SaveManager> saveManager;
 
 		std::vector<std::shared_ptr<SavePoint>> savePoints;

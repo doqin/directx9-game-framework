@@ -12,6 +12,7 @@
 #include "HealingPoint.h"
 #include "RustyChestNPC.h"
 #include "TreasureChestNPC.h"
+#include "PlayerHUD.h"
 
 
 namespace Demo {
@@ -22,6 +23,7 @@ namespace Demo {
         std::shared_ptr<DX9GF::TransformManager> transformManager;
         std::shared_ptr<Demo::DraggableManager> draggableManager;
         std::shared_ptr<InventoryMenu> inventoryMenu;
+        std::shared_ptr<PlayerHUD> playerHUD;
 
         std::shared_ptr<DX9GF::Font> font;
         std::shared_ptr<Player> player;
