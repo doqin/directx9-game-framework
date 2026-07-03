@@ -70,6 +70,7 @@
     <ClCompile Include="SecretPuzzleScene.cpp" />
     <ClCompile Include="TreasureChestNPC.cpp" />
     <ClCompile Include="CreditsScene.cpp" />
+    <ClCompile Include="PopupManager.cpp" />
   </ItemGroup>
   <ItemGroup>
     <ClInclude Include="AdvancedCards.h" />
@@ -144,6 +145,7 @@
     <ClInclude Include="SecretPuzzleScene.h" />
     <ClInclude Include="TreasureChestNPC.h" />
     <ClInclude Include="CreditsScene.h" />
+    <ClInclude Include="PopupManager.h" />
   </ItemGroup>
   <ItemGroup>
     <ResourceCompile Include="demo.rc" />

@@ -3,7 +3,7 @@
 #include "DX9GF.h"
 #include "DX9GFExtras.h"
 #include "IconButton.h"
-
+#include "TextIconButton.h"
 namespace Demo
 {
     //UI constants
@@ -52,7 +52,7 @@ namespace Demo
         std::shared_ptr<Demo::IconButton> btnSFXDec, btnSFXInc;
 
         //keybind UI
-        std::shared_ptr<Demo::IconButton> btnUp, btnDown, btnLeft, btnRight;
+        std::shared_ptr<Demo::TextIconButton> btnUp, btnDown, btnLeft, btnRight;
 
         bool isListeningUp = false;
         bool isListeningDown = false;
@@ -62,7 +62,6 @@ namespace Demo
         //helper methods
         void DrawBackground(unsigned long long deltaTime);
         void DrawVolumeTrack(std::shared_ptr<DX9GF::NineSliceSprite> bg, std::shared_ptr<DX9GF::NineSliceSprite> fill, float vol, RECT originalRect, unsigned long long deltaTime);
-        void DrawKeybindButton(const std::string& action, std::shared_ptr<IconButton> btn, bool listening);
 
     public:
         SettingsScene(Game* game, int screenWidth, int screenHeight)

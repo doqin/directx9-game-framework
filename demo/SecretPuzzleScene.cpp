@@ -6,6 +6,7 @@
 #include "SaveGameState.h"
 #include "TransitionCommand.h"
 #include "resource.h"
+#include "PopupManager.h"
 
 void Demo::SecretPuzzleScene::Init()
 {
@@ -125,20 +126,28 @@ void Demo::SecretPuzzleScene::Init()
 	});
 	font = std::make_shared<DX9GF::Font>(game->GetGraphicsDevice(), L"StatusPlz", 16);
 
+	auto borderTex = std::make_shared<DX9GF::Texture>(game->GetGraphicsDevice());
+	borderTex->LoadTexture(L"assets/popup-borders.png");
+
+	auto uiTex = std::make_shared<DX9GF::Texture>(game->GetGraphicsDevice());
+	uiTex->LoadTexture(L"assets/ui.png");
+
+	PopupManager::GetInstance()->Init(game->GetGraphicsDevice(), borderTex, uiTex, font);
+
 	savePoints.push_back(std::make_shared<SavePoint>(transformManager, -47.0f * 16, -43.0f * 16));
-	savePoints.back()->Init(game->GetGraphicsDevice(), &camera,&uiCamera, player, colliderManager, saveManager, font, drawBuffer);
+	savePoints.back()->Init(game->GetGraphicsDevice(), &camera, player, colliderManager, saveManager, font, drawBuffer);
 	savePoints.back()->SetVisible(true);
 	savePoints.push_back(std::make_shared<SavePoint>(transformManager, -42.0f * 16, 23.0f * 16));
-	savePoints.back()->Init(game->GetGraphicsDevice(), &camera, &uiCamera, player, colliderManager, saveManager, font, drawBuffer);
+	savePoints.back()->Init(game->GetGraphicsDevice(), &camera, player, colliderManager, saveManager, font, drawBuffer);
 	savePoints.back()->SetVisible(true);
 	savePoints.push_back(std::make_shared<SavePoint>(transformManager, 31.0f * 16, 47.0f * 16));
-	savePoints.back()->Init(game->GetGraphicsDevice(), &camera, &uiCamera, player, colliderManager, saveManager, font, drawBuffer);
+	savePoints.back()->Init(game->GetGraphicsDevice(), &camera, player, colliderManager, saveManager, font, drawBuffer);
 	savePoints.back()->SetVisible(true);
 	savePoints.push_back(std::make_shared<SavePoint>(transformManager, 64.0f * 16, 37.0f * 16));
-	savePoints.back()->Init(game->GetGraphicsDevice(), &camera, &uiCamera, player, colliderManager, saveManager, font, drawBuffer);
+	savePoints.back()->Init(game->GetGraphicsDevice(), &camera, player, colliderManager, saveManager, font, drawBuffer);
 	savePoints.back()->SetVisible(true);
 	savePoints.push_back(std::make_shared<SavePoint>(transformManager, 86.0f * 16, 58.0f * 16));
-	savePoints.back()->Init(game->GetGraphicsDevice(), &camera, &uiCamera, player, colliderManager, saveManager, font, drawBuffer);
+	savePoints.back()->Init(game->GetGraphicsDevice(), &camera, player, colliderManager, saveManager, font, drawBuffer);
 	savePoints.back()->SetVisible(true);
 
 	shopPoints.push_back(std::make_shared<ShopPoint>(transformManager, -58.0f * 16, -26.0f * 16));
@@ -233,6 +242,8 @@ void Demo::SecretPuzzleScene::Init()
 
 void Demo::SecretPuzzleScene::Update(unsigned long long deltaTime)
 {
+	PopupManager::GetInstance()->SetUICamera(&this->uiCamera);
+
 	auto OpenChestWithDialog = [&](std::shared_ptr<TreasureChestNPC>& chest) {
 		auto given = chest->Open(player.get());
 		if (given.empty()) return;
@@ -272,6 +283,11 @@ void Demo::SecretPuzzleScene::Update(unsigned long long deltaTime)
 
 	bool isGamePaused = this->isGamePaused;	
 
+	if (PopupManager::GetInstance()->IsActive()) {
+		PopupManager::GetInstance()->Update(deltaTime, &this->uiCamera);
+		isGamePaused = true;
+	}
+
 	if (currentConversation) {
 		isGamePaused = true;
 		currentConversation->Execute(deltaTime);
@@ -280,7 +296,6 @@ void Demo::SecretPuzzleScene::Update(unsigned long long deltaTime)
 
 	for (auto& savePoint : savePoints) {
 		savePoint->Update(deltaTime);
-		if (savePoint->IsMenuOpen()) isGamePaused = true;
 	}
 
 	for (auto& shopPoint : shopPoints) {
@@ -399,6 +414,8 @@ void Demo::SecretPuzzleScene::DrawUI(unsigned long long deltaTime)
 		if (drawBuffer) {
 			drawBuffer->Update(deltaTime);
 		}
+
+		PopupManager::GetInstance()->DrawUI(deltaTime, &this->uiCamera);
 
 		DX9GF::InputManager::GetInstance()->DrawCursor(&this->uiCamera, deltaTime);
 

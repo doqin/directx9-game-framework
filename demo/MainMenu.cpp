@@ -10,6 +10,8 @@
 #include <cstdio>
 #include "TransitionCommand.h"
 #include "CreditsScene.h"
+#include "PopupManager.h"
+
 namespace Demo
 {
 	std::shared_ptr<SaveGameState> MainMenu::gameSaveState = nullptr;
@@ -131,6 +133,14 @@ namespace Demo
 		continueButton->SetSpriteScale(2.f, 2.f);
 		/*continueButton->SetState(IButton::ButtonState::DISABLED);*/
 
+		auto borderTex = std::make_shared<DX9GF::Texture>(game->GetGraphicsDevice());
+		borderTex->LoadTexture(L"assets/popup-borders.png");
+
+		auto uiTex = std::make_shared<DX9GF::Texture>(game->GetGraphicsDevice());
+		uiTex->LoadTexture(L"assets/ui.png");
+
+		PopupManager::GetInstance()->Init(game->GetGraphicsDevice(), borderTex, uiTex, font);
+
 		std::ifstream f("savegame.json");
 		if (f.good()) {
 			continueButton->SetState(IButton::ButtonState::IDLE);
@@ -160,31 +170,47 @@ namespace Demo
 		newGameButton->SetSpriteRects(DX9GF::Utils::CreateRectsVertical(144, 48, 48, 16, 3));
 		newGameButton->SetOnReleaseLeft([this](DX9GF::ITrigger* t) {
 			if (isTransitioning) return;
-			isTransitioning = true;
-			auto transitionInCommand = std::make_shared<TransitionCommand>(game->GetGraphicsDevice(), &this->uiCamera, 1.f, true);
-			drawBuffer->PushCommand(transitionInCommand);
-			drawBuffer->PushCommand(transitionInCommand);
-			commandBuffer->PushCommand(std::make_shared<DX9GF::CustomCommand>([this, transitionInCommand](std::function<void(void)> markFinished) {
-				if (!transitionInCommand->IsFinished()) {
-					return;
-				}
-				std::remove("savegame.json");
-				gameSaveState = SaveGameState::StartNewGame(game, saveManager);
-				isTransitioning = false;
-				commandBuffer->PushCommand(std::make_shared<DX9GF::CustomCommand>([this](std::function<void(void)> markFinished1) {
-					std::ifstream f("savegame.json");
-					if (f.good()) {
-						continueButton->SetState(IButton::ButtonState::IDLE);
-					}
-					else {
-						continueButton->SetState(IButton::ButtonState::DISABLED);
-					}
-					f.close();
-					markFinished1();
+
+			//check save file
+			std::ifstream f("savegame.json");
+			bool hasSave = f.good();
+			f.close();
+
+			auto startNewGameLogic = [this]() {
+				this->isTransitioning = true;
+				auto transitionInCommand = std::make_shared<TransitionCommand>(game->GetGraphicsDevice(), &this->uiCamera, 1.f, true);
+
+				this->drawBuffer->PushCommand(transitionInCommand);
+				this->commandBuffer->PushCommand(std::make_shared<DX9GF::CustomCommand>([this, transitionInCommand](std::function<void(void)> markFinished) {
+					if (!transitionInCommand->IsFinished()) return;
+
+					std::remove("savegame.json");
+					gameSaveState = SaveGameState::StartNewGame(this->game, this->saveManager);
+					this->isTransitioning = false;
+
+					this->commandBuffer->PushCommand(std::make_shared<DX9GF::CustomCommand>([this](std::function<void(void)> markFinished1) {
+						std::ifstream f2("savegame.json");
+						if (f2.good()) this->continueButton->SetState(IButton::ButtonState::IDLE);
+						else this->continueButton->SetState(IButton::ButtonState::DISABLED);
+						f2.close();
+
+						markFinished1();
+						}));
+					markFinished();
 					}));
-				markFinished();
-				}));
-			drawBuffer->PushCommand(std::make_shared<TransitionCommand>(game->GetGraphicsDevice(), &this->uiCamera, 1.f, false));
+				this->drawBuffer->PushCommand(std::make_shared<TransitionCommand>(game->GetGraphicsDevice(), &this->uiCamera, 1.f, false));
+				};
+
+			if (hasSave) {
+				std::vector<std::pair<std::wstring, std::function<void()>>> popupBtns = {
+					{ L"Yes", startNewGameLogic },
+					{ L"No", []() {} }
+				};
+				PopupManager::GetInstance()->Show("stepped_red", L"WARNING", L"Overwrite existing save?", popupBtns);
+			}
+			else {
+				startNewGameLogic();
+			}
 			});
 		newGameButton->SetSpriteScale(2.f, 2.f);
 
@@ -244,6 +270,8 @@ namespace Demo
 
 	void MainMenu::Update(unsigned long long deltaTime)
 	{
+		PopupManager::GetInstance()->SetUICamera(&this->uiCamera);
+
 		auto inpMan = DX9GF::InputManager::GetInstance();
 		inpMan->ReadMouse(deltaTime);
 		inpMan->ReadKeyboard(deltaTime);
@@ -251,12 +279,14 @@ namespace Demo
 		auto [currW, currH] = camera.GetScreenResolution();
 		UpdateLayout(currW, currH);
 
-		for (auto& button : uiButtons)
-		{
-			if (button->GetState() == IButton::ButtonState::DISABLED) continue;
-			button->Update(deltaTime);
-		}
-
+		if (!PopupManager::GetInstance()->IsActive()) {
+			for (auto& button : uiButtons)
+			{
+				if (button->GetState() == IButton::ButtonState::DISABLED) continue;
+				button->Update(deltaTime);
+			}
+		}		
+		PopupManager::GetInstance()->Update(deltaTime, &this->uiCamera);
 		transformManager->UpdateAll();
 		camera.Update();
 		commandBuffer->Update(deltaTime);
@@ -306,9 +336,8 @@ namespace Demo
 			}
 
 			drawBuffer->Update(deltaTime);
-
+			PopupManager::GetInstance()->DrawUI(deltaTime, &this->uiCamera);
 			DX9GF::InputManager::GetInstance()->DrawCursor(&this->uiCamera, deltaTime);
-
 			gd->EndDraw();
 		}
 	}

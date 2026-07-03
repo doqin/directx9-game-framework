@@ -342,11 +342,21 @@ void Demo::IBattleScene::RefreshItemMenu()
 	auto& inventory = player->GetInventoryItems().GetSlots();
 
 	std::vector<int> validIndices;
+
 	for (int i = 0; i < inventory.size(); i++) {
 		if (inventory[i].quantity > 0 && Demo::ItemData::GetInstance()->GetItemBlueprint(inventory[i].itemID)) {
 			validIndices.push_back(i);
 		}
 	}
+
+	//test items list ui pages
+	//for (int i = 0; i < inventory.size(); i++) {
+	//	if (inventory[i].quantity > 0 && Demo::ItemData::GetInstance()->GetItemBlueprint(inventory[i].itemID)) {
+	//		for (int q = 0; q < inventory[i].quantity; ++q) {
+	//			validIndices.push_back(i);
+	//		}
+	//	}
+	//}
 
 
 	float targetWidth = itemMenuBackground->GetTargetWidth();
@@ -827,11 +837,21 @@ void Demo::IBattleScene::PlayerOpenItemsDraw(unsigned long long deltaTime)
 	std::wstring hoverDescription = L"";
 
 	std::vector<int> validIndices;
+
 	for (int i = 0; i < inventory.size(); i++) {
 		if (inventory[i].quantity > 0 && Demo::ItemData::GetInstance()->GetItemBlueprint(inventory[i].itemID)) {
 			validIndices.push_back(i);
 		}
 	}
+
+	//test items list ui pages
+	//for (int i = 0; i < inventory.size(); i++) {
+	//	if (inventory[i].quantity > 0 && Demo::ItemData::GetInstance()->GetItemBlueprint(inventory[i].itemID)) {
+	//		for (int q = 0; q < inventory[i].quantity; ++q) {
+	//			validIndices.push_back(i);
+	//		}
+	//	}
+	//}
 
 	float targetWidth = itemMenuBackground->GetTargetWidth();
 	float targetHeight = itemMenuBackground->GetTargetHeight();
@@ -874,18 +894,6 @@ void Demo::IBattleScene::PlayerOpenItemsDraw(unsigned long long deltaTime)
 			}
 		}
 		displayIndex++;
-	}
-
-	if (currentItemPage > 0) {
-		fontSprite->SetPosition(btnPrevPage->GetWorldX() + btnPrevPage->GetWidth() / 2.0f - 1.5f, btnPrevPage->GetWorldY());
-		fontSprite->SetText(L"<");
-		fontSprite->Draw(this->uiCamera, deltaTime);
-	}
-
-	if (currentItemPage < maxItemPage) {
-		fontSprite->SetPosition(btnNextPage->GetWorldX() + btnNextPage->GetWidth() / 2.0f - 1.5f, btnNextPage->GetWorldY());
-		fontSprite->SetText(L">");
-		fontSprite->Draw(this->uiCamera, deltaTime);
 	}
 
 	if (maxItemPage > 0) {
@@ -1248,9 +1256,10 @@ void Demo::IBattleScene::Init()
 		});
 	closeItemMenuButton->SetSpriteScale(2.f, 2.f);
 
-	btnPrevPage = std::make_shared<IconButton>(transformManager, 0, 0, 30.0f, 30.0f, uiSheetTex);
-	btnPrevPage->SetSpriteRects({ {0, 0, 15, 15}, {0, 17, 15, 31}, {0, 35, 15, 47} });
+	btnPrevPage = std::make_shared<Demo::TextIconButton>(transformManager, 0, 0, 30.0f, 30.0f, uiSheetTex, font.get(), L"<", 3);
+	btnPrevPage->SetSpriteRects({ {0, 0, 16, 16}, {0, 16, 16, 32}, {0, 32, 16, 48} });
 	btnPrevPage->SetSpriteScale(2.0f, 2.0f);
+	btnPrevPage->SetTextColor(0xFF111111); // Set chữ màu đen
 	btnPrevPage->SetOnReleaseLeft([&](DX9GF::ITrigger* thisObj) {
 		if (currentItemPage > 0) {
 			currentItemPage--;
@@ -1258,9 +1267,10 @@ void Demo::IBattleScene::Init()
 		}
 		});
 
-	btnNextPage = std::make_shared<IconButton>(transformManager, 0, 0, 30.0f, 30.0f, uiSheetTex);
-	btnNextPage->SetSpriteRects({ {0, 0, 15, 15}, {0, 17, 15, 31}, {0, 35, 15, 47} });
+	btnNextPage = std::make_shared<Demo::TextIconButton>(transformManager, 0, 0, 30.0f, 30.0f, uiSheetTex, font.get(), L">", 3);
+	btnNextPage->SetSpriteRects({ {0, 0, 16, 16}, {0, 16, 16, 32}, {0, 32, 16, 48} });
 	btnNextPage->SetSpriteScale(2.0f, 2.0f);
+	btnNextPage->SetTextColor(0xFF111111);
 	btnNextPage->SetOnReleaseLeft([&](DX9GF::ITrigger* thisObj) {
 		if (currentItemPage < maxItemPage) {
 			currentItemPage++;
