@@ -28,6 +28,9 @@ namespace Demo {
 
 		std::function<void()> onInventoryOpen;
 		bool visible = true;
+		// Fades toward barely-visible while the player is moving, back to full when idle
+		float opacity = 1.0f;
+		D3DCOLOR ApplyOpacity(D3DCOLOR color) const;
 
 		// Layout cache, recomputed every frame so the panel can grow with its content
 		std::wstring hpValue;
