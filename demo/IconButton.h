@@ -23,6 +23,7 @@ namespace Demo
 		IconButton* SetSpriteRects(std::vector<RECT> rects);
 		void Init(DX9GF::Camera* cam) override;
 		void SetSpriteScale(float scaleX, float scaleY);
+		void SetSpriteColor(D3DCOLOR color);
 		void Draw(DX9GF::GraphicsDevice* gd, unsigned long long deltaTime) override;
 		void SetSpriteRotation(float radians);
 		void SetSpriteOrigin(float x, float y);

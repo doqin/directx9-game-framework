@@ -46,6 +46,9 @@ namespace DX9GF {
 		float GetPositionY() const;
 		float GetPositionZ() const;
 		D3DXVECTOR3 GetPosition() const;
+		//color (modulates the sprite, including alpha for opacity)
+		void SetColor(D3DCOLOR color);
+		D3DCOLOR GetColor() const;
 		//scale
 		void SetScale(float s);
 		void SetScale(float sx, float sy); //stretch

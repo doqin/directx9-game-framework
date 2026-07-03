@@ -51,6 +51,11 @@ void Demo::IconButton::SetSpriteScale(float scaleX, float scaleY)
 	this->sprite->SetScale(scaleX, scaleY);
 }
 
+void Demo::IconButton::SetSpriteColor(D3DCOLOR color)
+{
+	if (this->sprite) this->sprite->SetColor(color);
+}
+
 void Demo::IconButton::Draw(DX9GF::GraphicsDevice* gd, unsigned long long deltaTime)
 {
 	//prevent from crashing

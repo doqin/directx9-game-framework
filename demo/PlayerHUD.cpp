@@ -40,6 +40,11 @@ namespace {
 	constexpr D3DCOLOR CELL_BG = 0xFF141410;
 	constexpr D3DCOLOR DIGIT_COLOR = 0xFFf0eeda;
 	constexpr D3DCOLOR DIGIT_COLOR_LOW = 0xFFff5a3c;
+
+	// Opacity while the player is moving, and fade rates in opacity per millisecond
+	constexpr float MOVING_OPACITY = 0.15f;
+	constexpr float FADE_OUT_SPEED = 0.002f;
+	constexpr float FADE_IN_SPEED = 0.004f;
 }
 
 Demo::PlayerHUD::PlayerHUD(Game* game, std::shared_ptr<Player> player, std::shared_ptr<DX9GF::TransformManager> transformManager, DX9GF::Camera* uiCamera, DX9GF::Font* font)
@@ -106,27 +111,42 @@ void Demo::PlayerHUD::Update(unsigned long long deltaTime)
 {
 	if (!visible) return;
 	UpdateLayout();
+
+	float dt = static_cast<float>(deltaTime);
+	if (player->IsWalking()) {
+		opacity = (std::max)(MOVING_OPACITY, opacity - FADE_OUT_SPEED * dt);
+	}
+	else {
+		opacity = (std::min)(1.0f, opacity + FADE_IN_SPEED * dt);
+	}
+
 	btnInventory->SetLocalPosition(contentX + contentW - BUTTON_W, contentY + (statsRowH - BUTTON_H) / 2.0f);
 	btnInventory->Update(deltaTime);
+}
+
+D3DCOLOR Demo::PlayerHUD::ApplyOpacity(D3DCOLOR color) const
+{
+	DWORD alpha = static_cast<DWORD>(((color >> 24) & 0xFF) * opacity);
+	return (color & 0x00FFFFFF) | (alpha << 24);
 }
 
 void Demo::PlayerHUD::DrawPanel(DX9GF::GraphicsDevice* gd)
 {
 	// Dark outline -> cream frame -> dark inner line -> checkered interior
-	gd->DrawRectangle(*uiCamera, panelX, panelY, panelW, panelH, PANEL_OUTLINE, true);
-	gd->DrawRectangle(*uiCamera, panelX + OUTLINE_T, panelY + OUTLINE_T, panelW - 2.0f * OUTLINE_T, panelH - 2.0f * OUTLINE_T, PANEL_FRAME, true);
+	gd->DrawRectangle(*uiCamera, panelX, panelY, panelW, panelH, ApplyOpacity(PANEL_OUTLINE), true);
+	gd->DrawRectangle(*uiCamera, panelX + OUTLINE_T, panelY + OUTLINE_T, panelW - 2.0f * OUTLINE_T, panelH - 2.0f * OUTLINE_T, ApplyOpacity(PANEL_FRAME), true);
 
 	float innerX = panelX + OUTLINE_T + FRAME_T;
 	float innerY = panelY + OUTLINE_T + FRAME_T;
 	float innerW = panelW - 2.0f * (OUTLINE_T + FRAME_T);
 	float innerH = panelH - 2.0f * (OUTLINE_T + FRAME_T);
-	gd->DrawRectangle(*uiCamera, innerX, innerY, innerW, innerH, PANEL_OUTLINE, true);
+	gd->DrawRectangle(*uiCamera, innerX, innerY, innerW, innerH, ApplyOpacity(PANEL_OUTLINE), true);
 
 	float bgX = innerX + INNER_T;
 	float bgY = innerY + INNER_T;
 	float bgW = innerW - 2.0f * INNER_T;
 	float bgH = innerH - 2.0f * INNER_T;
-	gd->DrawRectangle(*uiCamera, bgX, bgY, bgW, bgH, PANEL_BG, true);
+	gd->DrawRectangle(*uiCamera, bgX, bgY, bgW, bgH, ApplyOpacity(PANEL_BG), true);
 
 	int cols = static_cast<int>(std::ceil(bgW / CHECKER_SIZE));
 	int rows = static_cast<int>(std::ceil(bgH / CHECKER_SIZE));
@@ -137,7 +157,7 @@ void Demo::PlayerHUD::DrawPanel(DX9GF::GraphicsDevice* gd)
 			float w = (std::min)(CHECKER_SIZE, bgX + bgW - x);
 			float h = (std::min)(CHECKER_SIZE, bgY + bgH - y);
 			if (w > 0.0f && h > 0.0f) {
-				gd->DrawRectangle(*uiCamera, x, y, w, h, PANEL_BG_ALT, true);
+				gd->DrawRectangle(*uiCamera, x, y, w, h, ApplyOpacity(PANEL_BG_ALT), true);
 			}
 		}
 	}
@@ -148,24 +168,24 @@ void Demo::PlayerHUD::DrawStatRow(DX9GF::GraphicsDevice* gd, unsigned long long 
 	float groupX = contentX + contentW - groupW;
 
 	// Cream backing with one black field per digit, odometer style
-	gd->DrawRectangle(*uiCamera, groupX, rowY, groupW, ROW_H, CELL_FRAME, true);
-	gd->DrawRectangle(*uiCamera, groupX, rowY, groupW, ROW_H, PANEL_OUTLINE, false);
+	gd->DrawRectangle(*uiCamera, groupX, rowY, groupW, ROW_H, ApplyOpacity(CELL_FRAME), true);
+	gd->DrawRectangle(*uiCamera, groupX, rowY, groupW, ROW_H, ApplyOpacity(PANEL_OUTLINE), false);
 	for (int i = 0; i < cellCount; ++i) {
 		float cellX = groupX + CELL_BORDER + i * (CELL_W + CELL_BORDER);
-		gd->DrawRectangle(*uiCamera, cellX, rowY + CELL_BORDER, CELL_W, CELL_H, CELL_BG, true);
+		gd->DrawRectangle(*uiCamera, cellX, rowY + CELL_BORDER, CELL_W, CELL_H, ApplyOpacity(CELL_BG), true);
 	}
 
 	fontSprite->Begin();
 
-	fontSprite->SetOutline(true, LABEL_OUTLINE, 2.0f);
-	fontSprite->SetColor(LABEL_COLOR);
+	fontSprite->SetOutline(true, ApplyOpacity(LABEL_OUTLINE), 2.0f);
+	fontSprite->SetColor(ApplyOpacity(LABEL_COLOR));
 	fontSprite->SetText(std::wstring(label));
 	fontSprite->SetPosition(contentX, rowY + (ROW_H - fontSprite->GetHeight()) / 2.0f);
 	fontSprite->Draw(*uiCamera, deltaTime);
 	fontSprite->SetOutline(false);
 
 	// Digits fill the cells from the right, leading cells stay blank
-	fontSprite->SetColor(digitColor);
+	fontSprite->SetColor(ApplyOpacity(digitColor));
 	int blanks = cellCount - static_cast<int>(value.size());
 	for (size_t j = 0; j < value.size(); ++j) {
 		float cellX = groupX + CELL_BORDER + static_cast<float>(blanks + j) * (CELL_W + CELL_BORDER);
@@ -184,6 +204,8 @@ void Demo::PlayerHUD::Draw(DX9GF::GraphicsDevice* gd, unsigned long long deltaTi
 {
 	if (!visible) return;
 
+	gd->SetAlphaBlending(true);
+
 	DrawPanel(gd);
 
 	float hpRowY = contentY + statsRowH + CONTENT_GAP;
@@ -193,10 +215,14 @@ void Demo::PlayerHUD::Draw(DX9GF::GraphicsDevice* gd, unsigned long long deltaTi
 	DrawStatRow(gd, deltaTime, hpRowY, L"HP", hpValue, lowHealth ? DIGIT_COLOR_LOW : DIGIT_COLOR);
 	DrawStatRow(gd, deltaTime, goldRowY, L"G", goldValue, DIGIT_COLOR);
 
+	gd->SetAlphaBlending(false);
+
+	playerIcon->SetColor(ApplyOpacity(0xFFFFFFFF));
 	playerIcon->SetPosition(contentX, contentY + (statsRowH - ICON_SIZE) / 2.0f);
 	playerIcon->Begin();
 	playerIcon->Draw(*uiCamera, deltaTime);
 	playerIcon->End();
 
+	btnInventory->SetSpriteColor(ApplyOpacity(0xFFFFFFFF));
 	btnInventory->Draw(gd, deltaTime);
 }

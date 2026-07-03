@@ -32,6 +32,16 @@ void DX9GF::ISprite::Translate(
 	needUpdate = true;
 }
 
+void DX9GF::ISprite::SetColor(D3DCOLOR color)
+{
+	this->color = color;
+}
+
+D3DCOLOR DX9GF::ISprite::GetColor() const
+{
+	return color;
+}
+
 void DX9GF::ISprite::SetPosition(float x, float y)
 {
 	pos.x = x;
