@@ -7,7 +7,7 @@
 #include "SecretPuzzleScene.h"
 #include "ThreadAlleyScene.h"
 #include "BossWorldScene.h"
-#include "SplashScene.h"
+
 namespace Demo {
 	SaveGameState::SaveGameState(Game* game, std::shared_ptr<DX9GF::SaveManager> saveManager)
 		: game(game), saveManager(std::move(saveManager)) {
@@ -16,7 +16,6 @@ namespace Demo {
 	void SaveGameState::BuildScenes() {
 		auto app = DX9GF::Application::GetInstance();
 		auto sceneManager = game->GetSceneManager();
-		sceneManager->PushScene(new SplashScene(game, app->GetScreenWidth(), app->GetScreenHeight()));
 		sceneManager->PushScene(new IntroScene(game, app->GetScreenWidth(), app->GetScreenHeight()));
 		sceneManager->PushScene(new TutorialWorldScene(game, saveManager, app->GetScreenWidth(), app->GetScreenHeight()));
 		sceneMap["TutorialWorldScene"] = sceneManager->GetSceneCount() - 1;

@@ -259,7 +259,6 @@
     <ClCompile Include="ShopPoint.cpp" />
     <ClCompile Include="SineWaveProjectile.cpp" />
     <ClCompile Include="SpiralProjectile.cpp" />
-    <ClCompile Include="SplashScene.cpp" />
     <ClCompile Include="TargetedProjectile.cpp" />
     <ClCompile Include="TextIconButton.cpp" />
     <ClCompile Include="TextInputManager.cpp" />
@@ -341,7 +340,6 @@
     <ClInclude Include="ShopPoint.h" />
     <ClInclude Include="SineWaveProjectile.h" />
     <ClInclude Include="SpiralProjectile.h" />
-    <ClInclude Include="SplashScene.h" />
     <ClInclude Include="TargetedProjectile.h" />
     <ClInclude Include="TextIconButton.h" />
     <ClInclude Include="TextInputManager.h" />
@@ -452,9 +450,6 @@
     <Image Include="assets\daudau-Sheet.png">
       <DeploymentContent>true</DeploymentContent>
     </Image>
-    <Image Include="assets\department_logo.png">
-      <DeploymentContent>true</DeploymentContent>
-    </Image>
     <Image Include="assets\First Asset pack.png">
       <DeploymentContent>true</DeploymentContent>
     </Image>
@@ -510,9 +505,6 @@
       <DeploymentContent>true</DeploymentContent>
     </Image>
     <Image Include="assets\savepoint-Sheet.png">
-      <DeploymentContent>true</DeploymentContent>
-    </Image>
-    <Image Include="assets\school_logo.png">
       <DeploymentContent>true</DeploymentContent>
     </Image>
     <Image Include="assets\secretpuzzle.png">
