@@ -1,4 +1,4 @@
-#include "pch.h"
+﻿#include "pch.h"
 #include "DX9GFRectangleTrigger.h"
 #include "../DX9GFInputManager.h"
 #include "../DX9GFUtils.h"
@@ -48,11 +48,12 @@ namespace {
 
 bool DX9GF::RectangleTrigger::IsHovering(unsigned long long deltaTime)
 {
-    auto input = DX9GF::InputManager::GetInstance();
-    float mouseX = input->GetAbsoluteMouseX();
-    float mouseY = input->GetAbsoluteMouseY();
-    float worldX = GetWorldX();
-    float worldY = GetWorldY();
+	auto input = DX9GF::InputManager::GetInstance();
+	auto [mouseX, mouseY] = input->GetVirtualAbsoluteMousePos(camera);
+	auto [worldMouseX, worldMouseY] = Utils::WindowToWorldCoords(*camera, mouseX, mouseY);
+
+	float worldX = GetWorldX();
+	float worldY = GetWorldY();
 	float r = GetWorldRotation();
 	float sx = GetWorldScaleX();
 	float sy = GetWorldScaleY();
@@ -64,15 +65,14 @@ bool DX9GF::RectangleTrigger::IsHovering(unsigned long long deltaTime)
 		Vec2{ 0.0f, height }
 	};
 
-	std::array<Vec2, 4> windowCorners;
+	std::array<Vec2, 4> worldCorners;
 	for (size_t i = 0; i < local.size(); i++) {
 		Vec2 p = { (local[i].x - originX) * sx, (local[i].y - originY) * sy };
 		p = Rotate(p, r);
-		auto [wx, wy] = Utils::WorldToWindowCoords(*camera, worldX + p.x, worldY + p.y);
-		windowCorners[i] = { wx, wy };
+		worldCorners[i] = { worldX + p.x, worldY + p.y };
 	}
 
-	return PointInParallelogram({ mouseX, mouseY }, windowCorners[0], windowCorners[1], windowCorners[3]);
+	return PointInParallelogram({ worldMouseX, worldMouseY }, worldCorners[0], worldCorners[1], worldCorners[3]);
 }
 
 void DX9GF::RectangleTrigger::SetOrigin(float x, float y)

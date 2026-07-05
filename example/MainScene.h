@@ -34,7 +34,8 @@ private:
 public:
 	MainScene(ExampleGame* game, int width, int height) : game(game), IScene(width, height) {}
 	void Init() override;
-	void Draw(unsigned long long deltaTime) override;
+	void DrawWorld(unsigned long long deltaTime) override;
+	void DrawUI(unsigned long long deltaTime) override;
 	void Update(unsigned long long deltaTime) override;
 	void Dispose() override;
 

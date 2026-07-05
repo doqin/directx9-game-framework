@@ -204,11 +204,12 @@ void MainScene::RestoreSaveData(const nlohmann::json& inData)
 		camera.SetZoom(cameraZoom);
 	}
 }
-
-void MainScene::Draw(unsigned long long deltaTime)
+void MainScene::DrawUI(unsigned long long deltaTime)
+{
+}
+void MainScene::DrawWorld(unsigned long long deltaTime)
 {
 	auto dev = game->GetGraphicsDevice();
-	dev->Clear();
 
 	if (SUCCEEDED(dev->BeginDraw())) {
 		auto app = DX9GF::Application::GetInstance();

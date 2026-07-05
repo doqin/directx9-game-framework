@@ -5,11 +5,11 @@
 namespace Demo {
 	class IContainer : public IDraggable {
 	private:
-		size_t GetMaxWidthOfChildren();
-		size_t GetHeightOfChildren();
 		size_t maxHeight = 0;
 		float scrollOffset = 0;
 	protected:
+		size_t GetMaxWidthOfChildren();
+		size_t GetHeightOfChildren();
 		std::vector<std::weak_ptr<IDraggable>> children;
 		bool isHovered = false;
 	public:

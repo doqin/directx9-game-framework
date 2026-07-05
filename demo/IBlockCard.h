@@ -4,6 +4,8 @@
 #include "IStatementCard.h"
 
 namespace Demo {
+	class IBattleScene;
+
   class IBlockCard : public ICard, public IContainer {
 	private:
 		size_t executeIndex = 0;
@@ -11,10 +13,13 @@ namespace Demo {
 		std::weak_ptr<IStatementCard> currentExecutingCard;
 		float timeSinceLastExecution = 0;
 		const float timePerExecution = .5f;
+		IBattleScene* battleScene = nullptr;
+		float timeSinceLastEnergyPopUp = 999.f;
+		const float energyPopUpCooldown = 3.f;
 	protected:
 		std::vector<std::weak_ptr<IStatementCard>> statementCards;
 	public:
-       inline IBlockCard(std::weak_ptr<DX9GF::TransformManager> transformManager)
+		inline IBlockCard(std::weak_ptr<DX9GF::TransformManager> transformManager)
 			: IGameObject(transformManager), ICard(transformManager), IContainer(transformManager) {}
 		inline IBlockCard(
 			std::weak_ptr<DX9GF::TransformManager> transformManager,
@@ -46,7 +51,9 @@ namespace Demo {
 		void StartExecution();
 		void ExecuteIteratively(unsigned long long deltaTime);
 		bool IsExecuting() const;
-      std::shared_ptr<IStatementCard> GetCurrentExecutingCard() const;
+		std::shared_ptr<IStatementCard> GetCurrentExecutingCard() const;
 		void ResetExecution();
+		void SetBattleScene(IBattleScene* scene) { battleScene = scene; }
+		bool HasAllRequiredTargets() const;
 	};
 }

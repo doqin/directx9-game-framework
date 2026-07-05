@@ -10,19 +10,18 @@
 #include "HealingPoint.h"
 #include "TreasureChestNPC.h"
 #include "IConversation.h"
-
-
+#include "PlayerHUD.h"
 
 namespace Demo {
 	class ThreadAlleyScene : public DX9GF::IScene, public DX9GF::ISaveable {
 		bool isGamePaused = false;
 		bool isTransitioning = false;
 		Game* game;
-		DX9GF::Camera uiCamera;
 		std::shared_ptr<DX9GF::ColliderManager> colliderManager;
 		std::shared_ptr<DX9GF::TransformManager> transformManager;
 		std::shared_ptr<Demo::DraggableManager> draggableManager;
 		std::shared_ptr<InventoryMenu> inventoryMenu;
+		std::shared_ptr<PlayerHUD> playerHUD;
 		std::shared_ptr<DX9GF::SaveManager> saveManager;
 
 		std::vector<std::shared_ptr<SavePoint>> savePoints;
@@ -54,11 +53,11 @@ namespace Demo {
 		void DrawCheckerBackground(DX9GF::GraphicsDevice* gd, unsigned long long deltaTime);
 
 	public:
-		ThreadAlleyScene(Game* game, std::shared_ptr<DX9GF::SaveManager> sm, UINT sw, UINT sh) : IScene(sw, sh), game(game), saveManager(sm), uiCamera(sw, sh) {}
+		ThreadAlleyScene(Game* game, std::shared_ptr<DX9GF::SaveManager> sm, UINT sw, UINT sh) : IScene(sw, sh), game(game), saveManager(sm) {}
 		void Init() override;
 		void Update(unsigned long long deltaTime) override;
-		void Draw(unsigned long long deltaTime) override;
-
+		void DrawWorld(unsigned long long deltaTime) override;
+		void DrawUI(unsigned long long deltaTime) override;
 		std::string GetSaveID() const override;
 		void GenerateSaveData(nlohmann::json& outData) override;
 		void RestoreSaveData(const nlohmann::json& inData) override;

@@ -4,12 +4,13 @@
 #include "DX9GFExtras.h"
 #include "DX9GFGraphicsDevice.h"
 #include "DX9GFApplication.h"
+#include "DX9GFCamera.h"
 
 namespace Demo {
     class TransitionCommand : public DX9GF::ICommand {
     private:
         DX9GF::GraphicsDevice* graphicsDevice;
-        DX9GF::Camera uiCamera;
+        DX9GF::Camera* uiCamera;
         float duration;
         float elapsedTime;
         bool isTransitioningIn;
@@ -18,7 +19,7 @@ namespace Demo {
         int screenHeight;
         int frame = 0;
     public:
-        TransitionCommand(DX9GF::GraphicsDevice* gd, float duration, bool isTransitioningIn, int numPillars = 10);
+        TransitionCommand(DX9GF::GraphicsDevice* gd, DX9GF::Camera* uiCamera, float duration, bool isTransitioningIn, int numPillars = 10);
         void Execute(unsigned long long deltaTime) override;
 
         static float EaseInOutQuad(float t) {

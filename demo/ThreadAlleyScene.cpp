@@ -1,4 +1,4 @@
-#include "pch.h"
+﻿#include "pch.h"
 #include "ThreadAlleyScene.h"
 #include "RandomEncounter.h"
 #include "CardShop.h"
@@ -8,6 +8,7 @@
 #include "SaveGameState.h"
 #include "TransitionCommand.h"
 #include "resource.h"
+#include "PopupManager.h"
 
 void Demo::ThreadAlleyScene::Init()
 {
@@ -29,11 +30,11 @@ void Demo::ThreadAlleyScene::Init()
 	map->SetAreaUpdateHandler("triggers", GetRandomEncounterFunc(game, player, {
 		{"VampireBatEnemy", 40},
 		{"MimicEnemy", 25},
-		}, drawBuffer, commandBuffer, &isGamePaused, [this](DX9GF::GraphicsDevice* gd, unsigned long long deltaTime) { DrawCheckerBackground(gd, deltaTime); }));
+		}, drawBuffer, commandBuffer, &isGamePaused, & this->uiCamera, [this](DX9GF::GraphicsDevice* gd, unsigned long long deltaTime) { DrawCheckerBackground(gd, deltaTime); }));
 
 	map->SetAreaUpdateHandler("trigger_p", [this](const DX9GF::Map::ObjectArea& area) {
 		isTransitioning = true;
-		auto transitionInCommand = std::make_shared<TransitionCommand>(game->GetGraphicsDevice(), 1.f, true);
+		auto transitionInCommand = std::make_shared<TransitionCommand>(game->GetGraphicsDevice(), &this->uiCamera, 1.f, true);
 		drawBuffer->PushCommand(transitionInCommand);
 		commandBuffer->PushCommand(std::make_shared<DX9GF::CustomCommand>([this, transitionInCommand](std::function<void(void)> markFinished) {
 			if (!transitionInCommand->IsFinished()) {
@@ -48,8 +49,8 @@ void Demo::ThreadAlleyScene::Init()
 			isTransitioning = false;
 			markFinished();
 			}));
-		drawBuffer->PushCommand(std::make_shared<TransitionCommand>(game->GetGraphicsDevice(), 1.f, false));
-	});
+		drawBuffer->PushCommand(std::make_shared<TransitionCommand>(game->GetGraphicsDevice(), &this->uiCamera, 1.f, false));
+		});
 
 	font = std::make_shared<DX9GF::Font>(game->GetGraphicsDevice(), L"StatusPlz", 16);
 
@@ -77,7 +78,13 @@ void Demo::ThreadAlleyScene::Init()
 	);
 	shopPoints.back()->SetVisible(true);
 	  
-	//
+	auto borderTex = std::make_shared<DX9GF::Texture>(game->GetGraphicsDevice());
+	borderTex->LoadTexture(L"assets/popup-borders.png");
+
+	auto uiTex = std::make_shared<DX9GF::Texture>(game->GetGraphicsDevice());
+	uiTex->LoadTexture(L"assets/ui.png");
+
+	PopupManager::GetInstance()->Init(game->GetGraphicsDevice(), borderTex, uiTex, font);
 
 	savePoints.push_back(std::make_shared<SavePoint>(transformManager, -710, -554));
 	savePoints.back()->Init(game->GetGraphicsDevice(), &camera, player, colliderManager, saveManager, font, drawBuffer);
@@ -107,10 +114,9 @@ void Demo::ThreadAlleyScene::Init()
 	savePoints.back()->Init(game->GetGraphicsDevice(), &camera, player, colliderManager, saveManager, font, drawBuffer);
 	savePoints.back()->SetVisible(true);
 
-	//savePoints.push_back(std::make_shared<SavePoint>(transformManager, 230, -392));
-	//savePoints.back()->Init(game->GetGraphicsDevice(), &camera, player, colliderManager, saveManager, font, drawBuffer);
-	//savePoints.back()->SetVisible(true);
-
+	savePoints.push_back(std::make_shared<SavePoint>(transformManager, 230, -392));
+	savePoints.back()->Init(game->GetGraphicsDevice(), &camera, player, colliderManager, saveManager, font, drawBuffer);
+	savePoints.back()->SetVisible(true);
 
 	savePoints.push_back(std::make_shared<SavePoint>(transformManager, 968, -216));
 	savePoints.back()->Init(game->GetGraphicsDevice(), &camera, player, colliderManager, saveManager, font, drawBuffer);
@@ -120,7 +126,6 @@ void Demo::ThreadAlleyScene::Init()
 	savePoints.back()->Init(game->GetGraphicsDevice(), &camera, player, colliderManager, saveManager, font, drawBuffer);
 	savePoints.back()->SetVisible(true);
 
-	//
 
 	healingPoints.push_back(std::make_shared<HealingPoint>(transformManager, -328, -537));
 	healingPoints.back()->Init(game->GetGraphicsDevice(), &camera, player, colliderManager, font, drawBuffer);
@@ -219,12 +224,18 @@ void Demo::ThreadAlleyScene::Init()
 		treasureChests.push_back(std::make_shared<TreasureChestNPC>(
 			transformManager, def.pos.first, def.pos.second,
 			def.rewards, def.randomPick));
-		treasureChests.back()->Init(game->GetGraphicsDevice(), player, colliderManager, font, drawBuffer);
+		treasureChests.back()->Init(game->GetGraphicsDevice(),&camera, player, colliderManager, font, drawBuffer);
 	}
 
 	draggableManager = std::make_shared<Demo::DraggableManager>();
 	inventoryMenu = std::make_shared<InventoryMenu>(game, player, transformManager, draggableManager, &uiCamera, font.get());
 	inventoryMenu->Init();
+
+	playerHUD = std::make_shared<PlayerHUD>(game, player, transformManager, &this->uiCamera, font.get());
+	playerHUD->SetOnInventoryOpen([this]() {
+		if (inventoryMenu && !inventoryMenu->IsOpen()) inventoryMenu->Toggle();
+		});
+	playerHUD->Init();
 
 	auto audio = DX9GF::AudioManager::GetInstance();
 
@@ -248,11 +259,13 @@ void Demo::ThreadAlleyScene::Init()
 	this->GiveTestItems();
 
 	transformManager->RebuildHierarchy();
-	drawBuffer->PushCommand(std::make_shared<Demo::TransitionCommand>(game->GetGraphicsDevice(), 1.f, false));
+	drawBuffer->PushCommand(std::make_shared<TransitionCommand>(game->GetGraphicsDevice(), &this->uiCamera, 1.f, false)); 
 }
 
 void Demo::ThreadAlleyScene::Update(unsigned long long deltaTime)
 {
+	PopupManager::GetInstance()->SetUICamera(&this->uiCamera);
+
 	auto OpenChestWithDialog = [&](std::shared_ptr<TreasureChestNPC>& chest) {
 		auto given = chest->Open(player.get());
 		if (given.empty()) return;
@@ -278,12 +291,6 @@ void Demo::ThreadAlleyScene::Update(unsigned long long deltaTime)
 		currentConversation->AddLine({ .name = L"Treasure Chest", .content = msg });
 		};
 
-	auto [currentWidth, currentHeight] = camera.GetScreenResolution();
-	auto [lastWidth, lastHeight] = uiCamera.GetScreenResolution();
-	if (currentWidth != lastWidth || currentHeight != lastHeight) {
-		uiCamera.SetScreenResolution(currentWidth, currentHeight);
-	}
-
 	auto inpMan = DX9GF::InputManager::GetInstance();
 	inpMan->ReadMouse(deltaTime);
 	inpMan->ReadKeyboard(deltaTime);
@@ -298,6 +305,11 @@ void Demo::ThreadAlleyScene::Update(unsigned long long deltaTime)
 
 	bool isGamePaused = this->isGamePaused;
 
+	if (PopupManager::GetInstance()->IsActive()) {
+		PopupManager::GetInstance()->Update(deltaTime, &this->uiCamera);
+		isGamePaused = true;
+	}
+
 	if (currentConversation) {
 		isGamePaused = true;
 		currentConversation->Execute(deltaTime);
@@ -306,7 +318,6 @@ void Demo::ThreadAlleyScene::Update(unsigned long long deltaTime)
 
 	for (auto& savePoint : savePoints) {
 		savePoint->Update(deltaTime);
-		if (savePoint->IsMenuOpen()) isGamePaused = true;
 	}
 
 	for (auto& shopPoint : shopPoints) {
@@ -350,10 +361,14 @@ void Demo::ThreadAlleyScene::Update(unsigned long long deltaTime)
 		inventoryMenu->Update(deltaTime);
 	}
 
+	if (playerHUD && !isGamePaused) playerHUD->Update(deltaTime);
+
 	if (!isGamePaused) {
 		player->Update(deltaTime);
 		camera.Update();
 	}
+
+	this->uiCamera.Update();
 
 	transformManager->UpdateAll();
 	if (!isGamePaused) map->UpdateAreas(player->GetWorldX(), player->GetWorldY());
@@ -372,45 +387,56 @@ void Demo::ThreadAlleyScene::Update(unsigned long long deltaTime)
 	commandBuffer->Update(deltaTime);
 }
 
-void Demo::ThreadAlleyScene::Draw(unsigned long long deltaTime)
+void Demo::ThreadAlleyScene::DrawWorld(unsigned long long deltaTime)
 {
 	auto gd = game->GetGraphicsDevice();
-	gd->Clear(0xFF403353);
 	if (SUCCEEDED(gd->BeginDraw())) {
 		DrawCheckerBackground(gd, deltaTime);
 
 		map->Draw(camera);
 
-		for (auto& savePoint : savePoints) {
-			savePoint->Draw(camera, deltaTime);
-		}
-
-		for (auto& shopPoint : shopPoints) {
-			shopPoint->Draw(camera, deltaTime);
-		}
-
-		for (auto& healPoint : healingPoints) {
-			healPoint->Draw(camera, deltaTime);
-		}
-
-		for (auto& chest : treasureChests)
-			chest->Draw(camera, deltaTime);
+		for (auto& savePoint : savePoints) savePoint->Draw(camera, deltaTime);
+		for (auto& shopPoint : shopPoints) shopPoint->Draw(camera, deltaTime);
+		for (auto& healPoint : healingPoints) healPoint->Draw(camera, deltaTime);
+		for (auto& chest : treasureChests) chest->Draw(camera, deltaTime);
 
 		player->Draw(deltaTime);
 
-		if (drawBuffer) {
-			drawBuffer->Update(deltaTime);
-		}
+
+		gd->EndDraw();
+	}
+}
+
+void Demo::ThreadAlleyScene::DrawUI(unsigned long long deltaTime)
+{
+	auto gd = game->GetGraphicsDevice();
+	if (SUCCEEDED(gd->BeginDraw())) {
+
+		for (auto& savePoint : savePoints) savePoint->DrawUI(&this->uiCamera, deltaTime);
+		for (auto& chest : treasureChests) chest->DrawUI(&this->uiCamera, deltaTime);
+		for (auto& healPoint : healingPoints) healPoint->DrawUI(&this->uiCamera, deltaTime);
+		for (auto& shopPoint : shopPoints) shopPoint->DrawUI(&this->uiCamera, deltaTime);
+
+		if (playerHUD) playerHUD->Draw(gd, deltaTime);
 		if (inventoryMenu) inventoryMenu->Draw(gd, deltaTime);
 		if (draggableManager && inventoryMenu && inventoryMenu->IsOpen() && inventoryMenu->GetCurrentTab() == Demo::InventoryMenu::Tab::DECK) {
 			draggableManager->Draw(deltaTime);
 		}
 
-		if (currentConversation) currentConversation->Draw(gd, deltaTime);
+		if (currentConversation) {
+			currentConversation->Draw(gd, &this->uiCamera, deltaTime);
+		}
+
+		if (drawBuffer) {
+			drawBuffer->Update(deltaTime);
+		}
+
+		PopupManager::GetInstance()->DrawUI(deltaTime, &this->uiCamera);
+
 		DX9GF::InputManager::GetInstance()->DrawCursor(&this->uiCamera, deltaTime);
+
 		gd->EndDraw();
 	}
-	gd->Present();
 }
 
 std::string Demo::ThreadAlleyScene::GetSaveID() const
@@ -454,6 +480,7 @@ void Demo::ThreadAlleyScene::GiveTestItems()
 void Demo::ThreadAlleyScene::DrawCheckerBackground(DX9GF::GraphicsDevice* gd, unsigned long long deltaTime)
 {
 	auto [screenWidth, screenHeight] = uiCamera.GetScreenResolution();
+	gd->DrawRectangle(0.0f, 0.0f, static_cast<float>(screenWidth), static_cast<float>(screenHeight), 0xFF403353, true);
 	
 	const float SQUARE_SIZE = 128.0f;
 	const float BASE_SCROLL_SPEED = 30.0f; 

@@ -1,4 +1,4 @@
-#include "pch.h"
+﻿#include "pch.h"
 #include "IDraggable.h"
 #include <DX9GF.h>
 #include <algorithm>
@@ -23,12 +23,12 @@ void Demo::DraggableManager::RebuildHierarchy()
 			newHierarchy.push_back(val);
 		}
 	}
-	newLevels.push_back({currentStart, newHierarchy.size()});
+	newLevels.push_back({ currentStart, newHierarchy.size() });
 	while (newHierarchy.size() < objectMap.size()) {
 		auto lastLevel = newLevels.back();
 		currentStart = newHierarchy.size();
 		size_t sizeBeforeIteration = newHierarchy.size();
-		
+
 		for (size_t i = lastLevel.startIdx; i < lastLevel.endIdx; ++i) {
 			for (auto& [key, val] : objectMap) {
 				// Remove dead objects
@@ -47,13 +47,13 @@ void Demo::DraggableManager::RebuildHierarchy()
 				}
 			}
 		}
-		
+
 		// Break if no new objects were added to prevent infinite loop
 		if (newHierarchy.size() == sizeBeforeIteration) {
 			break;
 		}
-		
-		newLevels.push_back({ currentStart, newHierarchy.size()});
+
+		newLevels.push_back({ currentStart, newHierarchy.size() });
 	}
 	hierarchy = std::move(newHierarchy);
 	levels = std::move(newLevels);
@@ -110,7 +110,7 @@ void Demo::DraggableManager::AttachDroppable(std::shared_ptr<IDraggable> obj)
 
 void Demo::DraggableManager::Update(unsigned long long deltaTime)
 {
-   // Snapshot to avoid iterator/index invalidation if an Update() rebuilds hierarchy.
+	// Snapshot to avoid iterator/index invalidation if an Update() rebuilds hierarchy.
 	auto levelsSnapshot = levels;
 	auto hierarchySnapshot = hierarchy;
 
@@ -124,11 +124,6 @@ void Demo::DraggableManager::Update(unsigned long long deltaTime)
 			}
 		}
 	}
-}
-
-void Demo::DraggableManager::Draw(unsigned long long deltaTime)
-{
-	std::vector<std::shared_ptr<IDraggable>> isDraggingDraggables;
 	for (size_t i = 0; i < levels.size(); ++i) {
 		for (size_t j = levels[i].startIdx; j < levels[i].endIdx; ++j) {
 			if (auto lock = hierarchy[j].lock()) {
@@ -151,21 +146,51 @@ void Demo::DraggableManager::Draw(unsigned long long deltaTime)
 					isDraggingDraggables.push_back(lock);
 					continue;
 				}
-				lock->Draw(deltaTime);
+			}
+		}
+	}
+}
+
+void Demo::DraggableManager::Draw(unsigned long long deltaTime)
+{
+	for (size_t i = 0; i < levels.size(); ++i) {
+		for (size_t j = levels[i].startIdx; j < levels[i].endIdx; ++j) {
+			if (auto lock = hierarchy[j].lock()) {
+				for (auto& draggable : isDraggingDraggables) {
+					if (draggable.get() == lock.get()) {
+						goto skipDraw; // Skip drawing if this object is being dragged or is following a dragged object
+					}
+				}
+				if (!lock->IsHidden()) {
+					lock->Draw(deltaTime);
+				}
+			skipDraw:
+				continue;
 			}
 		}
 	}
 	for (auto& draggable : isDraggingDraggables) {
-		draggable->Draw(deltaTime);
+		if (!draggable->IsHidden()) {
+			draggable->Draw(deltaTime);
+		}
 	}
-	while(drawBuffer.IsBusy()) {
-		drawBuffer.Update(deltaTime);
-	}
+	isDraggingDraggables.clear();
+	drawBuffer.Update(deltaTime);
 }
 
 void Demo::DraggableManager::QueueDraw(std::shared_ptr<DX9GF::ICommand> cmd)
 {
-	drawBuffer.PushCommand(std::move(cmd));
+	drawBuffer.StackCommand(std::move(cmd));
+}
+
+bool Demo::DraggableManager::IsQueueBusy()
+{
+	return drawBuffer.IsBusy();
+}
+
+std::vector<std::shared_ptr<Demo::IDraggable>> Demo::DraggableManager::GetDraggingDraggables() const
+{
+	return isDraggingDraggables;
 }
 
 void Demo::IDraggable::Init(std::shared_ptr<DraggableManager> manager, DX9GF::GraphicsDevice* graphicsDevice, DX9GF::Camera* camera)
@@ -174,9 +199,9 @@ void Demo::IDraggable::Init(std::shared_ptr<DraggableManager> manager, DX9GF::Gr
 	this->camera = camera;
 	this->graphicsDevice = graphicsDevice;
 	trigger = std::make_shared<DX9GF::RectangleTrigger>(
-		this->transformManager, 
-		shared_from_this(), 
-		dragAreaWidth, 
+		this->transformManager,
+		shared_from_this(),
+		dragAreaWidth,
 		dragAreaHeight,
 		0,
 		0,
@@ -186,23 +211,27 @@ void Demo::IDraggable::Init(std::shared_ptr<DraggableManager> manager, DX9GF::Gr
 	);
 	trigger->Init(camera);
 	//trigger->SetOriginCenter();
+
 	trigger->SetOnHeldLeft([&](DX9GF::ITrigger* thisObj) {
 		auto parent = dynamic_pointer_cast<IDraggable>(thisObj->GetParent().value().lock());
 		if (parent->GetParent().has_value()) {
 			parent->DetachParent();
 		}
 		auto inpMan = DX9GF::InputManager::GetInstance();
-		auto dX = inpMan->GetRelativeMouseX();
-		auto dY = inpMan->GetRelativeMouseY();
+
+		auto [dX, dY] = inpMan->GetVirtualRelativeMousePos(this->camera);
+
 		auto currentX = parent->GetWorldX();
 		auto currentY = parent->GetWorldY();
+
 		parent->SetLocalPosition(currentX + dX / this->camera->GetZoom(), currentY + dY / this->camera->GetZoom());
 		parent->GetTransformManager().lock()->RebuildHierarchy();
+
 		if (!isDragging) {
 			DX9GF::AudioManager::GetInstance()->PlayRandom("card_draw", 0.4f);
 		}
 		isDragging = true;
-	});
+		});
 	trigger->SetOnReleaseLeft([&](DX9GF::ITrigger* thisObj) {
 		auto parent = dynamic_pointer_cast<IDraggable>(thisObj->GetParent().value().lock());
 		parent->GetDraggableManager().lock()->AttachDroppable(parent);
@@ -210,11 +239,11 @@ void Demo::IDraggable::Init(std::shared_ptr<DraggableManager> manager, DX9GF::Gr
 			DX9GF::AudioManager::GetInstance()->PlayRandom("card_snap", 0.2f);
 		}
 		else {
-			 DX9GF::AudioManager::GetInstance()->PlayRandom("card_draw", 0.2f);
+			DX9GF::AudioManager::GetInstance()->PlayRandom("card_draw", 0.2f);
 		}
 		parent->GetTransformManager().lock()->RebuildHierarchy();
 		isDragging = false;
-	});
+		});
 	manager->Add(dynamic_pointer_cast<IDraggable>(shared_from_this()));
 	std::random_device rd;
 	std::mt19937 gen(rd());
@@ -309,9 +338,9 @@ bool Demo::IDraggable::OnDrop(std::shared_ptr<IDraggable> other)
 	auto otherX = other->trigger->GetWorldX() - other->trigger->GetOriginX() + other->trigger->GetWidth() / 2.0f;
 	auto otherY = other->trigger->GetWorldY() - other->trigger->GetOriginY() + other->trigger->GetHeight() / 2.0f;
 	if (otherX > thisX
-	   && otherX < thisX + trigger->GetWidth()
+		&& otherX < thisX + trigger->GetWidth()
 		&& otherY > thisY
-       && otherY < thisY + trigger->GetHeight()) {
+		&& otherY < thisY + trigger->GetHeight()) {
 		other->SetParent(shared_from_this());
 		return true;
 	}
@@ -325,9 +354,9 @@ bool Demo::IDraggable::OnHover(std::shared_ptr<IDraggable> other)
 	auto otherX = other->trigger->GetWorldX() - other->trigger->GetOriginX() + other->trigger->GetWidth() / 2.0f;
 	auto otherY = other->trigger->GetWorldY() - other->trigger->GetOriginY() + other->trigger->GetHeight() / 2.0f;
 	if (otherX > thisX
-	   && otherX < thisX + trigger->GetWidth()
+		&& otherX < thisX + trigger->GetWidth()
 		&& otherY > thisY
-       && otherY < thisY + trigger->GetHeight()) {
+		&& otherY < thisY + trigger->GetHeight()) {
 		return true;
 	}
 	return false;
@@ -372,4 +401,14 @@ std::weak_ptr<DX9GF::RectangleTrigger> Demo::IDraggable::GetTrigger()
 bool Demo::IDraggable::IsDragging() const
 {
 	return isDragging;
+}
+
+bool Demo::IDraggable::IsHidden() const
+{
+	return isHidden;
+}
+
+void Demo::IDraggable::SetHidden(bool hidden)
+{
+	isHidden = hidden;
 }

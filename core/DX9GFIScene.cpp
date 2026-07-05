@@ -13,3 +13,8 @@ DX9GF::Camera& DX9GF::IScene::GetCamera()
 {
 	return camera;
 }
+
+DX9GF::Camera& DX9GF::IScene::GetUICamera()
+{
+	return uiCamera;
+}

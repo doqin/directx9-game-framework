@@ -2,8 +2,9 @@
 #include "INPC.h"
 
 namespace Demo {
-    void INPC::Init(DX9GF::GraphicsDevice* gd, std::shared_ptr<Player> p, std::shared_ptr<DX9GF::ColliderManager> cm, std::shared_ptr<DX9GF::Font> font, std::shared_ptr<DX9GF::CommandBuffer> drawBuffer) {
+    void INPC::Init(DX9GF::GraphicsDevice* gd, DX9GF::Camera* camera, std::shared_ptr<Player> p, std::shared_ptr<DX9GF::ColliderManager> cm, std::shared_ptr<DX9GF::Font> font, std::shared_ptr<DX9GF::CommandBuffer> drawBuffer) {
         player = p;
+        this->worldCamera = camera;
         fontSprite = std::make_shared<DX9GF::FontSprite>(font.get());
         this->drawBuffer = drawBuffer;
     }
@@ -20,24 +21,33 @@ namespace Demo {
     }
 
     void INPC::Draw(const DX9GF::Camera& camera, unsigned long long deltaTime) {
-        if (isPlayerNear && fontSprite) {
-            auto [x, y] = GetWorldPosition();
-            if (auto bufferLock = drawBuffer.lock()) {
-                bufferLock->StackCommand(std::make_shared<DX9GF::CustomCommand>([this, x, y, &camera, deltaTime](std::function<void(void)> markFinished) {
-                    fontSprite->Begin();
-                    fontSprite->SetText(L"E");
-                    fontSprite->SetScale(1.0f);
-                    fontSprite->SetColor(0xFFFFFFFF);
-                    fontSprite->SetPosition(x - fontSprite->GetWidth() / 2.f, y - 40.f);
-                    fontSprite->SetOutline(true, 0xFF000000);
-                    fontSprite->Draw(camera, deltaTime);
-                    fontSprite->End();
-                    markFinished();
-                }));
-            }
+
+    }
+    void INPC::DrawUI(DX9GF::Camera* uiCamera, unsigned long long deltaTime) {
+        if (isPlayerNear && fontSprite && uiCamera && worldCamera) {
+            auto [worldX, worldY] = GetWorldPosition();
+
+            float zoom = worldCamera->GetZoom();
+
+            float uiX = (worldX - worldCamera->GetPosition().x) * zoom;
+            float uiY = (worldY - worldCamera->GetPosition().y) * zoom;
+
+            float scale = 1.0f * zoom;
+
+            fontSprite->Begin();
+            fontSprite->SetText(L"E");
+            fontSprite->SetScale(scale);
+            fontSprite->SetColor(0xFFFFFFFF);
+
+            float textW = fontSprite->GetWidth() * scale;
+
+            fontSprite->SetPosition(uiX - textW / 2.f, uiY - 40.f * zoom);
+
+            fontSprite->SetOutline(true, 0xFF000000);
+            fontSprite->Draw(*uiCamera, deltaTime);
+            fontSprite->End();
         }
     }
-
     void INPC::AddLine(std::wstring name, std::wstring content) {
         DialogueLine line;
         line.name = name;

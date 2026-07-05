@@ -5,6 +5,7 @@
 #include "SaveGameState.h"
 #include "TransitionCommand.h"
 #include "resource.h"
+#include "PopupManager.h"
 
 void Demo::TutorialWorldScene::Init()
 {
@@ -21,10 +22,11 @@ void Demo::TutorialWorldScene::Init()
 	map->SetAreaUpdateHandler("triggers", GetRandomEncounterFunc(game, player, {
 		{"DemonEyeEnemy", 40},
 		{"MimicEnemy", 20},
-		}, drawBuffer, commandBuffer, &isGamePaused, [this](DX9GF::GraphicsDevice* gd, unsigned long long deltaTime) { DrawBackground(gd, deltaTime); }));
+		}, drawBuffer, commandBuffer, &isGamePaused, & this->uiCamera, [this](DX9GF::GraphicsDevice* gd, unsigned long long deltaTime) { DrawBackground(gd, deltaTime); }));
+
 	map->SetAreaUpdateHandler("trigger_p", [this](const DX9GF::Map::ObjectArea& area) {if (isTransitioning) return;
 	isTransitioning = true;
-	auto transitionInCommand = std::make_shared<TransitionCommand>(game->GetGraphicsDevice(), 1.f, true);
+	auto transitionInCommand = std::make_shared<TransitionCommand>(game->GetGraphicsDevice(), &this->uiCamera, 1.f, true);
 	drawBuffer->PushCommand(transitionInCommand);
 	commandBuffer->PushCommand(std::make_shared<DX9GF::CustomCommand>([this, transitionInCommand](std::function<void(void)> markFinished) {
 		if (!transitionInCommand->IsFinished()) {
@@ -39,11 +41,12 @@ void Demo::TutorialWorldScene::Init()
 		isTransitioning = false;
 		markFinished();
 		}));
-	drawBuffer->PushCommand(std::make_shared<TransitionCommand>(game->GetGraphicsDevice(), 1.f, false));
+	drawBuffer->PushCommand(std::make_shared<TransitionCommand>(game->GetGraphicsDevice(), &this->uiCamera, 1.f, false));
 		});
+
 	map->SetAreaUpdateHandler("trigger_secret", [this](const DX9GF::Map::ObjectArea& area) {if (isTransitioning) return;
 	isTransitioning = true;
-	auto transitionInCommand = std::make_shared<TransitionCommand>(game->GetGraphicsDevice(), 1.f, true);
+	auto transitionInCommand = std::make_shared<TransitionCommand>(game->GetGraphicsDevice(), &this->uiCamera, 1.f, true);
 	drawBuffer->PushCommand(transitionInCommand);
 	commandBuffer->PushCommand(std::make_shared<DX9GF::CustomCommand>([this, transitionInCommand](std::function<void(void)> markFinished) {
 		if (!transitionInCommand->IsFinished()) {
@@ -61,12 +64,13 @@ void Demo::TutorialWorldScene::Init()
 		isTransitioning = false;
 		markFinished();
 		}));
-	drawBuffer->PushCommand(std::make_shared<TransitionCommand>(game->GetGraphicsDevice(), 1.f, false));
+	drawBuffer->PushCommand(std::make_shared<TransitionCommand>(game->GetGraphicsDevice(), &this->uiCamera, 1.f, false));
 		});
+
 	font = std::make_shared<DX9GF::Font>(game->GetGraphicsDevice(), L"StatusPlz", 16);
 
 	npcIntroduction = std::make_shared<DauDauNPC>(transformManager, 167.0f, -18.0f);
-	npcIntroduction->Init(game->GetGraphicsDevice(), player, colliderManager, font, drawBuffer);
+	npcIntroduction->Init(game->GetGraphicsDevice(), &camera, player, colliderManager, font, drawBuffer);
 	npcIntroduction->AddLine(L"Dau Dau", L"Hello! Welcome.");
 	npcIntroduction->AddLine(L"Player", L"Where am I?");
 	npcIntroduction->AddLine(L"Dau Dau", L"This is a cyber world! You will encounter many challenges here. Like digital foes and cyber pirates!");
@@ -75,25 +79,34 @@ void Demo::TutorialWorldScene::Init()
 	npcIntroduction->AddLine(L"Dau Dau", L"But I can teach you how to survive here! Explore around a bit and I'll explain further.");
 	npcIntroduction->AddLine(L"Dau Dau", L"By the way, use the floppy disk icon over there to save your progress.");
 	npcExplainingEnemyEncounters = std::make_shared<DauDauNPC>(transformManager, 544.0f, -56.0f);
-	npcExplainingEnemyEncounters->Init(game->GetGraphicsDevice(), player, colliderManager, font, drawBuffer);
+	npcExplainingEnemyEncounters->Init(game->GetGraphicsDevice(), &camera, player, colliderManager, font, drawBuffer);
 	npcExplainingEnemyEncounters->AddLine(L"Dau Dau", L"Look out ahead! Those green patches are combat zones.");
 	npcExplainingEnemyEncounters->AddLine(L"Dau Dau", L"If you step on them, there is a chance you'll be ambushed.\n If so, you'll have to fight enemies.");
 	npcExplainingEnemyEncounters->AddLine(L"Dau Dau", L"Don't worry, you can run away from battles if you want.\n But you won't get any rewards if you do that!");
 	npcExplainingHealingPoint = std::make_shared<DauDauNPC>(transformManager, 289.0f, -496.0f);
-	npcExplainingHealingPoint->Init(game->GetGraphicsDevice(), player, colliderManager, font, drawBuffer);
+	npcExplainingHealingPoint->Init(game->GetGraphicsDevice(), &camera, player, colliderManager, font, drawBuffer);
 	npcExplainingHealingPoint->AddLine(L"Dau Dau", L"Hey, you look hurt.");
 	npcExplainingHealingPoint->AddLine(L"Player", L"Yeah, I feel dizzy...");
 	npcExplainingHealingPoint->AddLine(L"Dau Dau", L"This is a healing point. You can use it to restore your health. Just interact with it like you do with me.");
 	npcExplainingHealingPoint->AddLine(L"Dau Dau", L"If you want to heal in combat, you can use healing items! Check out my shop up ahead for some.");
 	npcExplainingPortal = std::make_shared<DauDauNPC>(transformManager, 630.f, -639.f);
-	npcExplainingPortal->Init(game->GetGraphicsDevice(), player, colliderManager, font, drawBuffer);
+	npcExplainingPortal->Init(game->GetGraphicsDevice(), &camera, player, colliderManager, font, drawBuffer);
 	npcExplainingPortal->AddLine(L"Dau Dau", L"This is a portal. It will take you to the next area.");
 	npcExplainingPortal->AddLine(L"Dau Dau", L"Just step on it and you'll be teleported. It's that simple!");
 	npcExplainingPortal->AddLine(L"Dau Dau", L"Beware that portals can be a one way trip!");
 
+	auto borderTex = std::make_shared<DX9GF::Texture>(game->GetGraphicsDevice());
+	borderTex->LoadTexture(L"assets/popup-borders.png");
+
+	auto uiTex = std::make_shared<DX9GF::Texture>(game->GetGraphicsDevice());
+	uiTex->LoadTexture(L"assets/ui.png");
+
+	PopupManager::GetInstance()->Init(game->GetGraphicsDevice(), borderTex, uiTex, font);
+
 	savePoints.push_back(std::make_shared<SavePoint>(transformManager, 248.0f, -70.0f));
 	savePoints.back()->Init(game->GetGraphicsDevice(), &camera, player, colliderManager, saveManager, font, drawBuffer);
 	savePoints.back()->SetVisible(true);
+
 	savePoints.push_back(std::make_shared<SavePoint>(transformManager, -64.0f, -592.0f));
 	savePoints.back()->Init(game->GetGraphicsDevice(), &camera, player, colliderManager, saveManager, font, drawBuffer);
 	savePoints.back()->SetVisible(true);
@@ -125,7 +138,7 @@ void Demo::TutorialWorldScene::Init()
 		ChestReward::Item(0, 1),
 			ChestReward::Card("StrikeCard")
 	}, true));
-	treasureChests.back()->Init(game->GetGraphicsDevice(), player, colliderManager, font, drawBuffer);
+	treasureChests.back()->Init(game->GetGraphicsDevice(), &camera, player, colliderManager, font, drawBuffer);
 
 
 	treasureChests.push_back(std::make_shared<TreasureChestNPC>(
@@ -134,13 +147,18 @@ void Demo::TutorialWorldScene::Init()
 		ChestReward::Item(2, 1),
 			ChestReward::Card("HeavyStrikeCard")
 	}, true));
-	treasureChests.back()->Init(game->GetGraphicsDevice(), player, colliderManager, font, drawBuffer);
-
-
+	treasureChests.back()->Init(game->GetGraphicsDevice(), &camera, player, colliderManager, font, drawBuffer);
 
 	draggableManager = std::make_shared<Demo::DraggableManager>();
-	inventoryMenu = std::make_shared<InventoryMenu>(game, player, transformManager, draggableManager, &uiCamera, font.get());
+
+	inventoryMenu = std::make_shared<InventoryMenu>(game, player, transformManager, draggableManager, &this->uiCamera, font.get());
 	inventoryMenu->Init();
+
+	playerHUD = std::make_shared<PlayerHUD>(game, player, transformManager, &this->uiCamera, font.get());
+	playerHUD->SetOnInventoryOpen([this]() {
+		if (inventoryMenu && !inventoryMenu->IsOpen()) inventoryMenu->Toggle();
+		});
+	playerHUD->Init();
 
 	player->SetBaseSurface("default");
 
@@ -156,11 +174,14 @@ void Demo::TutorialWorldScene::Init()
 	this->GiveTestItems();
 
 	transformManager->RebuildHierarchy();
-	drawBuffer->PushCommand(std::make_shared<Demo::TransitionCommand>(game->GetGraphicsDevice(), 1.f, false));
+
+	drawBuffer->PushCommand(std::make_shared<TransitionCommand>(game->GetGraphicsDevice(), &this->uiCamera, 1.f, false));
 }
 
 void Demo::TutorialWorldScene::Update(unsigned long long deltaTime)
 {
+	PopupManager::GetInstance()->SetUICamera(&this->uiCamera);
+
 	auto OpenChestWithDialog = [&](std::shared_ptr<TreasureChestNPC>& chest) {
 		auto given = chest->Open(player.get());
 		if (given.empty()) return;
@@ -180,17 +201,12 @@ void Demo::TutorialWorldScene::Update(unsigned long long deltaTime)
 				msg += wid + L"  ";
 			}
 		}
-		auto [sw, sh] = camera.GetScreenResolution();
+		float sw = game->GetVirtualWidth();
+		float sh = game->GetVirtualHeight();
 		currentConversation = std::make_shared<IConversation>(
 			std::make_shared<DX9GF::FontSprite>(font.get()), sw, sh);
 		currentConversation->AddLine({ .name = L"Treasure Chest", .content = msg });
 		};
-
-	auto [currentWidth, currentHeight] = camera.GetScreenResolution();
-	auto [lastWidth, lastHeight] = uiCamera.GetScreenResolution();
-	if (currentWidth != lastWidth || currentHeight != lastHeight) {
-		uiCamera.SetScreenResolution(currentWidth, currentHeight);
-	}
 
 	auto inpMan = DX9GF::InputManager::GetInstance();
 	inpMan->ReadMouse(deltaTime);
@@ -206,10 +222,16 @@ void Demo::TutorialWorldScene::Update(unsigned long long deltaTime)
 
 	bool isGamePaused = this->isGamePaused;
 
+	if (PopupManager::GetInstance()->IsActive()) {
+		PopupManager::GetInstance()->Update(deltaTime, &this->uiCamera);
+		isGamePaused = true;
+	}
+
 	if (npcIntroduction) {
 		npcIntroduction->Update(deltaTime);
 		if (!currentConversation && npcIntroduction->CanInteract() && inpMan->KeyPress(DIK_E)) {
-			auto [sw, sh] = camera.GetScreenResolution();
+			float sw = game->GetVirtualWidth();
+			float sh = game->GetVirtualHeight();
 			currentConversation = std::make_shared<IConversation>(std::make_shared<DX9GF::FontSprite>(font.get()), sw, sh);
 			for (auto& line : npcIntroduction->GetDialogueLines()) {
 				currentConversation->AddLine(line);
@@ -219,7 +241,8 @@ void Demo::TutorialWorldScene::Update(unsigned long long deltaTime)
 	if (npcExplainingHealingPoint) {
 		npcExplainingHealingPoint->Update(deltaTime);
 		if (!currentConversation && npcExplainingHealingPoint->CanInteract() && inpMan->KeyPress(DIK_E)) {
-			auto [sw, sh] = camera.GetScreenResolution();
+			float sw = game->GetVirtualWidth();
+			float sh = game->GetVirtualHeight();
 			currentConversation = std::make_shared<IConversation>(std::make_shared<DX9GF::FontSprite>(font.get()), sw, sh);
 			for (auto& line : npcExplainingHealingPoint->GetDialogueLines()) {
 				currentConversation->AddLine(line);
@@ -229,7 +252,8 @@ void Demo::TutorialWorldScene::Update(unsigned long long deltaTime)
 	if (npcExplainingEnemyEncounters) {
 		npcExplainingEnemyEncounters->Update(deltaTime);
 		if (!currentConversation && npcExplainingEnemyEncounters->CanInteract() && inpMan->KeyPress(DIK_E)) {
-			auto [sw, sh] = camera.GetScreenResolution();
+			float sw = game->GetVirtualWidth();
+			float sh = game->GetVirtualHeight();
 			currentConversation = std::make_shared<IConversation>(std::make_shared<DX9GF::FontSprite>(font.get()), sw, sh);
 			for (auto& line : npcExplainingEnemyEncounters->GetDialogueLines()) {
 				currentConversation->AddLine(line);
@@ -239,7 +263,8 @@ void Demo::TutorialWorldScene::Update(unsigned long long deltaTime)
 	if (npcExplainingPortal) {
 		npcExplainingPortal->Update(deltaTime);
 		if (!currentConversation && npcExplainingPortal->CanInteract() && inpMan->KeyPress(DIK_E)) {
-			auto [sw, sh] = camera.GetScreenResolution();
+			float sw = game->GetVirtualWidth();
+			float sh = game->GetVirtualHeight();
 			currentConversation = std::make_shared<IConversation>(std::make_shared<DX9GF::FontSprite>(font.get()), sw, sh);
 			for (auto& line : npcExplainingPortal->GetDialogueLines()) {
 				currentConversation->AddLine(line);
@@ -255,7 +280,6 @@ void Demo::TutorialWorldScene::Update(unsigned long long deltaTime)
 
 	for (auto& savePoint : savePoints) {
 		savePoint->Update(deltaTime);
-		if (savePoint->IsMenuOpen()) isGamePaused = true;
 	}
 
 	if (shopPoint_Card) shopPoint_Card->Update(deltaTime);
@@ -283,7 +307,8 @@ void Demo::TutorialWorldScene::Update(unsigned long long deltaTime)
 						msg += wid + L"  ";
 					}
 				}
-				auto [sw, sh] = camera.GetScreenResolution();
+				float sw = game->GetVirtualWidth();
+				float sh = game->GetVirtualHeight();
 				currentConversation = std::make_shared<IConversation>(
 					std::make_shared<DX9GF::FontSprite>(font.get()), sw, sh);
 				currentConversation->AddLine({ .name = L"Treasure Chest", .content = msg });
@@ -295,6 +320,8 @@ void Demo::TutorialWorldScene::Update(unsigned long long deltaTime)
 		isGamePaused = true;
 		inventoryMenu->Update(deltaTime);
 	}
+
+	if (playerHUD && !isGamePaused) playerHUD->Update(deltaTime);
 
 	if (!isGamePaused) {
 		player->Update(deltaTime);
@@ -319,15 +346,12 @@ void Demo::TutorialWorldScene::Update(unsigned long long deltaTime)
 	commandBuffer->Update(deltaTime);
 }
 
-void Demo::TutorialWorldScene::Draw(unsigned long long deltaTime)
+void Demo::TutorialWorldScene::DrawWorld(unsigned long long deltaTime)
 {
 	auto gd = game->GetGraphicsDevice();
-	gd->Clear(0xFF403353);
 	if (SUCCEEDED(gd->BeginDraw())) {
-		/* Cool wave grid effect */
-		DrawBackground(gd, deltaTime);
-		/* End of cool wave grid effect */
 
+		DrawBackground(gd, deltaTime);
 		map->Draw(camera);
 		if (npcIntroduction) npcIntroduction->Draw(camera, deltaTime);
 		if (npcExplainingHealingPoint) npcExplainingHealingPoint->Draw(camera, deltaTime);
@@ -343,24 +367,60 @@ void Demo::TutorialWorldScene::Draw(unsigned long long deltaTime)
 
 		if (npcExplainingPortal) npcExplainingPortal->Draw(camera, deltaTime);
 		player->Draw(deltaTime);
-		if (drawBuffer) {
-			drawBuffer->Update(deltaTime);
+
+		gd->EndDraw();
+	}
+}
+
+void Demo::TutorialWorldScene::DrawUI(unsigned long long deltaTime)
+{
+	auto gd = game->GetGraphicsDevice();
+
+	if (SUCCEEDED(gd->BeginDraw())) {
+
+		if (healingPoint) healingPoint->DrawUI(&this->uiCamera, deltaTime);
+		for (auto& savePoint : savePoints) {
+			savePoint->DrawUI(&this->uiCamera, deltaTime);
 		}
+		for (auto& chest : treasureChests) {
+			chest->DrawUI(&this->uiCamera, deltaTime);
+		}
+
+		if (shopPoint_Card) shopPoint_Card->DrawUI(&this->uiCamera, deltaTime);
+		if (shopPoint_BSItem) shopPoint_BSItem->DrawUI(&this->uiCamera, deltaTime);
+
+		if (npcIntroduction) npcIntroduction->DrawUI(&this->uiCamera, deltaTime);
+		if (npcExplainingHealingPoint) npcExplainingHealingPoint->DrawUI(&this->uiCamera, deltaTime);
+		if (npcExplainingEnemyEncounters) npcExplainingEnemyEncounters->DrawUI(&this->uiCamera, deltaTime);
+		if (npcExplainingPortal) npcExplainingPortal->DrawUI(&this->uiCamera, deltaTime);
+		if (playerHUD) playerHUD->Draw(gd, deltaTime);
 		if (inventoryMenu) inventoryMenu->Draw(gd, deltaTime);
 		if (draggableManager && inventoryMenu && inventoryMenu->IsOpen() && inventoryMenu->GetCurrentTab() == Demo::InventoryMenu::Tab::DECK) {
 			draggableManager->Draw(deltaTime);
 		}
-		if (currentConversation) currentConversation->Draw(gd, deltaTime);
+
+		if (currentConversation) {
+			currentConversation->Draw(gd, &this->uiCamera, deltaTime);
+		}
+
+		if (drawBuffer) {
+			drawBuffer->Update(deltaTime);
+		}
+
+		PopupManager::GetInstance()->DrawUI(deltaTime, &this->uiCamera);
+
 		DX9GF::InputManager::GetInstance()->DrawCursor(&this->uiCamera, deltaTime);
+
 		gd->EndDraw();
 	}
-	gd->Present();
 }
 
 void Demo::TutorialWorldScene::DrawBackground(DX9GF::GraphicsDevice* gd, unsigned long long deltaTime)
 {
-
 	auto [screenWidth, screenHeight] = camera.GetScreenResolution();
+
+	gd->DrawRectangle(0.0f, 0.0f, static_cast<float>(screenWidth), static_cast<float>(screenHeight), 0xFF403353, true);
+
 	const int spacingX = 32;
 	const int spacingY = 32;
 	const float segmentLength = 16.0f;

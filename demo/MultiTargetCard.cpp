@@ -1,5 +1,6 @@
 #include "pch.h"
 #include "MultiTargetCard.h"
+#include "DrawUtils.h"
 
 namespace Demo {
 	MultiTargetCard::MultiTargetCard(std::weak_ptr<DX9GF::TransformManager> tm, size_t maxTargets, std::wstring name, float x, float y, size_t dragAreaWidth, size_t dragAreaHeight)
@@ -16,8 +17,8 @@ namespace Demo {
 		auto [otherX, otherY] = other->GetWorldPosition();
 		otherY += other->GetTrigger().lock()->GetHeight() / 2.0f;
 
-		if (otherX > thisX && otherX < thisX + dragAreaWidth &&
-			otherY > thisY && otherY < thisY + dragAreaHeight) {
+		if (otherX > thisX && otherX < thisX + GetWidth() &&
+			otherY > thisY && otherY < thisY + GetHeight()) {
 
 			float localX = dragAreaWidth;
 			for (auto& wp : targets) {
@@ -75,6 +76,71 @@ namespace Demo {
 
 	void MultiTargetCard::Draw(unsigned long long deltaTime) {
 		IStatementCard::Draw(deltaTime);
+		for (auto& draggable : draggableManager->GetDraggingDraggables()) {
+			if (auto draggedEnemyCard = std::dynamic_pointer_cast<EnemyCard>(draggable); draggableManager->GetDraggingDraggables().size() == 1 && draggedEnemyCard) {
+				auto [draggedX, draggedY] = draggedEnemyCard->GetWorldPosition();
+				auto draggedWidth = draggedEnemyCard->GetWidth();
+				auto draggedHeight = draggedEnemyCard->GetHeight();
+				auto width = GetWidth();
+				auto height = GetHeight();
+				auto thisX = GetWorldX();
+				auto thisY = GetWorldY();
+				if (targets.size() >= maxTargets) {
+					goto skipHighlight;
+				}
+				for (auto& wp : targets) {
+					if (auto lock = wp.lock()) {
+						if (lock.get() == draggedEnemyCard.get()) {
+							goto skipHighlight;
+						}
+					}
+				}
+				draggableManager->QueueDraw(std::make_shared<DX9GF::CustomCommand>([&, width, height, thisX, thisY, draggedX, draggedY, draggedWidth, draggedHeight](std::function<void(void)> markFinished) {
+					graphicsDevice->SetAlphaBlending(true);
+					Demo::DrawAnimatedDashedRectangle(
+						graphicsDevice,
+						*camera,
+						thisX,
+						thisY,
+						width,
+						height,
+						3.f,
+						0xFFFFFFFF,
+						false,
+						4.f,
+						0xFFFFFFFF,
+						20.f,
+						10.f,
+						40.f,
+						GetTickCount64()
+					);
+					//Demo::DrawAnimatedDashedArrow(
+					//	graphicsDevice,
+					//	*camera,
+					//	draggedX + draggedWidth / 2.0f,
+					//	draggedY + draggedHeight / 2.0f,
+					//	thisX + GetWidth() / 2.0f,
+					//	thisY + GetHeight() / 2.0f,
+					//	3.f,
+					//	0x80FFFFFF,
+					//	false,
+					//	10.f,
+					//	0xFFFFFFFF,
+					//	20.f,
+					//	10.f,
+					//	40.f,
+					//	GetTickCount64(),
+					//	10.f,
+					//	10.f
+					//);
+					graphicsDevice->SetAlphaBlending(false);
+					markFinished();
+				}));
+				return;
+			skipHighlight:
+				continue;
+			}
+		}
 		//if (!nameFont) {
 		//	nameFont = std::make_shared<DX9GF::Font>(graphicsDevice, L"StatusPlz", 16);
 		//	nameFontSprite = std::make_shared<DX9GF::FontSprite>(nameFont.get());

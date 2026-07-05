@@ -67,10 +67,9 @@ void SubScene::Update(unsigned long long deltaTime)
 	camera.Update();
 }
 
-void SubScene::Draw(unsigned long long deltaTime)
+void SubScene::DrawWorld(unsigned long long deltaTime)
 {
 	auto dev = game->GetGraphicsDevice();
-	dev->Clear();
 	if (SUCCEEDED(dev->BeginDraw())) {
 		auto app = DX9GF::Application::GetInstance();
 		auto width = app->GetScreenWidth();
@@ -107,6 +106,9 @@ void SubScene::Draw(unsigned long long deltaTime)
 		dev->EndDraw();
 	}
 	dev->Present();
+}
+void SubScene::DrawUI(unsigned long long deltaTime)
+{
 }
 
 void SubScene::Dispose()

@@ -1,4 +1,4 @@
-#include "pch.h"
+﻿#include "pch.h"
 #include "DX9GFSprites.h"
 #include "DX9GFGraphicsDevice.h"
 #include <DxErr.h>
@@ -294,6 +294,88 @@ void DX9GF::FontSprite::Draw(const Camera& camera, unsigned long long deltaTime)
 }
 
 void DX9GF::FontSprite::End()
+{
+	p_sprite->End();
+}
+
+DX9GF::NineSliceSprite::NineSliceSprite(Texture* texture, RECT srcRect, int left, int top, int right, int bottom)
+	: ISprite(texture->GetGraphicsDevice()), texture(texture), srcRect(srcRect),
+	leftMargin(left), topMargin(top), rightMargin(right), bottomMargin(bottom)
+{
+	targetWidth = static_cast<float>(srcRect.right - srcRect.left);
+	targetHeight = static_cast<float>(srcRect.bottom - srcRect.top);
+
+	HRESULT result = D3DXCreateSprite(graphicsDevice->GetDevice(), &p_sprite);
+	if (result != D3D_OK) {
+		auto error = DXGetErrorDescription(result);
+		std::string what = std::string(error, error + wcslen(error));
+		throw std::invalid_argument(what);
+	}
+}
+
+DX9GF::NineSliceSprite::~NineSliceSprite()
+{
+	if (p_sprite != nullptr) p_sprite->Release();
+}
+
+void DX9GF::NineSliceSprite::SetTargetSize(float width, float height)
+{
+	targetWidth = width;
+	targetHeight = height;
+}
+
+void DX9GF::NineSliceSprite::Begin()
+{
+	p_sprite->OnLostDevice();
+	p_sprite->OnResetDevice();
+	if (auto result = p_sprite->Begin(D3DXSPRITE_ALPHABLEND); FAILED(result)) {
+		auto error = DXGetErrorDescription(result);
+		std::string what = std::string(error, error + wcslen(error));
+		throw std::runtime_error(what);
+	}
+	ApplyPixelArtSamplerState(graphicsDevice->GetDevice());
+}
+
+void DX9GF::NineSliceSprite::Draw(const Camera& camera, unsigned long long deltaTime)
+{
+	auto matWorld = GetTransformMatrix();
+	auto matCamera = camera.GetTransformMatrix();
+
+	// Calculate the 4 clipping coordinates on the source image
+	float srcX[4] = { (float)srcRect.left, (float)srcRect.left + leftMargin, (float)srcRect.right - rightMargin, (float)srcRect.right };
+	float srcY[4] = { (float)srcRect.top, (float)srcRect.top + topMargin, (float)srcRect.bottom - bottomMargin, (float)srcRect.bottom };
+
+	// Calculate the 4 drawing coordinates on the target screen
+	float dstX[4] = { 0.0f, leftMargin * scale, targetWidth - (rightMargin * scale), targetWidth };
+	float dstY[4] = { 0.0f, topMargin * scale, targetHeight - (bottomMargin * scale), targetHeight };
+
+	D3DXVECTOR3 zeroPos(0.0f, 0.0f, 0.0f);
+
+	for (int row = 0; row < 3; ++row) {
+		for (int col = 0; col < 3; ++col) {
+			float sW = srcX[col + 1] - srcX[col];
+			float sH = srcY[row + 1] - srcY[row];
+			float dW = dstX[col + 1] - dstX[col];
+			float dH = dstY[row + 1] - dstY[row];
+
+			// Skip if the clipping array is invalid or the target size is too small
+			if (sW <= 0.0f || sH <= 0.0f || dW <= 0.0f || dH <= 0.0f) continue;
+
+			RECT pSrc = { (LONG)srcX[col], (LONG)srcY[row], (LONG)srcX[col + 1], (LONG)srcY[row + 1] };
+
+			D3DXMATRIX matPatchScale, matPatchTrans;
+			D3DXMatrixScaling(&matPatchScale, dW / sW, dH / sH, 1.0f);
+			D3DXMatrixTranslation(&matPatchTrans, dstX[col], dstY[row], 0.0f);
+
+			D3DXMATRIX matFinal = matPatchScale * matPatchTrans * matWorld * matCamera;
+
+			p_sprite->SetTransform(&matFinal);
+			p_sprite->Draw(texture->GetRawTexture(), &pSrc, nullptr, &zeroPos, color);
+		}
+	}
+}
+
+void DX9GF::NineSliceSprite::End()
 {
 	p_sprite->End();
 }

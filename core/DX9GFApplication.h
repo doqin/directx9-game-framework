@@ -37,9 +37,14 @@ namespace DX9GF {
 		unsigned int GetScreenHeight() const;
 
 		void OnResize(UINT width, UINT height);
+		void SetFullscreen(bool fullscreen);
+		bool IsFullscreen() const { return isFullscreen; }
 	private:
 		Application() {}
 		~Application() {}
 		ATOM AppRegisterClass();
+		//FULLSCREEN BORDERLESS
+		WINDOWPLACEMENT wpPrev = { sizeof(wpPrev) };
+		bool isFullscreen = false;
 	};
 };

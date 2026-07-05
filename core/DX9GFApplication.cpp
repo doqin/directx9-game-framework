@@ -65,9 +65,7 @@ void DX9GF::Application::Init(HINSTANCE hInstance, std::wstring appTitle, UINT s
 	AppRegisterClass();
 
     DWORD windowStyle = WS_VISIBLE | WS_OVERLAPPEDWINDOW;
-	if (!resizable) {
-		windowStyle &= ~(WS_THICKFRAME | WS_MAXIMIZEBOX);
-	}
+	windowStyle &= ~(WS_THICKFRAME | WS_MAXIMIZEBOX);
 
 	RECT windowRect = { 0, 0, static_cast<LONG>(screenWidth), static_cast<LONG>(screenHeight) };
 	AdjustWindowRect(&windowRect, windowStyle, FALSE);
@@ -130,8 +128,8 @@ unsigned int DX9GF::Application::GetScreenHeight() const
 
 void DX9GF::Application::OnResize(UINT width, UINT height)
 {
-	this->screenWidth = width;
-	this->screenHeight = height;
+	//this->screenWidth = width;
+	//this->screenHeight = height;
 }
 
 void DX9GF::Application::AttachGame(IGame* game)
@@ -211,4 +209,38 @@ ATOM DX9GF::Application::AppRegisterClass()
 	wc.hIconSm = hIcon;
 
 	return RegisterClassEx(&wc);
+}
+
+void DX9GF::Application::SetFullscreen(bool fullscreen)
+{
+	if (this->isFullscreen == fullscreen) return;
+	this->isFullscreen = fullscreen;
+
+	DWORD style = GetWindowLong(hwnd, GWL_STYLE);
+
+	if (fullscreen) {
+		// Save the previous window dimensions before maximizing
+		GetWindowPlacement(hwnd, &wpPrev);
+		MONITORINFO mi = { sizeof(mi) };
+		if (GetMonitorInfo(MonitorFromWindow(hwnd, MONITOR_DEFAULTTOPRIMARY), &mi)) {
+			// Strip away the window borders
+			SetWindowLong(hwnd, GWL_STYLE, style & ~WS_OVERLAPPEDWINDOW);
+			// Force the window size to match the actual screen dimensions
+			SetWindowPos(hwnd, HWND_TOP,
+				mi.rcMonitor.left, mi.rcMonitor.top,
+				mi.rcMonitor.right - mi.rcMonitor.left,
+				mi.rcMonitor.bottom - mi.rcMonitor.top,
+				SWP_NOOWNERZORDER | SWP_FRAMECHANGED);
+		}
+	}
+	else {
+		// Restore the window borders but strictly disable resizing
+		DWORD windowedStyle = (style | WS_OVERLAPPEDWINDOW) & ~(WS_THICKFRAME | WS_MAXIMIZEBOX);
+		SetWindowLong(hwnd, GWL_STYLE, windowedStyle);
+
+		// Revert to the original size
+		SetWindowPlacement(hwnd, &wpPrev);
+		SetWindowPos(hwnd, NULL, 0, 0, 0, 0,
+			SWP_NOMOVE | SWP_NOSIZE | SWP_NOZORDER | SWP_NOOWNERZORDER | SWP_FRAMECHANGED);
+	}
 }

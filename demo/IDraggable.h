@@ -20,6 +20,7 @@ namespace Demo {
 		bool isDragging = false;
 		RECT scissorRect;
 		bool isCropped = false;
+		bool isHidden = false;
 	public:
 		inline static bool debug = false;
 		inline IDraggable(std::weak_ptr<DX9GF::TransformManager> transformManager) : IGameObject(transformManager), dragAreaWidth(0), dragAreaHeight(0) { 
@@ -69,6 +70,8 @@ namespace Demo {
 		std::weak_ptr<DraggableManager> GetDraggableManager();
 		std::weak_ptr<DX9GF::RectangleTrigger> GetTrigger();
 		bool IsDragging() const;
+		bool IsHidden() const;
+		void SetHidden(bool hidden);
 	};
 
 	class DraggableManager final {
@@ -80,6 +83,7 @@ namespace Demo {
 		std::vector<std::weak_ptr<IDraggable>> hierarchy;
 		std::vector<LevelBatch> levels;
 		std::unordered_map<std::string, std::shared_ptr<IDraggable>> objectMap;
+		std::vector<std::shared_ptr<IDraggable>> isDraggingDraggables;
 		DX9GF::CommandBuffer drawBuffer;
 	public:
 		void RebuildHierarchy();
@@ -90,5 +94,7 @@ namespace Demo {
 		void Update(unsigned long long deltaTime);
 		void Draw(unsigned long long deltaTime);
 		void QueueDraw(std::shared_ptr<DX9GF::ICommand> cmd);
+		bool IsQueueBusy();
+		std::vector<std::shared_ptr<IDraggable>> GetDraggingDraggables() const;
 	};
 }

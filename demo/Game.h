@@ -6,5 +6,8 @@ namespace Demo {
 	public:
 	Game(HWND hwnd, const UINT screenWidth, const UINT screenHeight) : IGame(hwnd, screenWidth, screenHeight) {}
 	void Init() override;
+	UINT GetVirtualWidth() const { return SCREEN_WIDTH; }
+	UINT GetVirtualHeight() const { return SCREEN_HEIGHT; }
 	};
+
 }

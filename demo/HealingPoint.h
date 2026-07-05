@@ -8,6 +8,7 @@ namespace Demo {
     class HealingPoint : public DX9GF::IGameObject {
     private:
         DX9GF::GraphicsDevice* gd;
+        DX9GF::Camera* worldCamera;
         std::weak_ptr<DX9GF::TransformManager> transformManager;
         std::shared_ptr<DX9GF::Texture> spritesheet;
         std::shared_ptr<DX9GF::AnimatedSprite> sprite;
@@ -30,6 +31,7 @@ namespace Demo {
 
         void Update(unsigned long long deltaTime);
         void Draw(const DX9GF::Camera& camera, unsigned long long deltaTime);
+        void DrawUI(DX9GF::Camera* uiCamera, unsigned long long deltaTime);
         void SetVisible(bool visible) { isVisible = visible; }
         bool IsVisible() const { return isVisible; }
     };

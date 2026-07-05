@@ -2,13 +2,12 @@
 #include "TransitionCommand.h"
 
 namespace Demo {
-    TransitionCommand::TransitionCommand(DX9GF::GraphicsDevice* gd, float duration, bool isTransitioningIn, int numPillars)
-        : graphicsDevice(gd), duration(duration), elapsedTime(0.0f), isTransitioningIn(isTransitioningIn), numPillars(numPillars), uiCamera(DX9GF::Application::GetInstance()->GetScreenWidth(), DX9GF::Application::GetInstance()->GetScreenHeight())
+    TransitionCommand::TransitionCommand(DX9GF::GraphicsDevice* gd, DX9GF::Camera* uiCamera, float duration, bool isTransitioningIn, int numPillars)
+        : graphicsDevice(gd), uiCamera(uiCamera), duration(duration), elapsedTime(0.0f), isTransitioningIn(isTransitioningIn), numPillars(numPillars)
     {
-        auto app = DX9GF::Application::GetInstance();
-        screenWidth = app->GetScreenWidth();
-        screenHeight = app->GetScreenHeight();
-        uiCamera.SetPosition(screenWidth / 2.0f, screenHeight / 2.0f);
+        auto [camW, camH] = uiCamera->GetScreenResolution();
+        screenWidth = camW;
+        screenHeight = camH;
     }
 
     void TransitionCommand::Execute(unsigned long long deltaTime) {
@@ -24,9 +23,11 @@ namespace Demo {
         float progress = elapsedTime / duration;
         float pillarWidth = static_cast<float>(screenWidth) / numPillars;
 
+        float startX = -screenWidth / 2.0f;
+        float startY = -screenHeight / 2.0f;
+
         for (int i = 0; i < numPillars; ++i) {
-            // Calculate a stagger based on the pillar index for a left-to-right effect
-            float staggerDuration = 0.5f; // Portion of the total duration for stagger
+            float staggerDuration = 0.5f;
             float tStart = (static_cast<float>(i) / numPillars) * staggerDuration;
             float tEnd = tStart + (1.0f - staggerDuration);
 
@@ -38,23 +39,22 @@ namespace Demo {
 
             localProgress = EaseInOutQuad(localProgress);
 
-            float y = 0.0f;
             float currentHeight = 0.0f;
+            float y = startY;
 
             if (isTransitioningIn) {
-                // Falling down
+
                 currentHeight = screenHeight * localProgress;
             }
             else {
-                // Lifting up
                 currentHeight = screenHeight * (1.0f - localProgress);
             }
 
             if (currentHeight > 0) {
                 graphicsDevice->DrawRectangle(
-                    uiCamera,
-                    i * pillarWidth, y, 
-                    pillarWidth + 1.0f, currentHeight, // +1.0f to overlap pillars and prevent 1px gap from rounding
+                    *uiCamera,
+                    startX + (i * pillarWidth), y,
+                    pillarWidth + 1.0f, currentHeight,
                     0xFF000000, true
                 );
             }

@@ -7,10 +7,10 @@ namespace Demo {
         : IGameObject(tm, x, y), transformManager(tm), colorID(cID), terminalName(name) {
     }
 
-    void HackTerminal::Init(DX9GF::GraphicsDevice* gd, DX9GF::Camera* camera, std::shared_ptr<Player> p, std::shared_ptr<DX9GF::ColliderManager> cm, std::shared_ptr<DX9GF::Font> font, std::shared_ptr<DX9GF::CommandBuffer> drawBuffer, std::function<void(int)> hackCallback) {
+    void HackTerminal::Init(DX9GF::GraphicsDevice* gd, DX9GF::Camera* camera, std::shared_ptr<Player> p, std::shared_ptr<DX9GF::ColliderManager> cm, std::shared_ptr<DX9GF::Font> font, std::function<void(int)> hackCallback) {
         player = p;
+        this->worldCamera = camera;
         fontSprite = std::make_shared<DX9GF::FontSprite>(font.get());
-        this->drawBuffer = drawBuffer;
         this->gd = gd;
         this->onHackAttempt = hackCallback;
 
@@ -19,25 +19,23 @@ namespace Demo {
         cm->Add(collider);
 
         spritesheet = std::make_shared<DX9GF::Texture>(gd);
-
         spritesheet->LoadTexture(L"assets/terminals.png");
-
 
         sprite = std::make_shared<DX9GF::StaticSprite>(spritesheet.get());
         if (terminalName == "M1") {
-			sprite->SetSrcRect({.left=0, .top=0, .right=16, .bottom=32});
+            sprite->SetSrcRect({ .left = 0, .top = 0, .right = 16, .bottom = 32 });
         }
         else if (terminalName == "M2") {
-			sprite->SetSrcRect({ .left = 16, .top = 0, .right = 32, .bottom = 32 });
+            sprite->SetSrcRect({ .left = 16, .top = 0, .right = 32, .bottom = 32 });
         }
         else if (terminalName == "M3") {
             sprite->SetSrcRect({ .left = 32, .top = 0, .right = 48, .bottom = 32 });
         }
         else if (terminalName == "M4") {
-			sprite->SetSrcRect({ .left = 48, .top = 0, .right = 64, .bottom = 32 });
+            sprite->SetSrcRect({ .left = 48, .top = 0, .right = 64, .bottom = 32 });
         }
         else {
-			sprite->SetSrcRect({ .left = 64, .top = 0, .right = 80, .bottom = 32 });
+            sprite->SetSrcRect({ .left = 64, .top = 0, .right = 80, .bottom = 32 });
         }
         sprite->SetOrigin(8.f, 16.f);
         sprite->SetPosition(GetWorldX(), GetWorldY());
@@ -71,53 +69,56 @@ namespace Demo {
 
     void HackTerminal::Draw(const DX9GF::Camera& camera, unsigned long long deltaTime) {
         if (!isVisible) return;
-
-        auto [x, y] = GetWorldPosition();
-
         sprite->Begin();
         sprite->Draw(camera, deltaTime);
         sprite->End();
+    }
 
-        if (fontSprite) {
-            if (!statusMessage.empty()) {
-                if (auto bufferLock = drawBuffer.lock()) {
-                    const auto statusText = statusMessage;
-                    bufferLock->StackCommand(std::make_shared<DX9GF::CustomCommand>([this, statusText, x, y, &camera, deltaTime](std::function<void(void)> markFinished) {
-                        fontSprite->Begin();
-                        fontSprite->SetText(std::wstring(statusText.begin(), statusText.end()));
-                        fontSprite->SetScale(0.8f);
-                        fontSprite->SetColor(0xFF55FF55);
-                        fontSprite->SetPosition(x - fontSprite->GetWidth() * 0.8f / 2.f, y - 45.f - fontSprite->GetHeight() / 2.f);
-                        fontSprite->SetOutline(true, 0xFF000000);
-                        fontSprite->Draw(camera, deltaTime);
-                        fontSprite->End();
-                        markFinished();
-                        }));
-                }
-            }
-            else if (isPlayerNear && !isHacked) {
-                if (auto bufferLock = drawBuffer.lock()) {
-                    bufferLock->StackCommand(std::make_shared<DX9GF::CustomCommand>([this, x, y, &camera, deltaTime](std::function<void(void)> markFinished) {
-                        fontSprite->Begin();
-                        fontSprite->SetText(L"E");
-                        fontSprite->SetScale(1.f);
-                        fontSprite->SetColor(0xFFFFFFFF);
-                        fontSprite->SetPosition(x - fontSprite->GetWidth() / 2.f, y - 30.f - fontSprite->GetHeight() / 2.f);
-                        fontSprite->SetOutline(true, 0xFF000000);
-                        fontSprite->Draw(camera, deltaTime);
-                        fontSprite->End();
-                        markFinished();
-                        }));
-                }
-            }
+    void HackTerminal::DrawUI(DX9GF::Camera* uiCamera, unsigned long long deltaTime) {
+        if (!isVisible || !uiCamera || !fontSprite || !worldCamera) return;
+
+        auto [worldX, worldY] = GetWorldPosition();
+        float zoom = worldCamera->GetZoom();
+
+        float uiX = (worldX - worldCamera->GetPosition().x) * zoom;
+        float uiY = (worldY - worldCamera->GetPosition().y) * zoom;
+
+        if (!statusMessage.empty()) {
+            float scale = 0.8f * zoom;
+            fontSprite->Begin();
+            fontSprite->SetText(std::wstring(statusMessage.begin(), statusMessage.end()));
+            fontSprite->SetScale(scale);
+            fontSprite->SetColor(0xFF55FF55);
+
+            float textW = fontSprite->GetWidth() * scale;
+            float textH = fontSprite->GetHeight() * scale;
+            fontSprite->SetPosition(uiX - textW / 2.f, uiY - 45.f * zoom - textH / 2.f);
+
+            fontSprite->SetOutline(true, 0xFF000000);
+            fontSprite->Draw(*uiCamera, deltaTime);
+            fontSprite->End();
+        }
+        else if (isPlayerNear && !isHacked) {
+            float scale = 1.0f * zoom;
+            fontSprite->Begin();
+            fontSprite->SetText(L"E");
+            fontSprite->SetScale(scale);
+            fontSprite->SetColor(0xFFFFFFFF);
+
+            float textW = fontSprite->GetWidth() * scale;
+            float textH = fontSprite->GetHeight() * scale;
+            fontSprite->SetPosition(uiX - textW / 2.f, uiY - 30.f * zoom - textH / 2.f);
+
+            fontSprite->SetOutline(true, 0xFF000000);
+            fontSprite->Draw(*uiCamera, deltaTime);
+            fontSprite->End();
         }
     }
 
-    //set frame before/after hacked here
     void HackTerminal::SetHackedStatus(bool status) {
         isHacked = status;
         if (isHacked) {
-			sprite->SetSrcRect({ .left = 80, .top = 0, .right = 96, .bottom = 32 });
+            sprite->SetSrcRect({ .left = 80, .top = 0, .right = 96, .bottom = 32 });
         }
     }
 

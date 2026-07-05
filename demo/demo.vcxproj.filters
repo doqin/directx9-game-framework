@@ -8,6 +8,7 @@
     <ClCompile Include="DauDauNPC.cpp" />
     <ClCompile Include="DebugScene.cpp" />
     <ClCompile Include="DemonEyeEnemy.cpp" />
+    <ClCompile Include="DrawUtils.cpp" />
     <ClCompile Include="Game.cpp" />
     <ClCompile Include="GameItems.cpp" />
     <ClCompile Include="HandContainer.cpp" />
@@ -21,6 +22,7 @@
     <ClCompile Include="INPC.cpp" />
     <ClCompile Include="InventoryMenu.cpp" />
     <ClCompile Include="IStatementCard.cpp" />
+    <ClCompile Include="PlayerHUD.cpp" />
     <ClCompile Include="ItemShop.cpp" />
     <ClCompile Include="main.cpp" />
     <ClCompile Include="MainMenu.cpp" />
@@ -68,6 +70,7 @@
     <ClCompile Include="SecretPuzzleScene.cpp" />
     <ClCompile Include="TreasureChestNPC.cpp" />
     <ClCompile Include="CreditsScene.cpp" />
+    <ClCompile Include="PopupManager.cpp" />
   </ItemGroup>
   <ItemGroup>
     <ClInclude Include="AdvancedCards.h" />
@@ -79,6 +82,7 @@
     <ClInclude Include="DebugScene.h" />
     <ClInclude Include="DemonEyeEnemy.h" />
     <ClInclude Include="DialogueLine.h" />
+    <ClInclude Include="DrawUtils.h" />
     <ClInclude Include="EnemyCard.h" />
     <ClInclude Include="Game.h" />
     <ClInclude Include="GameItems.h" />
@@ -95,6 +99,7 @@
     <ClInclude Include="INPC.h" />
     <ClInclude Include="InventoryMenu.h" />
     <ClInclude Include="ItemShop.h" />
+    <ClInclude Include="PlayerHUD.h" />
     <ClInclude Include="MainMenu.h" />
     <ClInclude Include="IEnemy.h" />
     <ClInclude Include="IExpressionCard.h" />
@@ -140,6 +145,7 @@
     <ClInclude Include="SecretPuzzleScene.h" />
     <ClInclude Include="TreasureChestNPC.h" />
     <ClInclude Include="CreditsScene.h" />
+    <ClInclude Include="PopupManager.h" />
   </ItemGroup>
   <ItemGroup>
     <ResourceCompile Include="demo.rc" />
@@ -198,6 +204,7 @@
     <Image Include="assets\icon.ico" />
     <Image Include="assets\shardprojectile.png" />
     <Image Include="assets\minionprojectile-Sheet.png" />
+    <Image Include="assets\All-borders.png" />
   </ItemGroup>
   <ItemGroup>
     <Font Include="assets\arcade-among-2-r46pv.ttf" />

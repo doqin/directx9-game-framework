@@ -10,6 +10,7 @@ namespace Demo {
 
     void ShopPoint::Init(Game* game, DX9GF::GraphicsDevice* gd, DX9GF::Camera* camera, std::shared_ptr<Player> p, std::shared_ptr<DX9GF::ColliderManager> cm, std::shared_ptr<DX9GF::Font> font, std::shared_ptr<DX9GF::CommandBuffer> drawBuffer, std::function<DX9GF::IScene* (Game*, Player*, int, int)> factory) {
         this->game = game;
+        this->worldCamera = camera;
         player = p;
         fontSprite = std::make_shared<DX9GF::FontSprite>(font.get());
         this->drawBuffer = drawBuffer;
@@ -28,58 +29,59 @@ namespace Demo {
         this->sceneFactory = factory;
     }
 
-	void ShopPoint::Update(unsigned long long deltaTime) {
-		if (!isVisible) return;
+    void Demo::ShopPoint::Update(unsigned long long deltaTime) {
+        if (!isVisible) return;
+        auto pLock = player.lock();
+        if (!pLock) return;
 
-		auto pLock = player.lock();
-		if (!pLock) return;
+        auto [px, py] = pLock->GetWorldPosition();
+        auto [sx, sy] = GetWorldPosition();
+        float distance = std::sqrt((px - sx) * (px - sx) + (py - sy) * (py - sy));
+        isPlayerNear = (distance <= INTERACTION_DISTANCE);
 
-		auto [px, py] = pLock->GetWorldPosition();
-		auto [sx, sy] = GetWorldPosition();
+        auto inpMan = DX9GF::InputManager::GetInstance();
 
-		float distance = std::sqrt((px - sx) * (px - sx) + (py - sy) * (py - sy));
-		isPlayerNear = (distance <= INTERACTION_DISTANCE);
+        if (isPlayerNear && inpMan->KeyPress(DIK_E)) {
+            auto [sw, sh] = worldCamera->GetScreenResolution();
 
-		auto inpMan = DX9GF::InputManager::GetInstance();
-
-		if (isPlayerNear && inpMan->KeyPress(DIK_E)) {
-			auto app = DX9GF::Application::GetInstance();
-			int sw = app->GetScreenWidth();
-			int sh = app->GetScreenHeight();
-
-			if (sceneFactory) {
-				auto shopScene = sceneFactory(game, pLock.get(), sw, sh);
+            if (sceneFactory) {
+                auto shopScene = sceneFactory(game, pLock.get(), sw, sh);
                 auto sceMan = game->GetSceneManager();
-				sceMan->InsertScene(sceMan->GetIndex() + 1, shopScene);
-				sceMan->GoToNext();
-			}
+                sceMan->InsertScene(sceMan->GetIndex() + 1, shopScene);
+                sceMan->GoToNext();
+            }
+        }
+    }
 
-		}
-	}
+    void Demo::ShopPoint::Draw(const DX9GF::Camera& camera, unsigned long long deltaTime) {
+        if (!isVisible) return;
+        sprite->Begin();
+        sprite->Draw(camera, deltaTime);
+        sprite->End();
+    }
 
-	void ShopPoint::Draw(const DX9GF::Camera& camera, unsigned long long deltaTime) {
-		if (!isVisible) return;
-
-		auto [x, y] = GetWorldPosition();
-
-		sprite->Begin();
-		sprite->Draw(camera, deltaTime);
-		sprite->End();
+    void Demo::ShopPoint::DrawUI(DX9GF::Camera* uiCamera, unsigned long long deltaTime) {
+        if (!isVisible || !uiCamera || !worldCamera) return;
 
         if (fontSprite && isPlayerNear) {
-            if (auto bufferLock = drawBuffer.lock()) {
-                bufferLock->StackCommand(std::make_shared<DX9GF::CustomCommand>([this, x, y, &camera, deltaTime](std::function<void(void)> markFinished) {
-                    fontSprite->Begin();
-                    fontSprite->SetText(L"E");
-                    fontSprite->SetScale(1.f);
-                    fontSprite->SetColor(0xFFFFFFFF);
-                    fontSprite->SetPosition(x - fontSprite->GetWidth() / 2.f, y - 30.f - fontSprite->GetHeight() / 2.f);
-                    fontSprite->SetOutline(true, 0xFF000000);
-                    fontSprite->Draw(camera, deltaTime);
-                    fontSprite->End();
-                    markFinished();
-                }));
-            }
+            auto [x, y] = GetWorldPosition();
+            float uiX = (x - worldCamera->GetPosition().x) * worldCamera->GetZoom();
+            float uiY = (y - worldCamera->GetPosition().y) * worldCamera->GetZoom();
+
+            float zoom = worldCamera->GetZoom();
+            float scale = 1.0f * zoom;
+
+            fontSprite->Begin();
+            fontSprite->SetText(L"E");
+            fontSprite->SetScale(scale);
+            fontSprite->SetColor(0xFFFFFFFF);
+
+            float textW = fontSprite->GetWidth() * scale;
+            float textH = fontSprite->GetHeight() * scale;
+            fontSprite->SetPosition(uiX - textW / 2.f, uiY - 30.f * zoom - textH / 2.f);
+            fontSprite->SetOutline(true, 0xFF000000);
+            fontSprite->Draw(*uiCamera, deltaTime);
+            fontSprite->End();
         }
     }
 }

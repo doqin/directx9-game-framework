@@ -1,10 +1,11 @@
 ﻿#include "pch.h"
 #include "DebugScene.h"
 #include "TestBattleScene.h"
+#include "DrawUtils.h"
 
-Demo::DebugScene::DebugScene(Game* game, int sw, int sh) : IScene(sw, sh), game(game), uiCamera(sw, sh)
+Demo::DebugScene::DebugScene(Game* game, int sw, int sh) : IScene(sw, sh), game(game)
 {
-	uiCamera.SetPosition(sw / 2.0f, sh / 2.0f);
+	this->uiCamera.SetPosition(sw / 2.0f, sh / 2.0f);
 }
 
 void Demo::DebugScene::Init()
@@ -137,18 +138,28 @@ void Demo::DebugScene::Update(unsigned long long deltaTime)
 	commandBuffer.Update(deltaTime);
 	transformManager->UpdateAll();
 	camera.Update();
+	this->uiCamera.Update();
 }
 
-void Demo::DebugScene::Draw(unsigned long long deltaTime)
+void Demo::DebugScene::DrawWorld(unsigned long long deltaTime)
 {
 	auto gd = game->GetGraphicsDevice();
-	gd->Clear();
 	if (SUCCEEDED(gd->BeginDraw())) {
 		draggableManager->Draw(deltaTime);
 
-		//draw all UI button
-		for (auto& btn : uiButtons)
-		{
+		Demo::DrawAnimatedDashedRectangle(gd, camera, 0, 0, 500, 500, 6.f, 0xFFFF00FF, true, 4.f, 0xFFFFFFFF, 20.f, 10.f, 40.f, GetTickCount64());
+		Demo::DrawAnimatedDashedArrow(gd, camera, 0, 0, 200, 200, 3.f, 0xFFFFFFFF, false, 10.f, 0xFFFFFFFF, 20.f, 10.f, 40.f, GetTickCount64(), 10.f, 10.f);
+
+		gd->EndDraw();
+	}
+}
+
+void Demo::DebugScene::DrawUI(unsigned long long deltaTime)
+{
+	auto gd = game->GetGraphicsDevice();
+	if (SUCCEEDED(gd->BeginDraw())) {
+
+		for (auto& btn : uiButtons) {
 			btn->Draw(gd, deltaTime);
 		}
 
@@ -157,15 +168,16 @@ void Demo::DebugScene::Draw(unsigned long long deltaTime)
 			myFontSprite->SetPosition(20.0f, 50.0f);
 			myFontSprite->SetColor(0xFF00FF00);
 			myFontSprite->SetText(std::wstring(typedText.begin(), typedText.end()));
-			myFontSprite->Draw(uiCamera, deltaTime);
+			myFontSprite->Draw(this->uiCamera, deltaTime);
 			myFontSprite->End();
 		}
 
 		if (activeConversation && !activeConversation->IsFinished()) {
-			activeConversation->Draw(gd, deltaTime);
+			activeConversation->Draw(gd, &this->uiCamera, deltaTime);
 		}
+
+		DX9GF::InputManager::GetInstance()->DrawCursor(&this->uiCamera, deltaTime);
 
 		gd->EndDraw();
 	}
-	gd->Present();
 }

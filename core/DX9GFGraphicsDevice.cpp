@@ -1,4 +1,4 @@
-#include "pch.h"
+﻿#include "pch.h"
 #include "DX9GFGraphicsDevice.h"
 #include <vector>
 #include <algorithm>
@@ -6,6 +6,7 @@
 #include <d3dx9math.h>
 #include "DX9GFApplication.h"
 #include "DX9GFUtils.h"
+#include "DX9GFTexture.h"
 
 struct Vertex {
 	float x, y, z, rhw; // rhw is reciprocal of homogenous w
@@ -127,7 +128,33 @@ void DX9GF::GraphicsDevice::SetScissorRect(const RECT& rect)
 	d3ddev->SetScissorRect(&rect);
 }
 
+void DX9GF::GraphicsDevice::SetVirtualTransform(float scale, float offsetX, float offsetY)
+{
+	virtualScale = scale;
+	virtualOffsetX = offsetX;
+	virtualOffsetY = offsetY;
+}
+
+void DX9GF::GraphicsDevice::ResetVirtualTransform()
+{
+	virtualScale = 1.0f;
+	virtualOffsetX = 0.0f;
+	virtualOffsetY = 0.0f;
+}
+
 void DX9GF::GraphicsDevice::DrawLine(float x1, float y1, float x2, float y2, D3DCOLOR color, float thickness)
+{
+	DrawLineInternal(
+		x1 * virtualScale + virtualOffsetX,
+		y1 * virtualScale + virtualOffsetY,
+		x2 * virtualScale + virtualOffsetX,
+		y2 * virtualScale + virtualOffsetY,
+		color,
+		thickness > 1.0f ? thickness * virtualScale : thickness
+	);
+}
+
+void DX9GF::GraphicsDevice::DrawLineInternal(float x1, float y1, float x2, float y2, D3DCOLOR color, float thickness)
 {
 	if (thickness <= 1.0f) {
 		Vertex vertices[] = {
@@ -171,7 +198,7 @@ void DX9GF::GraphicsDevice::DrawLine(const DX9GF::Camera& camera, float x1, floa
 	auto matCamera = camera.GetTransformMatrix();
 	auto p1 = TransformPoint(matCamera, x1, y1);
 	auto p2 = TransformPoint(matCamera, x2, y2);
-	DrawLine(p1.x, p1.y, p2.x, p2.y, color, thickness);
+	DrawLineInternal(p1.x, p1.y, p2.x, p2.y, color, thickness);
 }
 
 void DX9GF::GraphicsDevice::DrawRectangle(float x, float y, float width, float height, D3DCOLOR color, bool isFilled)
@@ -190,6 +217,11 @@ void DX9GF::GraphicsDevice::DrawRectangle(float x, float y, float width, float h
 	auto p1 = TransformRectanglePoint(x, y, width, 0.0f, rotation, scaleX, scaleY, offsetX, offsetY);
 	auto p2 = TransformRectanglePoint(x, y, width, height, rotation, scaleX, scaleY, offsetX, offsetY);
 	auto p3 = TransformRectanglePoint(x, y, 0.0f, height, rotation, scaleX, scaleY, offsetX, offsetY);
+
+	for (auto* p : { &p0, &p1, &p2, &p3 }) {
+		p->x = p->x * virtualScale + virtualOffsetX;
+		p->y = p->y * virtualScale + virtualOffsetY;
+	}
 
 	std::vector<Vertex> vertices = {
 		{.x = p0.x, .y = p0.y, .z = 0.0f, .rhw = 1.0f, .color = color },
@@ -258,7 +290,7 @@ void DX9GF::GraphicsDevice::DrawEllipse(float x, float y, float width, float hei
 
 	if (isFilled) {
 		auto c = TransformRectanglePoint(x, y, cx, cy, rotation, scaleX, scaleY, offsetX, offsetY);
-		vertices.push_back({ .x = c.x, .y = c.y, .z = 0.0f, .rhw = 1.0f, .color = color });
+		vertices.push_back({ .x = c.x * virtualScale + virtualOffsetX, .y = c.y * virtualScale + virtualOffsetY, .z = 0.0f, .rhw = 1.0f, .color = color });
 	}
 	for (int i = 0; i <= SAMPLES; ++i) {
 		float theta = i * (2.0f * D3DX_PI / SAMPLES);
@@ -266,8 +298,8 @@ void DX9GF::GraphicsDevice::DrawEllipse(float x, float y, float width, float hei
 		float ly = cy + std::sin(theta) * ry;
 		auto p = TransformRectanglePoint(x, y, lx, ly, rotation, scaleX, scaleY, offsetX, offsetY);
 		vertices.push_back({
-			.x = p.x,
-			.y = p.y,
+			.x = p.x * virtualScale + virtualOffsetX,
+			.y = p.y * virtualScale + virtualOffsetY,
 			.z = 0.0f,
 			.rhw = 1.0f,
 			.color = color
@@ -313,4 +345,20 @@ void DX9GF::GraphicsDevice::DrawEllipse(const DX9GF::Camera& camera, float x, fl
 	d3ddev->SetFVF(D3DFVF_XYZRHW | D3DFVF_DIFFUSE);
 	D3DPRIMITIVETYPE primitiveType = isFilled ? D3DPT_TRIANGLEFAN : D3DPT_LINESTRIP;
 	d3ddev->DrawPrimitiveUP(primitiveType, SAMPLES, vertices.data(), sizeof(Vertex));
+}
+HRESULT DX9GF::GraphicsDevice::SetRenderTarget(Texture* renderTarget)
+{
+	if (renderTarget == nullptr) return E_POINTER;
+	IDirect3DSurface9* surface = renderTarget->GetSurface();
+	HRESULT hr = d3ddev->SetRenderTarget(0, surface);
+
+	// COM object automatically increments its reference count when calling GetSurfaceLevel; must Release after use
+	if (surface != nullptr) surface->Release();
+	return hr;
+}
+
+HRESULT DX9GF::GraphicsDevice::RestoreRenderTarget()
+{
+	// Restore the render target back to the actual screen
+	return d3ddev->SetRenderTarget(0, backbuffer);
 }

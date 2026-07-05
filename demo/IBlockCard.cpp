@@ -1,5 +1,6 @@
 #include "pch.h"
 #include "IBlockCard.h"
+#include "IBattleScene.h"
 
 bool Demo::IBlockCard::OnDrop(std::shared_ptr<IDraggable> other)
 {
@@ -7,6 +8,18 @@ bool Demo::IBlockCard::OnDrop(std::shared_ptr<IDraggable> other)
 	if (!statementCard) {
 		return false;
 	}
+
+	if (battleScene) {
+		int cost = static_cast<int>(statementCard->GetCost());
+		if (battleScene->GetAvailableEnergy() < 0) {
+			if (timeSinceLastEnergyPopUp >= energyPopUpCooldown) {
+				battleScene->QueuePopUpMessage(L"Not enough energy");
+				timeSinceLastEnergyPopUp = 0.f;
+			}
+			return false;
+		}
+	}
+
 	if (IContainer::OnDrop(other)) {
 		statementCards.push_back(statementCard);
 		return true;
@@ -17,6 +30,9 @@ bool Demo::IBlockCard::OnDrop(std::shared_ptr<IDraggable> other)
 void Demo::IBlockCard::Update(unsigned long long deltaTime)
 {
 	IContainer::Update(deltaTime);
+
+	timeSinceLastEnergyPopUp += deltaTime / 1000.f;
+
 	// Removes invalid cards
 	for (size_t i = 0; i < statementCards.size(); ++i) {
 		auto lock = statementCards[i].lock();
@@ -91,4 +107,16 @@ void Demo::IBlockCard::ResetExecution()
 	executeIndex = 0;
 	isExecuting = false;
 	currentExecutingCard.reset();
+}
+
+bool Demo::IBlockCard::HasAllRequiredTargets() const
+{
+	for (auto& card : statementCards) {
+		if (auto lock = card.lock()) {
+			if (!lock->HasRequiredTargets()) {
+				return false;
+			}
+		}
+	}
+	return true;
 }

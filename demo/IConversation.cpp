@@ -4,10 +4,8 @@
 #include <DX9GFApplication.h>
 #include "DX9GFAudioManager.h"
 Demo::IConversation::IConversation(std::shared_ptr<DX9GF::FontSprite> fontSprite, int screenWidth, int screenHeight)
-	: fontSprite(fontSprite), fixedCamera(screenWidth, screenHeight)
+	: fontSprite(fontSprite), virtualWidth((float)screenWidth), virtualHeight((float)screenHeight)
 {
-	fixedCamera.SetPosition(screenWidth / 2.0f, screenHeight / 2.0f);
-	fixedCamera.Update();
 }
 
 void Demo::IConversation::AddLine(const DialogueLine& line)
@@ -66,45 +64,45 @@ void Demo::IConversation::Execute(unsigned long long deltaTime)
 	}
 }
 
-void Demo::IConversation::Draw(DX9GF::GraphicsDevice* gd, unsigned long long deltaTime)
+void Demo::IConversation::Draw(DX9GF::GraphicsDevice* gd, DX9GF::Camera* uiCamera, unsigned long long deltaTime)
 {
-	if (dialogueQueue.empty() || IsFinished() || !gd) return;
+	if (dialogueQueue.empty() || IsFinished() || !gd || !uiCamera) return;
 
 	const auto& currentLine = dialogueQueue.front();
 
-	auto [screenW, screenH] = fixedCamera.GetScreenResolution();
-	float fScreenW = static_cast<float>(screenW);
-	float fScreenH = static_cast<float>(screenH);
+	float leftEdge = -virtualWidth / 2.0f;
+	float rightEdge = virtualWidth / 2.0f;
+	float bottomEdge = virtualHeight / 2.0f;
 
 	if (currentLine.left.has_value() && currentLine.left.value()) {
 		auto sprite = currentLine.left.value();
-		sprite->SetPosition(100.0f, fScreenH - 180.0f);
+		sprite->SetPosition(leftEdge + 100.0f, bottomEdge - 180.0f);
 		sprite->Begin();
-		sprite->Draw(fixedCamera, deltaTime);
+		sprite->Draw(*uiCamera, deltaTime);
 		sprite->End();
 	}
 
 	if (currentLine.right.has_value() && currentLine.right.value()) {
 		auto sprite = currentLine.right.value();
-		sprite->SetPosition(fScreenW - 100.0f, fScreenH - 180.0f);
+		sprite->SetPosition(rightEdge - 100.0f, bottomEdge - 180.0f);
 		sprite->Begin();
-		sprite->Draw(fixedCamera, deltaTime);
+		sprite->Draw(*uiCamera, deltaTime);
 		sprite->End();
 	}
 
-	float boxWidth = fScreenW - 40.0f;
+	float boxWidth = virtualWidth - 40.0f;
 	float boxHeight = 120.0f;
-	float boxX = 20.0f;
-	float boxY = fScreenH - boxHeight - 20.0f;
+	float boxX = leftEdge + 20.0f;
+	float boxY = bottomEdge - boxHeight - 20.0f;
 
 	gd->DrawRectangle(
-		fixedCamera,
+		*uiCamera,
 		boxX, boxY, boxWidth, boxHeight,
 		0.0f, 1.0f, 1.0f, 0.0f, 0.0f,
 		0xFFE0E0E0, true
 	);
 	gd->DrawRectangle(
-		fixedCamera,
+		*uiCamera,
 		boxX, boxY, boxWidth, boxHeight,
 		0.0f, 1.0f, 1.0f, 0.0f, 0.0f,
 		0xFF000000, false
@@ -117,14 +115,14 @@ void Demo::IConversation::Draw(DX9GF::GraphicsDevice* gd, unsigned long long del
 		fontSprite->SetColor(0xFFFFFFFF);
 		fontSprite->SetOutline(true, 0xFF000000, 2.f);
 		fontSprite->SetText(std::wstring(currentLine.name));
-		fontSprite->Draw(fixedCamera, deltaTime);
+		fontSprite->Draw(*uiCamera, deltaTime);
 
 		fontSprite->SetOutline(false);
 		fontSprite->SetScale(1.f, 1.f);
 		fontSprite->SetPosition(boxX + 20.0f, boxY + 50.0f);
 		fontSprite->SetColor(0xFF000000);
 		fontSprite->SetText(std::wstring(displayedContent));
-		fontSprite->Draw(fixedCamera, deltaTime);
+		fontSprite->Draw(*uiCamera, deltaTime);
 
 		fontSprite->End();
 	}

@@ -23,7 +23,8 @@ namespace DX9GF {
 		void PopScene();
 		void RemoveScene(size_t index);
 		void Update(unsigned long long deltaTime);
-		void Draw(unsigned long long deltaTime);
+		void DrawWorld(unsigned long long deltaTime);
+		void DrawUI(unsigned long long deltaTime);
 		void OnResize(int width, int height);
 		void GoToNext();
 		void GoToPrevious();

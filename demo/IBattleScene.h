@@ -1,10 +1,9 @@
-#pragma once
+﻿#pragma once
 #include "DX9GF.h"
 #include "DX9GFExtras.h"
 #include "Player.h"
 #include "Game.h"
 #include "IDraggable.h"
-#include "TextButton.h"
 #include "IconButton.h"
 #include "MainBlockCard.h"
 #include "StrikeCard.h"
@@ -13,6 +12,7 @@
 #include "TestEnemy.h"
 #include "PopUpMessage.h"
 #include "AdvancedCards.h"	
+#include "TextIconButton.h"
 
 namespace Demo {
 	class IBattleScene : public DX9GF::IScene {
@@ -36,6 +36,13 @@ namespace Demo {
 		bool isTransitioning = false;
 		bool enemyAttackStartPending = false;
 		bool isFleeing = false;
+		float timeSinceLastTargetPopUp = 999.f;
+		const float targetPopUpCooldown = 3.f;
+		bool isAttackCountdownActive = false;
+		int attackCountdownNumber = 3;
+		float attackCountdownTimer = 0.f;
+		const float ATTACK_COUNTDOWN_STEP_SECONDS = 0.7f;
+		std::shared_ptr<std::vector<std::shared_ptr<IEnemy>>> countdownAttackingEnemies;
 		size_t initialEnemyCount = 0;
 		int battleGoldReward = 0;
 		bool isBattleEnding = false;
@@ -82,11 +89,17 @@ namespace Demo {
 		std::shared_ptr<IconButton> backButton;
 		std::shared_ptr<IconButton> executeButton;
 		std::shared_ptr<IconButton> closeItemMenuButton;
+
 		std::vector<std::shared_ptr<IconButton>> buffItems;
+		std::shared_ptr<TextIconButton> btnNextPage;
+		std::shared_ptr<TextIconButton> btnPrevPage;
+		int currentItemPage = 0;
+		int maxItemPage = 0;
+
 		std::shared_ptr<PopUpMessage> popUpMessage;
 		std::shared_ptr<DX9GF::StaticSprite> energyIcon;
 		std::shared_ptr<DX9GF::StaticSprite> hourglassIcon;
-		std::shared_ptr<DX9GF::StaticSprite> itemMenuBackground;
+		std::shared_ptr<DX9GF::NineSliceSprite> itemMenuBackground; //
 		std::shared_ptr<DX9GF::StaticSprite> attackBuffIcon;
 		std::shared_ptr<DX9GF::StaticSprite> defenseBuffIcon;
 		//
@@ -114,6 +127,9 @@ namespace Demo {
 		bool EnemyAttackUpdate(unsigned long long deltaTime);
 		void QueueEnemyLayoutTransition(State targetState);
 		void RemoveEnemyCardsInRemoveArea();
+		void StartAttackCountdown(std::shared_ptr<std::vector<std::shared_ptr<IEnemy>>> attackingEnemies);
+		bool UpdateAttackCountdown(unsigned long long deltaTime);
+		void DrawAttackCountdown(unsigned long long deltaTime);
 		// Draws
 		void PlayerStandByDraw(unsigned long long deltaTime);
 		void PlayerAttackDraw(unsigned long long deltaTime);
@@ -124,10 +140,13 @@ namespace Demo {
 		IBattleScene(Game* game, std::shared_ptr<Player> player, int screenWidth, int screenHeight) : IScene(screenWidth, screenHeight), game(game), player(player) {}
 		virtual void Init() override;
 		void Update(unsigned long long deltaTime) override;
-		void Draw(unsigned long long deltaTime) override;
+		void DrawWorld(unsigned long long deltaTime) override;
+		void DrawUI(unsigned long long deltaTime) override;
 		void SetCustomBackgroundDraw(std::function<void(DX9GF::GraphicsDevice*, unsigned long long)> drawFunc) { customBackgroundDraw = drawFunc; }
 		//
 		void SetOnVictoryCallback(std::function<void()> cb) { onVictoryCallback = cb; }
 		void SetCustomBGM(const std::string& name) { customBGMName = name; }
+		int GetAvailableEnergy() const { return energy - usedEnergy; }
+		void QueuePopUpMessage(const std::wstring& msg) { if (popUpMessage) popUpMessage->QueueMessage(&commandBuffer, msg); }
 	};
 }

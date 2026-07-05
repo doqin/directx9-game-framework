@@ -15,6 +15,7 @@
 #include "CardShop.h"
 #include "ItemShop.h"
 #include "TreasureChestNPC.h"
+#include "PlayerHUD.h"
 
 
 namespace Demo {
@@ -24,11 +25,11 @@ namespace Demo {
 		bool isBossDead = false;
 
 		Game* game;
-		DX9GF::Camera uiCamera;
 		std::shared_ptr<DX9GF::ColliderManager> colliderManager;
 		std::shared_ptr<DX9GF::TransformManager> transformManager;
 		std::shared_ptr<Demo::DraggableManager> draggableManager;
 		std::shared_ptr<InventoryMenu> inventoryMenu;
+		std::shared_ptr<PlayerHUD> playerHUD;
 		std::shared_ptr<DX9GF::SaveManager> saveManager;
 
 		std::vector<std::shared_ptr<SavePoint>> savePoints;
@@ -46,11 +47,11 @@ namespace Demo {
 		std::vector<std::shared_ptr<TreasureChestNPC>> treasureChests;
 
 	public:
-		SecretPuzzleScene(Game* game, std::shared_ptr<DX9GF::SaveManager> sm, UINT sw, UINT sh) : IScene(sw, sh), game(game), saveManager(sm), uiCamera(sw, sh) {}
+		SecretPuzzleScene(Game* game, std::shared_ptr<DX9GF::SaveManager> sm, UINT sw, UINT sh) : IScene(sw, sh), game(game), saveManager(sm) {}
 		void Init() override;
 		void Update(unsigned long long deltaTime) override;
-		void Draw(unsigned long long deltaTime) override;
-
+		void DrawWorld(unsigned long long deltaTime) override;
+		void DrawUI(unsigned long long deltaTime) override;
 		void DrawBackground(DX9GF::GraphicsDevice* gd, unsigned long long deltaTime);
 
 		// Inherited via ISaveable

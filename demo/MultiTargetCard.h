@@ -22,5 +22,6 @@ namespace Demo {
 		size_t GetWidth() const override;
 		void ResetExecution() override;
 		std::wstring GetInputsDescription() const override;
+		bool HasRequiredTargets() const override { return !targets.empty(); }
 	};
 }
