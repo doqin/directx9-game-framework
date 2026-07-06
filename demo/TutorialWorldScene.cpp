@@ -19,10 +19,11 @@ void Demo::TutorialWorldScene::Init()
 	commandBuffer = std::make_shared<DX9GF::CommandBuffer>();
 	map = std::make_shared<DX9GF::Map>(game->GetGraphicsDevice());
 	map->Create(transformManager, colliderManager, "./assets/tutorial.tmx");
-	map->SetAreaUpdateHandler("triggers", GetRandomEncounterFunc(game, player, {
+	/*map->SetAreaUpdateHandler("triggers", GetRandomEncounterFunc(game, player, {
 		{"DemonEyeEnemy", 40},
 		{"MimicEnemy", 20},
-		}, drawBuffer, commandBuffer, &isGamePaused, & this->uiCamera, [this](DX9GF::GraphicsDevice* gd, unsigned long long deltaTime) { DrawBackground(gd, deltaTime); }));
+		}, drawBuffer, commandBuffer, &isGamePaused, & this->uiCamera, [this](DX9GF::GraphicsDevice* gd, unsigned long long deltaTime) { DrawBackground(gd, deltaTime); }));*/
+
 
 	map->SetAreaUpdateHandler("trigger_p", [this](const DX9GF::Map::ObjectArea& area) {if (isTransitioning) return;
 	isTransitioning = true;
@@ -140,7 +141,6 @@ void Demo::TutorialWorldScene::Init()
 	}, true));
 	treasureChests.back()->Init(game->GetGraphicsDevice(), &camera, player, colliderManager, font, drawBuffer);
 
-
 	treasureChests.push_back(std::make_shared<TreasureChestNPC>(
 		transformManager, 164.f, -380.f,
 		std::vector<ChestReward>{
@@ -148,6 +148,24 @@ void Demo::TutorialWorldScene::Init()
 			ChestReward::Card("HeavyStrikeCard")
 	}, true));
 	treasureChests.back()->Init(game->GetGraphicsDevice(), &camera, player, colliderManager, font, drawBuffer);
+
+	// 2. KHỞI TẠO MAP ENEMY
+	BattleEncounter testEncounter;
+	testEncounter.mapEnemyID = "tutorial_mimic_01";
+	testEncounter.enemyTypes = { "MimicEnemy" };
+	testEncounter.bgmName = "battle_loop1";
+
+	// Gắn thêm hàm vẽ nền truyền vào cho BattleScene
+	testEncounter.bgDrawFunc = [this](DX9GF::GraphicsDevice* gd, unsigned long long deltaTime) {
+		DrawBackground(gd, deltaTime);
+		};
+
+	// Đặt quái ở tọa độ x=400, y=-400 (gần chỗ cái rương)
+	auto roamingEnemy = std::make_shared<MapEnemy>(transformManager, 320.f, 0.f, testEncounter);
+	roamingEnemy->Init(game, game->GetGraphicsDevice(), colliderManager.get(), player);
+
+	mapEnemies.push_back(roamingEnemy);
+
 
 	draggableManager = std::make_shared<Demo::DraggableManager>();
 
@@ -324,6 +342,10 @@ void Demo::TutorialWorldScene::Update(unsigned long long deltaTime)
 	if (playerHUD && !isGamePaused) playerHUD->Update(deltaTime);
 
 	if (!isGamePaused) {
+		// 3. THÊM VÒNG LẶP NÀY ĐỂ QUÁI CHẠY
+		for (auto& enemy : mapEnemies) {
+			enemy->Update(deltaTime);
+		}
 		player->Update(deltaTime);
 		camera.Update();
 	}
@@ -366,6 +388,11 @@ void Demo::TutorialWorldScene::DrawWorld(unsigned long long deltaTime)
 			chest->Draw(camera, deltaTime);
 
 		if (npcExplainingPortal) npcExplainingPortal->Draw(camera, deltaTime);
+
+		// 4. THÊM VÒNG LẶP VẼ QUÁI
+		for (auto& enemy : mapEnemies) {
+			enemy->Draw(&camera, deltaTime);
+		}
 		player->Draw(deltaTime);
 
 		gd->EndDraw();

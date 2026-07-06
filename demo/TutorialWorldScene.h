@@ -16,6 +16,7 @@
 #include "CardShop.h"
 #include "ItemShop.h"
 #include "PlayerHUD.h"
+#include "MapEnemy.h"
 namespace Demo {
 	class TutorialWorldScene : public DX9GF::IScene, public DX9GF::ISaveable {
 		bool isGamePaused = false;
@@ -45,6 +46,7 @@ namespace Demo {
 		std::shared_ptr<IConversation> currentConversation;	
 
 		std::vector<std::shared_ptr<TreasureChestNPC>> treasureChests;
+		std::vector<std::shared_ptr<MapEnemy>> mapEnemies;
 	public:
 		TutorialWorldScene(Game* game, std::shared_ptr<DX9GF::SaveManager> sm, UINT sw, UINT sh)
 			: IScene(sw, sh), game(game), saveManager(sm) {
