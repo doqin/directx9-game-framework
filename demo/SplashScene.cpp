@@ -61,8 +61,7 @@ namespace Demo {
         }
         else {
             auto sceMan = game->GetSceneManager();
-            sceMan->InsertScene(sceMan->GetIndex() + 1, new MainMenu(game, game->GetVirtualWidth(), game->GetVirtualHeight()));
-            sceMan->GoToNext();
+            sceMan->ChangeScene(new MainMenu(game, game->GetVirtualWidth(), game->GetVirtualHeight()));
             return;
         }
 
