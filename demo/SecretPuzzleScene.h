@@ -23,6 +23,9 @@ namespace Demo {
 		bool isGamePaused = false;
 		bool isTransitioning = false;
 		bool isBossDead = false;
+		bool hasSetInitialQuest = false;
+		bool questRestoredFromSave = false;
+		bool questGiven = false;
 
 		Game* game;
 		std::shared_ptr<DX9GF::ColliderManager> colliderManager;
@@ -43,6 +46,7 @@ namespace Demo {
 		std::shared_ptr<IConversation> currentConversation;
 
 		std::shared_ptr<DauDauNPC> dauDau;
+		std::shared_ptr<DauDauNPC> dauDauSpawn;
 
 		std::vector<std::shared_ptr<TreasureChestNPC>> treasureChests;
 

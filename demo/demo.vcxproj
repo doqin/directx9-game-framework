@@ -248,6 +248,7 @@
     </ClCompile>
     <ClCompile Include="Player.cpp" />
     <ClCompile Include="PopupManager.cpp" />
+    <ClCompile Include="QuestManager.cpp" />
     <ClCompile Include="RandomEncounter.cpp" />
     <ClCompile Include="RustyChestNPC.cpp" />
     <ClCompile Include="SaveGameState.cpp" />
@@ -329,6 +330,7 @@
     <ClInclude Include="Player.h" />
     <ClInclude Include="PopupManager.h" />
     <ClInclude Include="PopUpMessage.h" />
+    <ClInclude Include="QuestManager.h" />
     <ClInclude Include="RandomEncounter.h" />
     <ClInclude Include="resource.h" />
     <ClInclude Include="RustyChestNPC.h" />

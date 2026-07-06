@@ -6,6 +6,7 @@
 #include "TransitionCommand.h"
 #include "resource.h"
 #include "PopupManager.h"
+#include "QuestManager.h"
 
 void Demo::TutorialWorldScene::Init()
 {
@@ -102,6 +103,8 @@ void Demo::TutorialWorldScene::Init()
 	uiTex->LoadTexture(L"assets/ui.png");
 
 	PopupManager::GetInstance()->Init(game->GetGraphicsDevice(), borderTex, uiTex, font);
+	QuestManager::GetInstance()->Init(game->GetGraphicsDevice(), transformManager, &this->uiCamera, font);
+	QuestManager::GetInstance()->SetQuest(L"Quest: ???");
 
 	savePoints.push_back(std::make_shared<SavePoint>(transformManager, 248.0f, -70.0f));
 	savePoints.back()->Init(game->GetGraphicsDevice(), &camera, player, colliderManager, saveManager, font, drawBuffer);
@@ -181,6 +184,17 @@ void Demo::TutorialWorldScene::Init()
 void Demo::TutorialWorldScene::Update(unsigned long long deltaTime)
 {
 	PopupManager::GetInstance()->SetUICamera(&this->uiCamera);
+	if (!hasSetInitialQuest) {
+		if (questRestoredFromSave && questStarted) {
+			QuestManager::GetInstance()->SetQuest(L"Quest: Fint a way out of this place!");
+		}
+		else if (!questStarted) {
+			QuestManager::GetInstance()->SetQuest(L"Quest: ???");
+		}
+		hasSetInitialQuest = true;
+	}
+	QuestManager::GetInstance()->SetVisible(!(inventoryMenu && inventoryMenu->IsOpen()));
+	QuestManager::GetInstance()->Update(deltaTime);
 
 	auto OpenChestWithDialog = [&](std::shared_ptr<TreasureChestNPC>& chest) {
 		auto given = chest->Open(player.get());
@@ -236,6 +250,8 @@ void Demo::TutorialWorldScene::Update(unsigned long long deltaTime)
 			for (auto& line : npcIntroduction->GetDialogueLines()) {
 				currentConversation->AddLine(line);
 			}
+			QuestManager::GetInstance()->SetQuest(L"Quest: Fint a way out of this place!");
+			questStarted = true;
 		}
 	}
 	if (npcExplainingHealingPoint) {
@@ -408,6 +424,7 @@ void Demo::TutorialWorldScene::DrawUI(unsigned long long deltaTime)
 		}
 
 		PopupManager::GetInstance()->DrawUI(deltaTime, &this->uiCamera);
+		QuestManager::GetInstance()->Draw(gd, &this->uiCamera, deltaTime);
 
 		DX9GF::InputManager::GetInstance()->DrawCursor(&this->uiCamera, deltaTime);
 
@@ -464,6 +481,8 @@ void Demo::TutorialWorldScene::GenerateSaveData(nlohmann::json& outData)
 		{"zoom", camera.GetZoom()}
 	};
 
+	outData["quest"] = { {"questStarted", questStarted} };
+
 	nlohmann::json chestStates = nlohmann::json::array();
 	for (auto& c : treasureChests) chestStates.push_back(c->GetIsOpened());
 	outData["treasureChests"] = chestStates;
@@ -474,6 +493,11 @@ void Demo::TutorialWorldScene::RestoreSaveData(const nlohmann::json& inData)
 	player->RestoreSaveData(inData["player"]);
 	camera.SetPosition(inData["camera"]["x"], inData["camera"]["y"]);
 	camera.SetZoom(inData["camera"]["zoom"]);
+	
+	if (inData.contains("quest")) {
+		questStarted = inData["quest"].value("questStarted", false);
+		questRestoredFromSave = true;
+	}
 
 	if (inData.contains("treasureChests")) {
 		auto& arr = inData["treasureChests"];
