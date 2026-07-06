@@ -7,6 +7,7 @@
 #include "DX9GFAudioManager.h"
 #include "resource.h"
 #include "SettingsManager.h"
+#include "SplashScene.h"
 void Demo::Game::Init()
 {
 	srand(static_cast<unsigned int>(time(NULL)));
@@ -105,7 +106,7 @@ void Demo::Game::Init()
 	this->sceneManager->PushScene(new DebugScene(this, app->GetScreenWidth(), app->GetScreenHeight()));
 #else
 	// this->sceneManager->PushScene(new World1Scene(this, app->GetScreenWidth(), app->GetScreenHeight()));
-	this->sceneManager->PushScene(new MainMenu(this, app->GetScreenWidth(), app->GetScreenHeight()));
+	this->sceneManager->PushScene(new SplashScene(this, app->GetScreenWidth(), app->GetScreenHeight()));
 
 #endif
 	this->sceneManager->GoToNext();
