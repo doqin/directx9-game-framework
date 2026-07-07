@@ -1,9 +1,9 @@
-﻿// MapEnemy.h
-#pragma once
+﻿#pragma once
 #include "DX9GF.h"
 #include "DX9GFExtras.h"
 #include "Player.h"
 #include "BattleEncounter.h"
+#include <deque>
 
 namespace Demo {
     class MapEnemy : public DX9GF::IGameObject {
@@ -17,6 +17,9 @@ namespace Demo {
         float speed = 40.f;
         float aggroRadius = 80.f;
         float returnRadius = 150.f;
+
+        // THÊM: Giới hạn "xích cổ" để quái không bị dắt đi quá xa khỏi điểm gốc
+        float tetherRadius = 400.f;
 
         std::shared_ptr<DX9GF::Texture> texture;
         std::shared_ptr<DX9GF::AnimatedSprite> sprite;

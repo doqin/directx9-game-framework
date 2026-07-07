@@ -298,6 +298,7 @@
     <ClInclude Include="DemonEyeEnemy.h" />
     <ClInclude Include="DialogueLine.h" />
     <ClInclude Include="DrawUtils.h" />
+    <ClInclude Include="EncounterGenerator.h" />
     <ClInclude Include="EnemyCard.h" />
     <ClInclude Include="EnemyFactory.h" />
     <ClInclude Include="Game.h" />

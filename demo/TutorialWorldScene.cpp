@@ -6,7 +6,8 @@
 #include "TransitionCommand.h"
 #include "resource.h"
 #include "PopupManager.h"
-
+#include "EncounterGenerator.h"
+#include "EnemyFactory.h"
 void Demo::TutorialWorldScene::Init()
 {
 	camera.SetZoom(2.0f);
@@ -160,18 +161,64 @@ void Demo::TutorialWorldScene::Init()
 	testEncounter.spriteWidth = 64;
 	testEncounter.spriteHeight = 64;
 
-	// 1. Thả con Mimic thứ nhất
-	auto roamingEnemy1 = std::make_shared<MapEnemy>(transformManager, 615.f, -170.f, testEncounter);
+	// --- KHỞI TẠO MAP ENEMIES ---
+
+	// 1. Con thứ nhất: Chỉ có KeyeEnemy (Tọa độ 615, -170)
+	BattleEncounter encounter1;
+	encounter1.mapEnemyID = "tutorial_keye_01";
+	encounter1.enemyTypes = { "KeyeEnemy" };
+	encounter1.bgmName = "battle_loop1";
+	encounter1.bgDrawFunc = [this](DX9GF::GraphicsDevice* gd, unsigned long long deltaTime) { DrawBackground(gd, deltaTime); };
+
+	// AUTO LOAD SPRITE: Lấy hình của con KeyeEnemy
+	auto sprite1 = EnemyFactory::GetOverworldSprite(encounter1.enemyTypes[0]);
+	encounter1.mapTexturePath = sprite1.texturePath;
+	encounter1.spriteWidth = sprite1.width;
+	encounter1.spriteHeight = sprite1.height;
+	encounter1.frameCount = sprite1.frameCount;
+
+	auto roamingEnemy1 = std::make_shared<MapEnemy>(transformManager, 615.f, -170.f, encounter1);
 	roamingEnemy1->Init(game, game->GetGraphicsDevice(), colliderManager.get(), player);
 	mapEnemies.push_back(roamingEnemy1);
 
-	// 2. Thả con Mimic thứ hai (Nhân bản data và đổi ID)
-	BattleEncounter testEncounter2 = testEncounter;
-	testEncounter2.mapEnemyID = "tutorial_mimic_02"; // Đổi ID cho chắc cú
 
-	auto roamingEnemy2 = std::make_shared<MapEnemy>(transformManager, 510.f, -380.f, testEncounter2);
+	// 2. Con thứ hai: Chỉ có DemonEyeEnemy (Tọa độ 510, -380)
+	BattleEncounter encounter2;
+	encounter2.mapEnemyID = "tutorial_demoneye_01";
+	encounter2.enemyTypes = { "DemonEyeEnemy" };
+	encounter2.bgmName = "battle_loop1";
+	encounter2.bgDrawFunc = [this](DX9GF::GraphicsDevice* gd, unsigned long long deltaTime) { DrawBackground(gd, deltaTime); };
+
+	// AUTO LOAD SPRITE: Lấy hình của con DemonEyeEnemy
+	auto sprite2 = EnemyFactory::GetOverworldSprite(encounter2.enemyTypes[0]);
+	encounter2.mapTexturePath = sprite2.texturePath;
+	encounter2.spriteWidth = sprite2.width;
+	encounter2.spriteHeight = sprite2.height;
+	encounter2.frameCount = sprite2.frameCount;
+
+	auto roamingEnemy2 = std::make_shared<MapEnemy>(transformManager, 510.f, -380.f, encounter2);
 	roamingEnemy2->Init(game, game->GetGraphicsDevice(), colliderManager.get(), player);
 	mapEnemies.push_back(roamingEnemy2);
+
+
+	// 3. Con thứ ba: Random 1-2 con Keye/Demon (Tọa độ 500, -590)
+	BattleEncounter encounter3;
+	encounter3.mapEnemyID = "tutorial_random_01";
+	encounter3.enemyTypes = EncounterGenerator::GenerateFromTypes({ "KeyeEnemy", "DemonEyeEnemy" });
+	encounter3.bgmName = "battle_loop1";
+	encounter3.bgDrawFunc = [this](DX9GF::GraphicsDevice* gd, unsigned long long deltaTime) { DrawBackground(gd, deltaTime); };
+
+	// AUTO LOAD DẤU CHẤM HỎI: Cố tình truyền "Random" để lấy fallback dấu chấm hỏi
+	auto sprite3 = EnemyFactory::GetOverworldSprite("Random");
+	encounter3.mapTexturePath = sprite3.texturePath;
+	encounter3.spriteWidth = sprite3.width;
+	encounter3.spriteHeight = sprite3.height;
+	encounter3.frameCount = sprite3.frameCount;
+
+	auto roamingEnemy3 = std::make_shared<MapEnemy>(transformManager, 500.f, -590.f, encounter3);
+	roamingEnemy3->Init(game, game->GetGraphicsDevice(), colliderManager.get(), player);
+	mapEnemies.push_back(roamingEnemy3);
+
 
 	draggableManager = std::make_shared<Demo::DraggableManager>();
 

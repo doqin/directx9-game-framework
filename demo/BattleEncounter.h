@@ -14,5 +14,7 @@ namespace Demo {
         std::wstring mapTexturePath;
         int spriteWidth;
         int spriteHeight;
+
+        int frameCount = 12;
     };
 }
