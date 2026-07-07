@@ -149,23 +149,29 @@ void Demo::TutorialWorldScene::Init()
 	}, true));
 	treasureChests.back()->Init(game->GetGraphicsDevice(), &camera, player, colliderManager, font, drawBuffer);
 
-	// 2. KHỞI TẠO MAP ENEMY
 	BattleEncounter testEncounter;
 	testEncounter.mapEnemyID = "tutorial_mimic_01";
 	testEncounter.enemyTypes = { "MimicEnemy" };
 	testEncounter.bgmName = "battle_loop1";
-
-	// Gắn thêm hàm vẽ nền truyền vào cho BattleScene
 	testEncounter.bgDrawFunc = [this](DX9GF::GraphicsDevice* gd, unsigned long long deltaTime) {
 		DrawBackground(gd, deltaTime);
 		};
+	testEncounter.mapTexturePath = L"assets/notresponding-Sheet.png";
+	testEncounter.spriteWidth = 64;
+	testEncounter.spriteHeight = 64;
 
-	// Đặt quái ở tọa độ x=400, y=-400 (gần chỗ cái rương)
-	auto roamingEnemy = std::make_shared<MapEnemy>(transformManager, 320.f, 0.f, testEncounter);
-	roamingEnemy->Init(game, game->GetGraphicsDevice(), colliderManager.get(), player);
+	// 1. Thả con Mimic thứ nhất
+	auto roamingEnemy1 = std::make_shared<MapEnemy>(transformManager, 615.f, -170.f, testEncounter);
+	roamingEnemy1->Init(game, game->GetGraphicsDevice(), colliderManager.get(), player);
+	mapEnemies.push_back(roamingEnemy1);
 
-	mapEnemies.push_back(roamingEnemy);
+	// 2. Thả con Mimic thứ hai (Nhân bản data và đổi ID)
+	BattleEncounter testEncounter2 = testEncounter;
+	testEncounter2.mapEnemyID = "tutorial_mimic_02"; // Đổi ID cho chắc cú
 
+	auto roamingEnemy2 = std::make_shared<MapEnemy>(transformManager, 510.f, -380.f, testEncounter2);
+	roamingEnemy2->Init(game, game->GetGraphicsDevice(), colliderManager.get(), player);
+	mapEnemies.push_back(roamingEnemy2);
 
 	draggableManager = std::make_shared<Demo::DraggableManager>();
 

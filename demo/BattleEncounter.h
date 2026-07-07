@@ -9,7 +9,10 @@ namespace Demo {
         std::string mapEnemyID;
         std::vector<std::string> enemyTypes;
         std::string bgmName = "battle_loop1";
-
         std::function<void(DX9GF::GraphicsDevice*, unsigned long long)> bgDrawFunc = nullptr;
+
+        std::wstring mapTexturePath;
+        int spriteWidth;
+        int spriteHeight;
     };
 }

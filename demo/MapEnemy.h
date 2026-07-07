@@ -1,4 +1,4 @@
-// MapEnemy.h
+﻿// MapEnemy.h
 #pragma once
 #include "DX9GF.h"
 #include "DX9GFExtras.h"
@@ -14,9 +14,9 @@ namespace Demo {
         BattleEncounter encounterData;
 
         float startX, startY;
-        float speed = 50.f;
-        float aggroRadius = 150.f;
-        float returnRadius = 300.f;
+        float speed = 40.f;
+        float aggroRadius = 80.f;
+        float returnRadius = 150.f;
 
         std::shared_ptr<DX9GF::Texture> texture;
         std::shared_ptr<DX9GF::AnimatedSprite> sprite;
@@ -29,6 +29,15 @@ namespace Demo {
         bool isDefeated = false;
         float respawnTimer = 0.f;
         float postBattleCooldown = 0.f;
+
+        // Hàng đợi lưu vết chân
+        std::deque<D3DXVECTOR2> chasePath;
+        std::deque<D3DXVECTOR2> returnPath;
+        D3DXVECTOR2 lastPlayerPos{ 0, 0 };
+        D3DXVECTOR2 lastEnemyPos{ 0, 0 };
+
+        // Hàm giả lập Raycast để làm Hybrid AI
+        bool CheckLineOfSight(float startX, float startY, float targetX, float targetY);
 
     public:
         MapEnemy(std::weak_ptr<DX9GF::TransformManager> tm, float x, float y, const BattleEncounter& data);
