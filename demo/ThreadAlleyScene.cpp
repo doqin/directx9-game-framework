@@ -86,6 +86,7 @@ void Demo::ThreadAlleyScene::Init()
 	uiTex->LoadTexture(L"assets/ui.png");
 
 	PopupManager::GetInstance()->Init(game->GetGraphicsDevice(), borderTex, uiTex, font);
+	QuestManager::GetInstance()->SetVirtualResolution(game->GetVirtualWidth(), game->GetVirtualHeight());
 	QuestManager::GetInstance()->Init(game->GetGraphicsDevice(), transformManager, &this->uiCamera, font);
 	QuestManager::GetInstance()->SetQuest(L"???");
 
@@ -272,15 +273,11 @@ void Demo::ThreadAlleyScene::Init()
 void Demo::ThreadAlleyScene::Update(unsigned long long deltaTime)
 {
 	PopupManager::GetInstance()->SetUICamera(&this->uiCamera);
-	if (!hasSetInitialQuest) {
-		if (questRestoredFromSave && questStarted) {
-			QuestManager::GetInstance()->SetQuest(L"Quest: Find a solution to wipe out the malware!");
-		}
-		else if (!questStarted) {
-			QuestManager::GetInstance()->SetQuest(L"Quest: ???");
-		}
-		hasSetInitialQuest = true;
-	}
+	QuestManager::GetInstance()->SetUICamera(&this->uiCamera);
+	QuestManager::GetInstance()->SetQuest(
+		questStarted ? L"Quest: Find the malware through this alley!" : L"Quest: ???"
+	);
+	QuestManager::GetInstance()->SetVirtualResolution(game->GetVirtualWidth(), game->GetVirtualHeight());
 	QuestManager::GetInstance()->SetVisible(!(inventoryMenu && inventoryMenu->IsOpen()));
 	QuestManager::GetInstance()->Update(deltaTime);
 
@@ -342,7 +339,7 @@ void Demo::ThreadAlleyScene::Update(unsigned long long deltaTime)
 			for (auto& line : dauDau->GetDialogueLines()) {
 				currentConversation->AddLine(line);
 			}
-			QuestManager::GetInstance()->SetQuest(L"Quest: Find a solution to wipe out the malware!");
+			QuestManager::GetInstance()->SetQuest(L"Quest: Find the malware through this alley!");
 			questStarted = true;
 		}
 	}
@@ -431,8 +428,8 @@ void Demo::ThreadAlleyScene::DrawWorld(unsigned long long deltaTime)
 		for (auto& healPoint : healingPoints) healPoint->Draw(camera, deltaTime);
 		for (auto& chest : treasureChests) chest->Draw(camera, deltaTime);
 
-		player->Draw(deltaTime);
 		if (dauDau) dauDau->Draw(camera, deltaTime);
+		player->Draw(deltaTime);
 
 		gd->EndDraw();
 	}
@@ -459,12 +456,13 @@ void Demo::ThreadAlleyScene::DrawUI(unsigned long long deltaTime)
 			currentConversation->Draw(gd, &this->uiCamera, deltaTime);
 		}
 
+		QuestManager::GetInstance()->Draw(gd, &this->uiCamera, deltaTime);
+
 		if (drawBuffer) {
 			drawBuffer->Update(deltaTime);
 		}
 
 		PopupManager::GetInstance()->DrawUI(deltaTime, &this->uiCamera);
-		QuestManager::GetInstance()->Draw(gd, &this->uiCamera, deltaTime);
 
 		DX9GF::InputManager::GetInstance()->DrawCursor(&this->uiCamera, deltaTime);
 

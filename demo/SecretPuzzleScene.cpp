@@ -144,6 +144,7 @@ void Demo::SecretPuzzleScene::Init()
 	uiTex->LoadTexture(L"assets/ui.png");
 
 	PopupManager::GetInstance()->Init(game->GetGraphicsDevice(), borderTex, uiTex, font);
+	QuestManager::GetInstance()->SetVirtualResolution(game->GetVirtualWidth(), game->GetVirtualHeight());
 	QuestManager::GetInstance()->Init(game->GetGraphicsDevice(), transformManager, &this->uiCamera, font);
 	QuestManager::GetInstance()->SetQuest(L"Quest: ???");
 
@@ -260,19 +261,15 @@ void Demo::SecretPuzzleScene::Init()
 void Demo::SecretPuzzleScene::Update(unsigned long long deltaTime)
 {
 	PopupManager::GetInstance()->SetUICamera(&this->uiCamera);
-	if (!hasSetInitialQuest) {
-		if (questRestoredFromSave) {
-			QuestManager::GetInstance()->SetQuest(isBossDead
-				? L"Quest: Find secret boss, defeat it and get rewards: Boss defeated 1/1"
-				: L"Quest: Find secret boss, defeat it and get rewards: Boss defeated 0/1");
-		}
-		else {
-			QuestManager::GetInstance()->SetQuest(L"???");
-		}
-		hasSetInitialQuest = true;
-	}
+	QuestManager::GetInstance()->SetUICamera(&this->uiCamera);
+	QuestManager::GetInstance()->SetQuest(
+		!questGiven ? L"Quest: ???"
+		: (isBossDead
+			? L"Quest: Find secret boss, defeat it and get rewards: Boss defeated 1/1"
+			: L"Quest: Find secret boss, defeat it and get rewards: Boss defeated 0/1")
+	);
+	QuestManager::GetInstance()->SetVirtualResolution(game->GetVirtualWidth(), game->GetVirtualHeight());
 	QuestManager::GetInstance()->SetVisible(!(inventoryMenu && inventoryMenu->IsOpen()));
-
 	QuestManager::GetInstance()->Update(deltaTime);
 
 	auto OpenChestWithDialog = [&](std::shared_ptr<TreasureChestNPC>& chest) {
@@ -429,11 +426,10 @@ void Demo::SecretPuzzleScene::DrawWorld(unsigned long long deltaTime)
 		for (auto& shopPoint : shopPoints) shopPoint->Draw(camera, deltaTime);
 		for (auto& healingPoint : healingPoints) healingPoint->Draw(camera, deltaTime);
 		for (auto& chest : treasureChests) chest->Draw(camera, deltaTime);
-
+		
+		if (dauDauSpawn) dauDauSpawn->Draw(camera, deltaTime);
 		dauDau->Draw(camera, deltaTime);
 		player->Draw(deltaTime);
-		if (dauDauSpawn) dauDauSpawn->Draw(camera, deltaTime);
-
 
 		gd->EndDraw();
 	}
@@ -461,12 +457,13 @@ void Demo::SecretPuzzleScene::DrawUI(unsigned long long deltaTime)
 			currentConversation->Draw(gd, &this->uiCamera, deltaTime);
 		}
 
+		QuestManager::GetInstance()->Draw(gd, &this->uiCamera, deltaTime);
+
 		if (drawBuffer) {
 			drawBuffer->Update(deltaTime);
 		}
 
 		PopupManager::GetInstance()->DrawUI(deltaTime, &this->uiCamera);
-		QuestManager::GetInstance()->Draw(gd, &this->uiCamera, deltaTime);
 
 		DX9GF::InputManager::GetInstance()->DrawCursor(&this->uiCamera, deltaTime);
 

@@ -14,6 +14,10 @@ namespace Demo {
 		std::shared_ptr<DX9GF::Texture> uiTex;
 		std::shared_ptr<IconButton> btnToggle;
 		QuestManager() = default;
+		DX9GF::Camera* cachedUICamera = nullptr;
+		float virtualWidth = 0.0f;
+		float virtualHeight = 0.0f;
+		std::shared_ptr<DX9GF::TransformManager> uiTransformManager;
 	public:
 		static QuestManager* GetInstance() {
 			static QuestManager instance;
@@ -28,5 +32,14 @@ namespace Demo {
 
 		void Update(unsigned long long deltaTime);
 		void Draw(DX9GF::GraphicsDevice* gd, DX9GF::Camera* uiCamera, unsigned long long deltaTime);
+		void SetVirtualResolution(float w, float h) {
+			virtualWidth = w;
+			virtualHeight = h;
+		}
+		void SetUICamera(DX9GF::Camera* cam) {
+			if (cachedUICamera == cam) return;
+			cachedUICamera = cam;
+			if (btnToggle) btnToggle->Init(cam);
+		}
 	};
 }

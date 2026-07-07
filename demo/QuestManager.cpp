@@ -12,33 +12,46 @@ namespace {
 	constexpr D3DCOLOR TEXT_COLOR = 0xFFFFD700;
 }
 
-void Demo::QuestManager::Init(DX9GF::GraphicsDevice* gd, std::shared_ptr<DX9GF::TransformManager> tm, DX9GF::Camera* uiCamera, std::shared_ptr<DX9GF::Font> font)
+void Demo::QuestManager::Init(DX9GF::GraphicsDevice* gd, std::shared_ptr<DX9GF::TransformManager> tm,
+	DX9GF::Camera* uiCamera, std::shared_ptr<DX9GF::Font> font)
 {
-	this->font = font;
-	fontSprite = std::make_shared<DX9GF::FontSprite>(font.get());
-
+	if (!fontSprite || this->font.get() != font.get()) {
+		this->font = font;
+		fontSprite = std::make_shared<DX9GF::FontSprite>(font.get());
+	}
 	if (!uiTex) {
 		uiTex = std::make_shared<DX9GF::Texture>(gd);
 		uiTex->LoadTexture(L"assets/ui.png");
 	}
+	if (!uiTransformManager) {
+		uiTransformManager = std::make_shared<DX9GF::TransformManager>();
+	}
 
-	auto [sw, sh] = uiCamera->GetScreenResolution();
-	float panelX = -static_cast<float>(sw) / 2.0f + MARGIN_X;
-	float panelY = -static_cast<float>(sh) / 2.0f + MARGIN_Y;
+	if (!btnToggle) {
+		btnToggle = std::make_shared<IconButton>(uiTransformManager, 0, 0,
+			static_cast<int>(ARROW_SIZE), static_cast<int>(ARROW_SIZE), uiTex, 3);
+		btnToggle->SetSpriteCoords(240, 96, 16, 16, 0);
+		btnToggle->SetSpriteScale(ARROW_SIZE / 16.0f, ARROW_SIZE / 16.0f);
+		btnToggle->SetOnReleaseLeft([this](DX9GF::ITrigger*) {
+			isExpanded = !isExpanded;
+			});
+	}
 
-	btnToggle = std::make_shared<IconButton>(tm, panelX, panelY,
-		static_cast<int>(ARROW_SIZE), static_cast<int>(ARROW_SIZE), uiTex, 3);
-	btnToggle->SetSpriteCoords(0, 0, static_cast<int>(ARROW_SIZE), static_cast<int>(ARROW_SIZE), 0, false);
-	btnToggle->SetOnReleaseLeft([this](DX9GF::ITrigger*) {
-		isExpanded = !isExpanded;
-		});
-	btnToggle->Init(uiCamera);
+	SetUICamera(uiCamera);
+	uiTransformManager->RebuildHierarchy();
 }
-
 void Demo::QuestManager::Update(unsigned long long deltaTime)
 {
 	if (!isVisible) return;
-	if (btnToggle) btnToggle->Update(deltaTime);
+	float panelX = -virtualWidth / 2.0f + MARGIN_X;
+	float panelY = -virtualHeight / 2.0f + MARGIN_Y;
+	if (btnToggle) {
+		btnToggle->SetLocalPosition(panelX, panelY);
+		btnToggle->Update(deltaTime);
+	}
+	if (uiTransformManager) {
+		uiTransformManager->UpdateAll();
+	}
 }
 
 void Demo::QuestManager::Draw(DX9GF::GraphicsDevice* gd, DX9GF::Camera* uiCamera, unsigned long long deltaTime)
@@ -47,9 +60,15 @@ void Demo::QuestManager::Draw(DX9GF::GraphicsDevice* gd, DX9GF::Camera* uiCamera
 	if (btnToggle) btnToggle->Draw(gd, deltaTime);
 	if (!isExpanded || questText.empty()) return;
 
-	auto [sw, sh] = uiCamera->GetScreenResolution();
-	float panelX = -static_cast<float>(sw) / 2.0f + MARGIN_X;
-	float panelY = -static_cast<float>(sh) / 2.0f + MARGIN_Y;
+	float panelX = -virtualWidth / 2.0f + MARGIN_X;
+	float panelY = -virtualHeight / 2.0f + MARGIN_Y;
+	static int qmLogCounter = 0;
+	if (qmLogCounter++ % 60 == 0) {
+		char buf[256];
+		sprintf_s(buf, "[QM DEBUG] virtualW=%.1f virtualH=%.1f panelX=%.1f panelY=%.1f\n",
+			virtualWidth, virtualHeight, panelX, panelY);
+		OutputDebugStringA(buf);
+	}
 	float textX = panelX + ARROW_SIZE + 8.0f;
 
 	fontSprite->Begin();

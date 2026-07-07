@@ -103,6 +103,7 @@ void Demo::TutorialWorldScene::Init()
 	uiTex->LoadTexture(L"assets/ui.png");
 
 	PopupManager::GetInstance()->Init(game->GetGraphicsDevice(), borderTex, uiTex, font);
+	QuestManager::GetInstance()->SetVirtualResolution(game->GetVirtualWidth(), game->GetVirtualHeight());
 	QuestManager::GetInstance()->Init(game->GetGraphicsDevice(), transformManager, &this->uiCamera, font);
 	QuestManager::GetInstance()->SetQuest(L"Quest: ???");
 
@@ -184,15 +185,11 @@ void Demo::TutorialWorldScene::Init()
 void Demo::TutorialWorldScene::Update(unsigned long long deltaTime)
 {
 	PopupManager::GetInstance()->SetUICamera(&this->uiCamera);
-	if (!hasSetInitialQuest) {
-		if (questRestoredFromSave && questStarted) {
-			QuestManager::GetInstance()->SetQuest(L"Quest: Fint a way out of this place!");
-		}
-		else if (!questStarted) {
-			QuestManager::GetInstance()->SetQuest(L"Quest: ???");
-		}
-		hasSetInitialQuest = true;
-	}
+	QuestManager::GetInstance()->SetUICamera(&this->uiCamera);
+	QuestManager::GetInstance()->SetQuest(
+		questStarted ? L"Quest: Fint a way out of this place!" : L"Quest: ???"
+	);
+	QuestManager::GetInstance()->SetVirtualResolution(game->GetVirtualWidth(), game->GetVirtualHeight());
 	QuestManager::GetInstance()->SetVisible(!(inventoryMenu && inventoryMenu->IsOpen()));
 	QuestManager::GetInstance()->Update(deltaTime);
 
@@ -419,12 +416,14 @@ void Demo::TutorialWorldScene::DrawUI(unsigned long long deltaTime)
 			currentConversation->Draw(gd, &this->uiCamera, deltaTime);
 		}
 
+		QuestManager::GetInstance()->Draw(gd, &this->uiCamera, deltaTime);
+
 		if (drawBuffer) {
 			drawBuffer->Update(deltaTime);
 		}
 
 		PopupManager::GetInstance()->DrawUI(deltaTime, &this->uiCamera);
-		QuestManager::GetInstance()->Draw(gd, &this->uiCamera, deltaTime);
+
 
 		DX9GF::InputManager::GetInstance()->DrawCursor(&this->uiCamera, deltaTime);
 

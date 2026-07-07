@@ -124,6 +124,7 @@ void Demo::BossWorldScene::Init() {
 	uiTex->LoadTexture(L"assets/ui.png");
 
 	PopupManager::GetInstance()->Init(game->GetGraphicsDevice(), borderTex, uiTex, font);
+	QuestManager::GetInstance()->SetVirtualResolution(game->GetVirtualWidth(), game->GetVirtualHeight());
 	QuestManager::GetInstance()->Init(game->GetGraphicsDevice(), transformManager, &this->uiCamera, font);
 	QuestManager::GetInstance()->SetQuest(L"Quest: ???");
 
@@ -385,17 +386,14 @@ void Demo::BossWorldScene::OnTerminalHacked(int terminalID) {
 
 void Demo::BossWorldScene::Update(unsigned long long deltaTime) {
 	PopupManager::GetInstance()->SetUICamera(&this->uiCamera);
-	if (!hasSetInitialQuest) {
-		if (questRestoredFromSave) {
-			QuestManager::GetInstance()->SetQuest(isBossDoorUnlocked
-				? L"Quest: Defeat the malware!"
-				: L"Quest: Activate the terminals: " + std::to_wstring(currentHackStep) + L"/4");
-		}
-		else {
-			QuestManager::GetInstance()->SetQuest(L"Quest: ???");
-		}
-		hasSetInitialQuest = true;
-	}
+	QuestManager::GetInstance()->SetUICamera(&this->uiCamera);
+	QuestManager::GetInstance()->SetQuest(
+		!questGiven ? L"Quest: ???"
+		: (isBossDoorUnlocked
+			? L"Quest: Defeat the malware!"
+			: L"Quest: Activate the terminals: " + std::to_wstring(currentHackStep) + L"/4")
+	);
+	QuestManager::GetInstance()->SetVirtualResolution(game->GetVirtualWidth(), game->GetVirtualHeight());
 	QuestManager::GetInstance()->SetVisible(!(inventoryMenu && inventoryMenu->IsOpen()));
 	QuestManager::GetInstance()->Update(deltaTime);
 	auto OpenChestWithDialog = [&](std::shared_ptr<TreasureChestNPC>& chest) {
@@ -624,12 +622,13 @@ void Demo::BossWorldScene::DrawUI(unsigned long long deltaTime)
 			currentConversation->Draw(gd, &this->uiCamera, deltaTime);
 		}
 
+		QuestManager::GetInstance()->Draw(gd, &this->uiCamera, deltaTime);
+
 		if (drawBuffer) {
 			drawBuffer->Update(deltaTime);
 		}
 
 		PopupManager::GetInstance()->DrawUI(deltaTime, &this->uiCamera);
-		QuestManager::GetInstance()->Draw(gd, &this->uiCamera, deltaTime);
 
 		DX9GF::InputManager::GetInstance()->DrawCursor(&this->uiCamera, deltaTime);
 
