@@ -7,6 +7,7 @@
 #include "TransitionCommand.h"
 #include "resource.h"
 #include "PopupManager.h"
+#include "QuestManager.h"
 
 void Demo::SecretPuzzleScene::Init()
 {
@@ -118,6 +119,16 @@ void Demo::SecretPuzzleScene::Init()
 
 				if (this->isBossDead) {
 					this->player->GetInventoryItems().AddItem(10, 1);
+					QuestManager::GetInstance()->SetQuest(L"Find secret boss, defeat it and get rewards: Boss defeated 1/1");
+
+					auto* bp = ItemData::GetInstance()->GetItemBlueprint(10);
+					std::wstring msg = L"You found: ";
+					if (bp) msg += bp->GetName();
+
+					auto [sw, sh] = camera.GetScreenResolution();
+					currentConversation = std::make_shared<IConversation>(
+						std::make_shared<DX9GF::FontSprite>(font.get()), sw, sh);
+					currentConversation->AddLine({ .name = L"Secret boss (Pacman)", .content = msg });
 				}
 
 				markFinished();
@@ -133,6 +144,9 @@ void Demo::SecretPuzzleScene::Init()
 	uiTex->LoadTexture(L"assets/ui.png");
 
 	PopupManager::GetInstance()->Init(game->GetGraphicsDevice(), borderTex, uiTex, font);
+	QuestManager::GetInstance()->SetVirtualResolution(game->GetVirtualWidth(), game->GetVirtualHeight());
+	QuestManager::GetInstance()->Init(game->GetGraphicsDevice(), transformManager, &this->uiCamera, font);
+	QuestManager::GetInstance()->SetQuest(L"Quest: ???");
 
 	savePoints.push_back(std::make_shared<SavePoint>(transformManager, -47.0f * 16, -43.0f * 16));
 	savePoints.back()->Init(game->GetGraphicsDevice(), &camera, player, colliderManager, saveManager, font, drawBuffer);
@@ -238,11 +252,25 @@ void Demo::SecretPuzzleScene::Init()
 	dauDau = std::make_shared<DauDauNPC>(transformManager, 1 * 16, -31.0f * 16);
 	dauDau->Init(game->GetGraphicsDevice(),&camera, player, colliderManager, font, drawBuffer);
 	dauDau->AddLine(L"Dau Dau", L"Watch out! This portal is a one-way trip to the invisible maze! Enter if you dare!"); 
+
+	dauDauSpawn = std::make_shared<DauDauNPC>(transformManager, -80 * 16, -37 * 16);
+	dauDauSpawn->Init(game->GetGraphicsDevice(), &camera, player, colliderManager, font, drawBuffer);
+	dauDauSpawn->AddLine(L"Dau Dau", L"There's a hidden boss somewhere in this maze. Defeat it for a secret reward!");
 }
 
 void Demo::SecretPuzzleScene::Update(unsigned long long deltaTime)
 {
 	PopupManager::GetInstance()->SetUICamera(&this->uiCamera);
+	QuestManager::GetInstance()->SetUICamera(&this->uiCamera);
+	QuestManager::GetInstance()->SetQuest(
+		!questGiven ? L"Quest: ???"
+		: (isBossDead
+			? L"Quest: Find secret boss, defeat it and get rewards: Boss defeated 1/1"
+			: L"Quest: Find secret boss, defeat it and get rewards: Boss defeated 0/1")
+	);
+	QuestManager::GetInstance()->SetVirtualResolution(game->GetVirtualWidth(), game->GetVirtualHeight());
+	QuestManager::GetInstance()->SetVisible(!(inventoryMenu && inventoryMenu->IsOpen()));
+	QuestManager::GetInstance()->Update(deltaTime);
 
 	auto OpenChestWithDialog = [&](std::shared_ptr<TreasureChestNPC>& chest) {
 		auto given = chest->Open(player.get());
@@ -314,6 +342,22 @@ void Demo::SecretPuzzleScene::Update(unsigned long long deltaTime)
 		}
 	}
 
+	if (dauDauSpawn) {
+		dauDauSpawn->Update(deltaTime);
+		if (!currentConversation && dauDauSpawn->CanInteract() && inpMan->KeyPress(DIK_E)) {
+			auto [sw, sh] = camera.GetScreenResolution();
+			currentConversation = std::make_shared<IConversation>(std::make_shared<DX9GF::FontSprite>(font.get()), sw, sh);
+			for (auto& line : dauDauSpawn->GetDialogueLines()) {
+				currentConversation->AddLine(line);
+			}
+			questGiven = true;
+			QuestManager::GetInstance()->SetQuest(isBossDead
+				? L"Quest: Find secret boss, defeat it and get rewards: Boss defeated 1/1"
+				: L"Quest: Find secret boss, defeat it and get rewards: Boss defeated 0/1");
+		}
+	}
+
+
 	for (auto& chest : treasureChests) {
 		chest->Update(deltaTime);
 		if (!currentConversation && chest->CanInteract() && inpMan->KeyPress(DIK_E)) {
@@ -382,7 +426,8 @@ void Demo::SecretPuzzleScene::DrawWorld(unsigned long long deltaTime)
 		for (auto& shopPoint : shopPoints) shopPoint->Draw(camera, deltaTime);
 		for (auto& healingPoint : healingPoints) healingPoint->Draw(camera, deltaTime);
 		for (auto& chest : treasureChests) chest->Draw(camera, deltaTime);
-
+		
+		if (dauDauSpawn) dauDauSpawn->Draw(camera, deltaTime);
 		dauDau->Draw(camera, deltaTime);
 		player->Draw(deltaTime);
 
@@ -406,10 +451,13 @@ void Demo::SecretPuzzleScene::DrawUI(unsigned long long deltaTime)
 		if (draggableManager && inventoryMenu && inventoryMenu->IsOpen() && inventoryMenu->GetCurrentTab() == Demo::InventoryMenu::Tab::DECK) {
 			draggableManager->Draw(deltaTime);
 		}
+		if (dauDauSpawn) dauDauSpawn->DrawUI(&this->uiCamera, deltaTime);
 
 		if (currentConversation) {
 			currentConversation->Draw(gd, &this->uiCamera, deltaTime);
 		}
+
+		QuestManager::GetInstance()->Draw(gd, &this->uiCamera, deltaTime);
 
 		if (drawBuffer) {
 			drawBuffer->Update(deltaTime);
@@ -471,7 +519,8 @@ void Demo::SecretPuzzleScene::GenerateSaveData(nlohmann::json& outData)
 		{"zoom", camera.GetZoom()}
 	};
 	outData["puzzle"] = {
-		{"isBossDead", isBossDead}
+		{"isBossDead", isBossDead},
+		{ "questGiven", questGiven }
 	};
 
 	nlohmann::json chestStates = nlohmann::json::array();
@@ -486,6 +535,8 @@ void Demo::SecretPuzzleScene::RestoreSaveData(const nlohmann::json& inData)
 	camera.SetZoom(inData["camera"]["zoom"]);
 	if (inData.contains("puzzle") && inData["puzzle"].contains("isBossDead")) {
 		isBossDead = inData["puzzle"]["isBossDead"];
+		questGiven = inData["puzzle"].value("questGiven", false);
+		questRestoredFromSave = true;
 	}
 
 	if (inData.contains("treasureChests")) {
