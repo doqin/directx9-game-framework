@@ -3,7 +3,7 @@
 #include <cmath>
 #include <algorithm>
 #include "DrawUtils.h"
-
+#include "RNG.h"
 void Demo::IEnemy::InitCardSpawnTrigger(DX9GF::Camera* camera, float width, float height)
 {
     cardSpawnTrigger = std::make_shared<DX9GF::RectangleTrigger>(transformManager, shared_from_this(), width, height);
@@ -250,17 +250,13 @@ bool Demo::IEnemy::TakeDamage(float damage)
     if (health < 0) health = 0;
     if (finalDamage > 0) {
         DX9GF::AudioManager::GetInstance()->PlayRandom("take_dmg", 0.8f);
-    }    std::random_device rd;
-    std::mt19937 gen(rd());
-    std::uniform_real_distribution<float> vxDis(-64.f, 64.f);
-    std::uniform_real_distribution<float> vyDis(-200.f, -100.f);
-
+    }    
     damageIndicators.push_back(DamageIndicator{
         L"-" + std::to_wstring(static_cast<int>(std::round(finalDamage))),
         0.f,
         0.f,
-        vxDis(gen),
-        vyDis(gen),
+        RNG::Range(-64.f, 64.f),
+        RNG::Range(-200.f, -100.f),
         0
     });
 	if (!hitImpactTexture && graphicsDevice) { // graphicsDevice should be not null by now
@@ -268,12 +264,10 @@ bool Demo::IEnemy::TakeDamage(float damage)
 		hitImpactTexture->LoadTexture(L"assets/hitimpact-Sheet.png");
 	}
 	hitImpactSprites.push_back(std::make_shared<DX9GF::AnimatedSprite>(hitImpactTexture.get(), DX9GF::Utils::CreateRectsHorizontal(0, 0, 32, 32, 4), 24, false));
-	std::uniform_real_distribution<float> dis(-16.f, 16.f);
-	std::uniform_real_distribution<float> scaleDis(2.f, 3.f);
-	std::uniform_real_distribution<float> rotDis(-0.5f, 0.5f);
-	hitImpactSprites.back()->SetPosition(GetWorldX() + dis(gen), GetWorldY() + dis(gen));
-	hitImpactSprites.back()->SetScale(scaleDis(gen));
-	hitImpactSprites.back()->SetRotation(rotDis(gen));
+
+	hitImpactSprites.back()->SetPosition(GetWorldX() + RNG::Range(-16.f, 16.f), GetWorldY() + RNG::Range(-16.f, 16.f));
+	hitImpactSprites.back()->SetScale(RNG::Range(2.f, 3.f));
+	hitImpactSprites.back()->SetRotation(RNG::Range(-0.5f, 0.5f));
 
 	// Queue shake animation
 	float ox = GetWorldX();

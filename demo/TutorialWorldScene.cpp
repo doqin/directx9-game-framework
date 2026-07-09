@@ -25,25 +25,25 @@ void Demo::TutorialWorldScene::Init()
 		{"MimicEnemy", 20},
 		}, drawBuffer, commandBuffer, &isGamePaused, & this->uiCamera, [this](DX9GF::GraphicsDevice* gd, unsigned long long deltaTime) { DrawBackground(gd, deltaTime); }));*/
 
-
-	map->SetAreaUpdateHandler("trigger_p", [this](const DX9GF::Map::ObjectArea& area) {if (isTransitioning) return;
-	isTransitioning = true;
-	auto transitionInCommand = std::make_shared<TransitionCommand>(game->GetGraphicsDevice(), &this->uiCamera, 1.f, true);
-	drawBuffer->PushCommand(transitionInCommand);
-	commandBuffer->PushCommand(std::make_shared<DX9GF::CustomCommand>([this, transitionInCommand](std::function<void(void)> markFinished) {
-		if (!transitionInCommand->IsFinished()) {
-			return;
-		}
-		nlohmann::json saveData;
-		player->GenerateSaveGlobalData(saveData["player"]);
-		auto sceMan = game->GetSceneManager();
-		MainMenu::gameSaveState->GetPlayerFromScene(sceMan->GetScene(static_cast<size_t>(sceMan->GetIndex()) + 2))->RestoreSaveGlobalData(saveData["player"]);
-		DX9GF::AudioManager::GetInstance()->PlayBGM_Fade("bgm_arcade", 0.2f, 1.5f);
-		sceMan->GoToScene(sceMan->GetIndex() + 2);
-		isTransitioning = false;
-		markFinished();
-		}));
-	drawBuffer->PushCommand(std::make_shared<TransitionCommand>(game->GetGraphicsDevice(), &this->uiCamera, 1.f, false));
+	map->SetAreaUpdateHandler("trigger_p", [this](const DX9GF::Map::ObjectArea& area) {
+		if (isTransitioning) return;
+		isTransitioning = true;
+		auto transitionInCommand = std::make_shared<TransitionCommand>(game->GetGraphicsDevice(), &this->uiCamera, 1.f, true);
+		drawBuffer->PushCommand(transitionInCommand);
+		commandBuffer->PushCommand(std::make_shared<DX9GF::CustomCommand>([this, transitionInCommand](std::function<void(void)> markFinished) {
+			if (!transitionInCommand->IsFinished()) {
+				return;
+			}
+			nlohmann::json saveData;
+			player->GenerateSaveGlobalData(saveData["player"]);
+			auto sceMan = game->GetSceneManager();
+			MainMenu::gameSaveState->GetPlayerFromScene(sceMan->GetScene(static_cast<size_t>(sceMan->GetIndex()) + 2))->RestoreSaveGlobalData(saveData["player"]);
+			DX9GF::AudioManager::GetInstance()->PlayBGM_Fade("bgm_arcade", 0.2f, 1.5f);
+			sceMan->GoToScene(sceMan->GetIndex() + 2);
+			isTransitioning = false;
+			markFinished();
+			}));
+		drawBuffer->PushCommand(std::make_shared<TransitionCommand>(game->GetGraphicsDevice(), &this->uiCamera, 1.f, false));
 		});
 
 	map->SetAreaUpdateHandler("trigger_secret", [this](const DX9GF::Map::ObjectArea& area) {if (isTransitioning) return;
@@ -204,11 +204,16 @@ void Demo::TutorialWorldScene::Init()
 	// 3. Con thứ ba: Random 1-2 con Keye/Demon (Tọa độ 500, -590)
 	BattleEncounter encounter3;
 	encounter3.mapEnemyID = "tutorial_random_01";
-	encounter3.enemyTypes = EncounterGenerator::GenerateFromTypes({ "KeyeEnemy", "DemonEyeEnemy" });
+
+	// FIX: Nạp đạn vào rổ trước
+	encounter3.randomPool = { "KeyeEnemy", "DemonEyeEnemy" };
+	// Sau đó mới bốc thăm từ rổ
+	encounter3.enemyTypes = EncounterGenerator::GenerateFromTypes(encounter3.randomPool);
+
 	encounter3.bgmName = "battle_loop1";
 	encounter3.bgDrawFunc = [this](DX9GF::GraphicsDevice* gd, unsigned long long deltaTime) { DrawBackground(gd, deltaTime); };
 
-	// AUTO LOAD DẤU CHẤM HỎI: Cố tình truyền "Random" để lấy fallback dấu chấm hỏi
+	// AUTO LOAD DẤU CHẤM HỎI
 	auto sprite3 = EnemyFactory::GetOverworldSprite("Random");
 	encounter3.mapTexturePath = sprite3.texturePath;
 	encounter3.spriteWidth = sprite3.width;
@@ -219,6 +224,48 @@ void Demo::TutorialWorldScene::Init()
 	roamingEnemy3->Init(game, game->GetGraphicsDevice(), colliderManager.get(), player);
 	mapEnemies.push_back(roamingEnemy3);
 
+	// 4. Con thứ tư: Đội hình Cố định (Keye + DemonEye) - Ép người chơi xử lý đa mục tiêu
+	// Tọa độ: -90, -400
+	BattleEncounter encounter4;
+	encounter4.mapEnemyID = "tutorial_mixed_01";
+	encounter4.enemyTypes = { "KeyeEnemy", "DemonEyeEnemy" }; // Gặp chắc chắn 2 con khác loại
+	encounter4.bgmName = "battle_loop1";
+	encounter4.bgDrawFunc = [this](DX9GF::GraphicsDevice* gd, unsigned long long deltaTime) { DrawBackground(gd, deltaTime); };
+
+	// Lấy hình con Keye làm "Leader" đại diện ngoài map
+	auto sprite4 = EnemyFactory::GetOverworldSprite(encounter4.enemyTypes[0]);
+	encounter4.mapTexturePath = sprite4.texturePath;
+	encounter4.spriteWidth = sprite4.width;
+	encounter4.spriteHeight = sprite4.height;
+	encounter4.frameCount = sprite4.frameCount;
+
+	auto roamingEnemy4 = std::make_shared<MapEnemy>(transformManager, -90.f, -400.f, encounter4);
+	roamingEnemy4->Init(game, game->GetGraphicsDevice(), colliderManager.get(), player);
+	mapEnemies.push_back(roamingEnemy4);
+
+
+	// 5. Con thứ năm: Bể ngẫu nhiên Mở rộng (Có rủi ro gặp Mimic)
+	// Tọa độ: 50, -330
+	BattleEncounter encounter5;
+	encounter5.mapEnemyID = "tutorial_random_02";
+
+	// FIX: Nạp đạn vào rổ chứa cả Mimic
+	encounter5.randomPool = { "KeyeEnemy", "DemonEyeEnemy", "MimicEnemy" };
+	// Sau đó bốc thăm
+	encounter5.enemyTypes = EncounterGenerator::GenerateFromTypes(encounter5.randomPool);
+	encounter5.bgmName = "battle_loop1";
+	encounter5.bgDrawFunc = [this](DX9GF::GraphicsDevice* gd, unsigned long long deltaTime) { DrawBackground(gd, deltaTime); };
+
+	// Gắn sprite dấu chấm hỏi
+	auto sprite5 = EnemyFactory::GetOverworldSprite("Random");
+	encounter5.mapTexturePath = sprite5.texturePath;
+	encounter5.spriteWidth = sprite5.width;
+	encounter5.spriteHeight = sprite5.height;
+	encounter5.frameCount = sprite5.frameCount;
+
+	auto roamingEnemy5 = std::make_shared<MapEnemy>(transformManager, 50.f, -330.f, encounter5);
+	roamingEnemy5->Init(game, game->GetGraphicsDevice(), colliderManager.get(), player);
+	mapEnemies.push_back(roamingEnemy5);
 
 	draggableManager = std::make_shared<Demo::DraggableManager>();
 
@@ -547,6 +594,16 @@ void Demo::TutorialWorldScene::GenerateSaveData(nlohmann::json& outData)
 	nlohmann::json chestStates = nlohmann::json::array();
 	for (auto& c : treasureChests) chestStates.push_back(c->GetIsOpened());
 	outData["treasureChests"] = chestStates;
+
+	// THÊM MỚI: Quét toàn bộ mapEnemies và lưu trạng thái dựa trên mapEnemyID
+	nlohmann::json enemiesState = nlohmann::json::object();
+	for (auto& enemy : mapEnemies) {
+		enemiesState[enemy->GetEnemyID()] = {
+			{"isDefeated", enemy->IsDefeated()},
+			{"respawnTimer", enemy->GetRespawnTimer()}
+		};
+	}
+	outData["mapEnemies"] = enemiesState;
 }
 
 void Demo::TutorialWorldScene::RestoreSaveData(const nlohmann::json& inData)
@@ -559,6 +616,20 @@ void Demo::TutorialWorldScene::RestoreSaveData(const nlohmann::json& inData)
 		auto& arr = inData["treasureChests"];
 		for (size_t i = 0; i < treasureChests.size() && i < arr.size(); ++i)
 			treasureChests[i]->SetOpened(arr[i].get<bool>());
+	}
+
+	// THÊM MỚI: Khôi phục trạng thái chết/sống của quái vật
+	if (inData.contains("mapEnemies")) {
+		auto& enemiesState = inData["mapEnemies"];
+		for (auto& enemy : mapEnemies) {
+			std::string id = enemy->GetEnemyID();
+			// Nếu tìm thấy ID quái trong file Save, tiến hành set trạng thái
+			if (enemiesState.contains(id)) {
+				bool def = enemiesState[id]["isDefeated"].get<bool>();
+				float timer = enemiesState[id]["respawnTimer"].get<float>();
+				enemy->SetDefeatedState(def, timer);
+			}
+		}
 	}
 }
 

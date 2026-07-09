@@ -30,7 +30,7 @@ namespace Demo {
 			if (enemyType == "VampireBatEnemy") return { L"assets/shrimp-Sheet.png", 64.f, 64.f, 12 };
 
 			// Mặc định trả về dấu chấm hỏi nếu là quái Random hoặc không tìm thấy
-			return { L"assets/computerbug-Sheet.png", 64.f, 64.f, 12 };
+			return { L"assets/computerbug-Sheet.png", 64.f, 64.f, 12 }; //TODO: change this random sprite vro
 		}
 
 		static std::shared_ptr<IEnemy> Create(const std::string& type, std::weak_ptr<DX9GF::TransformManager> tm, DX9GF::GraphicsDevice* gd, DX9GF::Camera* cam) {

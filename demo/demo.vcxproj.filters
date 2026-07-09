@@ -157,6 +157,7 @@
     <ClInclude Include="SplashScene.h" />
     <ClInclude Include="TextIconButton.h" />
     <ClInclude Include="EncounterGenerator.h" />
+    <ClInclude Include="RNG.h" />
   </ItemGroup>
   <ItemGroup>
     <ResourceCompile Include="demo.rc" />

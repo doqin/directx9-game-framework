@@ -1,7 +1,7 @@
 ﻿#include "pch.h"
 #include "MapEnemy.h"
 #include "MapBattleScene.h"
-
+#include "EncounterGenerator.h"
 namespace Demo {
 	MapEnemy::MapEnemy(std::weak_ptr<DX9GF::TransformManager> tm, float x, float y, const BattleEncounter& data)
 		: IGameObject(tm, x, y), startX(x), startY(y), encounterData(data) {
@@ -40,12 +40,32 @@ namespace Demo {
 	}
 
 	void MapEnemy::Update(unsigned long long deltaTime) {
+
+		// 1. Logic hồi sinh
 		if (isDefeated) {
 			respawnTimer -= deltaTime / 1000.f;
 			if (respawnTimer <= 0) {
 				isDefeated = false;
 				SetLocalPosition(startX, startY);
 				currentState = State::Idle;
+
+				// FIX GHOST BUG: Tạo lại hộp va chạm mới tinh để nó có thể kích nổ combat lần sau
+				if (colliderManager) {
+					collider = std::make_shared<DX9GF::RectangleCollider>(
+						transformManager, shared_from_this(),
+						encounterData.spriteWidth, encounterData.spriteHeight, 0, 0
+					);
+					collider->SetOriginCenter();
+				}
+				// ĐOẠN XÀO BÀI (REROLL) LÚC HỒI SINH ĐƯỢC CẬP NHẬT:
+				if (encounterData.useGlobalPool) {
+					// Nếu đánh dấu là quái Hỗn mang -> Gọi hàm Global của sếp
+					encounterData.enemyTypes = EncounterGenerator::GenerateNormalEncounter();
+				}
+				else if (!encounterData.randomPool.empty()) {
+					// Nếu có hồ chứa riêng -> Bốc theo hồ chứa
+					encounterData.enemyTypes = EncounterGenerator::GenerateFromTypes(encounterData.randomPool);
+				}
 			}
 			return;
 		}

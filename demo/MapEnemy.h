@@ -14,7 +14,7 @@ namespace Demo {
         BattleEncounter encounterData;
 
         float startX, startY;
-        float speed = 40.f;
+        float speed = 75.f;
         float aggroRadius = 80.f;
         float returnRadius = 150.f;
 
@@ -49,5 +49,19 @@ namespace Demo {
         void Init(Game* game, DX9GF::GraphicsDevice* gd, DX9GF::ColliderManager* colMan, std::shared_ptr<Player> player);
         void Update(unsigned long long deltaTime);
         void Draw(DX9GF::Camera* camera, unsigned long long deltaTime);
+
+        // --- CÁC HÀM PHỤC VỤ SAVE/LOAD GAME ---
+        std::string GetEnemyID() const { return encounterData.mapEnemyID; }
+        bool IsDefeated() const { return isDefeated; }
+        float GetRespawnTimer() const { return respawnTimer; }
+
+        void SetDefeatedState(bool defeated, float timer) {
+            isDefeated = defeated;
+            respawnTimer = timer;
+            // Nếu nạp game lên mà quái đang chết, lập tức gỡ hộp va chạm để Player không đụng trúng tàng hình
+            if (isDefeated && colliderManager && collider) {
+                colliderManager->Remove(collider);
+            }
+        }
     };
 }

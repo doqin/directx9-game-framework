@@ -338,6 +338,7 @@
     <ClInclude Include="PopUpMessage.h" />
     <ClInclude Include="RandomEncounter.h" />
     <ClInclude Include="resource.h" />
+    <ClInclude Include="RNG.h" />
     <ClInclude Include="RustyChestNPC.h" />
     <ClInclude Include="SaveGameState.h" />
     <ClInclude Include="SavePoint.h" />

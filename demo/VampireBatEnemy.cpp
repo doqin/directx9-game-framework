@@ -3,7 +3,7 @@
 #include "resource.h"
 #include "SineWaveProjectile.h"
 #include "BoomerangProjectile.h"
-#include <random>
+#include "RNG.h"
 
 void Demo::VampireBatEnemy::Init(DX9GF::GraphicsDevice* graphicsDevice, DX9GF::Camera* camera) {
 	texture = std::make_shared<DX9GF::Texture>(graphicsDevice);
@@ -31,10 +31,7 @@ void Demo::VampireBatEnemy::Draw(DX9GF::GraphicsDevice* graphicsDevice, DX9GF::C
 }
 
 int Demo::VampireBatEnemy::GetRandomPattern() {
-	std::random_device rd;
-	std::mt19937 gen(rd());
-	std::uniform_int_distribution<int> dist(1, 2);
-	return dist(gen);
+	return RNG::Range(1, 2);
 }
 
 void Demo::VampireBatEnemy::StartAttack(std::shared_ptr<Player> player, std::vector<std::shared_ptr<IEnemy>>* enemies, std::shared_ptr<PopUpMessage> popUpMessage, DX9GF::GraphicsDevice* graphicsDevice, DX9GF::Camera* camera) {
@@ -101,11 +98,9 @@ void Demo::VampireBatEnemy::PatternEcholocation(float projDamage, std::vector<st
 		}
 		markFinished();
 	});
-	std::random_device rd;
-	std::mt19937 gen(rd());
-	std::uniform_int_distribution<int> dist(1, 2);
+
 	for (int i = 0; i < 20; i++) {
-		if (dist(gen) == 1) commandBuffer.PushCommand(std::make_shared<DX9GF::CustomCommand>(*leftAttack));
+		if (RNG::Range(1, 2) == 1) commandBuffer.PushCommand(std::make_shared<DX9GF::CustomCommand>(*leftAttack));
 		else commandBuffer.PushCommand(std::make_shared<DX9GF::CustomCommand>(*rightAttack));
 		commandBuffer.PushCommand(std::make_shared<DX9GF::DelayCommand>(0.5f));
 	}
@@ -189,12 +184,9 @@ void Demo::VampireBatEnemy::PatternSwoopBite(float projDamage) {
 		}
 		markFinished();
 		});
-	std::random_device rd;
-	std::mt19937 gen(rd());
-	std::uniform_int_distribution<int> dist(15, 20);
-	std::uniform_int_distribution<int> sideDist(1, 2);
-	for (int i = 0; i < dist(gen); i++) {
-		if (sideDist(gen) == 1) commandBuffer.PushCommand(std::make_shared<DX9GF::CustomCommand>(*leftAttack));
+	int dist = RNG::Range(15, 20);
+	for (int i = 0; i < dist; i++) {
+		if (RNG::Range(1, 2) == 1) commandBuffer.PushCommand(std::make_shared<DX9GF::CustomCommand>(*leftAttack));
 		else commandBuffer.PushCommand(std::make_shared<DX9GF::CustomCommand>(*rightAttack));
 		commandBuffer.PushCommand(std::make_shared<DX9GF::DelayCommand>(0.5f));
 	}

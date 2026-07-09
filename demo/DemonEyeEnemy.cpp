@@ -2,7 +2,7 @@
 #include "DemonEyeEnemy.h"
 #include "resource.h"
 #include "RoundProjectile.h"
-#include <random>
+#include "RNG.h"
 
 void Demo::DemonEyeEnemy::Init(DX9GF::GraphicsDevice* graphicsDevice, DX9GF::Camera* camera)
 {
@@ -34,10 +34,7 @@ void Demo::DemonEyeEnemy::Draw(DX9GF::GraphicsDevice* graphicsDevice, DX9GF::Cam
 
 int Demo::DemonEyeEnemy::GetRandomPattern()
 {
-	std::random_device rd;
-	std::mt19937 gen(rd());
-	std::uniform_int_distribution<int> dist(1, 3);
-	return dist(gen);
+	return RNG::Range(1, 3);
 }
 
 void Demo::DemonEyeEnemy::StartAttack(std::shared_ptr<Player> player, std::vector<std::shared_ptr<IEnemy>>* enemies, std::shared_ptr<PopUpMessage> popUpMessage, DX9GF::GraphicsDevice* graphicsDevice, DX9GF::Camera* camera)
@@ -69,12 +66,8 @@ void Demo::DemonEyeEnemy::PatternBloodRain(float projDamage, std::vector<std::sh
 	const float OFFSET_RANGE = 300.f;
 	const float DROP_HEIGHT = 350.f;
 
-	std::random_device rd;
-	std::mt19937 gen(rd());
-	std::uniform_real_distribution<float> offsetDist(-OFFSET_RANGE, OFFSET_RANGE);
-
 	for (int i = 0; i < BULLET_COUNT; i++) {
-		float offsetX = offsetDist(gen);
+		float offsetX = RNG::Range(-OFFSET_RANGE, OFFSET_RANGE);
 
 		commandBuffer.PushCommand(std::make_shared<DX9GF::CustomCommand>([this, projDamage, offsetX, DROP_HEIGHT, BULLET_SPEED](std::function<void(void)> markFinished) {
 			if (auto lock = this->player.lock()) {
@@ -115,13 +108,9 @@ void Demo::DemonEyeEnemy::PatternBloodWall(float projDamage, std::vector<std::sh
 	const float BULLET_SPACING = isAlone ? 40.f : 80.f;
 	const float BULLET_DECAY_TIME = isAlone ? 4.f : 8.f;
 
-	std::random_device rd;
-	std::mt19937 gen(rd());
-
 	for (int wave = 0; wave < WAVE_COUNT; wave++) {
 		//random hole
-		std::uniform_int_distribution<int> holeDist(0, BULLET_PER_WAVE - 1);
-		int emptyHole = holeDist(gen);
+		int emptyHole = RNG::Range(0, BULLET_PER_WAVE - 1);
 
 		commandBuffer.PushCommand(std::make_shared<DX9GF::CustomCommand>([this, projDamage, emptyHole, BULLET_PER_WAVE, BULLET_SPEED, DROP_HEIGHT, WALL_START_X, BULLET_SPACING, BULLET_DECAY_TIME](std::function<void(void)> markFinished) {
 			if (auto lock = this->player.lock()) {
@@ -165,14 +154,10 @@ void Demo::DemonEyeEnemy::PatternBloodCross(float projDamage, std::vector<std::s
 	const float OFFSET_MIN = -450.f;
 	const float OFFSET_MAX = 150.f;
 
-	std::random_device rd;
-	std::mt19937 gen(rd());
-
 	//since the bullets veer to the RIGHT(0.5, 1.0), shift the spawn area further to the left to ensure they hit the Player.
-	std::uniform_real_distribution<float> offsetDist(OFFSET_MIN, OFFSET_MAX);
 
 	for (int i = 0; i < BULLET_COUNT; i++) {
-		float offsetX = offsetDist(gen);
+		float offsetX = RNG::Range(OFFSET_MIN, OFFSET_MAX);
 
 		commandBuffer.PushCommand(std::make_shared<DX9GF::CustomCommand>([this, projDamage, offsetX, BULLET_SPEED, DROP_HEIGHT](std::function<void(void)> markFinished) {
 			if (auto lock = this->player.lock()) {

@@ -8,6 +8,11 @@
 #include "resource.h"
 #include "PopupManager.h"
 
+// THÊM HEADERS CHO HỆ THỐNG ENEMY
+#include "MapEnemy.h"
+#include "EnemyFactory.h"
+#include "EncounterGenerator.h"
+
 void Demo::SecretPuzzleScene::Init()
 {
 	camera.SetZoom(2.0f);
@@ -20,33 +25,36 @@ void Demo::SecretPuzzleScene::Init()
 	commandBuffer = std::make_shared<DX9GF::CommandBuffer>();
 	map = std::make_shared<DX9GF::Map>(game->GetGraphicsDevice());
 	map->Create(transformManager, colliderManager, "./assets/SecretPuzzle.tmx");
-	map->SetAreaUpdateHandler("trigger_encounter", GetRandomEncounterFunc(game, player, {
+
+	/*map->SetAreaUpdateHandler("trigger_encounter", GetRandomEncounterFunc(game, player, {
 		{"VampireBatEnemy", 40},
 		{"DemonEyeEnemy", 35},
-		}, drawBuffer, commandBuffer, &isGamePaused, & this->uiCamera, [this](DX9GF::GraphicsDevice* gd, unsigned long long deltaTime) { DrawBackground(gd, deltaTime); }));
+		}, drawBuffer, commandBuffer, &isGamePaused, &this->uiCamera, [this](DX9GF::GraphicsDevice* gd, unsigned long long deltaTime) { DrawBackground(gd, deltaTime); }));*/
+
 	map->SetAreaUpdateHandler("trigger_p_back", [this](const DX9GF::Map::ObjectArea& area) {
 		if (isTransitioning) return;
 		isTransitioning = true;
 		auto transitionInCommand = std::make_shared<TransitionCommand>(game->GetGraphicsDevice(), &this->uiCamera, 1.f, true);
 		drawBuffer->PushCommand(transitionInCommand);
 		commandBuffer->PushCommand(std::make_shared<DX9GF::CustomCommand>([this, transitionInCommand](std::function<void(void)> markFinished) {
-		if (!transitionInCommand->IsFinished()) {
-			return;
-		}
-		nlohmann::json saveData;
-		player->GenerateSaveGlobalData(saveData["player"]);
-		auto sceMan = game->GetSceneManager();
-		auto targetScene = sceMan->GetScene(static_cast<size_t>(sceMan->GetIndex()) - 1);
-		auto targetPlayer = MainMenu::gameSaveState->GetPlayerFromScene(targetScene);
-		targetPlayer->RestoreSaveGlobalData(saveData["player"]);
-		targetPlayer->SetLocalPosition(-263.f, -295.f);
-		DX9GF::AudioManager::GetInstance()->PlayBGM_Fade("bgm_tutorial", 0.5f, 1.5f);
-		sceMan->GoToPrevious();
-		isTransitioning = false;
-		markFinished();
-		}));
+			if (!transitionInCommand->IsFinished()) {
+				return;
+			}
+			nlohmann::json saveData;
+			player->GenerateSaveGlobalData(saveData["player"]);
+			auto sceMan = game->GetSceneManager();
+			auto targetScene = sceMan->GetScene(static_cast<size_t>(sceMan->GetIndex()) - 1);
+			auto targetPlayer = MainMenu::gameSaveState->GetPlayerFromScene(targetScene);
+			targetPlayer->RestoreSaveGlobalData(saveData["player"]);
+			targetPlayer->SetLocalPosition(-263.f, -295.f);
+			DX9GF::AudioManager::GetInstance()->PlayBGM_Fade("bgm_tutorial", 0.5f, 1.5f);
+			sceMan->GoToPrevious();
+			isTransitioning = false;
+			markFinished();
+			}));
 		drawBuffer->PushCommand(std::make_shared<TransitionCommand>(game->GetGraphicsDevice(), &this->uiCamera, 1.f, false));
 		});
+
 	map->SetAreaUpdateHandler("trigger_p_next_world", [this](const DX9GF::Map::ObjectArea& area) {
 		if (isTransitioning) return;
 		isTransitioning = true;
@@ -69,9 +77,11 @@ void Demo::SecretPuzzleScene::Init()
 			}));
 		drawBuffer->PushCommand(std::make_shared<TransitionCommand>(game->GetGraphicsDevice(), &this->uiCamera, 1.f, false));
 		});
+
 	map->SetAreaUpdateHandler("trigger_p_next", [this](const DX9GF::Map::ObjectArea& area) {
 		player->SetLocalPosition(31 * 16, 36 * 16);
-	});
+		});
+
 	map->SetAreaUpdateHandler("trigger_secretboss_encounter", [this](const DX9GF::Map::ObjectArea& area) {
 		if (!player->IsWalking()) return;
 
@@ -112,18 +122,16 @@ void Demo::SecretPuzzleScene::Init()
 
 			drawBuffer->PushCommand(std::make_shared<TransitionCommand>(game->GetGraphicsDevice(), &this->uiCamera, 1.f, false));
 
-			//check battle result and give key
 			drawBuffer->PushCommand(std::make_shared<DX9GF::CustomCommand>([this](std::function<void()> markFinished) {
 				this->isGamePaused = false;
-
 				if (this->isBossDead) {
 					this->player->GetInventoryItems().AddItem(10, 1);
 				}
-
 				markFinished();
 				}));
 		}
-	});
+		});
+
 	font = std::make_shared<DX9GF::Font>(game->GetGraphicsDevice(), L"StatusPlz", 16);
 
 	auto borderTex = std::make_shared<DX9GF::Texture>(game->GetGraphicsDevice());
@@ -164,6 +172,7 @@ void Demo::SecretPuzzleScene::Init()
 		}
 	);
 	shopPoints.back()->SetVisible(true);
+
 	healingPoints.push_back(std::make_shared<HealingPoint>(transformManager, -32.0f * 16, -38.0f * 16));
 	healingPoints.back()->Init(game->GetGraphicsDevice(), &camera, player, colliderManager, font, drawBuffer);
 	healingPoints.back()->SetVisible(true);
@@ -186,15 +195,83 @@ void Demo::SecretPuzzleScene::Init()
 	healingPoints.back()->Init(game->GetGraphicsDevice(), &camera, player, colliderManager, font, drawBuffer);
 	healingPoints.back()->SetVisible(true);
 
-	//TreasureChest
+	// TreasureChest
 	auto addChest = [&](float tx, float ty, std::vector<ChestReward> rewards, bool randomPick = false) {
 		auto c = std::make_shared<TreasureChestNPC>(transformManager, tx * 16, ty * 16, rewards, randomPick);
-		c->Init(game->GetGraphicsDevice(),&camera, player, colliderManager, font, drawBuffer);
+		c->Init(game->GetGraphicsDevice(), &camera, player, colliderManager, font, drawBuffer);
 		treasureChests.push_back(c);
 		};
 	addChest(-32, 26, { ChestReward::Item(0,1), ChestReward::Item(1,1), ChestReward::Card("PoisonCard") }, true);
 	addChest(-11, -31, { ChestReward::Item(2,1), ChestReward::Item(3,1), ChestReward::Card("CleaveCard") }, true);
 	addChest(80, 48, { ChestReward::Item(4,1), ChestReward::Item(5,1), ChestReward::Card("TwinStrikeCard") }, true);
+
+	// ==========================================
+	// HỆ THỐNG MAP ENEMIES (CLEAN SPAWN LAMBDA)
+	// ==========================================
+	auto spawnEnemy = [&](float x, float y, std::string id, std::vector<std::string> types, bool isRandomPool, bool useGlobalPool = false) {
+		BattleEncounter enc;
+		enc.mapEnemyID = id;
+		enc.useGlobalPool = useGlobalPool;
+
+		if (useGlobalPool) {
+			enc.enemyTypes = EncounterGenerator::GenerateNormalEncounter();
+		}
+		else if (isRandomPool) {
+			enc.randomPool = types;
+			enc.enemyTypes = EncounterGenerator::GenerateFromTypes(enc.randomPool);
+		}
+		else {
+			enc.enemyTypes = types;
+		}
+
+		enc.bgmName = (id == "sec_miniboss_01") ? "bgm_boss" : "battle_loop1";
+		enc.bgDrawFunc = [this](DX9GF::GraphicsDevice* gd, unsigned long long deltaTime) { DrawBackground(gd, deltaTime); };
+
+		auto sprite = EnemyFactory::GetOverworldSprite((isRandomPool || useGlobalPool) ? "Random" : types[0]);
+		enc.mapTexturePath = sprite.texturePath;
+		enc.spriteWidth = sprite.width;
+		enc.spriteHeight = sprite.height;
+		enc.frameCount = sprite.frameCount;
+
+		auto enemy = std::make_shared<MapEnemy>(transformManager, x, y, enc);
+		enemy->Init(game, game->GetGraphicsDevice(), colliderManager.get(), player);
+		mapEnemies.push_back(enemy);
+		};
+
+	// --- RẢI QUÁI MAP SECRET PUZZLE ---
+
+	// 1. Khu vực rìa ngoài (Gặp quái cơ bản)
+	spawnEnemy(-1140.f, -400.f, "sec_bat_01", { "VampireBatEnemy" }, false); // Cố định 1 Dơi
+	spawnEnemy(-910.f, 80.f, "sec_eye_01", { "DemonEyeEnemy" }, false); // Cố định 1 Mắt Quỷ
+	spawnEnemy(-780.f, 470.f, "sec_rand_bat_eye_01", { "VampireBatEnemy", "DemonEyeEnemy" }, true); // Random Dơi/Mắt
+
+	// 2. Khu vực tiến vào trong (Bắt đầu mix quái)
+	spawnEnemy(-480.f, 450.f, "sec_rand_keye_bat_01", { "KeyeEnemy", "VampireBatEnemy" }, true);
+	spawnEnemy(-330.f, 160.f, "sec_duo_bat_01", { "VampireBatEnemy", "VampireBatEnemy" }, false); // Đội hình đôi (2 Dơi)
+
+	// 3. Cạm bẫy ngầm (Mimic xuất hiện)
+	spawnEnemy(-440.f, -80.f, "sec_mimic_trap_01", { "MimicEnemy" }, false); // Ép dẫm phải Mimic
+	spawnEnemy(-300.f, -450.f, "sec_rand_3types_01", { "DemonEyeEnemy", "KeyeEnemy", "MimicEnemy" }, true); // Random 3 loại
+
+	// 4. Các điểm rải rác giữa map
+	spawnEnemy(-60.f, -460.f, "sec_bat_02", { "VampireBatEnemy" }, false);
+	spawnEnemy(90.f, -340.f, "sec_rand_eye_bat_01", { "DemonEyeEnemy", "VampireBatEnemy" }, true);
+	spawnEnemy(765.f, 680.f, "sec_keye_01", { "KeyeEnemy" }, false);
+	spawnEnemy(880.f, 730.f, "sec_rand_bat_mimic_01", { "VampireBatEnemy", "MimicEnemy" }, true); // Tỷ lệ 50/50 ăn Mimic
+	spawnEnemy(840.f, 900.f, "sec_duo_eye_01", { "DemonEyeEnemy", "DemonEyeEnemy" }, false); // Đội hình đôi (2 Mắt)
+	spawnEnemy(1070.f, 640.f, "sec_rand_3types_02", { "VampireBatEnemy", "DemonEyeEnemy", "KeyeEnemy" }, true);
+	spawnEnemy(1135.f, 930.f, "sec_rand_keye_mimic_01", { "KeyeEnemy", "MimicEnemy" }, true);
+	spawnEnemy(1195.f, 780.f, "sec_bat_03", { "VampireBatEnemy" }, false);
+	spawnEnemy(1350.f, 785.f, "sec_rand_eye_bat_02", { "DemonEyeEnemy", "VampireBatEnemy" }, true);
+
+	// 5. Khu vực cổng Boss (Quái Hỗn mang & Mini Boss)
+	// BỂ RANDOM TẤT CẢ: Tích cờ TRUE ở cuối để gọi GenerateNormalEncounter()
+	spawnEnemy(1700.f, 860.f, "sec_rand_all_01", {}, false, true);
+
+	// TRÙM CANH CỔNG (Cố định, đổi BGM riêng)
+	spawnEnemy(1660.f, 800.f, "sec_miniboss_01", { "CupidEnemy" }, false);
+	// ==========================================
+
 
 	draggableManager = std::make_shared<Demo::DraggableManager>();
 	inventoryMenu = std::make_shared<InventoryMenu>(game, player, transformManager, draggableManager, &uiCamera, font.get());
@@ -236,8 +313,8 @@ void Demo::SecretPuzzleScene::Init()
 	drawBuffer->PushCommand(std::make_shared<TransitionCommand>(game->GetGraphicsDevice(), &this->uiCamera, 1.f, false));
 
 	dauDau = std::make_shared<DauDauNPC>(transformManager, 1 * 16, -31.0f * 16);
-	dauDau->Init(game->GetGraphicsDevice(),&camera, player, colliderManager, font, drawBuffer);
-	dauDau->AddLine(L"Dau Dau", L"Watch out! This portal is a one-way trip to the invisible maze! Enter if you dare!"); 
+	dauDau->Init(game->GetGraphicsDevice(), &camera, player, colliderManager, font, drawBuffer);
+	dauDau->AddLine(L"Dau Dau", L"Watch out! This portal is a one-way trip to the invisible maze! Enter if you dare!");
 }
 
 void Demo::SecretPuzzleScene::Update(unsigned long long deltaTime)
@@ -281,7 +358,7 @@ void Demo::SecretPuzzleScene::Update(unsigned long long deltaTime)
 		escCooldown = 300.0f;
 	}
 
-	bool isGamePaused = this->isGamePaused;	
+	bool isGamePaused = this->isGamePaused;
 
 	if (PopupManager::GetInstance()->IsActive()) {
 		PopupManager::GetInstance()->Update(deltaTime, &this->uiCamera);
@@ -350,6 +427,10 @@ void Demo::SecretPuzzleScene::Update(unsigned long long deltaTime)
 	if (playerHUD && !isGamePaused) playerHUD->Update(deltaTime);
 
 	if (!isGamePaused) {
+		// CẬP NHẬT LOGIC QUÁI
+		for (auto& enemy : mapEnemies) {
+			enemy->Update(deltaTime);
+		}
 		player->Update(deltaTime);
 		camera.Update();
 	}
@@ -384,6 +465,12 @@ void Demo::SecretPuzzleScene::DrawWorld(unsigned long long deltaTime)
 		for (auto& chest : treasureChests) chest->Draw(camera, deltaTime);
 
 		dauDau->Draw(camera, deltaTime);
+
+		// VẼ QUÁI TRƯỚC PLAYER ĐỂ PLAYER ĐÈ LÊN KHI ĐỨNG DƯỚI
+		for (auto& enemy : mapEnemies) {
+			enemy->Draw(&camera, deltaTime);
+		}
+
 		player->Draw(deltaTime);
 
 		gd->EndDraw();
@@ -425,7 +512,6 @@ void Demo::SecretPuzzleScene::DrawUI(unsigned long long deltaTime)
 
 void Demo::SecretPuzzleScene::DrawBackground(DX9GF::GraphicsDevice* gd, unsigned long long deltaTime)
 {
-
 	auto [screenWidth, screenHeight] = camera.GetScreenResolution();
 	gd->DrawRectangle(0.0f, 0.0f, static_cast<float>(screenWidth), static_cast<float>(screenHeight), 0xFF403353, true);
 	const int spacingX = 32;
@@ -477,6 +563,16 @@ void Demo::SecretPuzzleScene::GenerateSaveData(nlohmann::json& outData)
 	nlohmann::json chestStates = nlohmann::json::array();
 	for (auto& c : treasureChests) chestStates.push_back(c->GetIsOpened());
 	outData["treasureChests"] = chestStates;
+
+	// BỔ SUNG LƯU GAME CHO MAP ENEMIES
+	nlohmann::json enemiesState = nlohmann::json::object();
+	for (auto& enemy : mapEnemies) {
+		enemiesState[enemy->GetEnemyID()] = {
+			{"isDefeated", enemy->IsDefeated()},
+			{"respawnTimer", enemy->GetRespawnTimer()}
+		};
+	}
+	outData["mapEnemies"] = enemiesState;
 }
 
 void Demo::SecretPuzzleScene::RestoreSaveData(const nlohmann::json& inData)
@@ -493,21 +589,23 @@ void Demo::SecretPuzzleScene::RestoreSaveData(const nlohmann::json& inData)
 		for (size_t i = 0; i < treasureChests.size() && i < arr.size(); ++i)
 			treasureChests[i]->SetOpened(arr[i].get<bool>());
 	}
+
+	// BỔ SUNG KHÔI PHỤC MAP ENEMIES
+	if (inData.contains("mapEnemies")) {
+		auto& enemiesState = inData["mapEnemies"];
+		for (auto& enemy : mapEnemies) {
+			std::string id = enemy->GetEnemyID();
+			if (enemiesState.contains(id)) {
+				bool def = enemiesState[id]["isDefeated"].get<bool>();
+				float timer = enemiesState[id]["respawnTimer"].get<float>();
+				enemy->SetDefeatedState(def, timer);
+			}
+		}
+	}
 }
 
 void Demo::SecretPuzzleScene::GiveTestItems()
 {
 	//ItemInventory& testItems = this->player->GetInventoryItems();
 	//testItems.InitFixedInventory(10);
-
-	//testItems.AddItem(0, 5);
-	//testItems.AddItem(1, 3);
-	//testItems.AddItem(2, 2);
-	//testItems.AddItem(3, 1);
-	//testItems.AddItem(4, 1);
-	//testItems.AddItem(5, 1);
-	//testItems.AddItem(6, 1);
-	//testItems.AddItem(7, 1);
-	//testItems.AddItem(8, 1);
-	//testItems.AddItem(9, 1);
 }

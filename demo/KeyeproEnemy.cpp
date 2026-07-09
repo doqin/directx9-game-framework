@@ -8,7 +8,7 @@
 #include "SpiralProjectile.h"
 #include "KeyeEnemy.h"
 #include "PopUpMessage.h"
-#include <random>
+#include "RNG.h"
 #include <algorithm>
 
 void Demo::KeyeproEnemy::Init(DX9GF::GraphicsDevice* graphicsDevice, DX9GF::Camera* camera) {
@@ -39,23 +39,15 @@ void Demo::KeyeproEnemy::Draw(DX9GF::GraphicsDevice* graphicsDevice, DX9GF::Came
 }
 
 int Demo::KeyeproEnemy::GetRandomPattern() {
-    std::random_device rd;
-    std::mt19937 gen(rd());
-    std::uniform_int_distribution<int> dist(1, 6);
-    return dist(gen);
+    return RNG::Range(1, 6);
 }
 
 void Demo::KeyeproEnemy::StartAttack(std::shared_ptr<Player> player, std::vector<std::shared_ptr<IEnemy>>* enemies, std::shared_ptr<PopUpMessage> popUpMessage, DX9GF::GraphicsDevice* graphicsDevice, DX9GF::Camera* camera) {
     this->player = player;
     float projDamage = 5.f; 
-
-    std::random_device rd;
-    std::mt19937 gen(rd());
-
     if (enemies != nullptr && graphicsDevice != nullptr && camera != nullptr) {
-        std::uniform_real_distribution<float> spawnChanceDist(0.f, 1.f);
         constexpr float MINION_SPAWN_CHANCE = 0.35f;
-        if (spawnChanceDist(gen) <= MINION_SPAWN_CHANCE) {
+        if (RNG::Range(0.f, 1.f) <= MINION_SPAWN_CHANCE) {
             size_t keyeCount = 0;
             for (const auto& enemy : *enemies) {
                 if (!enemy || enemy->IsDead()) {
@@ -271,11 +263,8 @@ void Demo::KeyeproEnemy::PatternEcholocation(float projDamage)
         }
         markFinished();
         });
-    std::random_device rd;
-    std::mt19937 gen(rd());
-    std::uniform_int_distribution<int> dist(1, 2);
     for (int i = 0; i < 40; i++) {
-        if (dist(gen) == 1) commandBuffer.PushCommand(std::make_shared<DX9GF::CustomCommand>(*leftAttack));
+        if (RNG::Range(1, 2) == 1) commandBuffer.PushCommand(std::make_shared<DX9GF::CustomCommand>(*leftAttack));
         else commandBuffer.PushCommand(std::make_shared<DX9GF::CustomCommand>(*rightAttack));
         commandBuffer.PushCommand(std::make_shared<DX9GF::DelayCommand>(0.5f));
     }
@@ -361,12 +350,10 @@ void Demo::KeyeproEnemy::PatternSwoopBite(float projDamage)
         }
         markFinished();
         });
-    std::random_device rd;
-    std::mt19937 gen(rd());
-    std::uniform_int_distribution<int> dist(30, 40);
-    std::uniform_int_distribution<int> sideDist(1, 2);
-    for (int i = 0; i < dist(gen); i++) {
-        if (sideDist(gen) == 1) commandBuffer.PushCommand(std::make_shared<DX9GF::CustomCommand>(*leftAttack));
+
+    int dist = RNG::Range(30, 40);
+    for (int i = 0; i < dist; i++) {
+        if (RNG::Range(1, 2) == 1) commandBuffer.PushCommand(std::make_shared<DX9GF::CustomCommand>(*leftAttack));
         else commandBuffer.PushCommand(std::make_shared<DX9GF::CustomCommand>(*rightAttack));
         commandBuffer.PushCommand(std::make_shared<DX9GF::DelayCommand>(0.5f));
     }

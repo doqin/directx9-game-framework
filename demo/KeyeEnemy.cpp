@@ -1,9 +1,9 @@
-#include "pch.h"
+﻿#include "pch.h"
 #include "KeyeEnemy.h"
 #include "resource.h"
 #include "RoundProjectile.h"
 #include "BoomerangProjectile.h"
-#include <random>
+#include "RNG.h"
 
 void Demo::KeyeEnemy::Init(DX9GF::GraphicsDevice* graphicsDevice, DX9GF::Camera* camera) {
     texture = std::make_shared<DX9GF::Texture>(graphicsDevice);
@@ -31,10 +31,7 @@ void Demo::KeyeEnemy::Draw(DX9GF::GraphicsDevice* graphicsDevice, DX9GF::Camera*
 }
 
 int Demo::KeyeEnemy::GetRandomPattern() {
-    std::random_device rd;
-    std::mt19937 gen(rd());
-    std::uniform_int_distribution<int> dist(1, 2);
-    return dist(gen);
+    return RNG::Range(1, 2);
 }
 
 void Demo::KeyeEnemy::StartAttack(std::shared_ptr<Player> player, std::vector<std::shared_ptr<IEnemy>>* enemies, std::shared_ptr<PopUpMessage> popUpMessage, DX9GF::GraphicsDevice* graphicsDevice, DX9GF::Camera* camera) {
@@ -45,22 +42,19 @@ void Demo::KeyeEnemy::StartAttack(std::shared_ptr<Player> player, std::vector<st
     this->player = player;
     float projDamage = 2.f; 
 
-    std::random_device rd; std::mt19937 gen(rd());
-    std::uniform_int_distribution<int> dist(1, 2);
-
     //PatternRoundCircle(projDamage);
-    if (dist(gen) == 1) PatternBoomerangCross(projDamage);
+    if (RNG::Range(1, 2) == 1) PatternBoomerangCross(projDamage);
     else PatternRoundCircle(projDamage);
 
     //commandBuffer.PushCommand(std::make_shared<DX9GF::DelayCommand>(3.f));
 }
 
 void Demo::KeyeEnemy::PatternBoomerangCross(float projDamage) {
-	std::random_device rd; std::mt19937 gen(rd());
-    auto attack = std::make_shared<DX9GF::CustomCommand>([this, projDamage, &gen](std::function<void(void)> markFinished) {
+    // Bỏ hết đống khai báo rd, gen đi
+    // Xóa luôn &gen ra khỏi danh sách capture của lambda
+    auto attack = std::make_shared<DX9GF::CustomCommand>([this, projDamage](std::function<void(void)> markFinished) {
         if (auto lock = this->player.lock()) {
             auto [px, py] = lock->GetWorldPosition();
-			std::uniform_int_distribution<int> xPos(-128, 128);
 
             for (int i = 0; i < 5; i++) {
                 float offset = i * 2.0f;
@@ -68,11 +62,11 @@ void Demo::KeyeEnemy::PatternBoomerangCross(float projDamage) {
                 auto projSprite = std::make_shared<DX9GF::AnimatedSprite>(projTexture.get(), projFrames, 12);
                 projSprite->SetOrigin(16, 16);
                 projectiles.push_back(
-                    BoomerangProjectile::Builder(transformManager, lock, projSprite, 16, 16, xPos(gen), -256.f + offset)
+                    BoomerangProjectile::Builder(transformManager, lock, projSprite, 16, 16, RNG::Range(-128.f, 128.f), -256.f + offset)
                     .SetTargetPosition(px, py)
                     .SetInitialVelocity(300.f)
                     .SetReturnAcceleration(100.f)
-                    .SetDelay(i * 0.1f) 
+                    .SetDelay(i * 0.1f)
                     .SetDecayTime(10.f)
                     .SetDamage(projDamage)
                     .Build()
@@ -102,11 +96,8 @@ void Demo::KeyeEnemy::PatternBoomerangCross(float projDamage) {
 }
 
 void Demo::KeyeEnemy::PatternRoundCircle(float projDamage) {
-    std::random_device rd; std::mt19937 gen(rd());
-    std::uniform_real_distribution<float> xDist(-120.f, 120.f);
-
     for (int i = 0; i < 25; i++) {
-        float randX = xDist(gen);
+        float randX = RNG::Range(-120.f, 120.f);
         commandBuffer.PushCommand(std::make_shared<DX9GF::CustomCommand>([this, projDamage, randX](std::function<void(void)> markFinished) {
             if (auto lock = this->player.lock()) {
                 auto projSprite = std::make_shared<DX9GF::AnimatedSprite>(projTexture.get(), projFrames, 12);
