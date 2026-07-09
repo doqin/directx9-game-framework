@@ -26,6 +26,13 @@ std::shared_ptr<Demo::TargetedProjectile> Demo::TargetedProjectile::Builder::Bui
 void Demo::TargetedProjectile::Init() {
 	this->collider = std::make_shared<DX9GF::EllipseCollider>(transformManager, shared_from_this(), colliderWidth, colliderHeight);
 	this->collider->SetOriginCenter();
+
+	auto graphicsDevice = sprite->GetGraphicsDevice();
+	trailTexture = std::make_shared<DX9GF::Texture>(graphicsDevice);
+	trailTexture->CreatePlainTexture(0xFFFFFFFF, 4, 4);
+	trailEmitter = std::make_unique<DX9GF::ParticleSystem>(trailTexture.get(), 32);
+	trailEmitter->SetOrigin(2, 2);
+	DX9GF::ConfigureTrailEmitter(*trailEmitter);
 }
 
 void Demo::TargetedProjectile::Update(unsigned long long deltaTime) {
@@ -58,9 +65,13 @@ void Demo::TargetedProjectile::Update(unsigned long long deltaTime) {
 		player->TakeDamage(damage);
 	}
 	this->elapsed += deltaTime / 1000.f;
+
+	auto [trailX, trailY] = GetWorldPosition();
+	trailEmitter->Update(deltaTime, trailX, trailY, GetWorldRotation(), 1.f, 1.f, 0xFFFFFFFF, state != State::Destroyed && elapsed >= delay);
 }
 
 void Demo::TargetedProjectile::Draw(const DX9GF::Camera& camera, unsigned long long deltaTime) {
+	trailEmitter->Draw(camera, deltaTime);
 	this->sprite->Begin();
 	auto [x, y] = GetWorldPosition();
 	this->sprite->SetPosition(x, y);

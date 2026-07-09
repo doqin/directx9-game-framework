@@ -99,6 +99,9 @@
     <ClCompile Include="DX9GFExtras\DX9GFColliderManager.cpp">
       <Filter>Source Files</Filter>
     </ClCompile>
+    <ClCompile Include="DX9GFExtras\DX9GFParticleSystem.cpp">
+      <Filter>Source Files</Filter>
+    </ClCompile>
     <ClCompile Include="DX9GFAudioManager.cpp">
       <Filter>Source Files</Filter>
     </ClCompile>
@@ -225,6 +228,9 @@
       <Filter>Header Files\Extras</Filter>
     </ClInclude>
     <ClInclude Include="DX9GFExtras\DX9GFColliderManager.h">
+      <Filter>Header Files\Extras</Filter>
+    </ClInclude>
+    <ClInclude Include="DX9GFExtras\DX9GFParticleSystem.h">
       <Filter>Header Files\Extras</Filter>
     </ClInclude>
     <ClInclude Include="DX9GFAudioManager.h">

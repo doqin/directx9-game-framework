@@ -25,8 +25,11 @@ namespace Demo {
 		};
 		// Constants
 		const int MAX_ENERGY = 3;
+		const float BACKGROUND_DIM_ALPHA = 0.55f;
+		const float BACKGROUND_DIM_SPEED = 2.f; // alpha units per second
 		// States
 		State state = State::PlayerStandBy;
+		float backgroundDimAlpha = 0.f;
 		State lastEnemyLayoutState = State::EnemyAttack;
 		bool enemyLayoutInitialized = false;
 		bool isExecutingAttacks = false;

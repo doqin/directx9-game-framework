@@ -40,6 +40,15 @@ Demo::BoomerangProjectile::Builder& Demo::BoomerangProjectile::Builder::SetDamag
 	return *this;
 }
 
+Demo::BoomerangProjectile::Builder& Demo::BoomerangProjectile::Builder::SetGhostSprite(DX9GF::Texture* texture, RECT srcRect, float originX, float originY) {
+	this->instance->ghostTexture = texture;
+	this->instance->ghostSrcRect = srcRect;
+	this->instance->ghostHasSrcRect = true;
+	this->instance->ghostOriginX = originX;
+	this->instance->ghostOriginY = originY;
+	return *this;
+}
+
 std::shared_ptr<Demo::BoomerangProjectile> Demo::BoomerangProjectile::Builder::Build() {
 	return instance;
 }
@@ -47,6 +56,13 @@ std::shared_ptr<Demo::BoomerangProjectile> Demo::BoomerangProjectile::Builder::B
 void Demo::BoomerangProjectile::Init() {
 	this->collider = std::make_shared<DX9GF::EllipseCollider>(transformManager, shared_from_this(), colliderWidth, colliderHeight);
 	this->collider->SetOriginCenter();
+
+	if (ghostTexture != nullptr) {
+		ghostEmitter = std::make_unique<DX9GF::ParticleSystem>(ghostTexture, 16);
+		if (ghostHasSrcRect) ghostEmitter->SetSrcRect(ghostSrcRect);
+		ghostEmitter->SetOrigin(ghostOriginX, ghostOriginY);
+		DX9GF::ConfigureGhostTrailEmitter(*ghostEmitter);
+	}
 }
 
 void Demo::BoomerangProjectile::Update(unsigned long long deltaTime) {
@@ -73,9 +89,15 @@ void Demo::BoomerangProjectile::Update(unsigned long long deltaTime) {
 		state = State::Destroyed;
 	}
 	this->elapsed += deltaTime / 1000.f;
+
+	if (ghostEmitter) {
+		auto [ghostX, ghostY] = GetWorldPosition();
+		ghostEmitter->Update(deltaTime, ghostX, ghostY, GetWorldRotation(), GetWorldScaleX(), GetWorldScaleY(), 0xFFFFFFFF, elapsed >= delay && state != State::Destroyed);
+	}
 }
 
 void Demo::BoomerangProjectile::Draw(const DX9GF::Camera& camera, unsigned long long deltaTime) {
+	if (ghostEmitter) ghostEmitter->Draw(camera, deltaTime);
 	if (this->elapsed < delay) return;
 	this->sprite->Begin();
 	auto [x, y] = GetWorldPosition();
