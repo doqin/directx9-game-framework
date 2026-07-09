@@ -46,6 +46,9 @@ namespace Demo
 		//check if the cursor is hovering over the button.
 		virtual void Update(unsigned long long deltaTime);
 
+		//programmatically invokes the button's click callback (used by keyboard navigation).
+		void Activate();
+
 		void SetState(ButtonState state) { this->currentState = state; }
 		ButtonState GetState() const { return this->currentState; }
 		std::shared_ptr<DX9GF::RectangleTrigger> GetTrigger() { return this->trigger; }

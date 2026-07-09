@@ -60,3 +60,18 @@ void Demo::IButton::Update(unsigned long long deltaTime)
 	}
 }
 
+void Demo::IButton::Activate()
+{
+	if (this->currentState == ButtonState::LISTENING || this->currentState == ButtonState::DISABLED)
+	{
+		return;
+	}
+
+	DX9GF::AudioManager::GetInstance()->Play(btnClickSfxName);
+
+	if (this->callback)
+	{
+		this->callback(this->trigger.get());
+	}
+}
+

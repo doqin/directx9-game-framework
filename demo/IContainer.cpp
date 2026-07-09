@@ -60,12 +60,18 @@ bool Demo::IContainer::OnDrop(std::shared_ptr<IDraggable> other)
 		&& otherX < thisX + (std::max)(dragAreaWidth, GetMaxWidthOfChildren())
 		&& otherY > thisY + dragAreaHeight
 		&& otherY < thisY + 2 * dragAreaHeight + displayedHeightOfChildren) {
-		other->SetParent(shared_from_this());
-		other->SetLocalPosition(0, (float)dragAreaHeight + currentHeightOfChildren);
-		children.push_back(other);
+		AttachChild(other);
 		return true;
 	}
 	return false;
+}
+
+void Demo::IContainer::AttachChild(std::shared_ptr<IDraggable> child)
+{
+	size_t currentHeightOfChildren = GetHeightOfChildren();
+	child->SetParent(shared_from_this());
+	child->SetLocalPosition(0, (float)dragAreaHeight + currentHeightOfChildren);
+	children.push_back(child);
 }
 
 void Demo::IContainer::Update(unsigned long long deltaTime)

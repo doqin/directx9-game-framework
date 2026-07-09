@@ -10,6 +10,8 @@
 #include "SecretPuzzleScene.h"
 #include "ThreadAlleyScene.h"
 #include "BossWorldScene.h"
+#include "SettingsManager.h"
+#include "DrawUtils.h"
 
 namespace {
 	constexpr float HiddenPileX = -10000.f;
@@ -574,6 +576,502 @@ void Demo::IBattleScene::DrawAttackCountdown(unsigned long long deltaTime)
 	fontSprite->End();
 }
 
+std::vector<Demo::IBattleScene::KeyboardCandidate> Demo::IBattleScene::CollectKeyboardCandidates()
+{
+	std::vector<KeyboardCandidate> candidates;
+
+	auto addButton = [&](std::shared_ptr<IButton> button) {
+		if (!button) {
+			return;
+		}
+		candidates.push_back({
+			button,
+			button->GetWorldX(),
+			button->GetWorldY(),
+			(float)button->GetWidth(),
+			(float)button->GetHeight(),
+			[button]() { button->Activate(); }
+			});
+		};
+
+	switch (state) {
+	case State::PlayerStandBy: {
+		if (!isFleeing) {
+			addButton(attackButton);
+			addButton(itemsButton);
+			addButton(fleeButton);
+		}
+		break;
+	}
+	case State::PlayerAttack: {
+		if (!mainBlockCard->IsExecuting() && !isTransitioning) {
+			if (energy - usedEnergy == MAX_ENERGY) {
+				addButton(backButton);
+			}
+			addButton(executeButton);
+		}
+
+		// Hand cards, plus orphaned cards floating in space (e.g. a card whose drop onto the
+		// block was rejected for lack of energy) - block-parented cards are handled below.
+		for (auto& card : cardHand) {
+			auto statementCard = std::dynamic_pointer_cast<IStatementCard>(card);
+			if (!statementCard) {
+				continue;
+			}
+			auto parent = card->GetParent();
+			const bool inHand = parent.has_value() && parent.value().lock().get() == handContainer.get();
+			const bool orphaned = !parent.has_value();
+			if (!inHand && !orphaned) {
+				continue;
+			}
+			if (orphaned && statementCard->IsDragging()) {
+				continue; // mid mouse-drag
+			}
+			candidates.push_back({
+				statementCard,
+				statementCard->GetWorldX(),
+				statementCard->GetWorldY(),
+				(float)statementCard->GetWidth(),
+				(float)statementCard->GetHeight(),
+				[this, statementCard]() { pickedUpCard = statementCard; placementSlotIndex = 0; }
+				});
+		}
+
+		// StatementCards already queued in the block can also be targeted, to reorder them.
+		for (auto& weakChild : mainBlockCard->GetChildren()) {
+			auto placedStatementCard = std::dynamic_pointer_cast<IStatementCard>(weakChild.lock());
+			if (!placedStatementCard) {
+				continue;
+			}
+			candidates.push_back({
+				placedStatementCard,
+				placedStatementCard->GetWorldX(),
+				placedStatementCard->GetWorldY(),
+				(float)placedStatementCard->GetWidth(),
+				(float)placedStatementCard->GetHeight(),
+				[this, placedStatementCard]() { pickedUpCard = placedStatementCard; placementSlotIndex = 0; }
+				});
+		}
+
+		candidates.push_back({
+			mainBlockCard,
+			mainBlockCard->GetWorldX(),
+			mainBlockCard->GetWorldY(),
+			(float)mainBlockCard->GetWidth(),
+			(float)mainBlockCard->GetHeight(),
+			[this]() { isDraggingBlockCardViaKeyboard = true; }
+			});
+
+		for (auto& enemy : enemies) {
+			if (enemy->IsDead() || enemy->IsOnStandby()) {
+				continue;
+			}
+			auto trigger = enemy->GetCardSpawnTrigger().lock();
+			if (!trigger) {
+				continue;
+			}
+			// The trigger uses a center origin, so its top-left (not the enemy's own world position) is the correct bound.
+			candidates.push_back({
+				enemy,
+				trigger->GetWorldX() - trigger->GetOriginX(),
+				trigger->GetWorldY() - trigger->GetOriginY(),
+				trigger->GetWidth(),
+				trigger->GetHeight(),
+				[this, enemy]() {
+					CreateEnemyCard(enemy);
+					// Skip having to separately navigate to the freshly spawned card - go straight
+					// into placement mode so the player immediately picks a target or discards it.
+					if (!enemyCards.empty()) {
+						pickedUpCard = enemyCards.back();
+						placementSlotIndex = 0;
+					}
+				}
+				});
+		}
+		break;
+	}
+	case State::PlayerOpenItems: {
+		addButton(closeItemMenuButton);
+		if (currentItemPage > 0) {
+			addButton(btnPrevPage);
+		}
+		if (currentItemPage < maxItemPage) {
+			addButton(btnNextPage);
+		}
+		for (auto& btn : buffItems) {
+			addButton(btn);
+		}
+		break;
+	}
+	default:
+		break;
+	}
+
+	return candidates;
+}
+
+void Demo::IBattleScene::UpdateKeyboardNavigation(unsigned long long deltaTime)
+{
+	auto inpMan = DX9GF::InputManager::GetInstance();
+	auto sm = SettingsManager::GetInstance();
+
+	const int keyUp = sm->GetKeybind("MOVE_UP");
+	const int keyDown = sm->GetKeybind("MOVE_DOWN");
+	const int keyLeft = sm->GetKeybind("MOVE_LEFT");
+	const int keyRight = sm->GetKeybind("MOVE_RIGHT");
+
+	if (inpMan->KeyDown(keyUp) || inpMan->KeyDown(keyDown) || inpMan->KeyDown(keyLeft) || inpMan->KeyDown(keyRight)) {
+		keyboardMode = true;
+	}
+	if (inpMan->GetRelativeMouseX() != 0 || inpMan->GetRelativeMouseY() != 0) {
+		keyboardMode = false;
+		keyboardTarget.reset();
+		isDraggingBlockCardViaKeyboard = false;
+		pickedUpCard.reset();
+	}
+
+	if (!keyboardMode) {
+		return;
+	}
+
+	if (pickedUpCard) {
+		auto slots = CollectPlacementSlots();
+		if (slots.empty()) {
+			pickedUpCard.reset();
+			return;
+		}
+		if (placementSlotIndex >= slots.size()) {
+			placementSlotIndex = slots.size() - 1;
+		}
+
+		int slotDirX = 0, slotDirY = 0;
+		if (inpMan->KeyDown(keyLeft)) slotDirX = -1;
+		else if (inpMan->KeyDown(keyRight)) slotDirX = 1;
+		if (inpMan->KeyDown(keyUp)) slotDirY = -1;
+		else if (inpMan->KeyDown(keyDown)) slotDirY = 1;
+
+		if (slotDirX != 0 || slotDirY != 0) {
+			const float dirLen = std::sqrt(static_cast<float>(slotDirX * slotDirX + slotDirY * slotDirY));
+			const float dirUnitX = slotDirX / dirLen;
+			const float dirUnitY = slotDirY / dirLen;
+
+			// Top-left, not center (see the equivalent comment in the top-level cycling below).
+			const auto& cur = slots[placementSlotIndex];
+			const float curCx = cur.x;
+			const float curCy = cur.y;
+
+			int best = -1;
+			float bestScore = 0.f;
+			for (size_t i = 0; i < slots.size(); ++i) {
+				if (i == placementSlotIndex) {
+					continue;
+				}
+				const float cx = slots[i].x;
+				const float cy = slots[i].y;
+				const float vx = cx - curCx;
+				const float vy = cy - curCy;
+				const float dist = std::sqrt(vx * vx + vy * vy);
+				if (dist <= 0.0001f) {
+					continue;
+				}
+				const float dot = (vx / dist) * dirUnitX + (vy / dist) * dirUnitY;
+				if (dot < KEYBOARD_DIRECTION_DOT_THRESHOLD) {
+					continue;
+				}
+				const float primaryAxisDist = vx * dirUnitX + vy * dirUnitY;
+				const float perpDist = std::sqrt((std::max)(0.f, dist * dist - primaryAxisDist * primaryAxisDist));
+				const float score = primaryAxisDist + perpDist * KEYBOARD_PERPENDICULAR_PENALTY;
+				if (best < 0 || score < bestScore) {
+					best = static_cast<int>(i);
+					bestScore = score;
+				}
+			}
+			if (best >= 0) {
+				placementSlotIndex = static_cast<size_t>(best);
+			}
+		}
+
+		if (inpMan->KeyDown(DIK_RETURN)) {
+			auto place = slots[placementSlotIndex].place;
+			pickedUpCard.reset();
+			placementSlotIndex = 0;
+			if (place) {
+				place();
+			}
+		}
+		return;
+	}
+
+	auto candidates = CollectKeyboardCandidates();
+
+	const KeyboardCandidate* currentCandidate = nullptr;
+	for (auto& c : candidates) {
+		if (c.anchor == keyboardTarget) {
+			currentCandidate = &c;
+			break;
+		}
+	}
+
+	if (!currentCandidate) {
+		isDraggingBlockCardViaKeyboard = false;
+		if (candidates.empty()) {
+			keyboardTarget.reset();
+			return;
+		}
+		// Default entry point: whichever candidate is closest to the screen center (0,0 in this camera-centered coordinate system).
+		const KeyboardCandidate* best = nullptr;
+		float bestDist = 0.f;
+		for (auto& c : candidates) {
+			float cx = c.x + c.width / 2.f;
+			float cy = c.y + c.height / 2.f;
+			float dist = cx * cx + cy * cy;
+			if (!best || dist < bestDist) {
+				best = &c;
+				bestDist = dist;
+			}
+		}
+		keyboardTarget = best->anchor;
+		return;
+	}
+
+	if (keyboardTarget == mainBlockCard && isDraggingBlockCardViaKeyboard) {
+		auto app = DX9GF::Application::GetInstance();
+		const float halfScreenWidth = app->GetScreenWidth() / 2.f;
+		const float halfScreenHeight = app->GetScreenHeight() / 2.f;
+
+		float dx = 0.f, dy = 0.f;
+		if (inpMan->KeyPress(keyLeft)) dx -= 1.f;
+		if (inpMan->KeyPress(keyRight)) dx += 1.f;
+		if (inpMan->KeyPress(keyUp)) dy -= 1.f;
+		if (inpMan->KeyPress(keyDown)) dy += 1.f;
+
+		if (dx != 0.f || dy != 0.f) {
+			const float len = std::sqrt(dx * dx + dy * dy);
+			const float step = KEYBOARD_BLOCK_CARD_SPEED * (deltaTime / 1000.f);
+			float newX = mainBlockCard->GetWorldX() + (dx / len) * step;
+			float newY = mainBlockCard->GetWorldY() + (dy / len) * step;
+			newX = (std::max)(-halfScreenWidth, (std::min)(newX, halfScreenWidth - (float)mainBlockCard->GetWidth()));
+			newY = (std::max)(-halfScreenHeight, (std::min)(newY, halfScreenHeight - (float)mainBlockCard->GetHeight()));
+			mainBlockCard->SetLocalPosition(newX, newY);
+		}
+
+		if (inpMan->KeyDown(DIK_RETURN)) {
+			isDraggingBlockCardViaKeyboard = false;
+		}
+		return;
+	}
+
+	int dirX = 0, dirY = 0;
+	if (inpMan->KeyDown(keyLeft)) dirX = -1;
+	else if (inpMan->KeyDown(keyRight)) dirX = 1;
+	if (inpMan->KeyDown(keyUp)) dirY = -1;
+	else if (inpMan->KeyDown(keyDown)) dirY = 1;
+
+	if (dirX != 0 || dirY != 0) {
+		const float dirLen = std::sqrt(static_cast<float>(dirX * dirX + dirY * dirY));
+		const float dirUnitX = dirX / dirLen;
+		const float dirUnitY = dirY / dirLen;
+
+		// Use each candidate's top-left corner rather than its center: block/hand cards are
+		// left-aligned in a column but vary in width (e.g. a MultiTargetCard grows wider as
+		// targets attach), so comparing centers would inject a false horizontal offset between
+		// vertically-stacked same-column items and make Down/Up skip past the immediate neighbor.
+		const float curCx = currentCandidate->x;
+		const float curCy = currentCandidate->y;
+
+		const KeyboardCandidate* best = nullptr;
+		float bestScore = 0.f;
+		for (auto& c : candidates) {
+			if (c.anchor == currentCandidate->anchor) {
+				continue;
+			}
+			const float cx = c.x;
+			const float cy = c.y;
+			const float vx = cx - curCx;
+			const float vy = cy - curCy;
+			const float dist = std::sqrt(vx * vx + vy * vy);
+			if (dist <= 0.0001f) {
+				continue;
+			}
+			const float dot = (vx / dist) * dirUnitX + (vy / dist) * dirUnitY;
+			if (dot < KEYBOARD_DIRECTION_DOT_THRESHOLD) {
+				continue;
+			}
+			// Rank by along-axis distance plus a heavily-penalized off-axis distance, so a
+			// candidate roughly "in front of" the cursor wins over one that's merely closer
+			// in raw distance but well off to the side.
+			const float primaryAxisDist = vx * dirUnitX + vy * dirUnitY;
+			const float perpDist = std::sqrt((std::max)(0.f, dist * dist - primaryAxisDist * primaryAxisDist));
+			const float score = primaryAxisDist + perpDist * KEYBOARD_PERPENDICULAR_PENALTY;
+			if (!best || score < bestScore) {
+				best = &c;
+				bestScore = score;
+			}
+		}
+		if (best) {
+			keyboardTarget = best->anchor;
+		}
+	}
+
+	if (inpMan->KeyDown(DIK_RETURN) && currentCandidate->activate) {
+		currentCandidate->activate();
+	}
+}
+
+std::vector<Demo::IBattleScene::PlacementSlot> Demo::IBattleScene::CollectPlacementSlots()
+{
+	std::vector<PlacementSlot> slots;
+	if (!pickedUpCard) {
+		return slots;
+	}
+
+	if (auto statementCard = std::dynamic_pointer_cast<IStatementCard>(pickedUpCard)) {
+		size_t otherCount = 0;
+		for (auto& weak : mainBlockCard->GetStatementCards()) {
+			auto sibling = weak.lock();
+			if (sibling && sibling != statementCard) {
+				++otherCount;
+			}
+		}
+		const float slotWidth = (float)mainBlockCard->GetWidth();
+		const float slotHeight = (float)statementCard->GetHeight();
+		for (size_t index = 0; index <= otherCount; ++index) {
+			auto [slotX, slotY] = mainBlockCard->GetStatementSlotWorldPosition(index, statementCard);
+			slots.push_back({
+				slotX, slotY, slotWidth, slotHeight,
+				[this, statementCard, index]() { PlaceStatementCardAt(statementCard, index); }
+				});
+		}
+
+		// A card not already in the hand (queued in the block, or orphaned in space after a
+		// rejected drop) can also be sent back to the hand. GetHeight() is just the container's
+		// header bar, not the visible card stack below it - offset past it.
+		auto parent = statementCard->GetParent();
+		const bool isInHand = parent.has_value() && parent.value().lock().get() == handContainer.get();
+		if (!isInHand) {
+			const float handDropHeight = handContainer->GetMaxHeight() > 0 ? (float)handContainer->GetMaxHeight() : 100.f;
+			slots.push_back({
+				handContainer->GetWorldX(), handContainer->GetWorldY() + (float)handContainer->GetHeight(),
+				(float)handContainer->GetWidth(), handDropHeight,
+				[this, statementCard]() { PlaceStatementCardInHand(statementCard); }
+				});
+		}
+		return slots;
+	}
+
+	if (auto enemyCard = std::dynamic_pointer_cast<EnemyCard>(pickedUpCard)) {
+		for (auto& weakChild : mainBlockCard->GetChildren()) {
+			auto statement = std::dynamic_pointer_cast<IStatementCard>(weakChild.lock());
+			if (!statement || !statement->CanAcceptEnemyCard()) {
+				continue;
+			}
+			slots.push_back({
+				statement->GetWorldX(), statement->GetWorldY(), (float)statement->GetWidth(), (float)statement->GetHeight(),
+				[this, enemyCard, statement]() { PlaceEnemyCardOn(enemyCard, statement); }
+				});
+		}
+		slots.push_back({
+			enemyCardRemoveAreaX, enemyCardRemoveAreaY, enemyCardRemoveAreaWidth, enemyCardRemoveAreaHeight,
+			[this, enemyCard]() { DiscardEnemyCard(enemyCard); }
+			});
+		return slots;
+	}
+
+	return slots;
+}
+
+void Demo::IBattleScene::PlaceStatementCardAt(std::shared_ptr<IStatementCard> card, size_t index)
+{
+	if (!card || mainBlockCard->IsExecuting()) {
+		return;
+	}
+
+	auto parent = card->GetParent();
+	const bool alreadyInBlock = parent.has_value() && parent.value().lock().get() == mainBlockCard.get();
+
+	if (!alreadyInBlock && GetAvailableEnergy() < 0) {
+		QueuePopUpMessage(L"Not enough energy");
+		return;
+	}
+
+	const float curX = card->GetWorldX();
+	const float curY = card->GetWorldY();
+	card->DetachParent();
+	card->SetLocalPosition(curX, curY);
+
+	auto [slotX, slotY] = mainBlockCard->GetStatementSlotWorldPosition(index, card);
+
+	std::vector<std::shared_ptr<DX9GF::ICommand>> commands = {
+		std::make_shared<DX9GF::GoToCommand>(card, slotX, slotY, 0.3f, DX9GF::TimeTag{}, DX9GF::EaseInOutTag{}),
+		std::make_shared<DX9GF::CustomCommand>([this, card, index](std::function<void(void)> markFinished) {
+			mainBlockCard->InsertStatementCardAt(card, index);
+			DX9GF::AudioManager::GetInstance()->PlayRandom("card_snap", 0.2f);
+			markFinished();
+			})
+	};
+	commandBuffer.StackCommand(std::make_shared<DX9GF::MultiCommand>(std::move(commands)));
+}
+
+void Demo::IBattleScene::PlaceStatementCardInHand(std::shared_ptr<IStatementCard> card)
+{
+	if (!card) {
+		return;
+	}
+
+	const float curX = card->GetWorldX();
+	const float curY = card->GetWorldY();
+	card->DetachParent();
+	card->SetLocalPosition(curX, curY);
+
+	const float handX = handContainer->GetWorldX();
+	const float handY = handContainer->GetWorldY() + (float)handContainer->GetHeight();
+
+	std::vector<std::shared_ptr<DX9GF::ICommand>> commands = {
+		std::make_shared<DX9GF::GoToCommand>(card, handX, handY, 0.3f, DX9GF::TimeTag{}, DX9GF::EaseInOutTag{}),
+		std::make_shared<DX9GF::CustomCommand>([this, card](std::function<void(void)> markFinished) {
+			handContainer->StoreCard(card);
+			DX9GF::AudioManager::GetInstance()->PlayRandom("card_snap", 0.2f);
+			markFinished();
+			})
+	};
+	commandBuffer.StackCommand(std::make_shared<DX9GF::MultiCommand>(std::move(commands)));
+}
+
+void Demo::IBattleScene::PlaceEnemyCardOn(std::shared_ptr<EnemyCard> card, std::shared_ptr<IStatementCard> destination)
+{
+	if (!card || !destination) {
+		return;
+	}
+
+	const float curX = card->GetWorldX();
+	const float curY = card->GetWorldY();
+	card->DetachParent();
+	card->SetLocalPosition(curX, curY);
+
+	auto [slotX, slotY] = destination->GetEnemyCardSlotWorldPosition();
+
+	std::vector<std::shared_ptr<DX9GF::ICommand>> commands = {
+		std::make_shared<DX9GF::GoToCommand>(card, slotX, slotY, 0.3f, DX9GF::TimeTag{}, DX9GF::EaseInOutTag{}),
+		std::make_shared<DX9GF::CustomCommand>([destination, card](std::function<void(void)> markFinished) {
+			destination->AttachEnemyCard(card);
+			DX9GF::AudioManager::GetInstance()->PlayRandom("card_snap", 0.2f);
+			markFinished();
+			})
+	};
+	commandBuffer.StackCommand(std::make_shared<DX9GF::MultiCommand>(std::move(commands)));
+}
+
+void Demo::IBattleScene::DiscardEnemyCard(std::shared_ptr<EnemyCard> card)
+{
+	if (!card) {
+		return;
+	}
+	if (auto manager = card->GetDraggableManager().lock()) {
+		manager->Remove(card);
+	}
+	enemyCards.erase(std::remove(enemyCards.begin(), enemyCards.end(), card), enemyCards.end());
+}
+
 void Demo::IBattleScene::QueueToEnemyAttack(unsigned long long deltaTime)
 {
 	isTransitioning = true;
@@ -1025,7 +1523,7 @@ void Demo::IBattleScene::Init()
 			}
 			QueueEnemyLayoutTransition(State::PlayerAttack);
 			lastEnemyLayoutState = State::PlayerAttack;
-			popUpMessage->QueueMessage(&commandBuffer, L"Click on the enemy sprite to create an Enemy Card and drag it to your attacking card to target it!", 2.5f);
+			//popUpMessage->QueueMessage(&commandBuffer, L"Click on the enemy sprite to create an Enemy Card and drag it to your attacking card to target it!", 2.5f);
 			markFinished();
 			}));
 		isExecutingAttacks = false;
@@ -1448,6 +1946,8 @@ void Demo::IBattleScene::Update(unsigned long long deltaTime)
 		throw std::runtime_error("Unexpected state");
 	}
 
+	UpdateKeyboardNavigation(deltaTime);
+
 	const float targetDim = (state == State::EnemyAttack) ? BACKGROUND_DIM_ALPHA : 0.f;
 	const float dimStep = BACKGROUND_DIM_SPEED * (deltaTime / 1000.f);
 	if (backgroundDimAlpha < targetDim) {
@@ -1460,6 +1960,63 @@ void Demo::IBattleScene::Update(unsigned long long deltaTime)
 	DamageTextManager::GetInstance()->Update(deltaTime);
 	transformManager->UpdateAll();
 	commandBuffer.Update(deltaTime);
+}
+
+void Demo::IBattleScene::DrawKeyboardReticleUI(unsigned long long deltaTime)
+{
+	if (!keyboardMode || !keyboardTarget) {
+		return;
+	}
+	auto button = std::dynamic_pointer_cast<IButton>(keyboardTarget);
+	if (!button) {
+		return;
+	}
+	auto gd = game->GetGraphicsDevice();
+	Demo::DrawKeyboardTargetReticle(gd, uiCamera, button->GetWorldX(), button->GetWorldY(), (float)button->GetWidth(), (float)button->GetHeight(), GetTickCount64());
+}
+
+void Demo::IBattleScene::DrawKeyboardReticleWorld(unsigned long long deltaTime)
+{
+	if (!keyboardMode) {
+		return;
+	}
+
+	auto gd = game->GetGraphicsDevice();
+
+	if (pickedUpCard) {
+		auto slots = CollectPlacementSlots();
+		if (slots.empty()) {
+			return;
+		}
+		size_t selectedIndex = (placementSlotIndex < slots.size()) ? placementSlotIndex : slots.size() - 1;
+
+		gd->SetAlphaBlending(true);
+		for (auto& slot : slots) {
+			Demo::DrawAnimatedDashedRectangle(
+				gd, camera, slot.x, slot.y, slot.width, slot.height,
+				3.f, 0xFFFFFFFF, false, 4.f, 0xFFFFFFFF, 20.f, 10.f, 40.f, GetTickCount64());
+		}
+		gd->SetAlphaBlending(false);
+
+		auto& selected = slots[selectedIndex];
+		Demo::DrawKeyboardTargetReticle(gd, camera, selected.x, selected.y, selected.width, selected.height, GetTickCount64());
+		return;
+	}
+
+	if (!keyboardTarget || std::dynamic_pointer_cast<IButton>(keyboardTarget)) {
+		return;
+	}
+
+	// Look up the target's bounds from the same candidate list navigation uses, rather than
+	// re-deriving them here - some kinds (e.g. enemies, whose trigger uses a center origin)
+	// don't have world position == top-left, so there's a single source of truth for that math.
+	auto candidates = CollectKeyboardCandidates();
+	for (auto& c : candidates) {
+		if (c.anchor == keyboardTarget) {
+			Demo::DrawKeyboardTargetReticle(gd, camera, c.x, c.y, c.width, c.height, GetTickCount64());
+			break;
+		}
+	}
 }
 
 void Demo::IBattleScene::DrawWorld(unsigned long long deltaTime)
@@ -1527,6 +2084,7 @@ void Demo::IBattleScene::DrawWorld(unsigned long long deltaTime)
 				enemy->Draw(gd, &camera, deltaTime);
 			}
 			draggableManager->Draw(deltaTime);
+			DrawKeyboardReticleWorld(deltaTime);
 			break;
 		case State::EnemyAttack:
 			// DRAW BATTLE BOUNDS
@@ -1580,6 +2138,8 @@ void Demo::IBattleScene::DrawUI(unsigned long long deltaTime)
 			break;
 		}
 
+		DrawKeyboardReticleUI(deltaTime);
+
 		if (isDefeatSequence && defeatElapsedMs >= 1000.f) {
 			auto [camW, camH] = uiCamera.GetScreenResolution();
 			float w = static_cast<float>(camW);
@@ -1594,7 +2154,9 @@ void Demo::IBattleScene::DrawUI(unsigned long long deltaTime)
 
 		drawBuffer->Update(deltaTime);
 
-		DX9GF::InputManager::GetInstance()->DrawCursor(&this->uiCamera, deltaTime);
+		if (!keyboardMode) {
+			DX9GF::InputManager::GetInstance()->DrawCursor(&this->uiCamera, deltaTime);
+		}
 		gd->EndDraw();
 	}
 }
