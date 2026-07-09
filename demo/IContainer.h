@@ -12,6 +12,8 @@ namespace Demo {
 		size_t GetHeightOfChildren();
 		std::vector<std::weak_ptr<IDraggable>> children;
 		bool isHovered = false;
+		// Parents, positions (at the next stacking slot) and appends child to the children list, skipping the hit-test in OnDrop.
+		void AttachChild(std::shared_ptr<IDraggable> child);
 	public:
        inline IContainer(std::weak_ptr<DX9GF::TransformManager> transformManager)
 			: IGameObject(transformManager), IDraggable(transformManager), maxHeight(0), scrollOffset(0) { }

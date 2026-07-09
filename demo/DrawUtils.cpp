@@ -276,3 +276,32 @@ void Demo::DrawAnimatedDashedRectangle(DX9GF::GraphicsDevice* graphicsDevice, DX
 		tick
 	);
 }
+
+void Demo::DrawKeyboardTargetReticle(DX9GF::GraphicsDevice* graphicsDevice, DX9GF::Camera& camera, float x, float y, float width, float height, unsigned long long tick)
+{
+	if (graphicsDevice == nullptr) {
+		return;
+	}
+
+	const float pad = 4.0f + 3.0f * std::sin(static_cast<float>(tick) * 0.004f);
+	const D3DCOLOR reticleColor = 0xFFFFD700;
+	const int thickness = 4;
+
+	const float rectX = x - pad;
+	const float rectY = y - pad;
+	const float rectWidth = width + pad * 2.0f;
+	const float rectHeight = height + pad * 2.0f;
+
+	graphicsDevice->SetAlphaBlending(true);
+	for (int i = 0; i < thickness; ++i) {
+		graphicsDevice->DrawRectangle(camera, rectX - i, rectY - i, rectWidth + i * 2.0f, rectHeight + i * 2.0f, reticleColor, false);
+	}
+
+	const float triangleWidth = 16.0f;
+	const float triangleHeight = 12.0f;
+	const float bounce = std::sin(static_cast<float>(tick) * 0.006f) * 4.0f;
+	const float triangleTopY = rectY - triangleHeight - 6.0f + bounce;
+
+	graphicsDevice->DrawTriangle(camera, rectX + rectWidth * 0.5f, triangleTopY, triangleWidth, triangleHeight, reticleColor, true);
+	graphicsDevice->SetAlphaBlending(false);
+}

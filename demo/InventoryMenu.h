@@ -6,6 +6,7 @@
 #include "TextButton.h"
 #include "IContainer.h"
 #include "IconButton.h"
+#include "KeyboardNavigator.h"
 namespace Demo {
 	class InventoryMenu {
 	public:
@@ -47,15 +48,21 @@ namespace Demo {
 
 		bool pendingLeave = false;
 
+		KeyboardNavigator keyboardNavigator;
+		std::vector<KeyboardNavigator::Candidate> CollectKeyboardCandidates();
+
 	public:
 		InventoryMenu(Game* g, std::shared_ptr<Player> p, std::shared_ptr<DX9GF::TransformManager> tm, std::shared_ptr<DraggableManager> dm, DX9GF::Camera* cam, DX9GF::Font* font);
 
 		void Init();
 		void Update(unsigned long long deltaTime);
 		void Draw(DX9GF::GraphicsDevice* gd, unsigned long long deltaTime);
+		// Host scenes call this after DraggableManager::Draw so the reticle draws above the cards.
+		void DrawKeyboardReticle(DX9GF::GraphicsDevice* gd, unsigned long long deltaTime);
 
 		void Toggle();
 		bool IsOpen() const { return isOpen; }
+		bool IsInKeyboardMode() const { return isOpen && keyboardNavigator.IsInKeyboardMode(); }
 		void SetTab(Tab tab) { currentTab = tab; }
 		bool IsPendingLeave() const { return pendingLeave; }
 		Tab GetCurrentTab() const { return currentTab; }

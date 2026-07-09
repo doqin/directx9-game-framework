@@ -115,4 +115,18 @@ namespace Demo {
 		float dashDistance,
 		float animationSpeed,
 		unsigned long long tick);
+
+	/// <summary>
+	/// Draws the keyboard-navigation target reticle: a pulsing yellow rectangle around the
+	/// target's bounds with a bouncing down-pointing triangle above it.
+	/// </summary>
+	/// <param name="tick">Elapsed animation time in milliseconds.</param>
+	void DrawKeyboardTargetReticle(
+		DX9GF::GraphicsDevice* graphicsDevice,
+		DX9GF::Camera& camera,
+		float x,
+		float y,
+		float width,
+		float height,
+		unsigned long long tick);
 }

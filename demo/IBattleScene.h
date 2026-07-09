@@ -11,8 +11,9 @@
 #include "HandContainer.h"
 #include "TestEnemy.h"
 #include "PopUpMessage.h"
-#include "AdvancedCards.h"	
+#include "AdvancedCards.h"
 #include "TextIconButton.h"
+#include "KeyboardNavigator.h"
 
 namespace Demo {
 	class IBattleScene : public DX9GF::IScene {
@@ -52,6 +53,27 @@ namespace Demo {
 		bool isDefeatSequence = false;
 		float defeatElapsedMs = 0.f;
 		float defeatFadeAlpha = 0.f;
+		// Keyboard navigation
+		// A destination a picked-up card can be placed at (a slot in the block's execution queue,
+		// or an eligible MultiTargetCard to lock an EnemyCard onto).
+		struct PlacementSlot {
+			float x;
+			float y;
+			float width;
+			float height;
+			std::function<void()> place;
+			// Slots whose visuals live in the UI pass (e.g. the discard bar, drawn in
+			// PlayerAttackDraw) must have their highlight drawn there too, or the bar
+			// drawn later would cover it.
+			bool inUIPass = false;
+		};
+		KeyboardNavigator keyboardNavigator;
+		bool isDraggingBlockCardViaKeyboard = false;
+		// Set while a StatementCard/EnemyCard has been "picked up" (first Enter) and is awaiting
+		// a second Enter to confirm which highlighted destination it should be placed at.
+		std::shared_ptr<DX9GF::IGameObject> pickedUpCard;
+		size_t placementSlotIndex = 0;
+		const float KEYBOARD_BLOCK_CARD_SPEED = 300.f; // px/sec
 		// Externals
 		Game* game;
 		std::shared_ptr<Player> player;
@@ -133,6 +155,17 @@ namespace Demo {
 		void StartAttackCountdown(std::shared_ptr<std::vector<std::shared_ptr<IEnemy>>> attackingEnemies);
 		bool UpdateAttackCountdown(unsigned long long deltaTime);
 		void DrawAttackCountdown(unsigned long long deltaTime);
+		// Keyboard navigation
+		void UpdateKeyboardNavigation(unsigned long long deltaTime);
+		std::vector<KeyboardNavigator::Candidate> CollectKeyboardCandidates();
+		std::vector<PlacementSlot> CollectPlacementSlots();
+		void PlaceStatementCardAt(std::shared_ptr<IStatementCard> card, size_t index);
+		void PlaceStatementCardInHand(std::shared_ptr<IStatementCard> card);
+		void PlaceEnemyCardOn(std::shared_ptr<EnemyCard> card, std::shared_ptr<IStatementCard> destination);
+		void DiscardEnemyCard(std::shared_ptr<EnemyCard> card);
+		void DrawKeyboardReticleUI(unsigned long long deltaTime);
+		void DrawKeyboardReticleWorld(unsigned long long deltaTime);
+		void DrawKeyboardPlacementUI(unsigned long long deltaTime);
 		// Draws
 		void PlayerStandByDraw(unsigned long long deltaTime);
 		void PlayerAttackDraw(unsigned long long deltaTime);

@@ -3,6 +3,8 @@
 #include <DX9GFInputManager.h>
 #include <DX9GFApplication.h>
 #include "DX9GFAudioManager.h"
+#include "SettingsManager.h"
+#include <cmath>
 Demo::IConversation::IConversation(std::shared_ptr<DX9GF::FontSprite> fontSprite, int screenWidth, int screenHeight)
 	: fontSprite(fontSprite), virtualWidth((float)screenWidth), virtualHeight((float)screenHeight)
 {
@@ -44,9 +46,17 @@ void Demo::IConversation::Execute(unsigned long long deltaTime)
 	}
 
 	auto input = DX9GF::InputManager::GetInstance();
+	const int keyAccept = SettingsManager::GetInstance()->GetKeybind("ACCEPT");
+	bool advance = false;
 	if (input->MouseDown(DX9GF::InputManager::MouseButton::Left)) {
 		input->ConsumeMouseButton(DX9GF::InputManager::MouseButton::Left);
-
+		advance = true;
+	}
+	else if (input->KeyDown(keyAccept)) {
+		input->ConsumeKey(keyAccept);
+		advance = true;
+	}
+	if (advance) {
 		if (isTyping) {
 			displayedContent = currentLine.content;
 			currentCharIndex = currentLine.content.length();
@@ -107,6 +117,16 @@ void Demo::IConversation::Draw(DX9GF::GraphicsDevice* gd, DX9GF::Camera* uiCamer
 		0.0f, 1.0f, 1.0f, 0.0f, 0.0f,
 		0xFF000000, false
 	);
+
+	// Advance indicator: a small down-pointing triangle bobbing at the bottom center
+	// of the box once the line has fully revealed.
+	if (!isTyping) {
+		const float triangleWidth = 16.0f;
+		const float triangleHeight = 10.0f;
+		const float bounce = std::sin(static_cast<float>(GetTickCount64()) * 0.006f) * 3.0f;
+		const float triangleTopY = boxY + boxHeight - triangleHeight - 10.0f + bounce;
+		gd->DrawTriangle(*uiCamera, boxX + boxWidth / 2.0f, triangleTopY, triangleWidth, triangleHeight, 0xFF000000, true);
+	}
 
 	if (fontSprite) {
 		fontSprite->Begin();

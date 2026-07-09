@@ -4,6 +4,7 @@
 #include "DX9GFIScene.h"
 #include "Game.h"
 #include "IconButton.h"
+#include "KeyboardNavigator.h"
 #include <vector>
 #include <string>
 
@@ -37,6 +38,9 @@ namespace Demo
 		//pagination
 		int currentPage = 0;
 		std::vector<std::vector<std::wstring>> creditsPages;
+
+		KeyboardNavigator keyboardNavigator;
+		std::vector<KeyboardNavigator::Candidate> CollectKeyboardCandidates();
 
 	public:
 		CreditsScene(Game* game, int screenWidth, int screenHeight)
