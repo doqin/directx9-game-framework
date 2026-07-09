@@ -342,7 +342,7 @@ void Demo::TutorialWorldScene::Update(unsigned long long deltaTime)
 	}
 
 	transformManager->UpdateAll();
-	if (!isGamePaused) map->UpdateAreas(player->GetWorldX(), player->GetWorldY());
+	if (!isGamePaused) map->UpdateAreas(player->GetCollider().lock()->GetWorldX(), player->GetCollider().lock()->GetWorldY());
 
 
 	if (draggableManager && inventoryMenu && inventoryMenu->IsOpen() && inventoryMenu->GetCurrentTab() == Demo::InventoryMenu::Tab::DECK) {
