@@ -1,4 +1,5 @@
 ﻿#include "pch.h"
+#include "SettingsManager.h"
 #include "SavePoint.h"
 #include "PopupManager.h"
 #include <cmath>
@@ -42,7 +43,7 @@ namespace Demo {
         isPlayerNear = (distance <= INTERACTION_DISTANCE);
 
         auto inpMan = DX9GF::InputManager::GetInstance();
-        if (isPlayerNear && inpMan->KeyPress(DIK_E)) {
+        if (isPlayerNear && inpMan->KeyPress(SettingsManager::GetInstance()->GetKeybind("INTERACT"))) {
             std::vector<std::pair<std::wstring, std::function<void()>>> buttons = {
                 { L"Yes", [this]() {
                     if (auto smLock = this->saveManager.lock()) {

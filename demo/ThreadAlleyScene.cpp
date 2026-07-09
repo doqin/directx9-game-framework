@@ -1,4 +1,5 @@
 ﻿#include "pch.h"
+#include "SettingsManager.h"
 #include "ThreadAlleyScene.h"
 #include "RandomEncounter.h"
 #include "CardShop.h"
@@ -313,7 +314,7 @@ void Demo::ThreadAlleyScene::Update(unsigned long long deltaTime)
 	static float escCooldown = 0.0f;
 	if (escCooldown > 0) escCooldown -= deltaTime;
 
-	if (inpMan->KeyPress(DIK_ESCAPE) && escCooldown <= 0) {
+	if (inpMan->KeyPress(SettingsManager::GetInstance()->GetKeybind("OPEN_INVENTORY")) && escCooldown <= 0) {
 		if (inventoryMenu) inventoryMenu->Toggle();
 		escCooldown = 300.0f;
 	}
@@ -333,7 +334,7 @@ void Demo::ThreadAlleyScene::Update(unsigned long long deltaTime)
 
 	if (dauDau) {
 		dauDau->Update(deltaTime);
-		if (!currentConversation && dauDau->CanInteract() && inpMan->KeyPress(DIK_E)) {
+		if (!currentConversation && dauDau->CanInteract() && inpMan->KeyPress(SettingsManager::GetInstance()->GetKeybind("INTERACT"))) {
 			auto [sw, sh] = camera.GetScreenResolution();
 			currentConversation = std::make_shared<IConversation>(std::make_shared<DX9GF::FontSprite>(font.get()), sw, sh);
 			for (auto& line : dauDau->GetDialogueLines()) {
@@ -358,7 +359,7 @@ void Demo::ThreadAlleyScene::Update(unsigned long long deltaTime)
 
 	for (auto& chest : treasureChests) {
 		chest->Update(deltaTime);
-		if (!currentConversation && chest->CanInteract() && inpMan->KeyPress(DIK_E)) {
+		if (!currentConversation && chest->CanInteract() && inpMan->KeyPress(SettingsManager::GetInstance()->GetKeybind("INTERACT"))) {
 			auto given = chest->Open(player.get());
 			if (!given.empty()) {
 				std::wstring msg = L"You found: ";
@@ -451,6 +452,7 @@ void Demo::ThreadAlleyScene::DrawUI(unsigned long long deltaTime)
 		if (draggableManager && inventoryMenu && inventoryMenu->IsOpen() && inventoryMenu->GetCurrentTab() == Demo::InventoryMenu::Tab::DECK) {
 			draggableManager->Draw(deltaTime);
 		}
+		if (inventoryMenu) inventoryMenu->DrawKeyboardReticle(gd, deltaTime);
 
 		if (currentConversation) {
 			currentConversation->Draw(gd, &this->uiCamera, deltaTime);
@@ -464,7 +466,9 @@ void Demo::ThreadAlleyScene::DrawUI(unsigned long long deltaTime)
 
 		PopupManager::GetInstance()->DrawUI(deltaTime, &this->uiCamera);
 
-		DX9GF::InputManager::GetInstance()->DrawCursor(&this->uiCamera, deltaTime);
+		if (!(inventoryMenu && inventoryMenu->IsInKeyboardMode())) {
+			DX9GF::InputManager::GetInstance()->DrawCursor(&this->uiCamera, deltaTime);
+		}
 
 		gd->EndDraw();
 	}

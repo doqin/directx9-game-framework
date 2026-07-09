@@ -1,4 +1,5 @@
 ﻿#include "pch.h"
+#include "SettingsManager.h"
 #include "TutorialWorldScene.h"
 #include "RandomEncounter.h"
 #include "MainMenu.h"
@@ -226,7 +227,7 @@ void Demo::TutorialWorldScene::Update(unsigned long long deltaTime)
 	static float escCooldown = 0.0f;
 	if (escCooldown > 0) escCooldown -= deltaTime;
 
-	if (inpMan->KeyPress(DIK_ESCAPE) && escCooldown <= 0) {
+	if (inpMan->KeyPress(SettingsManager::GetInstance()->GetKeybind("OPEN_INVENTORY")) && escCooldown <= 0) {
 		if (inventoryMenu) inventoryMenu->Toggle();
 		escCooldown = 300.0f;
 	}
@@ -240,7 +241,7 @@ void Demo::TutorialWorldScene::Update(unsigned long long deltaTime)
 
 	if (npcIntroduction) {
 		npcIntroduction->Update(deltaTime);
-		if (!currentConversation && npcIntroduction->CanInteract() && inpMan->KeyPress(DIK_E)) {
+		if (!currentConversation && npcIntroduction->CanInteract() && inpMan->KeyPress(SettingsManager::GetInstance()->GetKeybind("INTERACT"))) {
 			float sw = game->GetVirtualWidth();
 			float sh = game->GetVirtualHeight();
 			currentConversation = std::make_shared<IConversation>(std::make_shared<DX9GF::FontSprite>(font.get()), sw, sh);
@@ -253,7 +254,7 @@ void Demo::TutorialWorldScene::Update(unsigned long long deltaTime)
 	}
 	if (npcExplainingHealingPoint) {
 		npcExplainingHealingPoint->Update(deltaTime);
-		if (!currentConversation && npcExplainingHealingPoint->CanInteract() && inpMan->KeyPress(DIK_E)) {
+		if (!currentConversation && npcExplainingHealingPoint->CanInteract() && inpMan->KeyPress(SettingsManager::GetInstance()->GetKeybind("INTERACT"))) {
 			float sw = game->GetVirtualWidth();
 			float sh = game->GetVirtualHeight();
 			currentConversation = std::make_shared<IConversation>(std::make_shared<DX9GF::FontSprite>(font.get()), sw, sh);
@@ -264,7 +265,7 @@ void Demo::TutorialWorldScene::Update(unsigned long long deltaTime)
 	}
 	if (npcExplainingEnemyEncounters) {
 		npcExplainingEnemyEncounters->Update(deltaTime);
-		if (!currentConversation && npcExplainingEnemyEncounters->CanInteract() && inpMan->KeyPress(DIK_E)) {
+		if (!currentConversation && npcExplainingEnemyEncounters->CanInteract() && inpMan->KeyPress(SettingsManager::GetInstance()->GetKeybind("INTERACT"))) {
 			float sw = game->GetVirtualWidth();
 			float sh = game->GetVirtualHeight();
 			currentConversation = std::make_shared<IConversation>(std::make_shared<DX9GF::FontSprite>(font.get()), sw, sh);
@@ -275,7 +276,7 @@ void Demo::TutorialWorldScene::Update(unsigned long long deltaTime)
 	}
 	if (npcExplainingPortal) {
 		npcExplainingPortal->Update(deltaTime);
-		if (!currentConversation && npcExplainingPortal->CanInteract() && inpMan->KeyPress(DIK_E)) {
+		if (!currentConversation && npcExplainingPortal->CanInteract() && inpMan->KeyPress(SettingsManager::GetInstance()->GetKeybind("INTERACT"))) {
 			float sw = game->GetVirtualWidth();
 			float sh = game->GetVirtualHeight();
 			currentConversation = std::make_shared<IConversation>(std::make_shared<DX9GF::FontSprite>(font.get()), sw, sh);
@@ -302,7 +303,7 @@ void Demo::TutorialWorldScene::Update(unsigned long long deltaTime)
 
 	for (auto& chest : treasureChests) {
 		chest->Update(deltaTime);
-		if (!currentConversation && chest->CanInteract() && inpMan->KeyPress(DIK_E)) {
+		if (!currentConversation && chest->CanInteract() && inpMan->KeyPress(SettingsManager::GetInstance()->GetKeybind("INTERACT"))) {
 			auto given = chest->Open(player.get());
 			if (!given.empty()) {
 				std::wstring msg = L"You found: ";
@@ -411,6 +412,7 @@ void Demo::TutorialWorldScene::DrawUI(unsigned long long deltaTime)
 		if (draggableManager && inventoryMenu && inventoryMenu->IsOpen() && inventoryMenu->GetCurrentTab() == Demo::InventoryMenu::Tab::DECK) {
 			draggableManager->Draw(deltaTime);
 		}
+		if (inventoryMenu) inventoryMenu->DrawKeyboardReticle(gd, deltaTime);
 
 		if (currentConversation) {
 			currentConversation->Draw(gd, &this->uiCamera, deltaTime);
@@ -425,7 +427,9 @@ void Demo::TutorialWorldScene::DrawUI(unsigned long long deltaTime)
 		PopupManager::GetInstance()->DrawUI(deltaTime, &this->uiCamera);
 
 
-		DX9GF::InputManager::GetInstance()->DrawCursor(&this->uiCamera, deltaTime);
+		if (!(inventoryMenu && inventoryMenu->IsInKeyboardMode())) {
+			DX9GF::InputManager::GetInstance()->DrawCursor(&this->uiCamera, deltaTime);
+		}
 
 		gd->EndDraw();
 	}

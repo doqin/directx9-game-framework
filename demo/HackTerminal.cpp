@@ -1,4 +1,5 @@
 ﻿#include "pch.h"
+#include "SettingsManager.h"
 #include "HackTerminal.h"
 #include <cmath>
 
@@ -60,7 +61,7 @@ namespace Demo {
 
         auto inpMan = DX9GF::InputManager::GetInstance();
 
-        if (isPlayerNear && inpMan->KeyDown(DIK_E) && !isHacked) {
+        if (isPlayerNear && inpMan->KeyDown(SettingsManager::GetInstance()->GetKeybind("INTERACT")) && !isHacked) {
             if (onHackAttempt) {
                 onHackAttempt(this->colorID);
             }

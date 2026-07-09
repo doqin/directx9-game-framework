@@ -99,14 +99,60 @@ namespace Demo
 		}
 	}
 
+	bool SettingsScene::IsAnyKeybindListening() const
+	{
+		return isListeningUp || isListeningDown || isListeningLeft || isListeningRight
+			|| isListeningAccept || isListeningOpenInventory || isListeningInteract || isListeningSprint;
+	}
+
+	std::vector<KeyboardNavigator::Candidate> SettingsScene::CollectKeyboardCandidates()
+	{
+		std::vector<KeyboardNavigator::Candidate> candidates;
+
+		auto addButton = [&](std::shared_ptr<IButton> button) {
+			if (!button || button->GetState() == IButton::ButtonState::DISABLED) {
+				return;
+			}
+			candidates.push_back({
+				button,
+				button->GetWorldX(),
+				button->GetWorldY(),
+				(float)button->GetWidth(),
+				(float)button->GetHeight(),
+				[button]() { button->Activate(); }
+				});
+			};
+
+		for (auto& button : uiButtons) {
+			addButton(button);
+		}
+
+		auto sm = SettingsManager::GetInstance();
+		const int resIdx = sm->GetCurrentResolutionIndex();
+		const int maxIdx = static_cast<int>(sm->GetSupportedResolutions().size()) - 1;
+		if (resIdx > 0) {
+			addButton(btnResPrev);
+		}
+		if (resIdx < maxIdx) {
+			addButton(btnResNext);
+		}
+
+		return candidates;
+	}
+
 	//Update functions for component
 	void SettingsScene::ResetListening()
 	{
 		isListeningUp = isListeningDown = isListeningLeft = isListeningRight = false;
+		isListeningAccept = isListeningOpenInventory = isListeningInteract = isListeningSprint = false;
 		if (btnUp) btnUp->SetState(Demo::IButton::ButtonState::IDLE);
 		if (btnDown) btnDown->SetState(Demo::IButton::ButtonState::IDLE);
 		if (btnLeft) btnLeft->SetState(Demo::IButton::ButtonState::IDLE);
 		if (btnRight) btnRight->SetState(Demo::IButton::ButtonState::IDLE);
+		if (btnAccept) btnAccept->SetState(Demo::IButton::ButtonState::IDLE);
+		if (btnOpenInventory) btnOpenInventory->SetState(Demo::IButton::ButtonState::IDLE);
+		if (btnInteract) btnInteract->SetState(Demo::IButton::ButtonState::IDLE);
+		if (btnSprint) btnSprint->SetState(Demo::IButton::ButtonState::IDLE);
 	}
 
 	void SettingsScene::UpdateLayout(int screenW, int screenH)
@@ -159,10 +205,12 @@ namespace Demo
 		btnResPrev->SetLocalPosition(SLIDER_COLUMN_X, resRowY + fineTuneY);
 		btnResNext->SetLocalPosition(SLIDER_COLUMN_X + 180.f, resRowY + fineTuneY);
 
-		btnUp->SetLocalPosition(SLIDER_COLUMN_X, startY + rowSpacing * 5.0f + fineTuneY);
-		btnDown->SetLocalPosition(SLIDER_COLUMN_X, startY + rowSpacing * 6.5f + fineTuneY);
-		btnLeft->SetLocalPosition(SLIDER_COLUMN_X, startY + rowSpacing * 8.0f + fineTuneY);
-		btnRight->SetLocalPosition(SLIDER_COLUMN_X, startY + rowSpacing * 9.5f + fineTuneY);
+		std::shared_ptr<Demo::TextIconButton> keybindButtons[] = { btnUp, btnDown, btnLeft, btnRight, btnAccept, btnOpenInventory, btnInteract, btnSprint };
+		for (size_t i = 0; i < std::size(keybindButtons); ++i) {
+			if (keybindButtons[i]) {
+				keybindButtons[i]->SetLocalPosition(SLIDER_COLUMN_X, startY + rowSpacing * (KEYBIND_ROW_START + KEYBIND_ROW_STEP * i) + fineTuneY);
+			}
+		}
 	}
 
 	void SettingsScene::Init()
@@ -290,9 +338,13 @@ namespace Demo
 		SetupKeybindBtn(btnDown, "MOVE_DOWN", isListeningDown);
 		SetupKeybindBtn(btnLeft, "MOVE_LEFT", isListeningLeft);
 		SetupKeybindBtn(btnRight, "MOVE_RIGHT", isListeningRight);
+		SetupKeybindBtn(btnAccept, "ACCEPT", isListeningAccept);
+		SetupKeybindBtn(btnOpenInventory, "OPEN_INVENTORY", isListeningOpenInventory);
+		SetupKeybindBtn(btnInteract, "INTERACT", isListeningInteract);
+		SetupKeybindBtn(btnSprint, "SPRINT", isListeningSprint);
 
 		// Active Buttons
-		std::shared_ptr<Demo::IButton> buttons[] = { backButton, btnUp, btnDown, btnLeft, btnRight, btnMasterDec, btnMasterInc, btnMusicDec, btnMusicInc, btnSFXDec, btnSFXInc };
+		std::shared_ptr<Demo::IButton> buttons[] = { backButton, btnUp, btnDown, btnLeft, btnRight, btnAccept, btnOpenInventory, btnInteract, btnSprint, btnMasterDec, btnMasterInc, btnMusicDec, btnMusicInc, btnSFXDec, btnSFXInc };
 		for (auto& btn : buttons)
 		{
 			if (btn)
@@ -320,6 +372,12 @@ namespace Demo
 		transformManager->UpdateAll();
 		camera.Update();
 
+		// While a rebind capture is in progress every key belongs to the capture -
+		// suspend navigation so arrows don't move the cursor mid-listen.
+		if (!IsAnyKeybindListening()) {
+			keyboardNavigator.Update(deltaTime, CollectKeyboardCandidates());
+		}
+
 		//LOCAL FUNCTION to handle key presses
 		auto HandleKeybind = [&](bool& isListeningFlag, const std::string& actionName, std::shared_ptr<IconButton> btn)
 			{
@@ -329,7 +387,9 @@ namespace Demo
 				{
 					if (i == DIK_ESCAPE) continue;
 
-					if (inpMan->KeyPress(i))
+					// Edge-triggered: a key already held when listening began (e.g. the Accept
+					// key that activated this button via keyboard navigation) must not be captured.
+					if (inpMan->KeyDown(i))
 					{
 						SettingsManager::GetInstance()->SetKeybind(actionName, i);
 						btn->SetState(IButton::ButtonState::IDLE);
@@ -346,6 +406,10 @@ namespace Demo
 		HandleKeybind(isListeningDown, "MOVE_DOWN", btnDown);
 		HandleKeybind(isListeningLeft, "MOVE_LEFT", btnLeft);
 		HandleKeybind(isListeningRight, "MOVE_RIGHT", btnRight);
+		HandleKeybind(isListeningAccept, "ACCEPT", btnAccept);
+		HandleKeybind(isListeningOpenInventory, "OPEN_INVENTORY", btnOpenInventory);
+		HandleKeybind(isListeningInteract, "INTERACT", btnInteract);
+		HandleKeybind(isListeningSprint, "SPRINT", btnSprint);
 
 		if (this->isGoingBack)
 		{
@@ -382,10 +446,10 @@ namespace Demo
 			DrawString(L"Music Volume", LABEL_COLUMN_X, startY + rowSpacing, 0xFFFFFFFF);
 			DrawString(L"Sfx Volume", LABEL_COLUMN_X, startY + rowSpacing * 2, 0xFFFFFFFF);
 			DrawString(L"Resolution", LABEL_COLUMN_X, startY + rowSpacing * 3.5f, 0xFFFFFFFF);
-			DrawString(L"Move up", LABEL_COLUMN_X, startY + rowSpacing * 5.0f, 0xFFFFFFFF);
-			DrawString(L"Move down", LABEL_COLUMN_X, startY + rowSpacing * 6.5f, 0xFFFFFFFF);
-			DrawString(L"Move left", LABEL_COLUMN_X, startY + rowSpacing * 8.0f, 0xFFFFFFFF);
-			DrawString(L"Move right", LABEL_COLUMN_X, startY + rowSpacing * 9.5f, 0xFFFFFFFF);
+			const wchar_t* keybindLabels[] = { L"Move up", L"Move down", L"Move left", L"Move right", L"Accept", L"Open inventory", L"Interact", L"Sprint" };
+			for (size_t i = 0; i < std::size(keybindLabels); ++i) {
+				DrawString(keybindLabels[i], LABEL_COLUMN_X, startY + rowSpacing * (KEYBIND_ROW_START + KEYBIND_ROW_STEP * i), 0xFFFFFFFF);
+			}
 
 			//draw tracks
 			auto sm = SettingsManager::GetInstance();
@@ -410,7 +474,10 @@ namespace Demo
 			fontSprite->Begin(); fontSprite->Draw(uiCamera, 0); fontSprite->End();
 			if (resIdx < resList.size() - 1)
 				btnResNext->Draw(gd, deltaTime);
-			DX9GF::InputManager::GetInstance()->DrawCursor(&this->uiCamera, deltaTime);
+			keyboardNavigator.Draw(gd, uiCamera, CollectKeyboardCandidates());
+			if (!keyboardNavigator.IsInKeyboardMode()) {
+				DX9GF::InputManager::GetInstance()->DrawCursor(&this->uiCamera, deltaTime);
+			}
 			gd->EndDraw();
 		}
 	}

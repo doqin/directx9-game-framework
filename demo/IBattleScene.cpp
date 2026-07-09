@@ -576,9 +576,9 @@ void Demo::IBattleScene::DrawAttackCountdown(unsigned long long deltaTime)
 	fontSprite->End();
 }
 
-std::vector<Demo::IBattleScene::KeyboardCandidate> Demo::IBattleScene::CollectKeyboardCandidates()
+std::vector<Demo::KeyboardNavigator::Candidate> Demo::IBattleScene::CollectKeyboardCandidates()
 {
-	std::vector<KeyboardCandidate> candidates;
+	std::vector<KeyboardNavigator::Candidate> candidates;
 
 	auto addButton = [&](std::shared_ptr<IButton> button) {
 		if (!button) {
@@ -719,18 +719,12 @@ void Demo::IBattleScene::UpdateKeyboardNavigation(unsigned long long deltaTime)
 	const int keyDown = sm->GetKeybind("MOVE_DOWN");
 	const int keyLeft = sm->GetKeybind("MOVE_LEFT");
 	const int keyRight = sm->GetKeybind("MOVE_RIGHT");
+	const int keyAccept = sm->GetKeybind("ACCEPT");
 
-	if (inpMan->KeyDown(keyUp) || inpMan->KeyDown(keyDown) || inpMan->KeyDown(keyLeft) || inpMan->KeyDown(keyRight)) {
-		keyboardMode = true;
-	}
-	if (inpMan->GetRelativeMouseX() != 0 || inpMan->GetRelativeMouseY() != 0) {
-		keyboardMode = false;
-		keyboardTarget.reset();
+	keyboardNavigator.UpdateMode();
+	if (!keyboardNavigator.IsInKeyboardMode()) {
 		isDraggingBlockCardViaKeyboard = false;
 		pickedUpCard.reset();
-	}
-
-	if (!keyboardMode) {
 		return;
 	}
 
@@ -751,47 +745,20 @@ void Demo::IBattleScene::UpdateKeyboardNavigation(unsigned long long deltaTime)
 		else if (inpMan->KeyDown(keyDown)) slotDirY = 1;
 
 		if (slotDirX != 0 || slotDirY != 0) {
-			const float dirLen = std::sqrt(static_cast<float>(slotDirX * slotDirX + slotDirY * slotDirY));
-			const float dirUnitX = slotDirX / dirLen;
-			const float dirUnitY = slotDirY / dirLen;
-
-			// Top-left, not center (see the equivalent comment in the top-level cycling below).
-			const auto& cur = slots[placementSlotIndex];
-			const float curCx = cur.x;
-			const float curCy = cur.y;
-
-			int best = -1;
-			float bestScore = 0.f;
-			for (size_t i = 0; i < slots.size(); ++i) {
-				if (i == placementSlotIndex) {
-					continue;
-				}
-				const float cx = slots[i].x;
-				const float cy = slots[i].y;
-				const float vx = cx - curCx;
-				const float vy = cy - curCy;
-				const float dist = std::sqrt(vx * vx + vy * vy);
-				if (dist <= 0.0001f) {
-					continue;
-				}
-				const float dot = (vx / dist) * dirUnitX + (vy / dist) * dirUnitY;
-				if (dot < KEYBOARD_DIRECTION_DOT_THRESHOLD) {
-					continue;
-				}
-				const float primaryAxisDist = vx * dirUnitX + vy * dirUnitY;
-				const float perpDist = std::sqrt((std::max)(0.f, dist * dist - primaryAxisDist * primaryAxisDist));
-				const float score = primaryAxisDist + perpDist * KEYBOARD_PERPENDICULAR_PENALTY;
-				if (best < 0 || score < bestScore) {
-					best = static_cast<int>(i);
-					bestScore = score;
-				}
+			std::vector<std::pair<float, float>> positions;
+			positions.reserve(slots.size());
+			for (auto& slot : slots) {
+				positions.push_back({ slot.x, slot.y });
 			}
+			const int best = KeyboardNavigator::PickDirectional(
+				slots[placementSlotIndex].x, slots[placementSlotIndex].y,
+				slotDirX, slotDirY, positions, static_cast<int>(placementSlotIndex));
 			if (best >= 0) {
 				placementSlotIndex = static_cast<size_t>(best);
 			}
 		}
 
-		if (inpMan->KeyDown(DIK_RETURN)) {
+		if (inpMan->KeyDown(keyAccept)) {
 			auto place = slots[placementSlotIndex].place;
 			pickedUpCard.reset();
 			placementSlotIndex = 0;
@@ -802,39 +769,7 @@ void Demo::IBattleScene::UpdateKeyboardNavigation(unsigned long long deltaTime)
 		return;
 	}
 
-	auto candidates = CollectKeyboardCandidates();
-
-	const KeyboardCandidate* currentCandidate = nullptr;
-	for (auto& c : candidates) {
-		if (c.anchor == keyboardTarget) {
-			currentCandidate = &c;
-			break;
-		}
-	}
-
-	if (!currentCandidate) {
-		isDraggingBlockCardViaKeyboard = false;
-		if (candidates.empty()) {
-			keyboardTarget.reset();
-			return;
-		}
-		// Default entry point: whichever candidate is closest to the screen center (0,0 in this camera-centered coordinate system).
-		const KeyboardCandidate* best = nullptr;
-		float bestDist = 0.f;
-		for (auto& c : candidates) {
-			float cx = c.x + c.width / 2.f;
-			float cy = c.y + c.height / 2.f;
-			float dist = cx * cx + cy * cy;
-			if (!best || dist < bestDist) {
-				best = &c;
-				bestDist = dist;
-			}
-		}
-		keyboardTarget = best->anchor;
-		return;
-	}
-
-	if (keyboardTarget == mainBlockCard && isDraggingBlockCardViaKeyboard) {
+	if (keyboardNavigator.GetTarget() == mainBlockCard && isDraggingBlockCardViaKeyboard) {
 		auto app = DX9GF::Application::GetInstance();
 		const float halfScreenWidth = app->GetScreenWidth() / 2.f;
 		const float halfScreenHeight = app->GetScreenHeight() / 2.f;
@@ -855,67 +790,15 @@ void Demo::IBattleScene::UpdateKeyboardNavigation(unsigned long long deltaTime)
 			mainBlockCard->SetLocalPosition(newX, newY);
 		}
 
-		if (inpMan->KeyDown(DIK_RETURN)) {
+		if (inpMan->KeyDown(keyAccept)) {
 			isDraggingBlockCardViaKeyboard = false;
 		}
 		return;
 	}
+	// Target moved off the block card (e.g. it vanished from the candidates) - drop the grab.
+	isDraggingBlockCardViaKeyboard = false;
 
-	int dirX = 0, dirY = 0;
-	if (inpMan->KeyDown(keyLeft)) dirX = -1;
-	else if (inpMan->KeyDown(keyRight)) dirX = 1;
-	if (inpMan->KeyDown(keyUp)) dirY = -1;
-	else if (inpMan->KeyDown(keyDown)) dirY = 1;
-
-	if (dirX != 0 || dirY != 0) {
-		const float dirLen = std::sqrt(static_cast<float>(dirX * dirX + dirY * dirY));
-		const float dirUnitX = dirX / dirLen;
-		const float dirUnitY = dirY / dirLen;
-
-		// Use each candidate's top-left corner rather than its center: block/hand cards are
-		// left-aligned in a column but vary in width (e.g. a MultiTargetCard grows wider as
-		// targets attach), so comparing centers would inject a false horizontal offset between
-		// vertically-stacked same-column items and make Down/Up skip past the immediate neighbor.
-		const float curCx = currentCandidate->x;
-		const float curCy = currentCandidate->y;
-
-		const KeyboardCandidate* best = nullptr;
-		float bestScore = 0.f;
-		for (auto& c : candidates) {
-			if (c.anchor == currentCandidate->anchor) {
-				continue;
-			}
-			const float cx = c.x;
-			const float cy = c.y;
-			const float vx = cx - curCx;
-			const float vy = cy - curCy;
-			const float dist = std::sqrt(vx * vx + vy * vy);
-			if (dist <= 0.0001f) {
-				continue;
-			}
-			const float dot = (vx / dist) * dirUnitX + (vy / dist) * dirUnitY;
-			if (dot < KEYBOARD_DIRECTION_DOT_THRESHOLD) {
-				continue;
-			}
-			// Rank by along-axis distance plus a heavily-penalized off-axis distance, so a
-			// candidate roughly "in front of" the cursor wins over one that's merely closer
-			// in raw distance but well off to the side.
-			const float primaryAxisDist = vx * dirUnitX + vy * dirUnitY;
-			const float perpDist = std::sqrt((std::max)(0.f, dist * dist - primaryAxisDist * primaryAxisDist));
-			const float score = primaryAxisDist + perpDist * KEYBOARD_PERPENDICULAR_PENALTY;
-			if (!best || score < bestScore) {
-				best = &c;
-				bestScore = score;
-			}
-		}
-		if (best) {
-			keyboardTarget = best->anchor;
-		}
-	}
-
-	if (inpMan->KeyDown(DIK_RETURN) && currentCandidate->activate) {
-		currentCandidate->activate();
-	}
+	keyboardNavigator.Navigate(deltaTime, CollectKeyboardCandidates());
 }
 
 std::vector<Demo::IBattleScene::PlacementSlot> Demo::IBattleScene::CollectPlacementSlots()
@@ -972,7 +855,8 @@ std::vector<Demo::IBattleScene::PlacementSlot> Demo::IBattleScene::CollectPlacem
 		}
 		slots.push_back({
 			enemyCardRemoveAreaX, enemyCardRemoveAreaY, enemyCardRemoveAreaWidth, enemyCardRemoveAreaHeight,
-			[this, enemyCard]() { DiscardEnemyCard(enemyCard); }
+			[this, enemyCard]() { DiscardEnemyCard(enemyCard); },
+			true // the discard bar is drawn in the UI pass
 			});
 		return slots;
 	}
@@ -1320,7 +1204,7 @@ void Demo::IBattleScene::PlayerAttackDraw(unsigned long long deltaTime)
 		executeButton->Draw(game->GetGraphicsDevice(), deltaTime);
 	}
 
-
+	DrawKeyboardPlacementUI(deltaTime);
 }
 
 void Demo::IBattleScene::PlayerOpenItemsDraw(unsigned long long deltaTime)
@@ -1964,10 +1848,10 @@ void Demo::IBattleScene::Update(unsigned long long deltaTime)
 
 void Demo::IBattleScene::DrawKeyboardReticleUI(unsigned long long deltaTime)
 {
-	if (!keyboardMode || !keyboardTarget) {
+	if (!keyboardNavigator.IsInKeyboardMode() || !keyboardNavigator.GetTarget()) {
 		return;
 	}
-	auto button = std::dynamic_pointer_cast<IButton>(keyboardTarget);
+	auto button = std::dynamic_pointer_cast<IButton>(keyboardNavigator.GetTarget());
 	if (!button) {
 		return;
 	}
@@ -1977,7 +1861,7 @@ void Demo::IBattleScene::DrawKeyboardReticleUI(unsigned long long deltaTime)
 
 void Demo::IBattleScene::DrawKeyboardReticleWorld(unsigned long long deltaTime)
 {
-	if (!keyboardMode) {
+	if (!keyboardNavigator.IsInKeyboardMode()) {
 		return;
 	}
 
@@ -1992,6 +1876,9 @@ void Demo::IBattleScene::DrawKeyboardReticleWorld(unsigned long long deltaTime)
 
 		gd->SetAlphaBlending(true);
 		for (auto& slot : slots) {
+			if (slot.inUIPass) {
+				continue; // drawn later by DrawKeyboardPlacementUI, above the UI it belongs to
+			}
 			Demo::DrawAnimatedDashedRectangle(
 				gd, camera, slot.x, slot.y, slot.width, slot.height,
 				3.f, 0xFFFFFFFF, false, 4.f, 0xFFFFFFFF, 20.f, 10.f, 40.f, GetTickCount64());
@@ -1999,23 +1886,48 @@ void Demo::IBattleScene::DrawKeyboardReticleWorld(unsigned long long deltaTime)
 		gd->SetAlphaBlending(false);
 
 		auto& selected = slots[selectedIndex];
-		Demo::DrawKeyboardTargetReticle(gd, camera, selected.x, selected.y, selected.width, selected.height, GetTickCount64());
-		return;
-	}
-
-	if (!keyboardTarget || std::dynamic_pointer_cast<IButton>(keyboardTarget)) {
-		return;
-	}
-
-	// Look up the target's bounds from the same candidate list navigation uses, rather than
-	// re-deriving them here - some kinds (e.g. enemies, whose trigger uses a center origin)
-	// don't have world position == top-left, so there's a single source of truth for that math.
-	auto candidates = CollectKeyboardCandidates();
-	for (auto& c : candidates) {
-		if (c.anchor == keyboardTarget) {
-			Demo::DrawKeyboardTargetReticle(gd, camera, c.x, c.y, c.width, c.height, GetTickCount64());
-			break;
+		if (!selected.inUIPass) {
+			Demo::DrawKeyboardTargetReticle(gd, camera, selected.x, selected.y, selected.width, selected.height, GetTickCount64());
 		}
+		return;
+	}
+
+	if (!keyboardNavigator.GetTarget() || std::dynamic_pointer_cast<IButton>(keyboardNavigator.GetTarget())) {
+		return;
+	}
+
+	// The navigator looks the target's bounds up from the same candidate list navigation
+	// uses - some kinds (e.g. enemies, whose trigger uses a center origin) don't have
+	// world position == top-left, so there's a single source of truth for that math.
+	keyboardNavigator.Draw(gd, camera, CollectKeyboardCandidates());
+}
+
+void Demo::IBattleScene::DrawKeyboardPlacementUI(unsigned long long deltaTime)
+{
+	if (!keyboardNavigator.IsInKeyboardMode() || !pickedUpCard) {
+		return;
+	}
+	auto slots = CollectPlacementSlots();
+	if (slots.empty()) {
+		return;
+	}
+	size_t selectedIndex = (placementSlotIndex < slots.size()) ? placementSlotIndex : slots.size() - 1;
+
+	auto gd = game->GetGraphicsDevice();
+	gd->SetAlphaBlending(true);
+	for (auto& slot : slots) {
+		if (!slot.inUIPass) {
+			continue;
+		}
+		Demo::DrawAnimatedDashedRectangle(
+			gd, uiCamera, slot.x, slot.y, slot.width, slot.height,
+			3.f, 0xFFFFFFFF, false, 4.f, 0xFFFFFFFF, 20.f, 10.f, 40.f, GetTickCount64());
+	}
+	gd->SetAlphaBlending(false);
+
+	auto& selected = slots[selectedIndex];
+	if (selected.inUIPass) {
+		Demo::DrawKeyboardTargetReticle(gd, uiCamera, selected.x, selected.y, selected.width, selected.height, GetTickCount64());
 	}
 }
 
@@ -2154,7 +2066,7 @@ void Demo::IBattleScene::DrawUI(unsigned long long deltaTime)
 
 		drawBuffer->Update(deltaTime);
 
-		if (!keyboardMode) {
+		if (!keyboardNavigator.IsInKeyboardMode()) {
 			DX9GF::InputManager::GetInstance()->DrawCursor(&this->uiCamera, deltaTime);
 		}
 		gd->EndDraw();

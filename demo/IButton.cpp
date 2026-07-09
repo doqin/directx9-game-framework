@@ -60,6 +60,11 @@ void Demo::IButton::Update(unsigned long long deltaTime)
 	}
 }
 
+void Demo::IButton::PlayHoverSfx()
+{
+	DX9GF::AudioManager::GetInstance()->Play(btnHoverSfxName);
+}
+
 void Demo::IButton::Activate()
 {
 	if (this->currentState == ButtonState::LISTENING || this->currentState == ButtonState::DISABLED)

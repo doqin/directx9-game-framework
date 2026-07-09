@@ -151,6 +151,64 @@ namespace Demo {
 		}
 	}
 
+	std::vector<KeyboardNavigator::Candidate> InventoryMenu::CollectKeyboardCandidates()
+	{
+		std::vector<KeyboardNavigator::Candidate> candidates;
+
+		auto addButton = [&](std::shared_ptr<IconButton> button) {
+			if (!button || button->GetState() == IButton::ButtonState::DISABLED) {
+				return;
+			}
+			candidates.push_back({
+				button,
+				button->GetWorldX(),
+				button->GetWorldY(),
+				(float)button->GetWidth(),
+				(float)button->GetHeight(),
+				[button]() { button->Activate(); }
+				});
+			};
+
+		addButton(btnTabItems);
+		addButton(btnTabDeck);
+		addButton(btnResume);
+		addButton(btnOptions);
+		addButton(btnLeaveGame);
+
+		if (currentTab == Tab::DECK) {
+			// Cards in either container; activating one moves it to the other container
+			// (deck order doesn't matter - it's shuffled at battle start).
+			auto addCards = [&](std::shared_ptr<IContainer> from, std::shared_ptr<IContainer> to) {
+				for (auto& weakChild : from->GetChildren()) {
+					auto card = weakChild.lock();
+					if (!card || card->IsDragging()) {
+						continue;
+					}
+					candidates.push_back({
+						card,
+						card->GetWorldX(),
+						card->GetWorldY(),
+						(float)card->GetWidth(),
+						(float)card->GetHeight(),
+						[this, to, card]() {
+							// Keep the cursor at the card's old slot (the next card shifts up
+							// into it) so several cards can be moved in a row without re-navigating.
+							const float oldX = card->GetWorldX();
+							const float oldY = card->GetWorldY();
+							to->AddChildProgrammatically(card);
+							DX9GF::AudioManager::GetInstance()->PlayRandom("card_snap", 0.2f);
+							keyboardNavigator.RetargetNearest(oldX, oldY);
+						}
+						});
+				}
+				};
+			addCards(deckContainer, inventoryContainer);
+			addCards(inventoryContainer, deckContainer);
+		}
+
+		return candidates;
+	}
+
 	void InventoryMenu::Update(unsigned long long deltaTime)
 	{
 		if (!isOpen) return;
@@ -202,6 +260,8 @@ namespace Demo {
 				btn->Update(deltaTime);
 			}
 		}
+
+		keyboardNavigator.Update(deltaTime, CollectKeyboardCandidates());
 	}
 
 	void InventoryMenu::Draw(DX9GF::GraphicsDevice* gd, unsigned long long deltaTime)
@@ -316,6 +376,14 @@ namespace Demo {
 			deckContainer->Draw(deltaTime);
 			inventoryContainer->Draw(deltaTime);
 		}
+	}
+
+	void InventoryMenu::DrawKeyboardReticle(DX9GF::GraphicsDevice* gd, unsigned long long deltaTime)
+	{
+		// Called by the host scene after the DraggableManager has drawn the cards,
+		// so the reticle sits on top of them rather than underneath.
+		if (!isOpen) return;
+		keyboardNavigator.Draw(gd, *uiCamera, CollectKeyboardCandidates());
 	}
 
 	void InventoryMenu::RefreshItemsUI()

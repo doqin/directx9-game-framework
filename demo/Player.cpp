@@ -197,7 +197,7 @@ void Demo::Player::Update(unsigned long long deltaTime) {
 	D3DXVec2Normalize(&dirNorm, &dir);
 	D3DXVECTOR2 moveDir = dirNorm; // unscaled direction, used for footprint placement
 	bool isRunning = false;
-	if (inpMan->KeyPress(DIK_LSHIFT)) {
+	if (inpMan->KeyPress(SettingsManager::GetInstance()->GetKeybind("SPRINT"))) {
 		isRunning = true;
 		dirNorm.x *= SPRINT_MULTIPLIER;
 		dirNorm.y *= SPRINT_MULTIPLIER;

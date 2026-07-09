@@ -49,6 +49,9 @@ namespace Demo
 		//programmatically invokes the button's click callback (used by keyboard navigation).
 		void Activate();
 
+		//plays this button's hover sound (used by keyboard navigation when the cursor lands on it).
+		void PlayHoverSfx();
+
 		void SetState(ButtonState state) { this->currentState = state; }
 		ButtonState GetState() const { return this->currentState; }
 		std::shared_ptr<DX9GF::RectangleTrigger> GetTrigger() { return this->trigger; }

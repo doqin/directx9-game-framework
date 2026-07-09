@@ -115,6 +115,26 @@ namespace Demo {
         }
 
         LayoutButtons();
+        keyboardNavigator.Reset();
+    }
+
+    std::vector<KeyboardNavigator::Candidate> PopupManager::CollectKeyboardCandidates() {
+        std::vector<KeyboardNavigator::Candidate> candidates;
+        for (auto& popupBtn : activeButtons) {
+            auto btn = popupBtn->backgroundBtn;
+            if (!btn) {
+                continue;
+            }
+            candidates.push_back({
+                btn,
+                btn->GetWorldX(),
+                btn->GetWorldY(),
+                (float)btn->GetWidth(),
+                (float)btn->GetHeight(),
+                [btn]() { btn->Activate(); }
+                });
+        }
+        return candidates;
     }
 
     void PopupManager::LayoutButtons() {
@@ -142,6 +162,7 @@ namespace Demo {
 
     void PopupManager::Close() {
         this->isActive = false;
+        keyboardNavigator.Reset();
     }
 
     void PopupManager::Update(unsigned long long deltaTime, DX9GF::Camera* uiCamera) {
@@ -153,6 +174,9 @@ namespace Demo {
             activeButtons[i]->backgroundBtn->Update(deltaTime);
 
             if (!isActive) break;
+        }
+        if (isActive) {
+            keyboardNavigator.Update(deltaTime, CollectKeyboardCandidates());
         }
     }
 
@@ -193,5 +217,7 @@ namespace Demo {
         for (auto& btn : activeButtons) {
             btn->backgroundBtn->Draw(gd, deltaTime);
         }
+
+        keyboardNavigator.Draw(gd, *uiCamera, CollectKeyboardCandidates());
     }
 }
