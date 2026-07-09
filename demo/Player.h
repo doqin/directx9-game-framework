@@ -4,6 +4,7 @@
 #include "ICard.h"
 #include "GameItems.h"
 #include "DamageTextManager.h"
+#include <memory>
 namespace Demo {
 	class IEnemy;
 	class Player : public DX9GF::IGameObject, public DX9GF::ISaveable {
@@ -54,6 +55,12 @@ namespace Demo {
 		std::shared_ptr<DX9GF::AnimatedSprite> walkingUp;
 		std::shared_ptr<DX9GF::AnimatedSprite> walkingRight;
 		std::shared_ptr<DX9GF::AnimatedSprite> walkingLeft;
+		// Particles
+		const float FOOTPRINT_OFFSET = 3.f;
+		std::shared_ptr<DX9GF::Texture> footprintTexture;
+		std::unique_ptr<DX9GF::ParticleSystem> footprintEmitter;
+		bool footprintsEnabled = true;
+		bool nextFootLeft = true;
 		// Colliders
 		std::shared_ptr<DX9GF::RectangleCollider> collider;
 		// Externals
@@ -130,6 +137,7 @@ namespace Demo {
 		void AddActiveBuff(const ActiveBuff& buff);
 		bool IsWalking() const { return isWalking; }
 
+		void SetFootprintsEnabled(bool enabled);
 		void SetSurface(std::string surface);
 		void SetBaseSurface(std::string surface) {
 			this->baseSurface = surface;

@@ -1447,6 +1447,16 @@ void Demo::IBattleScene::Update(unsigned long long deltaTime)
 	default:
 		throw std::runtime_error("Unexpected state");
 	}
+
+	const float targetDim = (state == State::EnemyAttack) ? BACKGROUND_DIM_ALPHA : 0.f;
+	const float dimStep = BACKGROUND_DIM_SPEED * (deltaTime / 1000.f);
+	if (backgroundDimAlpha < targetDim) {
+		backgroundDimAlpha = (std::min)(targetDim, backgroundDimAlpha + dimStep);
+	}
+	else if (backgroundDimAlpha > targetDim) {
+		backgroundDimAlpha = (std::max)(targetDim, backgroundDimAlpha - dimStep);
+	}
+
 	DamageTextManager::GetInstance()->Update(deltaTime);
 	transformManager->UpdateAll();
 	commandBuffer.Update(deltaTime);
@@ -1493,6 +1503,16 @@ void Demo::IBattleScene::DrawWorld(unsigned long long deltaTime)
 				}
 			}
 			/* End of cool wave grid effect */
+		}
+
+		if (backgroundDimAlpha > 0.001f) {
+			auto app = DX9GF::Application::GetInstance();
+			float screenWidth = static_cast<float>(app->GetScreenWidth());
+			float screenHeight = static_cast<float>(app->GetScreenHeight());
+			const int dimAlphaByte = static_cast<int>(backgroundDimAlpha * 255.f);
+			gd->SetAlphaBlending(true);
+			gd->DrawRectangle(0.f, 0.f, screenWidth, screenHeight, D3DCOLOR_ARGB(dimAlphaByte, 0, 0, 0), true);
+			gd->SetAlphaBlending(false);
 		}
 
 		switch (state) {

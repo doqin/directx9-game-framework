@@ -13,6 +13,7 @@
 #include "DX9GFExtras/DX9GFICommand.h"
 #include "DX9GFExtras/DX9GFDestroyObjectCommand.h"
 #include "DX9GFExtras/DX9GFColliderManager.h"
+#include "DX9GFExtras/DX9GFParticleSystem.h"
 #include "DX9GFExtras/DX9GFGoToCommand.h"
 #include "DX9GFExtras/DX9GFRotateCommand.h"
 #include "DX9GFExtras/DX9GFSetCameraPositionCommand.h"
