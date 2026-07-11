@@ -161,111 +161,22 @@ void Demo::TutorialWorldScene::Init()
 	testEncounter.spriteWidth = 64;
 	testEncounter.spriteHeight = 64;
 
-	// --- KHỞI TẠO MAP ENEMIES ---
+	//map enemies
+	auto spawn = [&](float x, float y, std::string id, std::vector<std::string> types, bool isRand, bool isGlobal) {
+		auto bgDraw = [this](DX9GF::GraphicsDevice* gd, unsigned long long deltaTime) {
+			DrawBackground(gd, deltaTime);
+			};
+		mapEnemies.push_back(EnemyFactory::CreateMapEnemy(
+			x, y, id, types, isRand, isGlobal, "battle_loop", bgDraw,
+			transformManager, game, colliderManager.get(), player
+		));
+		};
 
-	// 1. Con thứ nhất: Chỉ có KeyeEnemy (Tọa độ 615, -170)
-	BattleEncounter encounter1;
-	encounter1.mapEnemyID = "tutorial_keye_01";
-	encounter1.enemyTypes = { "KeyeEnemy" };
-	encounter1.bgmName = "battle_loop1";
-	encounter1.bgDrawFunc = [this](DX9GF::GraphicsDevice* gd, unsigned long long deltaTime) { DrawBackground(gd, deltaTime); };
-
-	// AUTO LOAD SPRITE: Lấy hình của con KeyeEnemy
-	auto sprite1 = EnemyFactory::GetOverworldSprite(encounter1.enemyTypes[0]);
-	encounter1.mapTexturePath = sprite1.texturePath;
-	encounter1.spriteWidth = sprite1.width;
-	encounter1.spriteHeight = sprite1.height;
-	encounter1.frameCount = sprite1.frameCount;
-
-	auto roamingEnemy1 = std::make_shared<MapEnemy>(transformManager, 615.f, -170.f, encounter1);
-	roamingEnemy1->Init(game, game->GetGraphicsDevice(), colliderManager.get(), player);
-	mapEnemies.push_back(roamingEnemy1);
-
-
-	// 2. Con thứ hai: Chỉ có DemonEyeEnemy (Tọa độ 510, -380)
-	BattleEncounter encounter2;
-	encounter2.mapEnemyID = "tutorial_demoneye_01";
-	encounter2.enemyTypes = { "DemonEyeEnemy" };
-	encounter2.bgmName = "battle_loop1";
-	encounter2.bgDrawFunc = [this](DX9GF::GraphicsDevice* gd, unsigned long long deltaTime) { DrawBackground(gd, deltaTime); };
-
-	// AUTO LOAD SPRITE: Lấy hình của con DemonEyeEnemy
-	auto sprite2 = EnemyFactory::GetOverworldSprite(encounter2.enemyTypes[0]);
-	encounter2.mapTexturePath = sprite2.texturePath;
-	encounter2.spriteWidth = sprite2.width;
-	encounter2.spriteHeight = sprite2.height;
-	encounter2.frameCount = sprite2.frameCount;
-
-	auto roamingEnemy2 = std::make_shared<MapEnemy>(transformManager, 510.f, -380.f, encounter2);
-	roamingEnemy2->Init(game, game->GetGraphicsDevice(), colliderManager.get(), player);
-	mapEnemies.push_back(roamingEnemy2);
-
-
-	// 3. Con thứ ba: Random 1-2 con Keye/Demon (Tọa độ 500, -590)
-	BattleEncounter encounter3;
-	encounter3.mapEnemyID = "tutorial_random_01";
-
-	// FIX: Nạp đạn vào rổ trước
-	encounter3.randomPool = { "KeyeEnemy", "DemonEyeEnemy" };
-	// Sau đó mới bốc thăm từ rổ
-	encounter3.enemyTypes = EncounterGenerator::GenerateFromTypes(encounter3.randomPool);
-
-	encounter3.bgmName = "battle_loop1";
-	encounter3.bgDrawFunc = [this](DX9GF::GraphicsDevice* gd, unsigned long long deltaTime) { DrawBackground(gd, deltaTime); };
-
-	// AUTO LOAD DẤU CHẤM HỎI
-	auto sprite3 = EnemyFactory::GetOverworldSprite("Random");
-	encounter3.mapTexturePath = sprite3.texturePath;
-	encounter3.spriteWidth = sprite3.width;
-	encounter3.spriteHeight = sprite3.height;
-	encounter3.frameCount = sprite3.frameCount;
-
-	auto roamingEnemy3 = std::make_shared<MapEnemy>(transformManager, 500.f, -590.f, encounter3);
-	roamingEnemy3->Init(game, game->GetGraphicsDevice(), colliderManager.get(), player);
-	mapEnemies.push_back(roamingEnemy3);
-
-	// 4. Con thứ tư: Đội hình Cố định (Keye + DemonEye) - Ép người chơi xử lý đa mục tiêu
-	// Tọa độ: -90, -400
-	BattleEncounter encounter4;
-	encounter4.mapEnemyID = "tutorial_mixed_01";
-	encounter4.enemyTypes = { "KeyeEnemy", "DemonEyeEnemy" }; // Gặp chắc chắn 2 con khác loại
-	encounter4.bgmName = "battle_loop1";
-	encounter4.bgDrawFunc = [this](DX9GF::GraphicsDevice* gd, unsigned long long deltaTime) { DrawBackground(gd, deltaTime); };
-
-	// Lấy hình con Keye làm "Leader" đại diện ngoài map
-	auto sprite4 = EnemyFactory::GetOverworldSprite(encounter4.enemyTypes[0]);
-	encounter4.mapTexturePath = sprite4.texturePath;
-	encounter4.spriteWidth = sprite4.width;
-	encounter4.spriteHeight = sprite4.height;
-	encounter4.frameCount = sprite4.frameCount;
-
-	auto roamingEnemy4 = std::make_shared<MapEnemy>(transformManager, -90.f, -400.f, encounter4);
-	roamingEnemy4->Init(game, game->GetGraphicsDevice(), colliderManager.get(), player);
-	mapEnemies.push_back(roamingEnemy4);
-
-
-	// 5. Con thứ năm: Bể ngẫu nhiên Mở rộng (Có rủi ro gặp Mimic)
-	// Tọa độ: 50, -330
-	BattleEncounter encounter5;
-	encounter5.mapEnemyID = "tutorial_random_02";
-
-	// FIX: Nạp đạn vào rổ chứa cả Mimic
-	encounter5.randomPool = { "KeyeEnemy", "DemonEyeEnemy", "MimicEnemy" };
-	// Sau đó bốc thăm
-	encounter5.enemyTypes = EncounterGenerator::GenerateFromTypes(encounter5.randomPool);
-	encounter5.bgmName = "battle_loop1";
-	encounter5.bgDrawFunc = [this](DX9GF::GraphicsDevice* gd, unsigned long long deltaTime) { DrawBackground(gd, deltaTime); };
-
-	// Gắn sprite dấu chấm hỏi
-	auto sprite5 = EnemyFactory::GetOverworldSprite("Random");
-	encounter5.mapTexturePath = sprite5.texturePath;
-	encounter5.spriteWidth = sprite5.width;
-	encounter5.spriteHeight = sprite5.height;
-	encounter5.frameCount = sprite5.frameCount;
-
-	auto roamingEnemy5 = std::make_shared<MapEnemy>(transformManager, 50.f, -330.f, encounter5);
-	roamingEnemy5->Init(game, game->GetGraphicsDevice(), colliderManager.get(), player);
-	mapEnemies.push_back(roamingEnemy5);
+	spawn(615.f, -170.f, "tutorial_keye_01", { "KeyeEnemy" }, false, false);
+	spawn(510.f, -380.f, "tutorial_demoneye_01", { "DemonEyeEnemy" }, false, false);
+	spawn(500.f, -590.f, "tutorial_random_01", { "KeyeEnemy", "DemonEyeEnemy" }, true, false);
+	spawn(-90.f, -400.f, "tutorial_mixed_01", { "KeyeEnemy", "DemonEyeEnemy" }, false, false);
+	spawn(50.f, -330.f, "tutorial_random_02", { "KeyeEnemy", "DemonEyeEnemy", "MimicEnemy" }, true, false);
 
 	draggableManager = std::make_shared<Demo::DraggableManager>();
 
@@ -442,7 +353,6 @@ void Demo::TutorialWorldScene::Update(unsigned long long deltaTime)
 	if (playerHUD && !isGamePaused) playerHUD->Update(deltaTime);
 
 	if (!isGamePaused) {
-		// 3. THÊM VÒNG LẶP NÀY ĐỂ QUÁI CHẠY
 		for (auto& enemy : mapEnemies) {
 			enemy->Update(deltaTime);
 		}
@@ -489,7 +399,6 @@ void Demo::TutorialWorldScene::DrawWorld(unsigned long long deltaTime)
 
 		if (npcExplainingPortal) npcExplainingPortal->Draw(camera, deltaTime);
 
-		// 4. THÊM VÒNG LẶP VẼ QUÁI
 		for (auto& enemy : mapEnemies) {
 			enemy->Draw(&camera, deltaTime);
 		}
@@ -595,7 +504,6 @@ void Demo::TutorialWorldScene::GenerateSaveData(nlohmann::json& outData)
 	for (auto& c : treasureChests) chestStates.push_back(c->GetIsOpened());
 	outData["treasureChests"] = chestStates;
 
-	// THÊM MỚI: Quét toàn bộ mapEnemies và lưu trạng thái dựa trên mapEnemyID
 	nlohmann::json enemiesState = nlohmann::json::object();
 	for (auto& enemy : mapEnemies) {
 		enemiesState[enemy->GetEnemyID()] = {
@@ -618,12 +526,10 @@ void Demo::TutorialWorldScene::RestoreSaveData(const nlohmann::json& inData)
 			treasureChests[i]->SetOpened(arr[i].get<bool>());
 	}
 
-	// THÊM MỚI: Khôi phục trạng thái chết/sống của quái vật
 	if (inData.contains("mapEnemies")) {
 		auto& enemiesState = inData["mapEnemies"];
 		for (auto& enemy : mapEnemies) {
 			std::string id = enemy->GetEnemyID();
-			// Nếu tìm thấy ID quái trong file Save, tiến hành set trạng thái
 			if (enemiesState.contains(id)) {
 				bool def = enemiesState[id]["isDefeated"].get<bool>();
 				float timer = enemiesState[id]["respawnTimer"].get<float>();

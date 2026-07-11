@@ -43,15 +43,13 @@ void Demo::KeyeEnemy::StartAttack(std::shared_ptr<Player> player, std::vector<st
     float projDamage = 2.f; 
 
     //PatternRoundCircle(projDamage);
-    if (RNG::Range(1, 2) == 1) PatternBoomerangCross(projDamage);
+    if (GetSmartRandomPattern(1, 2) == 1) PatternBoomerangCross(projDamage);
     else PatternRoundCircle(projDamage);
 
     //commandBuffer.PushCommand(std::make_shared<DX9GF::DelayCommand>(3.f));
 }
 
 void Demo::KeyeEnemy::PatternBoomerangCross(float projDamage) {
-    // Bỏ hết đống khai báo rd, gen đi
-    // Xóa luôn &gen ra khỏi danh sách capture của lambda
     auto attack = std::make_shared<DX9GF::CustomCommand>([this, projDamage](std::function<void(void)> markFinished) {
         if (auto lock = this->player.lock()) {
             auto [px, py] = lock->GetWorldPosition();

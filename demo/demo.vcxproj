@@ -216,6 +216,7 @@
     <ClCompile Include="DebugScene.cpp" />
     <ClCompile Include="DemonEyeEnemy.cpp" />
     <ClCompile Include="DrawUtils.cpp" />
+    <ClCompile Include="EnemyFactory.cpp" />
     <ClCompile Include="Game.cpp" />
     <ClCompile Include="GameItems.cpp" />
     <ClCompile Include="HackTerminal.cpp" />

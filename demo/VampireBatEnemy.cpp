@@ -41,7 +41,7 @@ void Demo::VampireBatEnemy::StartAttack(std::shared_ptr<Player> player, std::vec
 	(void)camera;
 	this->player = player;
 
-	if (GetRandomPattern() == 1) PatternEcholocation(GetOutgoingDamage(2.f), enemies);
+	if (GetSmartRandomPattern(1, 2) == 1) PatternEcholocation(GetOutgoingDamage(2.f), enemies);
 	else PatternSwoopBite(GetOutgoingDamage(4.f));
 
 	//commandBuffer.PushCommand(std::make_shared<DX9GF::DelayCommand>(1.f));

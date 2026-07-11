@@ -1256,7 +1256,7 @@ void Demo::IBattleScene::Init()
 	btnPrevPage = std::make_shared<Demo::TextIconButton>(transformManager, 0, 0, 30.0f, 30.0f, uiSheetTex, font.get(), L"<", 3);
 	btnPrevPage->SetSpriteRects({ {0, 0, 16, 16}, {0, 16, 16, 32}, {0, 32, 16, 48} });
 	btnPrevPage->SetSpriteScale(2.0f, 2.0f);
-	btnPrevPage->SetTextColor(0xFF111111); // Set chữ màu đen
+	btnPrevPage->SetTextColor(0xFF111111);
 	btnPrevPage->SetOnReleaseLeft([&](DX9GF::ITrigger* thisObj) {
 		if (currentItemPage > 0) {
 			currentItemPage--;

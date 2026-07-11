@@ -52,7 +52,7 @@ void Demo::CupidEnemy::StartAttack(std::shared_ptr<Player> player, std::vector<s
 	float baseDamage = 4.f;
 	float projDamage = GetOutgoingDamage(baseDamage);
 
-	int patternId = GetRandomPattern();
+	int patternId = GetSmartRandomPattern(1, 3);
 
 	//PatternHeartWave(projDamage);
 	if (patternId == 1) PatternHeartWave(projDamage);

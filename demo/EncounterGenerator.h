@@ -6,7 +6,7 @@
 namespace Demo {
 	class EncounterGenerator {
 	public:
-		// bể quái chung cho toàn bộ mạch chạy roguelike
+		//roguelike enemy pool
 		static std::vector<std::string> GenerateNormalEncounter() {
 			std::vector<std::string> normalPool = {
 				"DemonEyeEnemy", "VampireBatEnemy",
@@ -23,7 +23,7 @@ namespace Demo {
 			return result;
 		}
 
-		// dùng riêng cho các trường hợp đặc biệt cần giới hạn loại quái dễ
+		//allow specific types of enemy
 		static std::vector<std::string> GenerateFromTypes(const std::vector<std::string>& allowedTypes) {
 			std::vector<std::string> result;
 			if (allowedTypes.empty()) return result;

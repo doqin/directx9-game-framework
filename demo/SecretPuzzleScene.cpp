@@ -7,8 +7,6 @@
 #include "TransitionCommand.h"
 #include "resource.h"
 #include "PopupManager.h"
-
-// THÊM HEADERS CHO HỆ THỐNG ENEMY
 #include "MapEnemy.h"
 #include "EnemyFactory.h"
 #include "EncounterGenerator.h"
@@ -205,73 +203,37 @@ void Demo::SecretPuzzleScene::Init()
 	addChest(-11, -31, { ChestReward::Item(2,1), ChestReward::Item(3,1), ChestReward::Card("CleaveCard") }, true);
 	addChest(80, 48, { ChestReward::Item(4,1), ChestReward::Item(5,1), ChestReward::Card("TwinStrikeCard") }, true);
 
-	// ==========================================
-	// HỆ THỐNG MAP ENEMIES (CLEAN SPAWN LAMBDA)
-	// ==========================================
-	auto spawnEnemy = [&](float x, float y, std::string id, std::vector<std::string> types, bool isRandomPool, bool useGlobalPool = false) {
-		BattleEncounter enc;
-		enc.mapEnemyID = id;
-		enc.useGlobalPool = useGlobalPool;
+	//map enemies
+	auto spawn = [&](float x, float y, std::string id, std::vector<std::string> types, bool isRand, bool isGlobal) {
+		auto bgDraw = [this](DX9GF::GraphicsDevice* gd, unsigned long long deltaTime) {
+			DrawBackground(gd, deltaTime);
+			};
 
-		if (useGlobalPool) {
-			enc.enemyTypes = EncounterGenerator::GenerateNormalEncounter();
-		}
-		else if (isRandomPool) {
-			enc.randomPool = types;
-			enc.enemyTypes = EncounterGenerator::GenerateFromTypes(enc.randomPool);
-		}
-		else {
-			enc.enemyTypes = types;
-		}
+		std::string bgm = (id == "sec_miniboss_01") ? "bgm_boss" : "battle_loop";
 
-		enc.bgmName = (id == "sec_miniboss_01") ? "bgm_boss" : "battle_loop1";
-		enc.bgDrawFunc = [this](DX9GF::GraphicsDevice* gd, unsigned long long deltaTime) { DrawBackground(gd, deltaTime); };
-
-		auto sprite = EnemyFactory::GetOverworldSprite((isRandomPool || useGlobalPool) ? "Random" : types[0]);
-		enc.mapTexturePath = sprite.texturePath;
-		enc.spriteWidth = sprite.width;
-		enc.spriteHeight = sprite.height;
-		enc.frameCount = sprite.frameCount;
-
-		auto enemy = std::make_shared<MapEnemy>(transformManager, x, y, enc);
-		enemy->Init(game, game->GetGraphicsDevice(), colliderManager.get(), player);
-		mapEnemies.push_back(enemy);
+		mapEnemies.push_back(EnemyFactory::CreateMapEnemy(
+			x, y, id, types, isRand, isGlobal, bgm, bgDraw,
+			transformManager, game, colliderManager.get(), player
+		));
 		};
 
-	// --- RẢI QUÁI MAP SECRET PUZZLE ---
-
-	// 1. Khu vực rìa ngoài (Gặp quái cơ bản)
-	spawnEnemy(-1140.f, -400.f, "sec_bat_01", { "VampireBatEnemy" }, false); // Cố định 1 Dơi
-	spawnEnemy(-910.f, 80.f, "sec_eye_01", { "DemonEyeEnemy" }, false); // Cố định 1 Mắt Quỷ
-	spawnEnemy(-780.f, 470.f, "sec_rand_bat_eye_01", { "VampireBatEnemy", "DemonEyeEnemy" }, true); // Random Dơi/Mắt
-
-	// 2. Khu vực tiến vào trong (Bắt đầu mix quái)
-	spawnEnemy(-480.f, 450.f, "sec_rand_keye_bat_01", { "KeyeEnemy", "VampireBatEnemy" }, true);
-	spawnEnemy(-330.f, 160.f, "sec_duo_bat_01", { "VampireBatEnemy", "VampireBatEnemy" }, false); // Đội hình đôi (2 Dơi)
-
-	// 3. Cạm bẫy ngầm (Mimic xuất hiện)
-	spawnEnemy(-440.f, -80.f, "sec_mimic_trap_01", { "MimicEnemy" }, false); // Ép dẫm phải Mimic
-	spawnEnemy(-300.f, -450.f, "sec_rand_3types_01", { "DemonEyeEnemy", "KeyeEnemy", "MimicEnemy" }, true); // Random 3 loại
-
-	// 4. Các điểm rải rác giữa map
-	spawnEnemy(-60.f, -460.f, "sec_bat_02", { "VampireBatEnemy" }, false);
-	spawnEnemy(90.f, -340.f, "sec_rand_eye_bat_01", { "DemonEyeEnemy", "VampireBatEnemy" }, true);
-	spawnEnemy(765.f, 680.f, "sec_keye_01", { "KeyeEnemy" }, false);
-	spawnEnemy(880.f, 730.f, "sec_rand_bat_mimic_01", { "VampireBatEnemy", "MimicEnemy" }, true); // Tỷ lệ 50/50 ăn Mimic
-	spawnEnemy(840.f, 900.f, "sec_duo_eye_01", { "DemonEyeEnemy", "DemonEyeEnemy" }, false); // Đội hình đôi (2 Mắt)
-	spawnEnemy(1070.f, 640.f, "sec_rand_3types_02", { "VampireBatEnemy", "DemonEyeEnemy", "KeyeEnemy" }, true);
-	spawnEnemy(1135.f, 930.f, "sec_rand_keye_mimic_01", { "KeyeEnemy", "MimicEnemy" }, true);
-	spawnEnemy(1195.f, 780.f, "sec_bat_03", { "VampireBatEnemy" }, false);
-	spawnEnemy(1350.f, 785.f, "sec_rand_eye_bat_02", { "DemonEyeEnemy", "VampireBatEnemy" }, true);
-
-	// 5. Khu vực cổng Boss (Quái Hỗn mang & Mini Boss)
-	// BỂ RANDOM TẤT CẢ: Tích cờ TRUE ở cuối để gọi GenerateNormalEncounter()
-	spawnEnemy(1700.f, 860.f, "sec_rand_all_01", {}, false, true);
-
-	// TRÙM CANH CỔNG (Cố định, đổi BGM riêng)
-	spawnEnemy(1660.f, 800.f, "sec_miniboss_01", { "CupidEnemy" }, false);
-	// ==========================================
-
+	spawn(-1140.f, -400.f, "sec_bat_01", { "VampireBatEnemy" }, false, false);
+	spawn(-910.f, 80.f, "sec_eye_01", { "DemonEyeEnemy" }, false, false);
+	spawn(-780.f, 470.f, "sec_rand_bat_eye_01", { "VampireBatEnemy", "DemonEyeEnemy" }, true, false);
+	spawn(-480.f, 450.f, "sec_rand_keye_bat_01", { "KeyeEnemy", "VampireBatEnemy" }, true, false);
+	spawn(-330.f, 160.f, "sec_duo_bat_01", { "VampireBatEnemy", "VampireBatEnemy" }, false, false);
+	spawn(-440.f, -80.f, "sec_mimic_trap_01", { "MimicEnemy" }, false, false);
+	spawn(-300.f, -450.f, "sec_rand_3types_01", { "DemonEyeEnemy", "KeyeEnemy", "MimicEnemy" }, true, false);
+	spawn(-60.f, -460.f, "sec_bat_02", { "VampireBatEnemy" }, false, false);
+	spawn(90.f, -340.f, "sec_rand_eye_bat_01", { "DemonEyeEnemy", "VampireBatEnemy" }, true, false);
+	spawn(765.f, 680.f, "sec_keye_01", { "KeyeEnemy" }, false, false);
+	spawn(880.f, 730.f, "sec_rand_bat_mimic_01", { "VampireBatEnemy", "MimicEnemy" }, true, false);
+	spawn(840.f, 900.f, "sec_duo_eye_01", { "DemonEyeEnemy", "DemonEyeEnemy" }, false, false);
+	spawn(1070.f, 640.f, "sec_rand_3types_02", { "VampireBatEnemy", "DemonEyeEnemy", "KeyeEnemy" }, true, false);
+	spawn(1135.f, 930.f, "sec_rand_keye_mimic_01", { "KeyeEnemy", "MimicEnemy" }, true, false);
+	spawn(1195.f, 780.f, "sec_bat_03", { "VampireBatEnemy" }, false, false);
+	spawn(1350.f, 785.f, "sec_rand_eye_bat_02", { "DemonEyeEnemy", "VampireBatEnemy" }, true, false);
+	spawn(1700.f, 860.f, "sec_rand_all_01", {}, false, true);
 
 	draggableManager = std::make_shared<Demo::DraggableManager>();
 	inventoryMenu = std::make_shared<InventoryMenu>(game, player, transformManager, draggableManager, &uiCamera, font.get());
@@ -427,7 +389,6 @@ void Demo::SecretPuzzleScene::Update(unsigned long long deltaTime)
 	if (playerHUD && !isGamePaused) playerHUD->Update(deltaTime);
 
 	if (!isGamePaused) {
-		// CẬP NHẬT LOGIC QUÁI
 		for (auto& enemy : mapEnemies) {
 			enemy->Update(deltaTime);
 		}
@@ -466,7 +427,6 @@ void Demo::SecretPuzzleScene::DrawWorld(unsigned long long deltaTime)
 
 		dauDau->Draw(camera, deltaTime);
 
-		// VẼ QUÁI TRƯỚC PLAYER ĐỂ PLAYER ĐÈ LÊN KHI ĐỨNG DƯỚI
 		for (auto& enemy : mapEnemies) {
 			enemy->Draw(&camera, deltaTime);
 		}
@@ -564,7 +524,6 @@ void Demo::SecretPuzzleScene::GenerateSaveData(nlohmann::json& outData)
 	for (auto& c : treasureChests) chestStates.push_back(c->GetIsOpened());
 	outData["treasureChests"] = chestStates;
 
-	// BỔ SUNG LƯU GAME CHO MAP ENEMIES
 	nlohmann::json enemiesState = nlohmann::json::object();
 	for (auto& enemy : mapEnemies) {
 		enemiesState[enemy->GetEnemyID()] = {
@@ -590,7 +549,6 @@ void Demo::SecretPuzzleScene::RestoreSaveData(const nlohmann::json& inData)
 			treasureChests[i]->SetOpened(arr[i].get<bool>());
 	}
 
-	// BỔ SUNG KHÔI PHỤC MAP ENEMIES
 	if (inData.contains("mapEnemies")) {
 		auto& enemiesState = inData["mapEnemies"];
 		for (auto& enemy : mapEnemies) {

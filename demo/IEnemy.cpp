@@ -1,4 +1,4 @@
-#include "pch.h"
+﻿#include "pch.h"
 #include "IEnemy.h"
 #include <cmath>
 #include <algorithm>
@@ -340,4 +340,27 @@ float Demo::IEnemy::GetOutgoingDamage(float baseDamage) const
     }
 
     return finalDamage;
+}
+
+int Demo::IEnemy::GetSmartRandomPattern(int minPattern, int maxPattern, int maxStreak, int breakChance)
+{
+    int patternId = RNG::Range(minPattern, maxPattern);
+
+    if (patternId == lastPattern) {
+        streakCount++;
+        if (streakCount >= maxStreak) {
+            if (RNG::Range(1, 100) <= breakChance) {
+                do {
+                    patternId = RNG::Range(minPattern, maxPattern);
+                } while (patternId == lastPattern);
+                streakCount = 0; //reset if switched skill
+            }
+        }
+    }
+    else {
+        streakCount = 0;
+    }
+
+    lastPattern = patternId;
+    return patternId;
 }

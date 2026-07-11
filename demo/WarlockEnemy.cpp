@@ -43,7 +43,7 @@ void Demo::WarlockEnemy::StartAttack(std::shared_ptr<Player> player, std::vector
 	this->player = player;
 	float projDamage = GetOutgoingDamage(4.f);
 
-	if (GetRandomPattern() == 1) PatternDarkVortex(projDamage, enemies);
+	if (GetSmartRandomPattern(1, 2) == 1) PatternDarkVortex(projDamage, enemies);
 	else PatternHomingCurse(projDamage, enemies);
 
 	//commandBuffer.PushCommand(std::make_shared<DX9GF::DelayCommand>(4.f));

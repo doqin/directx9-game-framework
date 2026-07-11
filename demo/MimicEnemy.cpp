@@ -38,8 +38,9 @@ void Demo::MimicEnemy::StartAttack(std::shared_ptr<Player> player, std::vector<s
 	this->player = player;
 	float projDamage = GetOutgoingDamage(4.f);
 
+	int patternId = GetSmartRandomPattern(1, 2);
 	//PatternJunkVomit(projDamage, enemies);
-	if (GetRandomPattern() == 1) PatternCoinCyclone(projDamage, enemies);
+	if (patternId == 1) PatternCoinCyclone(projDamage, enemies);
 	else PatternJunkVomit(projDamage, enemies);
 
 	commandBuffer.PushCommand(std::make_shared<DX9GF::DelayCommand>(4.f));

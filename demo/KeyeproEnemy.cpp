@@ -84,7 +84,7 @@ void Demo::KeyeproEnemy::StartAttack(std::shared_ptr<Player> player, std::vector
                 return;
             }
         }
-        int patternId = GetRandomPattern();
+        int patternId = GetSmartRandomPattern(1, 6);
         if (patternId == 1) {
             PatternTargetedSniping(projDamage);
         }

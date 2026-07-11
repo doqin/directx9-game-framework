@@ -17,9 +17,10 @@ namespace Demo {
         float speed = 75.f;
         float aggroRadius = 80.f;
         float returnRadius = 150.f;
-
-        // THÊM: Giới hạn "xích cổ" để quái không bị dắt đi quá xa khỏi điểm gốc
         float tetherRadius = 400.f;
+
+        float losTimer = 0.f;
+        bool lastLosResult = true;
 
         std::shared_ptr<DX9GF::Texture> texture;
         std::shared_ptr<DX9GF::AnimatedSprite> sprite;
@@ -33,13 +34,13 @@ namespace Demo {
         float respawnTimer = 0.f;
         float postBattleCooldown = 0.f;
 
-        // Hàng đợi lưu vết chân
+        // queue to store footprints
         std::deque<D3DXVECTOR2> chasePath;
         std::deque<D3DXVECTOR2> returnPath;
         D3DXVECTOR2 lastPlayerPos{ 0, 0 };
         D3DXVECTOR2 lastEnemyPos{ 0, 0 };
 
-        // Hàm giả lập Raycast để làm Hybrid AI
+        // simulated raycast function for hybrid ai
         bool CheckLineOfSight(float startX, float startY, float targetX, float targetY);
 
     public:
@@ -50,7 +51,6 @@ namespace Demo {
         void Update(unsigned long long deltaTime);
         void Draw(DX9GF::Camera* camera, unsigned long long deltaTime);
 
-        // --- CÁC HÀM PHỤC VỤ SAVE/LOAD GAME ---
         std::string GetEnemyID() const { return encounterData.mapEnemyID; }
         bool IsDefeated() const { return isDefeated; }
         float GetRespawnTimer() const { return respawnTimer; }
@@ -58,7 +58,6 @@ namespace Demo {
         void SetDefeatedState(bool defeated, float timer) {
             isDefeated = defeated;
             respawnTimer = timer;
-            // Nếu nạp game lên mà quái đang chết, lập tức gỡ hộp va chạm để Player không đụng trúng tàng hình
             if (isDefeated && colliderManager && collider) {
                 colliderManager->Remove(collider);
             }

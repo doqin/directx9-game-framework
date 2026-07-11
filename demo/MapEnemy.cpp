@@ -18,8 +18,14 @@ namespace Demo {
 		this->colliderManager = colMan;
 		this->targetPlayer = player;
 
-		texture = std::make_shared<DX9GF::Texture>(gd);
-		texture->LoadTexture(encounterData.mapTexturePath.c_str());
+		static std::map<std::wstring, std::shared_ptr<DX9GF::Texture>> enemyTextureCache;
+
+		if (enemyTextureCache.find(encounterData.mapTexturePath) == enemyTextureCache.end()) {
+			auto newTex = std::make_shared<DX9GF::Texture>(gd);
+			newTex->LoadTexture(encounterData.mapTexturePath.c_str());
+			enemyTextureCache[encounterData.mapTexturePath] = newTex;
+		}
+		this->texture = enemyTextureCache[encounterData.mapTexturePath];
 
 		sprite = std::make_shared<DX9GF::AnimatedSprite>(texture.get(),
 			DX9GF::Utils::CreateRectsHorizontal(0, 0, encounterData.spriteWidth, encounterData.spriteHeight, encounterData.frameCount), encounterData.frameCount);
@@ -41,7 +47,7 @@ namespace Demo {
 
 	void MapEnemy::Update(unsigned long long deltaTime) {
 
-		// 1. Logic hồi sinh
+		//respawn
 		if (isDefeated) {
 			respawnTimer -= deltaTime / 1000.f;
 			if (respawnTimer <= 0) {
@@ -49,7 +55,6 @@ namespace Demo {
 				SetLocalPosition(startX, startY);
 				currentState = State::Idle;
 
-				// FIX GHOST BUG: Tạo lại hộp va chạm mới tinh để nó có thể kích nổ combat lần sau
 				if (colliderManager) {
 					collider = std::make_shared<DX9GF::RectangleCollider>(
 						transformManager, shared_from_this(),
@@ -57,13 +62,10 @@ namespace Demo {
 					);
 					collider->SetOriginCenter();
 				}
-				// ĐOẠN XÀO BÀI (REROLL) LÚC HỒI SINH ĐƯỢC CẬP NHẬT:
 				if (encounterData.useGlobalPool) {
-					// Nếu đánh dấu là quái Hỗn mang -> Gọi hàm Global của sếp
 					encounterData.enemyTypes = EncounterGenerator::GenerateNormalEncounter();
 				}
 				else if (!encounterData.randomPool.empty()) {
-					// Nếu có hồ chứa riêng -> Bốc theo hồ chứa
 					encounterData.enemyTypes = EncounterGenerator::GenerateFromTypes(encounterData.randomPool);
 				}
 			}
@@ -124,7 +126,7 @@ namespace Demo {
 				}
 			}
 
-			// === XỬ LÝ TRẠNG THÁI AI VÀ GHI HÌNH VẾT CHÂN ===
+			//state handling and footprint recording
 			if (currentState == State::Idle || currentState == State::Patrol) {
 				if (distanceSq < aggroRadius * aggroRadius) {
 					currentState = State::Chase;
@@ -142,12 +144,11 @@ namespace Demo {
 				}
 			}
 			else if (currentState == State::Chase) {
-				// THÊM: Tính toán khoảng cách giữa quái và nhà của nó
 				float homeDx = startX - ex;
 				float homeDy = startY - ey;
 				float homeDistSq = homeDx * homeDx + homeDy * homeDy;
 
-				// AI TETHERING: Bỏ cuộc nếu Player chạy quá xa HOẶC quái bị dắt ra khỏi vùng xích cổ
+				//tethering
 				if (distanceSq > returnRadius * returnRadius || homeDistSq > tetherRadius * tetherRadius) {
 					currentState = State::Return;
 				}
@@ -173,23 +174,27 @@ namespace Demo {
 				float homeDy = startY - ey;
 				float homeDistSq = homeDx * homeDx + homeDy * homeDy;
 
-				// Ép quái phải về sát tận tâm điểm neo (< 10 pixel) mới được quay lại trạng thái Idle
+				// Force enemies to return within the anchor point (less than 10 pixels) before switching to Idle state
 				if (homeDistSq < 100.f) {
 					currentState = State::Idle;
 					returnPath.clear();
 				}
-				// ĐÃ XÓA TOÀN BỘ LOGIC CHO PHÉP RE-AGGRO Ở ĐÂY.
-				// LUẬT THÉP: Một khi đã quay đầu là đi thẳng về nhà, cấm rượt bậy dọc đường!
 			}
 
-			// === TÍNH TOÁN HƯỚNG DI CHUYỂN (HYBRID AI) ===
+			// Calculate movement direction
 			D3DXVECTOR2 dir{ 0, 0 };
 
 			if (currentState == State::Chase) {
 				float targetX = px;
 				float targetY = py;
 
-				if (CheckLineOfSight(ex, ey, px, py)) {
+				losTimer += (deltaTime / 1000.f);
+				if (losTimer >= 0.5f) {
+					lastLosResult = CheckLineOfSight(ex, ey, px, py);
+					losTimer = 0.f;
+				}
+
+				if (lastLosResult) {
 					chasePath.clear();
 				}
 				else {

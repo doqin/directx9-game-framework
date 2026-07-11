@@ -36,7 +36,7 @@ namespace Demo {
         static PopupManager* instance;
 
         DX9GF::GraphicsDevice* gd = nullptr;
-        DX9GF::Camera* uiCamera = nullptr; // Camera do Scene cấp
+        DX9GF::Camera* uiCamera = nullptr;
 
         std::shared_ptr<DX9GF::Texture> uiSheetTex;
         std::shared_ptr<DX9GF::Texture> borderSheetTex;

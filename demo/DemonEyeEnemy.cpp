@@ -48,7 +48,7 @@ void Demo::DemonEyeEnemy::StartAttack(std::shared_ptr<Player> player, std::vecto
 	float projDamage = GetOutgoingDamage(baseDamage);
 
 	//surprise element
-	int patternId = GetRandomPattern();
+	int patternId = GetSmartRandomPattern(1, 3);
 
 	//PatternBloodCross(projDamage, enemies);
 	if (patternId == 1) PatternBloodRain(projDamage, enemies);

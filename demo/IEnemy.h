@@ -45,6 +45,9 @@ namespace Demo {
 		DX9GF::GraphicsDevice* graphicsDevice = nullptr;
 		unsigned long long timeSinceStart = 0;
 		void SetGoldReward(int reward) { goldReward = reward; }
+		int lastPattern = -1;
+		int streakCount = 0;
+		int GetSmartRandomPattern(int minPattern, int maxPattern, int maxStreak = 2, int breakChance = 80);
 	public:
 		IEnemy(std::weak_ptr<DX9GF::TransformManager> tm, float maxHealth) : IGameObject(tm), maxHealth(maxHealth), health(maxHealth) {}
 		IEnemy(std::weak_ptr<DX9GF::TransformManager> tm, float maxHealth, float x, float y, float rotation = 0, float scaleX = 1, float scaleY = 1) : IGameObject(tm, x, y, rotation, scaleX, scaleY), maxHealth(maxHealth), health(maxHealth) {}
