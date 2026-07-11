@@ -217,6 +217,7 @@
     <ClCompile Include="DemonEyeEnemy.cpp" />
     <ClCompile Include="DrawUtils.cpp" />
     <ClCompile Include="EnemyFactory.cpp" />
+    <ClCompile Include="KeyboardNavigator.cpp" />
     <ClCompile Include="Game.cpp" />
     <ClCompile Include="GameItems.cpp" />
     <ClCompile Include="HackTerminal.cpp" />
@@ -251,6 +252,7 @@
     </ClCompile>
     <ClCompile Include="Player.cpp" />
     <ClCompile Include="PopupManager.cpp" />
+    <ClCompile Include="QuestManager.cpp" />
     <ClCompile Include="RandomEncounter.cpp" />
     <ClCompile Include="RustyChestNPC.cpp" />
     <ClCompile Include="SaveGameState.cpp" />
@@ -300,6 +302,7 @@
     <ClInclude Include="DialogueLine.h" />
     <ClInclude Include="DrawUtils.h" />
     <ClInclude Include="EncounterGenerator.h" />
+    <ClInclude Include="KeyboardNavigator.h" />
     <ClInclude Include="EnemyCard.h" />
     <ClInclude Include="EnemyFactory.h" />
     <ClInclude Include="Game.h" />
@@ -337,6 +340,7 @@
     <ClInclude Include="Player.h" />
     <ClInclude Include="PopupManager.h" />
     <ClInclude Include="PopUpMessage.h" />
+    <ClInclude Include="QuestManager.h" />
     <ClInclude Include="RandomEncounter.h" />
     <ClInclude Include="resource.h" />
     <ClInclude Include="RNG.h" />

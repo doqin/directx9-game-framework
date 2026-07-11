@@ -1,4 +1,5 @@
 ﻿#include "pch.h"
+#include "SettingsManager.h"
 #include "TutorialWorldScene.h"
 #include "RandomEncounter.h"
 #include "MainMenu.h"
@@ -8,6 +9,8 @@
 #include "PopupManager.h"
 #include "EncounterGenerator.h"
 #include "EnemyFactory.h"
+#include "QuestManager.h"
+
 void Demo::TutorialWorldScene::Init()
 {
 	camera.SetZoom(2.0f);
@@ -104,6 +107,9 @@ void Demo::TutorialWorldScene::Init()
 	uiTex->LoadTexture(L"assets/ui.png");
 
 	PopupManager::GetInstance()->Init(game->GetGraphicsDevice(), borderTex, uiTex, font);
+	QuestManager::GetInstance()->SetVirtualResolution(game->GetVirtualWidth(), game->GetVirtualHeight());
+	QuestManager::GetInstance()->Init(game->GetGraphicsDevice(), transformManager, &this->uiCamera, font);
+	QuestManager::GetInstance()->SetQuest(L"Quest: ???");
 
 	savePoints.push_back(std::make_shared<SavePoint>(transformManager, 248.0f, -70.0f));
 	savePoints.back()->Init(game->GetGraphicsDevice(), &camera, player, colliderManager, saveManager, font, drawBuffer);
@@ -210,6 +216,13 @@ void Demo::TutorialWorldScene::Init()
 void Demo::TutorialWorldScene::Update(unsigned long long deltaTime)
 {
 	PopupManager::GetInstance()->SetUICamera(&this->uiCamera);
+	QuestManager::GetInstance()->SetUICamera(&this->uiCamera);
+	QuestManager::GetInstance()->SetQuest(
+		questStarted ? L"Quest: Fint a way out of this place!" : L"Quest: ???"
+	);
+	QuestManager::GetInstance()->SetVirtualResolution(game->GetVirtualWidth(), game->GetVirtualHeight());
+	QuestManager::GetInstance()->SetVisible(!(inventoryMenu && inventoryMenu->IsOpen()));
+	QuestManager::GetInstance()->Update(deltaTime);
 
 	auto OpenChestWithDialog = [&](std::shared_ptr<TreasureChestNPC>& chest) {
 		auto given = chest->Open(player.get());
@@ -244,7 +257,7 @@ void Demo::TutorialWorldScene::Update(unsigned long long deltaTime)
 	static float escCooldown = 0.0f;
 	if (escCooldown > 0) escCooldown -= deltaTime;
 
-	if (inpMan->KeyPress(DIK_ESCAPE) && escCooldown <= 0) {
+	if (inpMan->KeyPress(SettingsManager::GetInstance()->GetKeybind("OPEN_INVENTORY")) && escCooldown <= 0) {
 		if (inventoryMenu) inventoryMenu->Toggle();
 		escCooldown = 300.0f;
 	}
@@ -258,18 +271,20 @@ void Demo::TutorialWorldScene::Update(unsigned long long deltaTime)
 
 	if (npcIntroduction) {
 		npcIntroduction->Update(deltaTime);
-		if (!currentConversation && npcIntroduction->CanInteract() && inpMan->KeyPress(DIK_E)) {
+		if (!currentConversation && npcIntroduction->CanInteract() && inpMan->KeyPress(SettingsManager::GetInstance()->GetKeybind("INTERACT"))) {
 			float sw = game->GetVirtualWidth();
 			float sh = game->GetVirtualHeight();
 			currentConversation = std::make_shared<IConversation>(std::make_shared<DX9GF::FontSprite>(font.get()), sw, sh);
 			for (auto& line : npcIntroduction->GetDialogueLines()) {
 				currentConversation->AddLine(line);
 			}
+			QuestManager::GetInstance()->SetQuest(L"Quest: Fint a way out of this place!");
+			questStarted = true;
 		}
 	}
 	if (npcExplainingHealingPoint) {
 		npcExplainingHealingPoint->Update(deltaTime);
-		if (!currentConversation && npcExplainingHealingPoint->CanInteract() && inpMan->KeyPress(DIK_E)) {
+		if (!currentConversation && npcExplainingHealingPoint->CanInteract() && inpMan->KeyPress(SettingsManager::GetInstance()->GetKeybind("INTERACT"))) {
 			float sw = game->GetVirtualWidth();
 			float sh = game->GetVirtualHeight();
 			currentConversation = std::make_shared<IConversation>(std::make_shared<DX9GF::FontSprite>(font.get()), sw, sh);
@@ -280,7 +295,7 @@ void Demo::TutorialWorldScene::Update(unsigned long long deltaTime)
 	}
 	if (npcExplainingEnemyEncounters) {
 		npcExplainingEnemyEncounters->Update(deltaTime);
-		if (!currentConversation && npcExplainingEnemyEncounters->CanInteract() && inpMan->KeyPress(DIK_E)) {
+		if (!currentConversation && npcExplainingEnemyEncounters->CanInteract() && inpMan->KeyPress(SettingsManager::GetInstance()->GetKeybind("INTERACT"))) {
 			float sw = game->GetVirtualWidth();
 			float sh = game->GetVirtualHeight();
 			currentConversation = std::make_shared<IConversation>(std::make_shared<DX9GF::FontSprite>(font.get()), sw, sh);
@@ -291,7 +306,7 @@ void Demo::TutorialWorldScene::Update(unsigned long long deltaTime)
 	}
 	if (npcExplainingPortal) {
 		npcExplainingPortal->Update(deltaTime);
-		if (!currentConversation && npcExplainingPortal->CanInteract() && inpMan->KeyPress(DIK_E)) {
+		if (!currentConversation && npcExplainingPortal->CanInteract() && inpMan->KeyPress(SettingsManager::GetInstance()->GetKeybind("INTERACT"))) {
 			float sw = game->GetVirtualWidth();
 			float sh = game->GetVirtualHeight();
 			currentConversation = std::make_shared<IConversation>(std::make_shared<DX9GF::FontSprite>(font.get()), sw, sh);
@@ -318,7 +333,7 @@ void Demo::TutorialWorldScene::Update(unsigned long long deltaTime)
 
 	for (auto& chest : treasureChests) {
 		chest->Update(deltaTime);
-		if (!currentConversation && chest->CanInteract() && inpMan->KeyPress(DIK_E)) {
+		if (!currentConversation && chest->CanInteract() && inpMan->KeyPress(SettingsManager::GetInstance()->GetKeybind("INTERACT"))) {
 			auto given = chest->Open(player.get());
 			if (!given.empty()) {
 				std::wstring msg = L"You found: ";
@@ -361,7 +376,7 @@ void Demo::TutorialWorldScene::Update(unsigned long long deltaTime)
 	}
 
 	transformManager->UpdateAll();
-	if (!isGamePaused) map->UpdateAreas(player->GetWorldX(), player->GetWorldY());
+	if (!isGamePaused) map->UpdateAreas(player->GetCollider().lock()->GetWorldX(), player->GetCollider().lock()->GetWorldY());
 
 
 	if (draggableManager && inventoryMenu && inventoryMenu->IsOpen() && inventoryMenu->GetCurrentTab() == Demo::InventoryMenu::Tab::DECK) {
@@ -434,10 +449,13 @@ void Demo::TutorialWorldScene::DrawUI(unsigned long long deltaTime)
 		if (draggableManager && inventoryMenu && inventoryMenu->IsOpen() && inventoryMenu->GetCurrentTab() == Demo::InventoryMenu::Tab::DECK) {
 			draggableManager->Draw(deltaTime);
 		}
+		if (inventoryMenu) inventoryMenu->DrawKeyboardReticle(gd, deltaTime);
 
 		if (currentConversation) {
 			currentConversation->Draw(gd, &this->uiCamera, deltaTime);
 		}
+
+		QuestManager::GetInstance()->Draw(gd, &this->uiCamera, deltaTime);
 
 		if (drawBuffer) {
 			drawBuffer->Update(deltaTime);
@@ -445,7 +463,10 @@ void Demo::TutorialWorldScene::DrawUI(unsigned long long deltaTime)
 
 		PopupManager::GetInstance()->DrawUI(deltaTime, &this->uiCamera);
 
-		DX9GF::InputManager::GetInstance()->DrawCursor(&this->uiCamera, deltaTime);
+
+		if (!(inventoryMenu && inventoryMenu->IsInKeyboardMode())) {
+			DX9GF::InputManager::GetInstance()->DrawCursor(&this->uiCamera, deltaTime);
+		}
 
 		gd->EndDraw();
 	}
@@ -500,6 +521,8 @@ void Demo::TutorialWorldScene::GenerateSaveData(nlohmann::json& outData)
 		{"zoom", camera.GetZoom()}
 	};
 
+	outData["quest"] = { {"questStarted", questStarted} };
+
 	nlohmann::json chestStates = nlohmann::json::array();
 	for (auto& c : treasureChests) chestStates.push_back(c->GetIsOpened());
 	outData["treasureChests"] = chestStates;
@@ -519,6 +542,11 @@ void Demo::TutorialWorldScene::RestoreSaveData(const nlohmann::json& inData)
 	player->RestoreSaveData(inData["player"]);
 	camera.SetPosition(inData["camera"]["x"], inData["camera"]["y"]);
 	camera.SetZoom(inData["camera"]["zoom"]);
+	
+	if (inData.contains("quest")) {
+		questStarted = inData["quest"].value("questStarted", false);
+		questRestoredFromSave = true;
+	}
 
 	if (inData.contains("treasureChests")) {
 		auto& arr = inData["treasureChests"];

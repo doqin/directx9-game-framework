@@ -87,6 +87,25 @@ void Demo::IShopScene::ShowMessage(std::string msg) {
 	messageTimer = 2.0f;
 }
 
+std::vector<Demo::KeyboardNavigator::Candidate> Demo::IShopScene::CollectKeyboardCandidates()
+{
+	std::vector<KeyboardNavigator::Candidate> candidates;
+	for (auto& button : uiButtons) {
+		if (!button || button->GetState() == IButton::ButtonState::DISABLED) {
+			continue;
+		}
+		candidates.push_back({
+			button,
+			button->GetWorldX(),
+			button->GetWorldY(),
+			(float)button->GetWidth(),
+			(float)button->GetHeight(),
+			[button]() { button->Activate(); }
+			});
+	}
+	return candidates;
+}
+
 void Demo::IShopScene::Update(unsigned long long deltaTime)
 {
 	auto inpMan = DX9GF::InputManager::GetInstance();
@@ -102,6 +121,8 @@ void Demo::IShopScene::Update(unsigned long long deltaTime)
 	for (auto& btn : uiButtons) {
 		btn->Update(deltaTime);
 	}
+
+	keyboardNavigator.Update(deltaTime, CollectKeyboardCandidates());
 
 	if (shouldLeave) {
 		auto sceMan = this->game->GetSceneManager();
@@ -170,7 +191,9 @@ void Demo::IShopScene::DrawUI(unsigned long long deltaTime)
 
 				if (i < buyButtons.size()) {
 					auto& btn = buyButtons[i];
-					if (btn && btn->GetTrigger() && btn->GetTrigger()->IsHovering(deltaTime)) {
+					// HOVER/CLICKED covers both the mouse (trigger-driven) and the keyboard
+					// cursor (navigator-driven) highlighting this row's buy button.
+					if (btn && (btn->GetState() == IButton::ButtonState::HOVER || btn->GetState() == IButton::ButtonState::CLICKED)) {
 						hoverDescription = itemsForSale[i].description;
 					}
 				}
@@ -187,7 +210,10 @@ void Demo::IShopScene::DrawUI(unsigned long long deltaTime)
 			myFontSprite->End();
 		}
 
-		DX9GF::InputManager::GetInstance()->DrawCursor(&uiCamera, deltaTime);
+		keyboardNavigator.Draw(gd, uiCamera, CollectKeyboardCandidates());
+		if (!keyboardNavigator.IsInKeyboardMode()) {
+			DX9GF::InputManager::GetInstance()->DrawCursor(&uiCamera, deltaTime);
+		}
 		gd->EndDraw();
 	}
 }

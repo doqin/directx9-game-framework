@@ -19,18 +19,31 @@ namespace Demo {
 
 		if (otherX > thisX && otherX < thisX + GetWidth() &&
 			otherY > thisY && otherY < thisY + GetHeight()) {
-
-			float localX = dragAreaWidth;
-			for (auto& wp : targets) {
-				if (auto lock = wp.lock()) localX += lock->GetWidth();
-			}
-
-			other->SetParent(shared_from_this());
-			other->SetLocalPosition(localX, 0);
-			targets.push_back(incomingEnemyCard);
-			return true;
+			return AttachEnemyCard(incomingEnemyCard);
 		}
 		return false;
+	}
+
+	bool MultiTargetCard::AttachEnemyCard(std::shared_ptr<EnemyCard> card) {
+		if (!card || targets.size() >= maxTargets) return false;
+
+		float localX = (float)dragAreaWidth;
+		for (auto& wp : targets) {
+			if (auto lock = wp.lock()) localX += lock->GetWidth();
+		}
+
+		card->SetParent(shared_from_this());
+		card->SetLocalPosition(localX, 0);
+		targets.push_back(card);
+		return true;
+	}
+
+	std::tuple<float, float> MultiTargetCard::GetEnemyCardSlotWorldPosition() const {
+		float localX = (float)dragAreaWidth;
+		for (auto& wp : targets) {
+			if (auto lock = wp.lock()) localX += lock->GetWidth();
+		}
+		return { GetWorldX() + localX, GetWorldY() };
 	}
 
 	void MultiTargetCard::Update(unsigned long long deltaTime) {

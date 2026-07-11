@@ -4,6 +4,7 @@
 #include "DX9GFFont.h"
 #include "DX9GFTexture.h"
 #include "IconButton.h"
+#include "KeyboardNavigator.h"
 #include <string>
 #include <vector>
 #include <functional>
@@ -63,6 +64,8 @@ namespace Demo {
         ~PopupManager() = default;
 
         void LayoutButtons();
+        KeyboardNavigator keyboardNavigator;
+        std::vector<KeyboardNavigator::Candidate> CollectKeyboardCandidates();
 
     public:
         std::map<std::string, PopupStyle> styles;
@@ -81,6 +84,7 @@ namespace Demo {
 
         void Close();
         bool IsActive() const { return isActive; }
+        bool IsKeyboardNavigating() const { return isActive && keyboardNavigator.IsInKeyboardMode(); }
 
         void Update(unsigned long long deltaTime, DX9GF::Camera* uiCamera);
         void DrawUI(unsigned long long deltaTime, DX9GF::Camera* uiCamera);

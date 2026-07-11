@@ -109,6 +109,71 @@ void Demo::IBlockCard::ResetExecution()
 	currentExecutingCard.reset();
 }
 
+bool Demo::IBlockCard::InsertStatementCardAt(std::shared_ptr<IStatementCard> card, size_t index)
+{
+	if (!card) {
+		return false;
+	}
+
+	bool alreadyAttached = false;
+	for (auto& weak : statementCards) {
+		if (weak.lock() == card) {
+			alreadyAttached = true;
+			break;
+		}
+	}
+
+	if (!alreadyAttached && battleScene) {
+		if (battleScene->GetAvailableEnergy() < 0) {
+			if (timeSinceLastEnergyPopUp >= energyPopUpCooldown) {
+				battleScene->QueuePopUpMessage(L"Not enough energy");
+				timeSinceLastEnergyPopUp = 0.f;
+			}
+			return false;
+		}
+	}
+
+	// Remove any existing bookkeeping for this card first (reordering case).
+	for (size_t i = 0; i < statementCards.size(); ++i) {
+		if (statementCards[i].lock() == card) {
+			statementCards.erase(statementCards.begin() + i);
+			break;
+		}
+	}
+	for (size_t i = 0; i < children.size(); ++i) {
+		if (children[i].lock() == card) {
+			children.erase(children.begin() + i);
+			break;
+		}
+	}
+
+	index = (std::min)(index, statementCards.size());
+	card->SetParent(shared_from_this());
+	statementCards.insert(statementCards.begin() + index, card);
+	children.insert(children.begin() + index, card);
+	// IContainer::Update repositions all children by vector order every frame, so no explicit reposition needed here.
+	return true;
+}
+
+std::tuple<float, float> Demo::IBlockCard::GetStatementSlotWorldPosition(size_t index, std::shared_ptr<IStatementCard> excluding)
+{
+	auto [thisX, thisY] = GetWorldPosition();
+	float y = thisY + (float)dragAreaHeight;
+	size_t counted = 0;
+	for (auto& weak : statementCards) {
+		auto lock = weak.lock();
+		if (!lock || lock == excluding) {
+			continue;
+		}
+		if (counted == index) {
+			break;
+		}
+		y += (float)lock->GetHeight();
+		++counted;
+	}
+	return { thisX, y };
+}
+
 bool Demo::IBlockCard::HasAllRequiredTargets() const
 {
 	for (auto& card : statementCards) {

@@ -9,6 +9,7 @@
     <ClCompile Include="DebugScene.cpp" />
     <ClCompile Include="DemonEyeEnemy.cpp" />
     <ClCompile Include="DrawUtils.cpp" />
+    <ClCompile Include="KeyboardNavigator.cpp" />
     <ClCompile Include="Game.cpp" />
     <ClCompile Include="GameItems.cpp" />
     <ClCompile Include="HandContainer.cpp" />
@@ -75,6 +76,9 @@
     <ClCompile Include="MapEnemy.cpp" />
     <ClCompile Include="SplashScene.cpp" />
     <ClCompile Include="TextIconButton.cpp" />
+    <ClCompile Include="SplashScene.cpp" />
+    <ClCompile Include="TextIconButton.cpp" />
+    <ClCompile Include="QuestManager.cpp" />
   </ItemGroup>
   <ItemGroup>
     <ClInclude Include="AdvancedCards.h" />
@@ -87,6 +91,7 @@
     <ClInclude Include="DemonEyeEnemy.h" />
     <ClInclude Include="DialogueLine.h" />
     <ClInclude Include="DrawUtils.h" />
+    <ClInclude Include="KeyboardNavigator.h" />
     <ClInclude Include="EnemyCard.h" />
     <ClInclude Include="Game.h" />
     <ClInclude Include="GameItems.h" />
@@ -158,6 +163,7 @@
     <ClInclude Include="TextIconButton.h" />
     <ClInclude Include="EncounterGenerator.h" />
     <ClInclude Include="RNG.h" />
+    <ClInclude Include="QuestManager.h" />
   </ItemGroup>
   <ItemGroup>
     <ResourceCompile Include="demo.rc" />

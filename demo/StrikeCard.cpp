@@ -15,12 +15,25 @@ bool Demo::StrikeCard::OnDrop(std::shared_ptr<IDraggable> other)
 		&& otherX < thisX + dragAreaWidth
 		&& otherY > thisY
 		&& otherY < thisY + dragAreaHeight) {
-		other->SetParent(shared_from_this());
-		other->SetLocalPosition(dragAreaWidth, 0);
-		enemyCard = incomingEnemyCard;
-		return true;
+		return AttachEnemyCard(incomingEnemyCard);
 	}
 	return false;
+}
+
+bool Demo::StrikeCard::AttachEnemyCard(std::shared_ptr<EnemyCard> card)
+{
+	if (!card || enemyCard.lock()) {
+		return false;
+	}
+	card->SetParent(shared_from_this());
+	card->SetLocalPosition((float)dragAreaWidth, 0);
+	enemyCard = card;
+	return true;
+}
+
+std::tuple<float, float> Demo::StrikeCard::GetEnemyCardSlotWorldPosition() const
+{
+	return { GetWorldX() + (float)dragAreaWidth, GetWorldY() };
 }
 
 bool Demo::StrikeCard::Execute()

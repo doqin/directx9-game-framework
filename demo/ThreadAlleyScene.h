@@ -11,11 +11,17 @@
 #include "TreasureChestNPC.h"
 #include "IConversation.h"
 #include "PlayerHUD.h"
+#include "DauDauNPC.h"
+
 #include "MapEnemy.h"
+
 namespace Demo {
 	class ThreadAlleyScene : public DX9GF::IScene, public DX9GF::ISaveable {
 		bool isGamePaused = false;
 		bool isTransitioning = false;
+		bool questStarted = false;
+		bool questRestoredFromSave = false;
+		bool hasSetInitialQuest = false;
 		Game* game;
 		std::shared_ptr<DX9GF::ColliderManager> colliderManager;
 		std::shared_ptr<DX9GF::TransformManager> transformManager;
@@ -33,6 +39,8 @@ namespace Demo {
 		std::shared_ptr<DX9GF::Map> map;
 		std::shared_ptr<DX9GF::CommandBuffer> drawBuffer;
 		std::shared_ptr<DX9GF::CommandBuffer> commandBuffer;
+		std::shared_ptr<DauDauNPC> dauDau;
+
 
 		std::vector<std::shared_ptr<TreasureChestNPC>> treasureChests;
 		std::shared_ptr<IConversation> currentConversation;

@@ -55,5 +55,14 @@ namespace Demo {
 		void ResetExecution();
 		void SetBattleScene(IBattleScene* scene) { battleScene = scene; }
 		bool HasAllRequiredTargets() const;
+		// Inserts (or moves, if already attached) a statement card at the given position in the
+		// execution queue, shifting the rest as needed (used by keyboard navigation).
+		// Returns false if the card can't be attached (e.g. not enough energy for a brand new card).
+		bool InsertStatementCardAt(std::shared_ptr<IStatementCard> card, size_t index);
+		// World-space position of the slot at the given queue index (0 = first to execute).
+		// Pass the card being moved as "excluding" so its own current slot isn't counted twice.
+		std::tuple<float, float> GetStatementSlotWorldPosition(size_t index, std::shared_ptr<IStatementCard> excluding = nullptr);
+		// Ordered list (execution order) of statement cards currently queued in this block.
+		const std::vector<std::weak_ptr<IStatementCard>>& GetStatementCards() const { return statementCards; }
 	};
 }

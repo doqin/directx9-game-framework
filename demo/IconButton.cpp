@@ -33,13 +33,15 @@ Demo::IconButton* Demo::IconButton::SetSpriteRects(std::vector<RECT> rects)
 
 void Demo::IconButton::Init(DX9GF::Camera* uiCamera)
 {
-	this->trigger = std::make_shared<DX9GF::RectangleTrigger>
-		(
-			this->GetTransformManager(), shared_from_this(),
-			this->width, this->height, 0, 0, 0, 1, 1
-		);
-
-	//lock the trigger
+	if (!this->trigger) {
+		this->trigger = std::make_shared<DX9GF::RectangleTrigger>
+			(
+				this->GetTransformManager(), shared_from_this(),
+				this->width, this->height, 0, 0, 0, 1, 1
+			);
+		//lock the trigger
+		this->trigger->SetLocalPosition(0, 0);
+	}
 	this->trigger->SetLocalPosition(0, 0);
 	this->uiCamera = uiCamera;
 	this->trigger->Init(uiCamera);

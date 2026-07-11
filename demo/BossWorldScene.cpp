@@ -1,4 +1,5 @@
 ﻿#include "pch.h"
+#include "SettingsManager.h"
 #include "BossWorldScene.h"
 #include "RandomEncounter.h"
 #include "CardShop.h"
@@ -14,6 +15,8 @@
 #include "PopupManager.h"
 #include "EncounterGenerator.h"
 #include "EnemyFactory.h"
+#include "QuestManager.h"
+
 void Demo::BossWorldScene::Init() {
 	camera.SetZoom(2.0f);
 	transformManager = std::make_shared<DX9GF::TransformManager>();
@@ -50,6 +53,10 @@ void Demo::BossWorldScene::Init() {
 	npcHint->AddLine(L"Veteran Debugger", L"I keep hearing the old admin's logs echoing in my head...");
 	npcHint->AddLine(L"Veteran Debugger", L"...'The red sun sets over the blue ocean, giving life to the green earth, until it fades into\norange autumn'...");
 	npcHint->AddLine(L"Veteran Debugger", L"Bah, probably just corrupted junk data. Don't mind my rambling.");
+
+	dauDauSpawn = std::make_shared<DauDauNPC>(transformManager, 300.f, 230.f);
+	dauDauSpawn->Init(game->GetGraphicsDevice(), &camera, player, colliderManager, font, drawBuffer);
+	dauDauSpawn->AddLine(L"Dau Dau", L"Welcome to the boss sector. Activate all four terminals to unlock the gate.");
 
 	//hack machines
 	auto hackCallback = std::bind(&BossWorldScene::OnTerminalHacked, this, std::placeholders::_1);
@@ -115,6 +122,9 @@ void Demo::BossWorldScene::Init() {
 	uiTex->LoadTexture(L"assets/ui.png");
 
 	PopupManager::GetInstance()->Init(game->GetGraphicsDevice(), borderTex, uiTex, font);
+	QuestManager::GetInstance()->SetVirtualResolution(game->GetVirtualWidth(), game->GetVirtualHeight());
+	QuestManager::GetInstance()->Init(game->GetGraphicsDevice(), transformManager, &this->uiCamera, font);
+	QuestManager::GetInstance()->SetQuest(L"Quest: ???");
 
 	savePoints.push_back(std::make_shared<SavePoint>(transformManager, 192.f, 320.f));
 	savePoints.back()->Init(game->GetGraphicsDevice(), &camera, player, colliderManager, saveManager, font, drawBuffer);
@@ -216,7 +226,7 @@ void Demo::BossWorldScene::Init() {
 
 		if (this->isBossDoorUnlocked && !this->isFinalBossDead) {
 
-			std::map<std::string, int> forcedEnemyMap = { {"KeyeproEnemy", 100}, {"KeyeEnemy", 100} };
+			std::map<std::string, int> forcedEnemyMap = { {"KeyeproEnemy", 100} };
 
 			auto demoGame = dynamic_cast<Demo::Game*>(this->game);
 			auto app = DX9GF::Application::GetInstance();
@@ -356,6 +366,7 @@ void Demo::BossWorldScene::OnTerminalHacked(int terminalID) {
 			isBossDoorUnlocked = true;
 			mainTerminal->SetHackedStatus(true);
 			mainTerminal->ShowStatusMessage("Access granted. Core unlocked.", 3.0f);
+			QuestManager::GetInstance()->SetQuest(L"Quest: Defeat the malware!");
 
 			audio->Play("hack_success");
 
@@ -386,6 +397,7 @@ void Demo::BossWorldScene::OnTerminalHacked(int terminalID) {
 		hackMachines[currentHackStep]->ShowStatusMessage(msg, 3.0f);
 		currentHackStep++;
 		audio->Play("hack_success");
+		QuestManager::GetInstance()->SetQuest(L"Quest: Activate the terminals: " + std::to_wstring(currentHackStep) + L"/4");
 	}
 	else {
 		currentHackStep = 0;
@@ -399,12 +411,22 @@ void Demo::BossWorldScene::OnTerminalHacked(int terminalID) {
 			}
 		}
 		audio->Play("hack_fail");
+		QuestManager::GetInstance()->SetQuest(L"Quest: Activate the terminals: " + std::to_wstring(currentHackStep) + L"/4");
 	}
 }
 
 void Demo::BossWorldScene::Update(unsigned long long deltaTime) {
 	PopupManager::GetInstance()->SetUICamera(&this->uiCamera);
-
+	QuestManager::GetInstance()->SetUICamera(&this->uiCamera);
+	QuestManager::GetInstance()->SetQuest(
+		!questGiven ? L"Quest: ???"
+		: (isBossDoorUnlocked
+			? L"Quest: Defeat the malware!"
+			: L"Quest: Activate the terminals: " + std::to_wstring(currentHackStep) + L"/4")
+	);
+	QuestManager::GetInstance()->SetVirtualResolution(game->GetVirtualWidth(), game->GetVirtualHeight());
+	QuestManager::GetInstance()->SetVisible(!(inventoryMenu && inventoryMenu->IsOpen()));
+	QuestManager::GetInstance()->Update(deltaTime);
 	auto OpenChestWithDialog = [&](std::shared_ptr<TreasureChestNPC>& chest) {
 		auto given = chest->Open(player.get());
 		if (given.empty()) return;
@@ -437,7 +459,7 @@ void Demo::BossWorldScene::Update(unsigned long long deltaTime) {
 	static float escCooldown = 0.0f;
 	if (escCooldown > 0) escCooldown -= deltaTime;
 
-	if (inpMan->KeyPress(DIK_ESCAPE) && escCooldown <= 0) {
+	if (inpMan->KeyPress(SettingsManager::GetInstance()->GetKeybind("OPEN_INVENTORY")) && escCooldown <= 0) {
 		if (inventoryMenu) inventoryMenu->Toggle();
 		escCooldown = 300.0f;
 	}
@@ -451,7 +473,7 @@ void Demo::BossWorldScene::Update(unsigned long long deltaTime) {
 
 	if (npcHint) {
 		npcHint->Update(deltaTime);
-		if (!currentConversation && npcHint->CanInteract() && inpMan->KeyPress(DIK_E)) {
+		if (!currentConversation && npcHint->CanInteract() && inpMan->KeyPress(SettingsManager::GetInstance()->GetKeybind("INTERACT"))) {
 			auto [sw, sh] = camera.GetScreenResolution();
 			currentConversation = std::make_shared<IConversation>(std::make_shared<DX9GF::FontSprite>(font.get()), sw, sh);
 			for (auto& line : npcHint->GetDialogueLines()) {
@@ -459,6 +481,22 @@ void Demo::BossWorldScene::Update(unsigned long long deltaTime) {
 			}
 		}
 	}
+
+	if (dauDauSpawn) {
+		dauDauSpawn->Update(deltaTime);
+		if (!currentConversation && dauDauSpawn->CanInteract() && inpMan->KeyPress(SettingsManager::GetInstance()->GetKeybind("INTERACT"))) {
+			auto [sw, sh] = camera.GetScreenResolution();
+			currentConversation = std::make_shared<IConversation>(std::make_shared<DX9GF::FontSprite>(font.get()), sw, sh);
+			for (auto& line : dauDauSpawn->GetDialogueLines()) {
+				currentConversation->AddLine(line);
+			}
+			questGiven = true;
+			QuestManager::GetInstance()->SetQuest(isBossDoorUnlocked
+				? L"Quest: Defeat the malware!"
+				: L"Quest: Activate the terminals: " + std::to_wstring(currentHackStep) + L"/4");
+		}
+	}
+
 	if (currentConversation) {
 		isGamePaused = true;
 		currentConversation->Execute(deltaTime);
@@ -467,7 +505,7 @@ void Demo::BossWorldScene::Update(unsigned long long deltaTime) {
 	if (rustyChest && !rustyChest->GetIsOpened()) {
 		rustyChest->Update(deltaTime);
 
-		if (!currentConversation && rustyChest->CanInteract() && inpMan->KeyPress(DIK_E)) {
+		if (!currentConversation && rustyChest->CanInteract() && inpMan->KeyPress(SettingsManager::GetInstance()->GetKeybind("INTERACT"))) {
 			auto [sw, sh] = camera.GetScreenResolution();
 			currentConversation = std::make_shared<IConversation>(std::make_shared<DX9GF::FontSprite>(font.get()), sw, sh);
 
@@ -501,7 +539,7 @@ void Demo::BossWorldScene::Update(unsigned long long deltaTime) {
 
 	for (auto& chest : treasureChests) {
 		chest->Update(deltaTime);
-		if (!currentConversation && chest->CanInteract() && inpMan->KeyPress(DIK_E)) {
+		if (!currentConversation && chest->CanInteract() && inpMan->KeyPress(SettingsManager::GetInstance()->GetKeybind("INTERACT"))) {
 			auto given = chest->Open(player.get());
 			if (!given.empty()) {
 				std::wstring msg = L"You found: ";
@@ -545,7 +583,7 @@ void Demo::BossWorldScene::Update(unsigned long long deltaTime) {
 	}
 	this->uiCamera.Update();
 	transformManager->UpdateAll();
-	if (!isGamePaused) map->UpdateAreas(player->GetWorldX(), player->GetWorldY());
+	if (!isGamePaused) map->UpdateAreas(player->GetCollider().lock()->GetWorldX(), player->GetCollider().lock()->GetWorldY());
 
 	if (draggableManager && inventoryMenu && inventoryMenu->IsOpen() && inventoryMenu->GetCurrentTab() == Demo::InventoryMenu::Tab::DECK) {
 		draggableManager->Update(deltaTime);
@@ -577,6 +615,7 @@ void Demo::BossWorldScene::DrawWorld(unsigned long long deltaTime) {
 		for (auto& m : hackMachines) m->Draw(camera, deltaTime);
 		mainTerminal->Draw(camera, deltaTime);
 
+		if (dauDauSpawn) dauDauSpawn->Draw(camera, deltaTime);
 		if (npcHint) npcHint->Draw(camera, deltaTime);
 		if (rustyChest) rustyChest->Draw(camera, deltaTime);
 		for (auto& savePoint : savePoints) savePoint->Draw(camera, deltaTime);
@@ -610,10 +649,14 @@ void Demo::BossWorldScene::DrawUI(unsigned long long deltaTime)
 		if (draggableManager && inventoryMenu && inventoryMenu->IsOpen() && inventoryMenu->GetCurrentTab() == Demo::InventoryMenu::Tab::DECK) {
 			draggableManager->Draw(deltaTime);
 		}
+		if (inventoryMenu) inventoryMenu->DrawKeyboardReticle(gd, deltaTime);
+		if (dauDauSpawn) dauDauSpawn->DrawUI(&this->uiCamera, deltaTime);
 
 		if (currentConversation) {
 			currentConversation->Draw(gd, &this->uiCamera, deltaTime);
 		}
+
+		QuestManager::GetInstance()->Draw(gd, &this->uiCamera, deltaTime);
 
 		if (drawBuffer) {
 			drawBuffer->Update(deltaTime);
@@ -621,7 +664,9 @@ void Demo::BossWorldScene::DrawUI(unsigned long long deltaTime)
 
 		PopupManager::GetInstance()->DrawUI(deltaTime, &this->uiCamera);
 
-		DX9GF::InputManager::GetInstance()->DrawCursor(&this->uiCamera, deltaTime);
+		if (!(inventoryMenu && inventoryMenu->IsInKeyboardMode())) {
+			DX9GF::InputManager::GetInstance()->DrawCursor(&this->uiCamera, deltaTime);
+		}
 
 		gd->EndDraw();
 	}
@@ -642,7 +687,8 @@ void Demo::BossWorldScene::GenerateSaveData(nlohmann::json& outData) {
 		{"hasGottenUselessItem", hasGottenUselessItem},
 		{"isMimicDead", isMimicDead},
 		{"isFinalBossDead", isFinalBossDead},
-		{"isChestOpened", rustyChest ? rustyChest->GetIsOpened() : false}
+		{"isChestOpened", rustyChest ? rustyChest->GetIsOpened() : false},
+		{"questGiven", questGiven}
 	};
 
 	nlohmann::json chestStates = nlohmann::json::array();
@@ -668,9 +714,11 @@ void Demo::BossWorldScene::RestoreSaveData(const nlohmann::json& inData) {
 	if (inData.contains("puzzle")) {
 		currentHackStep = inData["puzzle"]["currentHackStep"];
 		isBossDoorUnlocked = inData["puzzle"]["isBossDoorUnlocked"];
+		questRestoredFromSave = true;
 		hasGottenUselessItem = inData["puzzle"]["hasGottenUselessItem"];
 		isMimicDead = inData.value("puzzle", nlohmann::json::object()).value("isMimicDead", false);
 		isFinalBossDead = inData.value("puzzle", nlohmann::json::object()).value("isFinalBossDead", false);
+		questGiven = inData["puzzle"].value("questGiven", false);
 		if (rustyChest) rustyChest->SetOpened(inData.value("puzzle", nlohmann::json::object()).value("isChestOpened", false));
 	}
 

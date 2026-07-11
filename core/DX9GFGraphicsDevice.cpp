@@ -346,6 +346,46 @@ void DX9GF::GraphicsDevice::DrawEllipse(const DX9GF::Camera& camera, float x, fl
 	D3DPRIMITIVETYPE primitiveType = isFilled ? D3DPT_TRIANGLEFAN : D3DPT_LINESTRIP;
 	d3ddev->DrawPrimitiveUP(primitiveType, SAMPLES, vertices.data(), sizeof(Vertex));
 }
+
+void DX9GF::GraphicsDevice::DrawTriangle(float centerX, float topY, float width, float height, D3DCOLOR color, bool isFilled)
+{
+	std::vector<Vertex> vertices = {
+		{.x = (centerX - width * 0.5f) * virtualScale + virtualOffsetX, .y = topY * virtualScale + virtualOffsetY, .z = 0.0f, .rhw = 1.0f, .color = color },
+		{.x = (centerX + width * 0.5f) * virtualScale + virtualOffsetX, .y = topY * virtualScale + virtualOffsetY, .z = 0.0f, .rhw = 1.0f, .color = color },
+		{.x = centerX * virtualScale + virtualOffsetX, .y = (topY + height) * virtualScale + virtualOffsetY, .z = 0.0f, .rhw = 1.0f, .color = color }
+	};
+
+	if (!isFilled) {
+		vertices.push_back(vertices[0]);
+	}
+
+	d3ddev->SetFVF(D3DFVF_XYZRHW | D3DFVF_DIFFUSE);
+	D3DPRIMITIVETYPE primitiveType = isFilled ? D3DPT_TRIANGLEFAN : D3DPT_LINESTRIP;
+	d3ddev->DrawPrimitiveUP(primitiveType, isFilled ? 1 : 3, vertices.data(), sizeof(Vertex));
+}
+
+void DX9GF::GraphicsDevice::DrawTriangle(const DX9GF::Camera& camera, float centerX, float topY, float width, float height, D3DCOLOR color, bool isFilled)
+{
+	auto matCamera = camera.GetTransformMatrix();
+
+	auto p0 = TransformPoint(matCamera, centerX - width * 0.5f, topY);
+	auto p1 = TransformPoint(matCamera, centerX + width * 0.5f, topY);
+	auto p2 = TransformPoint(matCamera, centerX, topY + height);
+
+	std::vector<Vertex> vertices = {
+		{.x = p0.x, .y = p0.y, .z = 0.0f, .rhw = 1.0f, .color = color },
+		{.x = p1.x, .y = p1.y, .z = 0.0f, .rhw = 1.0f, .color = color },
+		{.x = p2.x, .y = p2.y, .z = 0.0f, .rhw = 1.0f, .color = color }
+	};
+
+	if (!isFilled) {
+		vertices.push_back(vertices[0]);
+	}
+
+	d3ddev->SetFVF(D3DFVF_XYZRHW | D3DFVF_DIFFUSE);
+	D3DPRIMITIVETYPE primitiveType = isFilled ? D3DPT_TRIANGLEFAN : D3DPT_LINESTRIP;
+	d3ddev->DrawPrimitiveUP(primitiveType, isFilled ? 1 : 3, vertices.data(), sizeof(Vertex));
+}
 HRESULT DX9GF::GraphicsDevice::SetRenderTarget(Texture* renderTarget)
 {
 	if (renderTarget == nullptr) return E_POINTER;

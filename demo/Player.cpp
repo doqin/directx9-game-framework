@@ -159,6 +159,14 @@ void Demo::Player::Init(DX9GF::GraphicsDevice* graphicsDevice, DX9GF::ColliderMa
 	// Create collider
 	collider = std::make_shared<DX9GF::RectangleCollider>(transformManager, shared_from_this(), 8, 4, 0, isBattling ? 6 : 14);
 	collider->SetOriginCenter();
+	// Create footprint particle emitter
+	footprintTexture = std::make_shared<DX9GF::Texture>(graphicsDevice);
+	footprintTexture->CreatePlainTexture(D3DCOLOR_ARGB(160, 90, 70, 50), 4, 4);
+	footprintEmitter = std::make_unique<DX9GF::ParticleSystem>(footprintTexture.get(), 32);
+	footprintEmitter->SetOrigin(2, 2);
+	DX9GF::ConfigureFootprintEmitter(*footprintEmitter);
+	footprintsEnabled = !isBattling;
+	footprintEmitter->SetEnabled(footprintsEnabled);
 	deck = { "StrikeCard", "StrikeCard", "StrikeCard", "TwinStrikeCard", "TwinStrikeCard" };
 	this->colliderManager->Add(collider);
 	inventoryItems.InitFixedInventory(12);
@@ -187,8 +195,9 @@ void Demo::Player::Update(unsigned long long deltaTime) {
 	if (dir.x == -1 && dir.y == -1) state = State::UpLeft;
 	D3DXVECTOR2 dirNorm;
 	D3DXVec2Normalize(&dirNorm, &dir);
+	D3DXVECTOR2 moveDir = dirNorm; // unscaled direction, used for footprint placement
 	bool isRunning = false;
-	if (inpMan->KeyPress(DIK_LSHIFT)) {
+	if (inpMan->KeyPress(SettingsManager::GetInstance()->GetKeybind("SPRINT"))) {
 		isRunning = true;
 		dirNorm.x *= SPRINT_MULTIPLIER;
 		dirNorm.y *= SPRINT_MULTIPLIER;
@@ -249,6 +258,15 @@ void Demo::Player::Update(unsigned long long deltaTime) {
 	auto [finalDX, finalDY] = colliderManager->GetSlidingDeltas(collider, dX, dY);
 	auto [currentX, currentY] = GetLocalPosition();
 	SetLocalPosition(currentX + finalDX, currentY + finalDY);
+	// Footprint particles, spawned at the collider (feet) position, alternating left/right
+	auto [colliderX, colliderY] = collider->GetWorldPosition();
+	D3DXVECTOR2 perp{ -moveDir.y, moveDir.x };
+	float footSign = nextFootLeft ? -1.f : 1.f;
+	float footX = colliderX + perp.x * FOOTPRINT_OFFSET * footSign;
+	float footY = colliderY + perp.y * FOOTPRINT_OFFSET * footSign;
+	if (footprintEmitter->Update(deltaTime, footX, footY, 0.f, 1.f, 1.f, 0xFFFFFFFF, isWalking && footprintsEnabled)) {
+		nextFootLeft = !nextFootLeft;
+	}
 	// Camera movement
 	if (followCamera) {
 		auto cameraPos = camera->GetPosition();
@@ -298,6 +316,7 @@ void Demo::Player::Update(unsigned long long deltaTime) {
 }
 
 void Demo::Player::Draw(unsigned long long deltaTime) {
+	footprintEmitter->Draw(*camera, deltaTime);
 	if (!isInvincible || static_cast<int>(timeSinceTurnedInvincible / BLINKING_DURATION) % 2) {
 		switch (state) {
 		case State::Down: {
@@ -572,4 +591,10 @@ void Demo::Player::SetSurface(std::string surface)
 {
 	this->currentSurface = surface;
 	this->surfaceTimeout = 0.1f;
+}
+
+void Demo::Player::SetFootprintsEnabled(bool enabled)
+{
+	this->footprintsEnabled = enabled;
+	footprintEmitter->SetEnabled(enabled);
 }

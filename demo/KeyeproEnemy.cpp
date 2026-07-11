@@ -58,7 +58,7 @@ void Demo::KeyeproEnemy::StartAttack(std::shared_ptr<Player> player, std::vector
                 }
             }
 
-            constexpr size_t MAX_KEYE_ENEMIES = 3;
+            constexpr size_t MAX_KEYE_ENEMIES = 1;
             const size_t spawnCount = (keyeCount < MAX_KEYE_ENEMIES)
                 ? (std::min)(static_cast<size_t>(1), MAX_KEYE_ENEMIES - keyeCount)
                 : 0;
@@ -123,12 +123,13 @@ void Demo::KeyeproEnemy::PatternSineWaveStorm(float projDamage) {
                     projSprite->SetOrigin(16, 16);
                     projectiles.push_back(
                         SineWaveProjectile::Builder(transformManager, lock, projSprite, 16, 16, -350.f, startY)
-                        .SetTrajectory(D3DXVECTOR2(1, 0)) 
+                        .SetTrajectory(D3DXVECTOR2(1, 0))
                         .SetWave(20.f, 4.0f)
-                        .SetDelay((waveCount * 0.25f) + (i * 0.05f)) 
+                        .SetDelay((waveCount * 0.25f) + (i * 0.05f))
                         .SetDecayTime(10.f)
                         .SetVelocity(100.f)
                         .SetDamage(projDamage)
+                        .SetGhostSprite(projTexture.get(), projFrames.front(), 16, 16)
                         .Build()
                     );
                     projectiles.back()->Init();
@@ -233,6 +234,7 @@ void Demo::KeyeproEnemy::PatternEcholocation(float projDamage)
                     .SetDecayTime(4.f)
                     .SetVelocity(VELOCITY)
                     .SetDamage(projDamage)
+                    .SetGhostSprite(projTexture.get(), projFrames.front(), 16, 16)
                     .Build()
                 );
                 projectiles.back()->Init();
@@ -255,6 +257,7 @@ void Demo::KeyeproEnemy::PatternEcholocation(float projDamage)
                     .SetDecayTime(4.f)
                     .SetVelocity(VELOCITY)
                     .SetDamage(projDamage)
+                    .SetGhostSprite(projTexture.get(), projFrames.front(), 16, 16)
                     .Build()
                 );
                 projectiles.back()->Init();

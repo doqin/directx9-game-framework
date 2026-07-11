@@ -18,6 +18,10 @@
 namespace Demo {
     class BossWorldScene : public DX9GF::IScene, public DX9GF::ISaveable {
         bool isGamePaused = false;
+        bool hasSetInitialQuest = false;
+        bool questRestoredFromSave = false;
+        bool questGiven = false;
+
         Game* game;
         std::shared_ptr<DX9GF::ColliderManager> colliderManager;
         std::shared_ptr<DX9GF::TransformManager> transformManager;
@@ -43,7 +47,6 @@ namespace Demo {
         bool isBossDoorUnlocked = false;
         bool hasGottenUselessItem = false;
 		bool isTransitioning = false;
-
     public:
         BossWorldScene(Game* game, std::shared_ptr<DX9GF::SaveManager> sm, UINT sw, UINT sh) : IScene(sw, sh), game(game), saveManager(sm){}
         void Init() override;
@@ -60,6 +63,7 @@ namespace Demo {
         std::shared_ptr<Player> GetPlayer() const { return player; }
     private:
         std::shared_ptr<DauDauNPC> npcHint;
+        std::shared_ptr<DauDauNPC> dauDauSpawn;
         std::shared_ptr<IConversation> currentConversation;
 
         std::vector<std::shared_ptr<SavePoint>> savePoints;

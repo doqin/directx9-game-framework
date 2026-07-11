@@ -5,6 +5,7 @@
 #include "Game.h"
 #include "TextButton.h"
 #include "IconButton.h"
+#include "KeyboardNavigator.h"
 
 namespace Demo
 {
@@ -40,6 +41,9 @@ namespace Demo
 		int lastScreenHeight;
 
 		bool isTransitioning = false;
+
+		KeyboardNavigator keyboardNavigator;
+		std::vector<KeyboardNavigator::Candidate> CollectKeyboardCandidates();
 
 	public:
 		static std::shared_ptr<SaveGameState> gameSaveState;

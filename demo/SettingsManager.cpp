@@ -30,15 +30,22 @@ namespace Demo
 		keybinds["MOVE_UP"] = DIK_W;
 		keybinds["MOVE_RIGHT"] = DIK_D;
 		keybinds["MOVE_DOWN"] = DIK_S;
+		keybinds["ACCEPT"] = DIK_RETURN;
+		keybinds["OPEN_INVENTORY"] = DIK_ESCAPE;
+		keybinds["INTERACT"] = DIK_E;
+		keybinds["SPRINT"] = DIK_LSHIFT;
 	}
 
 	bool SettingsManager::LoadSettings()
 	{
+		// Seed defaults first so actions missing from an older config.ini keep
+		// their default binds instead of GetKeybind falling through to 0.
+		this->SetDefaultSettings();
+
 		std::ifstream fileInput("config.ini");
 
 		if (!fileInput.is_open())
 		{
-			this->SetDefaultSettings();
 			this->SaveSettings();
 			return true;
 		}
