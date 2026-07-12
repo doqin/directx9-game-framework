@@ -32,8 +32,8 @@ namespace Demo {
 
 		sprite->SetOrigin(encounterData.spriteWidth / 2.f, encounterData.spriteHeight / 2.f);
 
-		this->SetLocalScale(0.4f, 0.4f);
-		sprite->SetScale(0.4f, 0.4f);
+		this->SetLocalScale(0.8f, 0.8f); //map enemy's size
+		sprite->SetScale(0.8f, 0.8f); //map enemy's size
 
 		collider = std::make_shared<DX9GF::RectangleCollider>(
 			transformManager,
@@ -248,13 +248,26 @@ namespace Demo {
 
 	void MapEnemy::Draw(DX9GF::Camera* camera, unsigned long long deltaTime) {
 		if (isDefeated) return;
+		if (postBattleCooldown > 0 && static_cast<int>(postBattleCooldown * 10) % 2 == 0) return;
 
-		if (postBattleCooldown > 0) {
-			if (static_cast<int>(postBattleCooldown * 10) % 2 == 0) return;
+		auto [x, y] = GetWorldPosition();
+
+		if (game && game->GetGraphicsDevice()) {
+			auto gd = game->GetGraphicsDevice();
+			gd->SetAlphaBlending(true);
+
+			float scaleX = std::abs(this->GetLocalScaleX());
+			float scaleY = std::abs(this->GetLocalScaleY());
+			float shadowWidth = encounterData.spriteWidth * 0.6f * scaleX;
+			float shadowHeight = shadowWidth * 0.4f;
+
+			float shadowY = y + (encounterData.spriteHeight * 0.45f * scaleY);
+
+			gd->DrawEllipse(*camera, x, shadowY, shadowWidth, shadowHeight, 0x64000000, true);
+			gd->SetAlphaBlending(false);
 		}
 
 		sprite->Begin();
-		auto [x, y] = GetWorldPosition();
 		sprite->SetPosition(x, y);
 		sprite->Draw(*camera, deltaTime);
 		sprite->End();
