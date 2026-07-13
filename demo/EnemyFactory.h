@@ -13,6 +13,8 @@ namespace Demo {
 		float width;
 		float height;
 		int frameCount;
+		float hitBoxWidth;
+		float hitBoxHeight;
 	};
 
 	class EnemyFactory {

@@ -35,14 +35,20 @@ namespace Demo {
 		this->SetLocalScale(0.8f, 0.8f); //map enemy's size
 		sprite->SetScale(0.8f, 0.8f); //map enemy's size
 
+		float hitBoxW = encounterData.hitBoxWidth;
+		float hitBoxH = encounterData.hitBoxHeight;
+
+		float offsetX = -hitBoxW / 2.0f;
+		float offsetY = -hitBoxH / 2.0f;
+
 		collider = std::make_shared<DX9GF::RectangleCollider>(
 			transformManager,
 			shared_from_this(),
-			encounterData.spriteWidth,
-			encounterData.spriteHeight,
-			0, 0
+			hitBoxW, hitBoxH,
+			offsetX, offsetY
 		);
-		collider->SetOriginCenter();
+
+		collider->SetOrigin(0.f, 0.f);
 	}
 
 	void MapEnemy::Update(unsigned long long deltaTime) {
@@ -56,11 +62,20 @@ namespace Demo {
 				currentState = State::Idle;
 
 				if (colliderManager) {
+					float hitBoxW = encounterData.hitBoxWidth;
+					float hitBoxH = encounterData.hitBoxHeight;
+
+					float offsetX = -hitBoxW / 2.0f;
+					float offsetY = -hitBoxH / 2.0f;
+
 					collider = std::make_shared<DX9GF::RectangleCollider>(
-						transformManager, shared_from_this(),
-						encounterData.spriteWidth, encounterData.spriteHeight, 0, 0
+						transformManager,
+						shared_from_this(),
+						hitBoxW, hitBoxH,
+						offsetX, offsetY
 					);
-					collider->SetOriginCenter();
+
+					collider->SetOrigin(0.f, 0.f);
 				}
 				if (encounterData.useGlobalPool) {
 					encounterData.enemyTypes = EncounterGenerator::GenerateNormalEncounter();
@@ -294,10 +309,14 @@ namespace Demo {
 				}
 
 				if (auto rect = std::dynamic_pointer_cast<DX9GF::RectangleCollider>(c)) {
-					float rx = rect->GetWorldX() - rect->GetOriginX();
-					float ry = rect->GetWorldY() - rect->GetOriginY();
-					float rw = rect->GetWidth() * std::abs(rect->GetWorldScaleX());
-					float rh = rect->GetHeight() * std::abs(rect->GetWorldScaleY());
+					float sx = std::abs(rect->GetWorldScaleX());
+					float sy = std::abs(rect->GetWorldScaleY());
+
+					float rx = rect->GetWorldX() - (rect->GetOriginX() * sx);
+					float ry = rect->GetWorldY() - (rect->GetOriginY() * sy);
+
+					float rw = rect->GetWidth() * sx;
+					float rh = rect->GetHeight() * sy;
 
 					if (tx >= rx && tx <= rx + rw && ty >= ry && ty <= ry + rh) {
 						return false;

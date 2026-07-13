@@ -85,8 +85,9 @@ void Demo::TutorialWorldScene::Init()
 	npcIntroduction->AddLine(L"Dau Dau", L"By the way, use the floppy disk icon over there to save your progress.");
 	npcExplainingEnemyEncounters = std::make_shared<DauDauNPC>(transformManager, 544.0f, -56.0f);
 	npcExplainingEnemyEncounters->Init(game->GetGraphicsDevice(), &camera, player, colliderManager, font, drawBuffer);
-	npcExplainingEnemyEncounters->AddLine(L"Dau Dau", L"Look out ahead! Those green patches are combat zones.");
-	npcExplainingEnemyEncounters->AddLine(L"Dau Dau", L"If you step on them, there is a chance you'll be ambushed.\n If so, you'll have to fight enemies.");
+	npcExplainingEnemyEncounters->AddLine(L"Dau Dau", L"Look out ahead! See those digital creeps roaming around?");
+	npcExplainingEnemyEncounters->AddLine(L"Dau Dau", L"If they spot you, they will chase you down! Touching them will drag you into a battle.");
+	npcExplainingEnemyEncounters->AddLine(L"Dau Dau", L"You can try to outrun them or hide behind walls to break their line of sight.");
 	npcExplainingEnemyEncounters->AddLine(L"Dau Dau", L"Don't worry, you can run away from battles if you want.\n But you won't get any rewards if you do that!");
 	npcExplainingHealingPoint = std::make_shared<DauDauNPC>(transformManager, 289.0f, -496.0f);
 	npcExplainingHealingPoint->Init(game->GetGraphicsDevice(), &camera, player, colliderManager, font, drawBuffer);

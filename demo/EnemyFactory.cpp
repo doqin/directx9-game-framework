@@ -14,14 +14,14 @@
 namespace Demo {
 
 	OverworldSpriteData EnemyFactory::GetOverworldSprite(const std::string& enemyType) {
-		if (enemyType == "KeyeEnemy") return { L"assets/minion-Sheet.png", 64.f, 64.f, 12 };
-		if (enemyType == "DemonEyeEnemy") return { L"assets/computerbug-Sheet.png", 64.f, 64.f, 12 };
-		if (enemyType == "MimicEnemy") return { L"assets/notresponding-Sheet.png", 64.f, 64.f, 12 };
-		if (enemyType == "CupidEnemy") return { L"assets/bubble-Sheet.png", 64.f, 64.f, 12 };
-		if (enemyType == "VampireBatEnemy") return { L"assets/shrimp-Sheet.png", 64.f, 64.f, 12 };
-		if (enemyType == "WarlockEnemy") return { L"assets/crawler-Sheet.png", 64.f, 64.f, 12 };
+		if (enemyType == "KeyeEnemy")       return { L"assets/minion-Sheet.png", 64.f, 64.f, 12, 38.f, 45.f };
+		if (enemyType == "DemonEyeEnemy")   return { L"assets/computerbug-Sheet.png", 64.f, 64.f, 12, 38.f, 45.f };
+		if (enemyType == "MimicEnemy")      return { L"assets/notresponding-Sheet.png", 64.f, 64.f, 12, 38.f, 45.f };
+		if (enemyType == "CupidEnemy")      return { L"assets/bubble-Sheet.png", 64.f, 64.f, 12, 38.f, 45.f };
+		if (enemyType == "VampireBatEnemy") return { L"assets/shrimp-Sheet.png", 64.f, 64.f, 12, 38.f, 45.f };
+		if (enemyType == "WarlockEnemy")    return { L"assets/crawler-Sheet.png", 64.f, 64.f, 12, 38.f, 45.f };
 
-		return { L"assets/computerbug-Sheet.png", 64.f, 64.f, 12 };
+		return { L"assets/computerbug-Sheet.png", 64.f, 64.f, 12, 38.f, 45.f };
 	}
 
 	std::shared_ptr<IEnemy> EnemyFactory::Create(const std::string& type, std::weak_ptr<DX9GF::TransformManager> tm, DX9GF::GraphicsDevice* gd, DX9GF::Camera* cam) {
@@ -95,6 +95,8 @@ namespace Demo {
 		enc.spriteWidth = static_cast<int>(sprite.width);
 		enc.spriteHeight = static_cast<int>(sprite.height);
 		enc.frameCount = sprite.frameCount;
+		enc.hitBoxWidth = sprite.hitBoxWidth;
+		enc.hitBoxHeight = sprite.hitBoxHeight;
 
 		auto enemy = std::make_shared<MapEnemy>(tm, x, y, enc);
 		enemy->Init(game, game->GetGraphicsDevice(), colMan, player);
