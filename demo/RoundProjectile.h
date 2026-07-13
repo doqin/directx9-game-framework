@@ -9,6 +9,8 @@ namespace Demo {
 	private:
 		std::shared_ptr<DX9GF::EllipseCollider> collider;
 		std::shared_ptr<DX9GF::ISprite> sprite;
+		std::shared_ptr<DX9GF::Texture> trailTexture;
+		std::unique_ptr<DX9GF::ParticleSystem> trailEmitter;
 		float colliderWidth;
 		float colliderHeight;
 		float velocity;

@@ -4,6 +4,7 @@
 #include "DX9GFExtras.h"
 #include "IconButton.h"
 #include "TextIconButton.h"
+#include "KeyboardNavigator.h"
 namespace Demo
 {
     //UI constants
@@ -16,6 +17,11 @@ namespace Demo
     constexpr float SPACING_Y = 30.0f;
     constexpr float BUTTON_OFFSET_X = 25.0f;
     constexpr float ALIGN_OFFSET_Y = 10.0f;
+
+    // Keybind rows share startY/rowSpacing with the volume rows; with 8 keybind
+    // rows a tighter step is needed to keep the last row on screen.
+    constexpr float KEYBIND_ROW_START = 5.0f;
+    constexpr float KEYBIND_ROW_STEP = 1.1f;
 
     //save offset to center the keybinds into box (just UI)
     constexpr int BTN_VISUAL_SHADOW_OFFSET = -2;
@@ -53,11 +59,20 @@ namespace Demo
 
         //keybind UI
         std::shared_ptr<Demo::TextIconButton> btnUp, btnDown, btnLeft, btnRight;
+        std::shared_ptr<Demo::TextIconButton> btnAccept, btnOpenInventory, btnInteract, btnSprint;
 
         bool isListeningUp = false;
         bool isListeningDown = false;
         bool isListeningLeft = false;
         bool isListeningRight = false;
+        bool isListeningAccept = false;
+        bool isListeningOpenInventory = false;
+        bool isListeningInteract = false;
+        bool isListeningSprint = false;
+
+        KeyboardNavigator keyboardNavigator;
+        std::vector<KeyboardNavigator::Candidate> CollectKeyboardCandidates();
+        bool IsAnyKeybindListening() const;
 
         //helper methods
         void DrawBackground(unsigned long long deltaTime);

@@ -1,4 +1,5 @@
 ﻿#include "pch.h"
+#include "SettingsManager.h"
 #include "ThreadAlleyScene.h"
 #include "RandomEncounter.h"
 #include "CardShop.h"
@@ -9,6 +10,7 @@
 #include "TransitionCommand.h"
 #include "resource.h"
 #include "PopupManager.h"
+#include "QuestManager.h"
 
 void Demo::ThreadAlleyScene::Init()
 {
@@ -85,6 +87,13 @@ void Demo::ThreadAlleyScene::Init()
 	uiTex->LoadTexture(L"assets/ui.png");
 
 	PopupManager::GetInstance()->Init(game->GetGraphicsDevice(), borderTex, uiTex, font);
+	QuestManager::GetInstance()->SetVirtualResolution(game->GetVirtualWidth(), game->GetVirtualHeight());
+	QuestManager::GetInstance()->Init(game->GetGraphicsDevice(), transformManager, &this->uiCamera, font);
+	QuestManager::GetInstance()->SetQuest(L"???");
+
+	dauDau = std::make_shared<DauDauNPC>(transformManager, -580.f, 100.f);
+	dauDau->Init(game->GetGraphicsDevice(), &camera, player, colliderManager, font, drawBuffer);
+	dauDau->AddLine(L"Dau Dau", L"This alley is full of malware. Watch out!");
 
 	savePoints.push_back(std::make_shared<SavePoint>(transformManager, -710, -554));
 	savePoints.back()->Init(game->GetGraphicsDevice(), &camera, player, colliderManager, saveManager, font, drawBuffer);
@@ -265,6 +274,13 @@ void Demo::ThreadAlleyScene::Init()
 void Demo::ThreadAlleyScene::Update(unsigned long long deltaTime)
 {
 	PopupManager::GetInstance()->SetUICamera(&this->uiCamera);
+	QuestManager::GetInstance()->SetUICamera(&this->uiCamera);
+	QuestManager::GetInstance()->SetQuest(
+		questStarted ? L"Quest: Find the malware through this alley!" : L"Quest: ???"
+	);
+	QuestManager::GetInstance()->SetVirtualResolution(game->GetVirtualWidth(), game->GetVirtualHeight());
+	QuestManager::GetInstance()->SetVisible(!(inventoryMenu && inventoryMenu->IsOpen()));
+	QuestManager::GetInstance()->Update(deltaTime);
 
 	auto OpenChestWithDialog = [&](std::shared_ptr<TreasureChestNPC>& chest) {
 		auto given = chest->Open(player.get());
@@ -298,7 +314,7 @@ void Demo::ThreadAlleyScene::Update(unsigned long long deltaTime)
 	static float escCooldown = 0.0f;
 	if (escCooldown > 0) escCooldown -= deltaTime;
 
-	if (inpMan->KeyPress(DIK_ESCAPE) && escCooldown <= 0) {
+	if (inpMan->KeyPress(SettingsManager::GetInstance()->GetKeybind("OPEN_INVENTORY")) && escCooldown <= 0) {
 		if (inventoryMenu) inventoryMenu->Toggle();
 		escCooldown = 300.0f;
 	}
@@ -316,6 +332,19 @@ void Demo::ThreadAlleyScene::Update(unsigned long long deltaTime)
 		if (currentConversation->IsFinished()) currentConversation = nullptr;
 	}
 
+	if (dauDau) {
+		dauDau->Update(deltaTime);
+		if (!currentConversation && dauDau->CanInteract() && inpMan->KeyPress(SettingsManager::GetInstance()->GetKeybind("INTERACT"))) {
+			auto [sw, sh] = camera.GetScreenResolution();
+			currentConversation = std::make_shared<IConversation>(std::make_shared<DX9GF::FontSprite>(font.get()), sw, sh);
+			for (auto& line : dauDau->GetDialogueLines()) {
+				currentConversation->AddLine(line);
+			}
+			QuestManager::GetInstance()->SetQuest(L"Quest: Find the malware through this alley!");
+			questStarted = true;
+		}
+	}
+
 	for (auto& savePoint : savePoints) {
 		savePoint->Update(deltaTime);
 	}
@@ -330,7 +359,7 @@ void Demo::ThreadAlleyScene::Update(unsigned long long deltaTime)
 
 	for (auto& chest : treasureChests) {
 		chest->Update(deltaTime);
-		if (!currentConversation && chest->CanInteract() && inpMan->KeyPress(DIK_E)) {
+		if (!currentConversation && chest->CanInteract() && inpMan->KeyPress(SettingsManager::GetInstance()->GetKeybind("INTERACT"))) {
 			auto given = chest->Open(player.get());
 			if (!given.empty()) {
 				std::wstring msg = L"You found: ";
@@ -371,7 +400,7 @@ void Demo::ThreadAlleyScene::Update(unsigned long long deltaTime)
 	this->uiCamera.Update();
 
 	transformManager->UpdateAll();
-	if (!isGamePaused) map->UpdateAreas(player->GetWorldX(), player->GetWorldY());
+	if (!isGamePaused) map->UpdateAreas(player->GetCollider().lock()->GetWorldX(), player->GetCollider().lock()->GetWorldY());
 
 	if (draggableManager && inventoryMenu && inventoryMenu->IsOpen() && inventoryMenu->GetCurrentTab() == Demo::InventoryMenu::Tab::DECK) {
 		draggableManager->Update(deltaTime);
@@ -400,8 +429,8 @@ void Demo::ThreadAlleyScene::DrawWorld(unsigned long long deltaTime)
 		for (auto& healPoint : healingPoints) healPoint->Draw(camera, deltaTime);
 		for (auto& chest : treasureChests) chest->Draw(camera, deltaTime);
 
+		if (dauDau) dauDau->Draw(camera, deltaTime);
 		player->Draw(deltaTime);
-
 
 		gd->EndDraw();
 	}
@@ -417,15 +446,19 @@ void Demo::ThreadAlleyScene::DrawUI(unsigned long long deltaTime)
 		for (auto& healPoint : healingPoints) healPoint->DrawUI(&this->uiCamera, deltaTime);
 		for (auto& shopPoint : shopPoints) shopPoint->DrawUI(&this->uiCamera, deltaTime);
 
+		if (dauDau) dauDau->DrawUI(&this->uiCamera, deltaTime);
 		if (playerHUD) playerHUD->Draw(gd, deltaTime);
 		if (inventoryMenu) inventoryMenu->Draw(gd, deltaTime);
 		if (draggableManager && inventoryMenu && inventoryMenu->IsOpen() && inventoryMenu->GetCurrentTab() == Demo::InventoryMenu::Tab::DECK) {
 			draggableManager->Draw(deltaTime);
 		}
+		if (inventoryMenu) inventoryMenu->DrawKeyboardReticle(gd, deltaTime);
 
 		if (currentConversation) {
 			currentConversation->Draw(gd, &this->uiCamera, deltaTime);
 		}
+
+		QuestManager::GetInstance()->Draw(gd, &this->uiCamera, deltaTime);
 
 		if (drawBuffer) {
 			drawBuffer->Update(deltaTime);
@@ -433,7 +466,9 @@ void Demo::ThreadAlleyScene::DrawUI(unsigned long long deltaTime)
 
 		PopupManager::GetInstance()->DrawUI(deltaTime, &this->uiCamera);
 
-		DX9GF::InputManager::GetInstance()->DrawCursor(&this->uiCamera, deltaTime);
+		if (!(inventoryMenu && inventoryMenu->IsInKeyboardMode())) {
+			DX9GF::InputManager::GetInstance()->DrawCursor(&this->uiCamera, deltaTime);
+		}
 
 		gd->EndDraw();
 	}
@@ -454,6 +489,8 @@ void Demo::ThreadAlleyScene::GenerateSaveData(nlohmann::json& outData)
 		{"zoom", camera.GetZoom()}
 	};
 
+	outData["quest"] = { {"questStarted", questStarted} };
+
 	nlohmann::json chestStates = nlohmann::json::array();
 	for (auto& c : treasureChests) chestStates.push_back(c->GetIsOpened());
 	outData["treasureChests"] = chestStates;
@@ -464,6 +501,11 @@ void Demo::ThreadAlleyScene::RestoreSaveData(const nlohmann::json& inData)
 	player->RestoreSaveData(inData["player"]);
 	camera.SetPosition(inData["camera"]["x"], inData["camera"]["y"]);
 	camera.SetZoom(inData["camera"]["zoom"]);
+
+	if (inData.contains("quest")) {
+		questStarted = inData["quest"].value("questStarted", false);
+		questRestoredFromSave = true;
+	}
 
 	if (inData.contains("treasureChests")) {
 		auto& arr = inData["treasureChests"];

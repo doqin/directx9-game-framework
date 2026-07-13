@@ -7,7 +7,6 @@
 #include "SecretPuzzleScene.h"
 #include "ThreadAlleyScene.h"
 #include "BossWorldScene.h"
-
 namespace Demo {
 	SaveGameState::SaveGameState(Game* game, std::shared_ptr<DX9GF::SaveManager> saveManager)
 		: game(game), saveManager(std::move(saveManager)) {

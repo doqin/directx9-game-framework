@@ -63,6 +63,7 @@ void Demo::VampireBatEnemy::PatternEcholocation(float projDamage, std::vector<st
 				float startY = (i - BULLETS / 2.f) * SPACING;
 				auto projSprite = std::make_shared<DX9GF::StaticSprite>(projTexture.get());
 				projSprite->SetOrigin(16, 8);
+				auto [sineProjTexWidth, sineProjTexHeight] = projTexture->GetSize();
 				projectiles.push_back(
 					SineWaveProjectile::Builder(transformManager, lock, projSprite, 16, 16, 320, startY)
 					.SetTrajectory(D3DXVECTOR2(-1, 0))
@@ -71,6 +72,7 @@ void Demo::VampireBatEnemy::PatternEcholocation(float projDamage, std::vector<st
 					.SetDecayTime(DECAY_TIME)
 					.SetVelocity(VELOCITY)
 					.SetDamage(projDamage)
+					.SetGhostSprite(projTexture.get(), RECT{ 0, 0, (LONG)sineProjTexWidth, (LONG)sineProjTexHeight }, 16, 8)
 					.Build()
 				);
 				projectiles.back()->Init();
@@ -85,6 +87,7 @@ void Demo::VampireBatEnemy::PatternEcholocation(float projDamage, std::vector<st
 				float startY = (i - BULLETS / 2.f) * SPACING;
 				auto projSprite = std::make_shared<DX9GF::StaticSprite>(projTexture.get());
 				projSprite->SetOrigin(16, 8);
+				auto [sineProjTexWidth, sineProjTexHeight] = projTexture->GetSize();
 				projectiles.push_back(
 					SineWaveProjectile::Builder(transformManager, lock, projSprite, 16, 16, -320, startY)
 					.SetTrajectory(D3DXVECTOR2(1, 0))
@@ -93,6 +96,7 @@ void Demo::VampireBatEnemy::PatternEcholocation(float projDamage, std::vector<st
 					.SetDecayTime(DECAY_TIME)
 					.SetVelocity(VELOCITY)
 					.SetDamage(projDamage)
+					.SetGhostSprite(projTexture.get(), RECT{ 0, 0, (LONG)sineProjTexWidth, (LONG)sineProjTexHeight }, 16, 8)
 					.Build()
 				);
 				projectiles.back()->Init();
@@ -136,6 +140,7 @@ void Demo::VampireBatEnemy::PatternSwoopBite(float projDamage) {
 
 				auto projSprite = std::make_shared<DX9GF::StaticSprite>(projTexture.get());
 				projSprite->SetOrigin(16, 8);
+				auto [projTexWidth, projTexHeight] = projTexture->GetSize();
 				projectiles.push_back(
 					BoomerangProjectile::Builder(transformManager, lock, projSprite, 16, 16, spawnX, spawnY)
 					.SetTargetPosition(targetX, targetY)
@@ -144,6 +149,7 @@ void Demo::VampireBatEnemy::PatternSwoopBite(float projDamage) {
 					.SetDelay(i * 0.05f)
 					.SetDecayTime(8.f)
 					.SetDamage(projDamage)
+					.SetGhostSprite(projTexture.get(), RECT{ 0, 0, (LONG)projTexWidth, (LONG)projTexHeight }, 16, 8)
 					.Build()
 				);
 				projectiles.back()->Init();
@@ -173,6 +179,7 @@ void Demo::VampireBatEnemy::PatternSwoopBite(float projDamage) {
 
 				auto projSprite = std::make_shared<DX9GF::StaticSprite>(projTexture.get());
 				projSprite->SetOrigin(16, 8);
+				auto [projTexWidth, projTexHeight] = projTexture->GetSize();
 				projectiles.push_back(
 					BoomerangProjectile::Builder(transformManager, lock, projSprite, 16, 16, spawnX, spawnY)
 					.SetTargetPosition(targetX, targetY)
@@ -181,6 +188,7 @@ void Demo::VampireBatEnemy::PatternSwoopBite(float projDamage) {
 					.SetDelay(i * 0.05f)
 					.SetDecayTime(8.f)
 					.SetDamage(projDamage)
+					.SetGhostSprite(projTexture.get(), RECT{ 0, 0, (LONG)projTexWidth, (LONG)projTexHeight }, 16, 8)
 					.Build()
 				);
 				projectiles.back()->Init();

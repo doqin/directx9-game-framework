@@ -1,4 +1,5 @@
 ﻿#include "pch.h"
+#include "SettingsManager.h"
 #include "HealingPoint.h"
 #include <cmath>
 
@@ -44,7 +45,7 @@ namespace Demo {
 
         auto inpMan = DX9GF::InputManager::GetInstance();
 
-        if (isPlayerNear && inpMan->KeyDown(DIK_E)) {
+        if (isPlayerNear && inpMan->KeyDown(SettingsManager::GetInstance()->GetKeybind("INTERACT"))) {
             if (pLock->GetHealth() < pLock->GetMaxHealth()) {
                 pLock->SetHealth(pLock->GetMaxHealth());
                 statusMessage = "Healed to FULL HP!";

@@ -9,6 +9,7 @@
 #include <vector>
 #include <functional>
 #include "IconButton.h"
+#include "KeyboardNavigator.h"
 
 namespace Demo {
 	enum class ShopTier { BASIC, HYBRID, PREMIUM, RK_HYBRID };
@@ -39,6 +40,9 @@ namespace Demo {
 		std::string shopTitle;
 		bool shouldLeave = false;
 		std::shared_ptr<DX9GF::Texture> uiSheetTex;
+
+		KeyboardNavigator keyboardNavigator;
+		std::vector<KeyboardNavigator::Candidate> CollectKeyboardCandidates();
 
 		void BuildUI();
 

@@ -39,6 +39,16 @@ Demo::SineWaveProjectile::Builder& Demo::SineWaveProjectile::Builder::SetWave(fl
     return *this;
 }
 
+Demo::SineWaveProjectile::Builder& Demo::SineWaveProjectile::Builder::SetGhostSprite(DX9GF::Texture* texture, RECT srcRect, float originX, float originY)
+{
+    this->instance->ghostTexture = texture;
+    this->instance->ghostSrcRect = srcRect;
+    this->instance->ghostHasSrcRect = true;
+    this->instance->ghostOriginX = originX;
+    this->instance->ghostOriginY = originY;
+    return *this;
+}
+
 std::shared_ptr<Demo::SineWaveProjectile> Demo::SineWaveProjectile::Builder::Build()
 {
     return instance;
@@ -51,6 +61,13 @@ void Demo::SineWaveProjectile::Init()
 
     auto [x, y] = GetWorldPosition();
     this->basePosition = D3DXVECTOR2(x, y);
+
+    if (ghostTexture != nullptr) {
+        ghostEmitter = std::make_unique<DX9GF::ParticleSystem>(ghostTexture, 16);
+        if (ghostHasSrcRect) ghostEmitter->SetSrcRect(ghostSrcRect);
+        ghostEmitter->SetOrigin(ghostOriginX, ghostOriginY);
+        DX9GF::ConfigureGhostTrailEmitter(*ghostEmitter);
+    }
 }
 
 void Demo::SineWaveProjectile::Update(unsigned long long deltaTime)
@@ -88,10 +105,16 @@ void Demo::SineWaveProjectile::Update(unsigned long long deltaTime)
     }
 
     this->elapsed += deltaTime / 1000.f;
+
+    if (ghostEmitter) {
+        auto [ghostX, ghostY] = GetWorldPosition();
+        ghostEmitter->Update(deltaTime, ghostX, ghostY, GetWorldRotation(), GetWorldScaleX(), GetWorldScaleY(), 0xFFFFFFFF, elapsed >= delay && state != State::Destroyed);
+    }
 }
 
 void Demo::SineWaveProjectile::Draw(const DX9GF::Camera& camera, unsigned long long deltaTime)
 {
+    if (ghostEmitter) ghostEmitter->Draw(camera, deltaTime);
     this->sprite->Begin();
     auto [x, y] = GetWorldPosition();
     this->sprite->SetPosition(x, y);

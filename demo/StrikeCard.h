@@ -24,5 +24,8 @@ namespace Demo {
 		std::wstring GetInputsDescription() const override;
 		size_t GetCost() const override;
 		size_t GetWidth() const override;
+		bool CanAcceptEnemyCard() const override { return !enemyCard.lock(); }
+		bool AttachEnemyCard(std::shared_ptr<EnemyCard> card) override;
+		std::tuple<float, float> GetEnemyCardSlotWorldPosition() const override;
 	};
 }

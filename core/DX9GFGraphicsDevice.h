@@ -74,5 +74,11 @@ namespace DX9GF {
 		void DrawEllipse(float x, float y, float width, float height, float rotation, float scaleX, float scaleY, float offsetX, float offsetY, D3DCOLOR color, bool isFilled);
 		void DrawEllipse(const DX9GF::Camera& camera, float x, float y, float width, float height, float rotation, float scaleX, float scaleY, float offsetX, float offsetY, D3DCOLOR color, bool isFilled);
 
+		/// <summary>
+		/// Draws an isoceles triangle pointing down, centered horizontally at centerX, spanning from topY to topY + height.
+		/// </summary>
+		void DrawTriangle(float centerX, float topY, float width, float height, D3DCOLOR color, bool isFilled);
+		void DrawTriangle(const DX9GF::Camera& camera, float centerX, float topY, float width, float height, D3DCOLOR color, bool isFilled);
+
 	};
 };

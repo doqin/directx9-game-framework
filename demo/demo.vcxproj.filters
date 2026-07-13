@@ -9,6 +9,7 @@
     <ClCompile Include="DebugScene.cpp" />
     <ClCompile Include="DemonEyeEnemy.cpp" />
     <ClCompile Include="DrawUtils.cpp" />
+    <ClCompile Include="KeyboardNavigator.cpp" />
     <ClCompile Include="Game.cpp" />
     <ClCompile Include="GameItems.cpp" />
     <ClCompile Include="HandContainer.cpp" />
@@ -71,6 +72,9 @@
     <ClCompile Include="TreasureChestNPC.cpp" />
     <ClCompile Include="CreditsScene.cpp" />
     <ClCompile Include="PopupManager.cpp" />
+    <ClCompile Include="SplashScene.cpp" />
+    <ClCompile Include="TextIconButton.cpp" />
+    <ClCompile Include="QuestManager.cpp" />
   </ItemGroup>
   <ItemGroup>
     <ClInclude Include="AdvancedCards.h" />
@@ -83,6 +87,7 @@
     <ClInclude Include="DemonEyeEnemy.h" />
     <ClInclude Include="DialogueLine.h" />
     <ClInclude Include="DrawUtils.h" />
+    <ClInclude Include="KeyboardNavigator.h" />
     <ClInclude Include="EnemyCard.h" />
     <ClInclude Include="Game.h" />
     <ClInclude Include="GameItems.h" />
@@ -146,6 +151,9 @@
     <ClInclude Include="TreasureChestNPC.h" />
     <ClInclude Include="CreditsScene.h" />
     <ClInclude Include="PopupManager.h" />
+    <ClInclude Include="SplashScene.h" />
+    <ClInclude Include="TextIconButton.h" />
+    <ClInclude Include="QuestManager.h" />
   </ItemGroup>
   <ItemGroup>
     <ResourceCompile Include="demo.rc" />
@@ -205,6 +213,9 @@
     <Image Include="assets\shardprojectile.png" />
     <Image Include="assets\minionprojectile-Sheet.png" />
     <Image Include="assets\All-borders.png" />
+    <Image Include="assets\department_logo.png" />
+    <Image Include="assets\popup-borders.png" />
+    <Image Include="assets\school_logo.png" />
   </ItemGroup>
   <ItemGroup>
     <Font Include="assets\arcade-among-2-r46pv.ttf" />

@@ -1,4 +1,5 @@
 #include "pch.h"
+#include "SettingsManager.h"
 #include "ShopPoint.h"
 #include "CardShop.h"
 #include <cmath>
@@ -41,7 +42,7 @@ namespace Demo {
 
         auto inpMan = DX9GF::InputManager::GetInstance();
 
-        if (isPlayerNear && inpMan->KeyPress(DIK_E)) {
+        if (isPlayerNear && inpMan->KeyPress(SettingsManager::GetInstance()->GetKeybind("INTERACT"))) {
             auto [sw, sh] = worldCamera->GetScreenResolution();
 
             if (sceneFactory) {

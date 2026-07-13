@@ -19,6 +19,14 @@ namespace Demo {
 		float decayTime = UNSPECIFIED;
 		float damage = 0.f;
 
+		// Ghost trail (optional, populated via Builder::SetGhostSprite)
+		DX9GF::Texture* ghostTexture = nullptr;
+		RECT ghostSrcRect{};
+		bool ghostHasSrcRect = false;
+		float ghostOriginX = 0.f;
+		float ghostOriginY = 0.f;
+		std::unique_ptr<DX9GF::ParticleSystem> ghostEmitter;
+
 	protected:
 		BoomerangProjectile(
 			std::weak_ptr<DX9GF::TransformManager> tm,
@@ -89,6 +97,9 @@ namespace Demo {
 		Builder& SetDelay(float delay);
 		Builder& SetDecayTime(float decayTime);
 		Builder& SetDamage(float dmg);
+		// Enables the ghost trail effect, reusing the given texture/region so the
+		// afterimages match the projectile's own appearance.
+		Builder& SetGhostSprite(DX9GF::Texture* texture, RECT srcRect, float originX, float originY);
 		std::shared_ptr<BoomerangProjectile> Build();
 	};
 }

@@ -263,6 +263,25 @@ namespace Demo
 		transformManager->RebuildHierarchy();
 	}
 
+	std::vector<KeyboardNavigator::Candidate> CreditsScene::CollectKeyboardCandidates()
+	{
+		std::vector<KeyboardNavigator::Candidate> candidates;
+		for (auto& button : uiButtons) {
+			if (!button || button->GetState() == IButton::ButtonState::DISABLED) {
+				continue;
+			}
+			candidates.push_back({
+				button,
+				button->GetWorldX(),
+				button->GetWorldY(),
+				(float)button->GetWidth(),
+				(float)button->GetHeight(),
+				[button]() { button->Activate(); }
+				});
+		}
+		return candidates;
+	}
+
 	void CreditsScene::Update(unsigned long long deltaTime)
 	{
 		auto inpMan = DX9GF::InputManager::GetInstance();
@@ -271,12 +290,7 @@ namespace Demo
 
 		for (auto& button : uiButtons) button->Update(deltaTime);
 
-		if (inpMan->KeyPress(DIK_UP) || inpMan->KeyPress(DIK_W) || inpMan->KeyPress(DIK_LEFT) || inpMan->KeyPress(DIK_A)) {
-			if (currentPage > 0) currentPage--;
-		}
-		if (inpMan->KeyPress(DIK_DOWN) || inpMan->KeyPress(DIK_S) || inpMan->KeyPress(DIK_RIGHT) || inpMan->KeyPress(DIK_D)) {
-			if (currentPage < creditsPages.size() - 1) currentPage++;
-		}
+		keyboardNavigator.Update(deltaTime, CollectKeyboardCandidates());
 
 		transformManager->UpdateAll();
 		camera.Update();
@@ -312,7 +326,10 @@ namespace Demo
 			DrawCreditsText(deltaTime);
 			DrawPagination(deltaTime);
 
-			DX9GF::InputManager::GetInstance()->DrawCursor(&this->uiCamera, deltaTime);
+			keyboardNavigator.Draw(gd, uiCamera, CollectKeyboardCandidates());
+			if (!keyboardNavigator.IsInKeyboardMode()) {
+				DX9GF::InputManager::GetInstance()->DrawCursor(&this->uiCamera, deltaTime);
+			}
 			gd->EndDraw();
 		}
 	}

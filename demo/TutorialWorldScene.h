@@ -20,6 +20,9 @@ namespace Demo {
 	class TutorialWorldScene : public DX9GF::IScene, public DX9GF::ISaveable {
 		bool isGamePaused = false;
 		bool isTransitioning = false;
+		bool questStarted = false;
+		bool hasSetInitialQuest = false;
+		bool questRestoredFromSave = false;
 		Game* game;
 		std::shared_ptr<DX9GF::ColliderManager> colliderManager;
 		std::shared_ptr<DX9GF::TransformManager> transformManager;

@@ -268,6 +268,25 @@ namespace Demo
 		transformManager->RebuildHierarchy();
 	}
 
+	std::vector<KeyboardNavigator::Candidate> MainMenu::CollectKeyboardCandidates()
+	{
+		std::vector<KeyboardNavigator::Candidate> candidates;
+		for (auto& button : uiButtons) {
+			if (!button || button->GetState() == IButton::ButtonState::DISABLED) {
+				continue;
+			}
+			candidates.push_back({
+				button,
+				button->GetWorldX(),
+				button->GetWorldY(),
+				(float)button->GetWidth(),
+				(float)button->GetHeight(),
+				[button]() { button->Activate(); }
+				});
+		}
+		return candidates;
+	}
+
 	void MainMenu::Update(unsigned long long deltaTime)
 	{
 		PopupManager::GetInstance()->SetUICamera(&this->uiCamera);
@@ -285,7 +304,11 @@ namespace Demo
 				if (button->GetState() == IButton::ButtonState::DISABLED) continue;
 				button->Update(deltaTime);
 			}
-		}		
+			keyboardNavigator.Update(deltaTime, CollectKeyboardCandidates());
+		}
+		else {
+			keyboardNavigator.Reset();
+		}
 		PopupManager::GetInstance()->Update(deltaTime, &this->uiCamera);
 		transformManager->UpdateAll();
 		camera.Update();
@@ -335,9 +358,13 @@ namespace Demo
 				btn->Draw(gd, deltaTime);
 			}
 
+			keyboardNavigator.Draw(gd, uiCamera, CollectKeyboardCandidates());
+
 			drawBuffer->Update(deltaTime);
 			PopupManager::GetInstance()->DrawUI(deltaTime, &this->uiCamera);
-			DX9GF::InputManager::GetInstance()->DrawCursor(&this->uiCamera, deltaTime);
+			if (!keyboardNavigator.IsInKeyboardMode() && !PopupManager::GetInstance()->IsKeyboardNavigating()) {
+				DX9GF::InputManager::GetInstance()->DrawCursor(&this->uiCamera, deltaTime);
+			}
 			gd->EndDraw();
 		}
 	}
