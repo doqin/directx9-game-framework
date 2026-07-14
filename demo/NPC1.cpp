@@ -9,7 +9,7 @@ namespace Demo {
     void NPC1::Init(DX9GF::GraphicsDevice* gd, DX9GF::Camera* camera, std::shared_ptr<Player> p, std::shared_ptr<DX9GF::ColliderManager> cm, std::shared_ptr<DX9GF::Font> font, std::shared_ptr<DX9GF::CommandBuffer> drawBuffer) {
         INPC::Init(gd, camera, p, cm, font, drawBuffer);
 
-        collider = std::make_shared<DX9GF::RectangleCollider>(transformManager, 32.f, 32.f, this->GetWorldX(), this->GetWorldY());
+        collider = std::make_shared<DX9GF::RectangleCollider>(transformManager, 32.f, 8.f, this->GetWorldX(), this->GetWorldY() + 12.f);
         collider->SetOriginCenter();
         cm->Add(collider);
 

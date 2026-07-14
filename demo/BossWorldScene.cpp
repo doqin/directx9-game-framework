@@ -1,4 +1,4 @@
-﻿#include "pch.h"
+#include "pch.h"
 #include "SettingsManager.h"
 #include "BossWorldScene.h"
 #include "RandomEncounter.h"
@@ -642,18 +642,30 @@ void Demo::BossWorldScene::DrawWorld(unsigned long long deltaTime) {
 			gateSprite->End();
 		}
 
-		for (auto& m : hackMachines) m->Draw(camera, deltaTime);
-		mainTerminal->Draw(camera, deltaTime);
+		struct DepthNode {
+			float y;
+			std::function<void()> drawCall;
+			bool operator<(const DepthNode& other) const { return y < other.y; }
+		};
+		std::vector<DepthNode> depthNodes;
 
-		if (dauDauSpawn) dauDauSpawn->Draw(camera, deltaTime);
-		if (npcHint) npcHint->Draw(camera, deltaTime);
-		if (rustyChest) rustyChest->Draw(camera, deltaTime);
-		for (auto& savePoint : savePoints) savePoint->Draw(camera, deltaTime);
-		for (auto& shopPoint : shopPoints) shopPoint->Draw(camera, deltaTime);
-		for (auto& healPoint : healingPoints) healPoint->Draw(camera, deltaTime);
-		for (auto& chest : treasureChests) chest->Draw(camera, deltaTime);
-		for (auto& enemy : mapEnemies) enemy->Draw(&camera, deltaTime);
-		player->Draw(deltaTime);
+		for (auto& m : hackMachines) depthNodes.push_back({ m->GetWorldY(), [&, m]() { m->Draw(camera, deltaTime); } });
+		if (mainTerminal) depthNodes.push_back({ mainTerminal->GetWorldY(), [&]() { mainTerminal->Draw(camera, deltaTime); } });
+
+		if (dauDauSpawn) depthNodes.push_back({ dauDauSpawn->GetWorldY(), [&]() { dauDauSpawn->Draw(camera, deltaTime); } });
+		if (npcHint) depthNodes.push_back({ npcHint->GetWorldY(), [&]() { npcHint->Draw(camera, deltaTime); } });
+		if (rustyChest) depthNodes.push_back({ rustyChest->GetWorldY(), [&]() { rustyChest->Draw(camera, deltaTime); } });
+		for (auto& savePoint : savePoints) depthNodes.push_back({ savePoint->GetWorldY(), [&, savePoint]() { savePoint->Draw(camera, deltaTime); } });
+		for (auto& shopPoint : shopPoints) depthNodes.push_back({ shopPoint->GetWorldY(), [&, shopPoint]() { shopPoint->Draw(camera, deltaTime); } });
+		for (auto& healPoint : healingPoints) depthNodes.push_back({ healPoint->GetWorldY(), [&, healPoint]() { healPoint->Draw(camera, deltaTime); } });
+		for (auto& chest : treasureChests) depthNodes.push_back({ chest->GetWorldY(), [&, chest]() { chest->Draw(camera, deltaTime); } });
+		for (auto& enemy : mapEnemies) depthNodes.push_back({ enemy->GetWorldY(), [&, enemy]() { enemy->Draw(&camera, deltaTime); } });
+		if (player) depthNodes.push_back({ player->GetWorldY(), [&]() { player->Draw(deltaTime); } });
+
+		std::sort(depthNodes.begin(), depthNodes.end());
+		for (auto& node : depthNodes) {
+			node.drawCall();
+		}
 
 		gd->EndDraw();
 	}

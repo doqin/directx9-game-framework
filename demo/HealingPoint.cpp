@@ -1,4 +1,4 @@
-﻿#include "pch.h"
+#include "pch.h"
 #include "SettingsManager.h"
 #include "HealingPoint.h"
 #include <cmath>
@@ -14,7 +14,7 @@ namespace Demo {
         fontSprite = std::make_shared<DX9GF::FontSprite>(font.get());
         this->drawBuffer = drawBuffer;
         this->gd = gd;
-        collider = std::make_shared<DX9GF::RectangleCollider>(transformManager, 32.f, 32.f, GetWorldX(), GetWorldY());
+        collider = std::make_shared<DX9GF::RectangleCollider>(transformManager, 32.f, 8.f, GetWorldX(), GetWorldY() + 12.f);
         collider->SetOriginCenter();
         cm->Add(collider);
 
