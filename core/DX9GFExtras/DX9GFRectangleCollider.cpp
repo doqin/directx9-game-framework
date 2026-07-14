@@ -10,6 +10,7 @@
 namespace {
 	constexpr float collisionEpsilon = 0.001f;
 	constexpr float floatEpsilon = 0.000001f;
+	constexpr float rotationEpsilon = 0.0001f;
 
 	struct Vec2 {
 		float x;
@@ -112,16 +113,9 @@ namespace {
 		outMtv = bestAxis * (-(bestOverlap + collisionEpsilon));
 		return true;
 	}
-}
 
-bool DX9GF::RectangleCollider::IsCollidedRectangle(std::weak_ptr<RectangleCollider> other, bool checkOther)
-{
-	auto lock = other.lock();
-	if (!lock) {
-		return false;
-	}
-
-	auto BuildCorners = [](DX9GF::RectangleCollider& collider, float worldX, float worldY) {
+	std::array<Vec2, 4> BuildCorners(DX9GF::RectangleCollider& collider, float worldX, float worldY)
+	{
 		float r = collider.GetWorldRotation();
 		float sx = collider.GetWorldScaleX();
 		float sy = collider.GetWorldScaleY();
@@ -142,7 +136,55 @@ bool DX9GF::RectangleCollider::IsCollidedRectangle(std::weak_ptr<RectangleCollid
 			worldCorners[i] = { worldX + p.x, worldY + p.y };
 		}
 		return worldCorners;
-	};
+	}
+
+	// Extents of an unrotated collider relative to its world position
+	// (handles negative scale)
+	void GetAxisAlignedExtents(DX9GF::RectangleCollider& collider, Vec2& outMin, Vec2& outMax)
+	{
+		float sx = collider.GetWorldScaleX();
+		float sy = collider.GetWorldScaleY();
+		float ox = collider.GetOriginX();
+		float oy = collider.GetOriginY();
+
+		float x0 = (0.0f - ox) * sx;
+		float x1 = (collider.GetWidth() - ox) * sx;
+		float y0 = (0.0f - oy) * sy;
+		float y1 = (collider.GetHeight() - oy) * sy;
+
+		outMin = { (std::min)(x0, x1), (std::min)(y0, y1) };
+		outMax = { (std::max)(x0, x1), (std::max)(y0, y1) };
+	}
+}
+
+DX9GF::ICollider::AABB DX9GF::RectangleCollider::GetWorldAABB()
+{
+	float worldX = GetWorldX();
+	float worldY = GetWorldY();
+
+	if (std::abs(GetWorldRotation()) < rotationEpsilon) {
+		Vec2 min, max;
+		GetAxisAlignedExtents(*this, min, max);
+		return { worldX + min.x, worldY + min.y, worldX + max.x, worldY + max.y };
+	}
+
+	auto corners = BuildCorners(*this, worldX, worldY);
+	AABB aabb = { corners[0].x, corners[0].y, corners[0].x, corners[0].y };
+	for (size_t i = 1; i < corners.size(); i++) {
+		aabb.minX = (std::min)(aabb.minX, corners[i].x);
+		aabb.minY = (std::min)(aabb.minY, corners[i].y);
+		aabb.maxX = (std::max)(aabb.maxX, corners[i].x);
+		aabb.maxY = (std::max)(aabb.maxY, corners[i].y);
+	}
+	return aabb;
+}
+
+bool DX9GF::RectangleCollider::IsCollidedRectangle(std::weak_ptr<RectangleCollider> other, bool checkOther)
+{
+	auto lock = other.lock();
+	if (!lock) {
+		return false;
+	}
 
 	auto a = BuildCorners(*this, GetWorldX(), GetWorldY());
 	auto b = BuildCorners(*lock, lock->GetWorldX(), lock->GetWorldY());
@@ -194,29 +236,6 @@ std::optional<std::tuple<float, float>> DX9GF::RectangleCollider::IsIntersecting
 		float otherX = rectangleCollider->GetWorldX();
 		float otherY = rectangleCollider->GetWorldY();
 
-		auto BuildCorners = [](DX9GF::RectangleCollider& collider, float worldX, float worldY) {
-			float r = collider.GetWorldRotation();
-			float sx = collider.GetWorldScaleX();
-			float sy = collider.GetWorldScaleY();
-			float ox = collider.GetOriginX();
-			float oy = collider.GetOriginY();
-
-			std::array<Vec2, 4> local = {
-				Vec2{ 0.0f, 0.0f },
-				Vec2{ collider.GetWidth(), 0.0f },
-				Vec2{ collider.GetWidth(), collider.GetHeight() },
-				Vec2{ 0.0f, collider.GetHeight() }
-			};
-
-			std::array<Vec2, 4> worldCorners;
-			for (size_t i = 0; i < local.size(); i++) {
-				Vec2 p = { (local[i].x - ox) * sx, (local[i].y - oy) * sy };
-				p = Rotate(p, r);
-				worldCorners[i] = { worldX + p.x, worldY + p.y };
-			}
-			return worldCorners;
-		};
-
 		auto otherCorners = BuildCorners(*rectangleCollider, otherX, otherY);
 		auto IsOverlappingAt = [&](float testX, float testY) {
 			auto selfCorners = BuildCorners(*this, testX, testY);
@@ -244,6 +263,38 @@ std::optional<std::tuple<float, float>> DX9GF::RectangleCollider::IsIntersecting
 		float dy = newY - currentY;
 		if (dx == 0.0f && dy == 0.0f) {
 			return std::nullopt;
+		}
+
+		// Fast path: both rects are axis-aligned, so the sweep has an exact
+		// analytic solution (Minkowski-expanded slab test) — no stepping needed
+		if (std::abs(GetWorldRotation()) < rotationEpsilon
+			&& std::abs(rectangleCollider->GetWorldRotation()) < rotationEpsilon) {
+			Vec2 selfMin, selfMax, otherMin, otherMax;
+			GetAxisAlignedExtents(*this, selfMin, selfMax);
+			GetAxisAlignedExtents(*rectangleCollider, otherMin, otherMax);
+
+			// Expand the other rect by self's half extents and sweep self's
+			// center point against it
+			Vec2 selfHalf = { (selfMax.x - selfMin.x) * 0.5f, (selfMax.y - selfMin.y) * 0.5f };
+			Vec2 selfCenter = {
+				currentX + (selfMin.x + selfMax.x) * 0.5f,
+				currentY + (selfMin.y + selfMax.y) * 0.5f
+			};
+			float expandedMinX = otherX + otherMin.x - selfHalf.x;
+			float expandedMaxX = otherX + otherMax.x + selfHalf.x;
+			float expandedMinY = otherY + otherMin.y - selfHalf.y;
+			float expandedMaxY = otherY + otherMax.y + selfHalf.y;
+
+			float tNear = 0.0f;
+			float tFar = 1.0f;
+			if (!CheckAxisIntersection(selfCenter.x, dx, expandedMinX, expandedMaxX, tNear, tFar)
+				|| !CheckAxisIntersection(selfCenter.y, dy, expandedMinY, expandedMaxY, tNear, tFar)) {
+				return std::nullopt;
+			}
+
+			float hitDistance = std::sqrt(dx * dx + dy * dy);
+			float correctedT = (std::max)(0.0f, tNear - collisionEpsilon / hitDistance);
+			return std::make_tuple(currentX + dx * correctedT, currentY + dy * correctedT);
 		}
 
 		float distance = std::sqrt(dx * dx + dy * dy);

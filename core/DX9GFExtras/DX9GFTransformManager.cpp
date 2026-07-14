@@ -31,12 +31,9 @@ void DX9GF::TransformManager::ComputeTransform(int dataIndex) {
 void DX9GF::TransformManager::UpdateAll()
 {
 	for (const auto& level : levels) {
-		tf::Executor executor;
-		tf::Taskflow taskflow;
-		taskflow.for_each(slots.begin() + level.start, slots.begin() + level.end, [this](Slot slot) {
-			this->ComputeTransform(slot.dataIndex);
-		});
-		executor.run(taskflow).wait();
+		for (size_t i = level.start; i < level.end; i++) {
+			ComputeTransform(slots[i].dataIndex);
+		}
 	}
 }
 

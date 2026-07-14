@@ -43,8 +43,8 @@ namespace DX9GF {
 
 		virtual void Init();
 		virtual void OnResize(UINT width, UINT height);
-		void Update(unsigned long long deltaTime);
-		void Draw(unsigned long long deltaTime);
+		virtual void Update(unsigned long long deltaTime);
+		virtual void Draw(unsigned long long deltaTime);
 		virtual void Dispose();
 	};
 }
