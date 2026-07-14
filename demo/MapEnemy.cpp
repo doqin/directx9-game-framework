@@ -119,24 +119,13 @@ namespace Demo {
 				if (pLeft <= eRight + epsilon && pRight >= eLeft - epsilon &&
 					pTop <= eBottom + epsilon && pBottom >= eTop - epsilon) {
 
-					auto app = DX9GF::Application::GetInstance();
-					auto sceMan = game->GetSceneManager();
-
 					currentState = State::Idle;
 					postBattleCooldown = 2.0f;
-
 					colliderManager->Remove(collider);
 
-					auto battleScene = new MapBattleScene(game, player, app->GetScreenWidth(), app->GetScreenHeight(), encounterData);
-
-					battleScene->SetOnVictoryCallback([this]() {
-						this->isDefeated = true;
-						this->respawnTimer = 180.f;
-						this->postBattleCooldown = 0.f;
-						});
-
-					sceMan->InsertScene(sceMan->GetIndex() + 1, battleScene);
-					sceMan->GoToNext();
+					if (onEncounterTriggered) {
+						onEncounterTriggered(std::dynamic_pointer_cast<MapEnemy>(shared_from_this()));
+					}
 					return;
 				}
 			}

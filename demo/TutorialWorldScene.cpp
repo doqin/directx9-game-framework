@@ -10,7 +10,7 @@
 #include "EncounterGenerator.h"
 #include "EnemyFactory.h"
 #include "QuestManager.h"
-
+#include "MapBattleScene.h"
 void Demo::TutorialWorldScene::Init()
 {
 	camera.SetZoom(2.0f);
@@ -173,10 +173,41 @@ void Demo::TutorialWorldScene::Init()
 		auto bgDraw = [this](DX9GF::GraphicsDevice* gd, unsigned long long deltaTime) {
 			DrawBackground(gd, deltaTime);
 			};
-		mapEnemies.push_back(EnemyFactory::CreateMapEnemy(
+
+		auto enemy = EnemyFactory::CreateMapEnemy(
 			x, y, id, types, isRand, isGlobal, "battle_loop", bgDraw,
 			transformManager, game, colliderManager.get(), player
-		));
+		);
+
+		enemy->SetOnEncounterTriggered([this](std::shared_ptr<MapEnemy> e) {
+			if (this->isTransitioning) return;
+			this->isTransitioning = true;
+
+			auto transitionIn = std::make_shared<TransitionCommand>(game->GetGraphicsDevice(), &this->uiCamera, 1.f, true);
+			this->drawBuffer->PushCommand(transitionIn);
+
+			this->commandBuffer->PushCommand(std::make_shared<DX9GF::CustomCommand>([this, transitionIn, e](std::function<void(void)> markFinished) {
+				if (!transitionIn->IsFinished()) return;
+
+				auto app = DX9GF::Application::GetInstance();
+				auto sceMan = this->game->GetSceneManager();
+				auto battleScene = new MapBattleScene(this->game, this->player, app->GetScreenWidth(), app->GetScreenHeight(), e->GetEncounterData());
+
+				battleScene->SetOnVictoryCallback([e]() {
+					e->SetDefeatedState(true, 180.f);
+					});
+
+				sceMan->InsertScene(sceMan->GetIndex() + 1, battleScene);
+				sceMan->GoToNext();
+
+				this->isTransitioning = false;
+				markFinished();
+				}));
+
+			this->drawBuffer->PushCommand(std::make_shared<TransitionCommand>(game->GetGraphicsDevice(), &this->uiCamera, 1.f, false));
+			});
+
+		mapEnemies.push_back(enemy);
 		};
 
 	spawn(615.f, -170.f, "tutorial_keye_01", { "KeyeEnemy" }, false, false);
@@ -543,7 +574,7 @@ void Demo::TutorialWorldScene::RestoreSaveData(const nlohmann::json& inData)
 	player->RestoreSaveData(inData["player"]);
 	camera.SetPosition(inData["camera"]["x"], inData["camera"]["y"]);
 	camera.SetZoom(inData["camera"]["zoom"]);
-	
+
 	if (inData.contains("quest")) {
 		questStarted = inData["quest"].value("questStarted", false);
 		questRestoredFromSave = true;

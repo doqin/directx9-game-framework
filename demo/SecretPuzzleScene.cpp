@@ -12,6 +12,7 @@
 #include "MapEnemy.h"
 #include "EnemyFactory.h"
 #include "EncounterGenerator.h"
+#include "MapBattleScene.h"
 
 void Demo::SecretPuzzleScene::Init()
 {
@@ -226,10 +227,40 @@ void Demo::SecretPuzzleScene::Init()
 
 		std::string bgm = (id == "sec_miniboss_01") ? "bgm_boss" : "battle_loop";
 
-		mapEnemies.push_back(EnemyFactory::CreateMapEnemy(
+		auto enemy = EnemyFactory::CreateMapEnemy(
 			x, y, id, types, isRand, isGlobal, bgm, bgDraw,
 			transformManager, game, colliderManager.get(), player
-		));
+		);
+
+		enemy->SetOnEncounterTriggered([this](std::shared_ptr<MapEnemy> e) {
+			if (this->isTransitioning) return;
+			this->isTransitioning = true;
+
+			auto transitionIn = std::make_shared<TransitionCommand>(game->GetGraphicsDevice(), &this->uiCamera, 1.f, true);
+			this->drawBuffer->PushCommand(transitionIn);
+
+			this->commandBuffer->PushCommand(std::make_shared<DX9GF::CustomCommand>([this, transitionIn, e](std::function<void(void)> markFinished) {
+				if (!transitionIn->IsFinished()) return;
+
+				auto app = DX9GF::Application::GetInstance();
+				auto sceMan = this->game->GetSceneManager();
+				auto battleScene = new MapBattleScene(this->game, this->player, app->GetScreenWidth(), app->GetScreenHeight(), e->GetEncounterData());
+
+				battleScene->SetOnVictoryCallback([e]() {
+					e->SetDefeatedState(true, 180.f);
+					});
+
+				sceMan->InsertScene(sceMan->GetIndex() + 1, battleScene);
+				sceMan->GoToNext();
+
+				this->isTransitioning = false;
+				markFinished();
+				}));
+
+			this->drawBuffer->PushCommand(std::make_shared<TransitionCommand>(game->GetGraphicsDevice(), &this->uiCamera, 1.f, false));
+			});
+
+		mapEnemies.push_back(enemy);
 		};
 
 	spawn(-1140.f, -400.f, "sec_bat_01", { "VampireBatEnemy" }, false, false);

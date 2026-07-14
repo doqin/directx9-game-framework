@@ -42,7 +42,7 @@ namespace Demo {
 
         // simulated raycast function for hybrid ai
         bool CheckLineOfSight(float startX, float startY, float targetX, float targetY);
-
+        std::function<void(std::shared_ptr<MapEnemy>)> onEncounterTriggered;
     public:
         MapEnemy(std::weak_ptr<DX9GF::TransformManager> tm, float x, float y, const BattleEncounter& data);
         ~MapEnemy();
@@ -62,5 +62,7 @@ namespace Demo {
                 colliderManager->Remove(collider);
             }
         }
+        void SetOnEncounterTriggered(std::function<void(std::shared_ptr<MapEnemy>)> callback) { onEncounterTriggered = callback; }
+        const BattleEncounter& GetEncounterData() const { return encounterData; }
     };
 }

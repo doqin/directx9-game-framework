@@ -79,6 +79,7 @@
     <ClCompile Include="SplashScene.cpp" />
     <ClCompile Include="TextIconButton.cpp" />
     <ClCompile Include="QuestManager.cpp" />
+    <ClCompile Include="EnemyFactory.cpp" />
   </ItemGroup>
   <ItemGroup>
     <ClInclude Include="AdvancedCards.h" />
