@@ -275,6 +275,18 @@ std::optional<std::tuple<float, float>> DX9GF::EllipseCollider::IsIntersecting(s
     }
 }
 
+DX9GF::ICollider::AABB DX9GF::EllipseCollider::GetWorldAABB()
+{
+	// Conservative circle bound around the world center, radius = largest
+	// scaled half-extent (over-approximates rotated/stretched ellipses)
+	Vec2 center = GetEllipseCenter(*this, GetWorldX(), GetWorldY());
+	float radius = 0.5f * (std::max)(
+		width * std::abs(GetWorldScaleX()),
+		height * std::abs(GetWorldScaleY())
+	);
+	return { center.x - radius, center.y - radius, center.x + radius, center.y + radius };
+}
+
 void DX9GF::EllipseCollider::SetOrigin(float x, float y)
 {
 	originX = x;

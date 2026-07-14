@@ -25,7 +25,6 @@ DX9GF::StaticSprite::StaticSprite(Texture* texture) : ISprite(texture->GetGraphi
 DX9GF::StaticSprite::~StaticSprite()
 {
 	if (p_sprite != nullptr) p_sprite->Release();
-	if (p_src != nullptr) delete p_src;
 }
 
 void DX9GF::StaticSprite::Begin()
@@ -49,7 +48,7 @@ void DX9GF::StaticSprite::Draw(const Camera& camera, unsigned long long deltaTim
 	p_sprite->SetTransform(&matFinal);
 	p_sprite->Draw(
 		texture->GetRawTexture(),
-		p_src,
+		hasSrc ? &src : nullptr,
 		nullptr,
 		&zeroPos,
 		color
@@ -63,8 +62,8 @@ void DX9GF::StaticSprite::End()
 
 void DX9GF::StaticSprite::SetSrcRect(RECT srcRect)
 {
-	if (this->p_src != nullptr) delete p_src;
-	this->p_src = new RECT(srcRect);
+	this->src = srcRect;
+	this->hasSrc = true;
 }
 
 DX9GF::AnimatedSprite::AnimatedSprite(

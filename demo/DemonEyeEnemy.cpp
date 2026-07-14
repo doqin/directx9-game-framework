@@ -1,19 +1,18 @@
 ﻿#include "pch.h"
 #include "DemonEyeEnemy.h"
 #include "resource.h"
-#include "RoundProjectile.h"
-#include <random>
+#include "RNG.h"
 
 void Demo::DemonEyeEnemy::Init(DX9GF::GraphicsDevice* graphicsDevice, DX9GF::Camera* camera)
 {
 	texture = std::make_shared<DX9GF::Texture>(graphicsDevice);
-	texture->LoadTexture(L"assets/computerbug-Sheet.png"); // TODO: enemy img
+	texture->LoadTexture(L"assets/computerbug-Sheet.png");
 	sprite = std::make_shared<DX9GF::AnimatedSprite>(texture.get(), DX9GF::Utils::CreateRectsHorizontal(0, 0, 64, 64, 12), 12);
 	sprite->SetOrigin(32, 32);
 	sprite->SetScale(2.f);
 
 	tearProjectileTexture = std::make_shared<DX9GF::Texture>(graphicsDevice);
-	tearProjectileTexture->LoadTexture(L"assets/bugprojectile-Sheet.png"); // TODO: blood drop img
+	tearProjectileTexture->LoadTexture(L"assets/bugprojectile-Sheet.png");
 	tearProjectileFrames = DX9GF::Utils::CreateRectsHorizontal(0, 0, 16, 16, 4);
 
 	SetGoldReward(static_cast<int>(std::round(GetMaxHealth())));
@@ -34,10 +33,7 @@ void Demo::DemonEyeEnemy::Draw(DX9GF::GraphicsDevice* graphicsDevice, DX9GF::Cam
 
 int Demo::DemonEyeEnemy::GetRandomPattern()
 {
-	std::random_device rd;
-	std::mt19937 gen(rd());
-	std::uniform_int_distribution<int> dist(1, 3);
-	return dist(gen);
+	return RNG::Range(1, 3);
 }
 
 void Demo::DemonEyeEnemy::StartAttack(std::shared_ptr<Player> player, std::vector<std::shared_ptr<IEnemy>>* enemies, std::shared_ptr<PopUpMessage> popUpMessage, DX9GF::GraphicsDevice* graphicsDevice, DX9GF::Camera* camera)
@@ -51,7 +47,7 @@ void Demo::DemonEyeEnemy::StartAttack(std::shared_ptr<Player> player, std::vecto
 	float projDamage = GetOutgoingDamage(baseDamage);
 
 	//surprise element
-	int patternId = GetRandomPattern();
+	int patternId = GetSmartRandomPattern(1, 3);
 
 	//PatternBloodCross(projDamage, enemies);
 	if (patternId == 1) PatternBloodRain(projDamage, enemies);
@@ -69,12 +65,8 @@ void Demo::DemonEyeEnemy::PatternBloodRain(float projDamage, std::vector<std::sh
 	const float OFFSET_RANGE = 300.f;
 	const float DROP_HEIGHT = 350.f;
 
-	std::random_device rd;
-	std::mt19937 gen(rd());
-	std::uniform_real_distribution<float> offsetDist(-OFFSET_RANGE, OFFSET_RANGE);
-
 	for (int i = 0; i < BULLET_COUNT; i++) {
-		float offsetX = offsetDist(gen);
+		float offsetX = RNG::Range(-OFFSET_RANGE, OFFSET_RANGE);
 
 		commandBuffer.PushCommand(std::make_shared<DX9GF::CustomCommand>([this, projDamage, offsetX, DROP_HEIGHT, BULLET_SPEED](std::function<void(void)> markFinished) {
 			if (auto lock = this->player.lock()) {
@@ -83,19 +75,15 @@ void Demo::DemonEyeEnemy::PatternBloodRain(float projDamage, std::vector<std::sh
 				float finalX = playerX + offsetX;
 				float finalY = playerY - DROP_HEIGHT;
 
-				auto projSprite = std::make_shared<DX9GF::AnimatedSprite>(tearProjectileTexture.get(), tearProjectileFrames, 12);
-				projSprite->SetOrigin(8, 8);
-				projectiles.push_back(
-					RoundProjectile::Builder(transformManager, lock, projSprite, 16, 16, finalX, finalY)
+				projectiles.Spawn(
+					lock,
+					ProjectileDesc(tearProjectileTexture.get(), tearProjectileFrames, 12, 8, 8, 16, 16, finalX, finalY)
 					.SetTrajectory(D3DXVECTOR2(0, 1))
 					.SetDelay(0.f)
 					.SetDecayTime(4.f)
 					.SetVelocity(BULLET_SPEED)
 					.SetDamage(projDamage)
-					.Build()
 				);
-				projectiles.back()->Init();
-				transformManager.lock()->RebuildHierarchy();
 			}
 			markFinished();
 			}));
@@ -115,13 +103,9 @@ void Demo::DemonEyeEnemy::PatternBloodWall(float projDamage, std::vector<std::sh
 	const float BULLET_SPACING = isAlone ? 40.f : 80.f;
 	const float BULLET_DECAY_TIME = isAlone ? 4.f : 8.f;
 
-	std::random_device rd;
-	std::mt19937 gen(rd());
-
 	for (int wave = 0; wave < WAVE_COUNT; wave++) {
 		//random hole
-		std::uniform_int_distribution<int> holeDist(0, BULLET_PER_WAVE - 1);
-		int emptyHole = holeDist(gen);
+		int emptyHole = RNG::Range(0, BULLET_PER_WAVE - 1);
 
 		commandBuffer.PushCommand(std::make_shared<DX9GF::CustomCommand>([this, projDamage, emptyHole, BULLET_PER_WAVE, BULLET_SPEED, DROP_HEIGHT, WALL_START_X, BULLET_SPACING, BULLET_DECAY_TIME](std::function<void(void)> markFinished) {
 			if (auto lock = this->player.lock()) {
@@ -134,20 +118,16 @@ void Demo::DemonEyeEnemy::PatternBloodWall(float projDamage, std::vector<std::sh
 					float finalX = playerX + offsetX;
 					float finalY = playerY - DROP_HEIGHT;
 
-					auto projSprite = std::make_shared<DX9GF::AnimatedSprite>(tearProjectileTexture.get(), tearProjectileFrames, 12);
-					projSprite->SetOrigin(8, 8);
-					projectiles.push_back(
-						RoundProjectile::Builder(transformManager, lock, projSprite, 16, 16, finalX, finalY)
+					projectiles.Spawn(
+						lock,
+						ProjectileDesc(tearProjectileTexture.get(), tearProjectileFrames, 12, 8, 8, 16, 16, finalX, finalY)
 						.SetTrajectory(D3DXVECTOR2(0, 1))
 						.SetDelay(0.f)
 						.SetDecayTime(BULLET_DECAY_TIME)
 						.SetVelocity(BULLET_SPEED)
 						.SetDamage(projDamage)
-						.Build()
 					);
-					projectiles.back()->Init();
 				}
-				transformManager.lock()->RebuildHierarchy();
 			}
 			markFinished();
 			}));
@@ -165,14 +145,10 @@ void Demo::DemonEyeEnemy::PatternBloodCross(float projDamage, std::vector<std::s
 	const float OFFSET_MIN = -450.f;
 	const float OFFSET_MAX = 150.f;
 
-	std::random_device rd;
-	std::mt19937 gen(rd());
-
 	//since the bullets veer to the RIGHT(0.5, 1.0), shift the spawn area further to the left to ensure they hit the Player.
-	std::uniform_real_distribution<float> offsetDist(OFFSET_MIN, OFFSET_MAX);
 
 	for (int i = 0; i < BULLET_COUNT; i++) {
-		float offsetX = offsetDist(gen);
+		float offsetX = RNG::Range(OFFSET_MIN, OFFSET_MAX);
 
 		commandBuffer.PushCommand(std::make_shared<DX9GF::CustomCommand>([this, projDamage, offsetX, BULLET_SPEED, DROP_HEIGHT](std::function<void(void)> markFinished) {
 			if (auto lock = this->player.lock()) {
@@ -181,19 +157,15 @@ void Demo::DemonEyeEnemy::PatternBloodCross(float projDamage, std::vector<std::s
 			float finalX = playerX + offsetX;
 			float finalY = playerY - DROP_HEIGHT;
 
-			auto projSprite = std::make_shared<DX9GF::AnimatedSprite>(tearProjectileTexture.get(), tearProjectileFrames, 12);
-			projSprite->SetOrigin(8, 8);
-			projectiles.push_back(
-				RoundProjectile::Builder(transformManager, lock, projSprite, 16, 16, finalX, finalY)
+			projectiles.Spawn(
+				lock,
+				ProjectileDesc(tearProjectileTexture.get(), tearProjectileFrames, 12, 8, 8, 16, 16, finalX, finalY)
 				.SetTrajectory(D3DXVECTOR2(0.5f, 1.0f))
 				.SetDelay(0.f)
 				.SetDecayTime(4.f)
 				.SetVelocity(BULLET_SPEED)
 				.SetDamage(projDamage)
-				.Build()
 			);
-			projectiles.back()->Init();
-			transformManager.lock()->RebuildHierarchy();
 			}
 			markFinished();
 			}));

@@ -1,6 +1,6 @@
 #include "pch.h"
 #include "RandomEncounter.h"
-#include <random>
+#include "RNG.h"
 #include <chrono>
 #include "CustomBattleScene.h"
 #include "Game.h"
@@ -29,11 +29,8 @@ std::function<void(const DX9GF::Map::ObjectArea&)> Demo::GetRandomEncounterFunc(
 		if (player->IsWalking()) {
 			const int CHANCE = 1; // in percentage
 			const int MAX = 100;
-			std::random_device rd;
-			std::mt19937 gen(rd());
-			std::uniform_int_distribution<> dis(1, MAX);
 
-			if (dis(gen) <= MAX * CHANCE / 100) {
+			if (RNG::Range(1, MAX) <= MAX * CHANCE / 100) {
 				lastEncounterTime = now;
 				std::map<std::string, int> possibleEnemiesMap;
 				for (const auto& [name, chance] : possibleEnemies) {

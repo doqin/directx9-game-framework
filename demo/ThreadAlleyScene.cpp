@@ -10,8 +10,10 @@
 #include "TransitionCommand.h"
 #include "resource.h"
 #include "PopupManager.h"
+#include "EncounterGenerator.h"
+#include "EnemyFactory.h"
 #include "QuestManager.h"
-
+#include "MapBattleScene.h"
 void Demo::ThreadAlleyScene::Init()
 {
 	camera.SetZoom(2.0f);
@@ -29,10 +31,10 @@ void Demo::ThreadAlleyScene::Init()
 	map = std::make_shared<DX9GF::Map>(game->GetGraphicsDevice());
 	map->Create(transformManager, colliderManager, "./assets/ThreadAlley.tmx");
 
-	map->SetAreaUpdateHandler("triggers", GetRandomEncounterFunc(game, player, {
+	/*map->SetAreaUpdateHandler("triggers", GetRandomEncounterFunc(game, player, {
 		{"VampireBatEnemy", 40},
 		{"MimicEnemy", 25},
-		}, drawBuffer, commandBuffer, &isGamePaused, & this->uiCamera, [this](DX9GF::GraphicsDevice* gd, unsigned long long deltaTime) { DrawCheckerBackground(gd, deltaTime); }));
+		}, drawBuffer, commandBuffer, &isGamePaused, & this->uiCamera, [this](DX9GF::GraphicsDevice* gd, unsigned long long deltaTime) { DrawCheckerBackground(gd, deltaTime); }));*/
 
 	map->SetAreaUpdateHandler("trigger_p", [this](const DX9GF::Map::ObjectArea& area) {
 		isTransitioning = true;
@@ -58,28 +60,28 @@ void Demo::ThreadAlleyScene::Init()
 
 	shopPoints.push_back(std::make_shared<ShopPoint>(transformManager, -710, -450));
 	shopPoints.back()->Init(game, game->GetGraphicsDevice(), &camera, player, colliderManager, font, drawBuffer,
-       [](Game* g, Player* p, int w, int h) { return new CardShop(g, p, w, h, ShopTier::HYBRID); }
+		[](Game* g, Player* p, int w, int h) { return new CardShop(g, p, w, h, ShopTier::HYBRID); }
 	);
 	shopPoints.back()->SetVisible(true);
 
 	shopPoints.push_back(std::make_shared<ShopPoint>(transformManager, -697, -1148));
 	shopPoints.back()->Init(game, game->GetGraphicsDevice(), &camera, player, colliderManager, font, drawBuffer,
-       [](Game* g, Player* p, int w, int h) { return new ItemShop(g, p, w, h, ShopTier::HYBRID); }
+		[](Game* g, Player* p, int w, int h) { return new ItemShop(g, p, w, h, ShopTier::HYBRID); }
 	);
 	shopPoints.back()->SetVisible(true);
 
 	shopPoints.push_back(std::make_shared<ShopPoint>(transformManager, 35, -1413));
 	shopPoints.back()->Init(game, game->GetGraphicsDevice(), &camera, player, colliderManager, font, drawBuffer,
-       [](Game* g, Player* p, int w, int h) { return new CardShop(g, p, w, h, ShopTier::BASIC); }
+		[](Game* g, Player* p, int w, int h) { return new CardShop(g, p, w, h, ShopTier::BASIC); }
 	);
 	shopPoints.back()->SetVisible(true);
 
 	shopPoints.push_back(std::make_shared<ShopPoint>(transformManager, 230, -456));
 	shopPoints.back()->Init(game, game->GetGraphicsDevice(), &camera, player, colliderManager, font, drawBuffer,
-       [](Game* g, Player* p, int w, int h) { return new ItemShop(g, p, w, h, ShopTier::BASIC); }
+		[](Game* g, Player* p, int w, int h) { return new ItemShop(g, p, w, h, ShopTier::BASIC); }
 	);
 	shopPoints.back()->SetVisible(true);
-	  
+
 	auto borderTex = std::make_shared<DX9GF::Texture>(game->GetGraphicsDevice());
 	borderTex->LoadTexture(L"assets/popup-borders.png");
 
@@ -233,8 +235,82 @@ void Demo::ThreadAlleyScene::Init()
 		treasureChests.push_back(std::make_shared<TreasureChestNPC>(
 			transformManager, def.pos.first, def.pos.second,
 			def.rewards, def.randomPick));
-		treasureChests.back()->Init(game->GetGraphicsDevice(),&camera, player, colliderManager, font, drawBuffer);
+		treasureChests.back()->Init(game->GetGraphicsDevice(), &camera, player, colliderManager, font, drawBuffer);
 	}
+
+	//map enemies
+	auto spawn = [&](float x, float y, std::string id, std::vector<std::string> types, bool isRand, bool isGlobal) {
+		auto bgDraw = [this](DX9GF::GraphicsDevice* gd, unsigned long long deltaTime) {
+			DrawCheckerBackground(gd, deltaTime);
+			};
+
+		std::string bgm = (id == "sec_miniboss_01") ? "bgm_boss" : "battle_loop";
+
+		auto enemy = EnemyFactory::CreateMapEnemy(
+			x, y, id, types, isRand, isGlobal, bgm, bgDraw,
+			transformManager, game, colliderManager.get(), player
+		);
+
+		enemy->SetOnEncounterTriggered([this](std::shared_ptr<MapEnemy> e) {
+			if (this->isTransitioning) return;
+			this->isTransitioning = true;
+
+			auto transitionIn = std::make_shared<TransitionCommand>(game->GetGraphicsDevice(), &this->uiCamera, 1.f, true);
+			this->drawBuffer->PushCommand(transitionIn);
+
+			this->commandBuffer->PushCommand(std::make_shared<DX9GF::CustomCommand>([this, transitionIn, e](std::function<void(void)> markFinished) {
+				if (!transitionIn->IsFinished()) return;
+
+				auto app = DX9GF::Application::GetInstance();
+				auto sceMan = this->game->GetSceneManager();
+				auto battleScene = new MapBattleScene(this->game, this->player, app->GetScreenWidth(), app->GetScreenHeight(), e->GetEncounterData());
+
+				battleScene->SetOnVictoryCallback([e]() {
+					e->SetDefeatedState(true, 180.f);
+					});
+
+				sceMan->InsertScene(sceMan->GetIndex() + 1, battleScene);
+				sceMan->GoToNext();
+
+				this->isTransitioning = false;
+				markFinished();
+				}));
+
+			this->drawBuffer->PushCommand(std::make_shared<TransitionCommand>(game->GetGraphicsDevice(), &this->uiCamera, 1.f, false));
+			});
+
+		mapEnemies.push_back(enemy);
+		};
+
+	spawn(-490.f, -50.f, "th_intro_01", { "KeyeEnemy" }, false, false);
+	spawn(-735.f, -160.f, "th_intro_02", { "VampireBatEnemy" }, false, false);
+	spawn(-210.f, -180.f, "th_intro_03", { "DemonEyeEnemy" }, false, false);
+	spawn(-40.f, -300.f, "th_intro_04", { "KeyeEnemy", "DemonEyeEnemy" }, true, false);
+	spawn(-540.f, -370.f, "th_mid_01", { "VampireBatEnemy", "VampireBatEnemy" }, false, false);
+	spawn(-330.f, -400.f, "th_mid_02", { "MimicEnemy" }, false, false);
+	spawn(-35.f, -470.f, "th_mid_03", { "KeyeEnemy", "VampireBatEnemy" }, true, false);
+	spawn(-230.f, -550.f, "th_mid_04", { "DemonEyeEnemy", "DemonEyeEnemy" }, false, false);
+	spawn(200.f, -560.f, "th_mid_05", {}, false, true);
+	spawn(-500.f, -640.f, "th_dark_01", { "WarlockEnemy" }, false, false);
+	spawn(925.f, -605.f, "th_dark_02", { "WarlockEnemy", "KeyeEnemy" }, false, false);
+	spawn(-370.f, -910.f, "th_dark_03", { "DemonEyeEnemy", "WarlockEnemy" }, true, false);
+	spawn(580.f, -910.f, "th_dark_04", { "WarlockEnemy", "VampireBatEnemy" }, false, false);
+	spawn(920.f, -950.f, "th_dark_05", { "WarlockEnemy", "WarlockEnemy" }, false, false);
+	spawn(-730.f, -990.f, "th_dark_06", {}, false, true);
+	spawn(-10.f, -1055.f, "th_deep_01", { "KeyeEnemy", "MimicEnemy" }, true, false);
+	spawn(280.f, -1080.f, "th_deep_02", { "DemonEyeEnemy", "MimicEnemy" }, true, false);
+	spawn(-480.f, -1110.f, "th_deep_03", { "VampireBatEnemy" }, false, false);
+	spawn(-10.f, -1200.f, "th_deep_04", { "MimicEnemy" }, false, false);
+	spawn(590.f, -1250.f, "th_deep_05", { "WarlockEnemy", "MimicEnemy" }, true, false);
+	spawn(1150.f, -1280.f, "th_deep_06", { "KeyeEnemy", "DemonEyeEnemy", "VampireBatEnemy" }, true, false);
+	spawn(-200.f, -1370.f, "th_end_01", { "WarlockEnemy", "DemonEyeEnemy" }, false, false);
+	spawn(920.f, -1380.f, "th_end_02", {}, false, true);
+	spawn(-700.f, -1430.f, "th_end_03", { "VampireBatEnemy", "VampireBatEnemy", "VampireBatEnemy" }, false, false);
+	spawn(-410.f, -1500.f, "th_end_04", { "WarlockEnemy", "WarlockEnemy", "DemonEyeEnemy" }, false, false);
+	spawn(620.f, -165.f, "th_extra_01", { "KeyeEnemy" }, false, false);
+	spawn(950.f, -220.f, "th_extra_02", { "DemonEyeEnemy" }, false, false);
+	spawn(1160.f, -280.f, "th_extra_03", { "VampireBatEnemy" }, false, false);
+	spawn(1135.f, -525.f, "th_extra_04", {}, false, true);
 
 	draggableManager = std::make_shared<Demo::DraggableManager>();
 	inventoryMenu = std::make_shared<InventoryMenu>(game, player, transformManager, draggableManager, &uiCamera, font.get());
@@ -253,7 +329,7 @@ void Demo::ThreadAlleyScene::Init()
 	audio->Load("step_c3", IDR_STEP_C3);
 	audio->Load("step_c4", IDR_STEP_C4);
 
-	audio->RegisterBank("step_concrete", { "step_c1", "step_c2", "step_c3", "step_c4"});
+	audio->RegisterBank("step_concrete", { "step_c1", "step_c2", "step_c3", "step_c4" });
 	player->SetBaseSurface("concrete");
 
 	map->SetAreaUpdateHandler("audio_zone_leaves", [this](const DX9GF::Map::ObjectArea&) {
@@ -268,7 +344,7 @@ void Demo::ThreadAlleyScene::Init()
 	this->GiveTestItems();
 
 	transformManager->RebuildHierarchy();
-	drawBuffer->PushCommand(std::make_shared<TransitionCommand>(game->GetGraphicsDevice(), &this->uiCamera, 1.f, false)); 
+	drawBuffer->PushCommand(std::make_shared<TransitionCommand>(game->GetGraphicsDevice(), &this->uiCamera, 1.f, false));
 }
 
 void Demo::ThreadAlleyScene::Update(unsigned long long deltaTime)
@@ -393,6 +469,9 @@ void Demo::ThreadAlleyScene::Update(unsigned long long deltaTime)
 	if (playerHUD && !isGamePaused) playerHUD->Update(deltaTime);
 
 	if (!isGamePaused) {
+		for (auto& enemy : mapEnemies) {
+			enemy->Update(deltaTime);
+		}
 		player->Update(deltaTime);
 		camera.Update();
 	}
@@ -428,6 +507,7 @@ void Demo::ThreadAlleyScene::DrawWorld(unsigned long long deltaTime)
 		for (auto& shopPoint : shopPoints) shopPoint->Draw(camera, deltaTime);
 		for (auto& healPoint : healingPoints) healPoint->Draw(camera, deltaTime);
 		for (auto& chest : treasureChests) chest->Draw(camera, deltaTime);
+		for (auto& enemy : mapEnemies) { enemy->Draw(&camera, deltaTime); }
 
 		if (dauDau) dauDau->Draw(camera, deltaTime);
 		player->Draw(deltaTime);
@@ -494,6 +574,15 @@ void Demo::ThreadAlleyScene::GenerateSaveData(nlohmann::json& outData)
 	nlohmann::json chestStates = nlohmann::json::array();
 	for (auto& c : treasureChests) chestStates.push_back(c->GetIsOpened());
 	outData["treasureChests"] = chestStates;
+
+	nlohmann::json enemiesState = nlohmann::json::object();
+	for (auto& enemy : mapEnemies) {
+		enemiesState[enemy->GetEnemyID()] = {
+			{"isDefeated", enemy->IsDefeated()},
+			{"respawnTimer", enemy->GetRespawnTimer()}
+		};
+	}
+	outData["mapEnemies"] = enemiesState;
 }
 
 void Demo::ThreadAlleyScene::RestoreSaveData(const nlohmann::json& inData)
@@ -512,6 +601,18 @@ void Demo::ThreadAlleyScene::RestoreSaveData(const nlohmann::json& inData)
 		for (size_t i = 0; i < treasureChests.size() && i < arr.size(); ++i)
 			treasureChests[i]->SetOpened(arr[i].get<bool>());
 	}
+
+	if (inData.contains("mapEnemies")) {
+		auto& enemiesState = inData["mapEnemies"];
+		for (auto& enemy : mapEnemies) {
+			std::string id = enemy->GetEnemyID();
+			if (enemiesState.contains(id)) {
+				bool def = enemiesState[id]["isDefeated"].get<bool>();
+				float timer = enemiesState[id]["respawnTimer"].get<float>();
+				enemy->SetDefeatedState(def, timer);
+			}
+		}
+	}
 }
 
 void Demo::ThreadAlleyScene::GiveTestItems()
@@ -523,11 +624,11 @@ void Demo::ThreadAlleyScene::DrawCheckerBackground(DX9GF::GraphicsDevice* gd, un
 {
 	auto [screenWidth, screenHeight] = uiCamera.GetScreenResolution();
 	gd->DrawRectangle(0.0f, 0.0f, static_cast<float>(screenWidth), static_cast<float>(screenHeight), 0xFF403353, true);
-	
+
 	const float SQUARE_SIZE = 128.0f;
-	const float BASE_SCROLL_SPEED = 30.0f; 
-	const float BLINK_PERIOD = 2000.0f; 
-	const float ANIMATION_DURATION = 800.0f; 
+	const float BASE_SCROLL_SPEED = 30.0f;
+	const float BLINK_PERIOD = 2000.0f;
+	const float ANIMATION_DURATION = 800.0f;
 	const int PADDING = 6; // Adjust this value to increase or decrease the extra squares generated off-screen
 
 	// Update base scroll
@@ -541,7 +642,7 @@ void Demo::ThreadAlleyScene::DrawCheckerBackground(DX9GF::GraphicsDevice* gd, un
 	bgPeriodTimer += deltaTime;
 	if (bgPeriodTimer >= BLINK_PERIOD) {
 		bgPeriodTimer = std::fmod(bgPeriodTimer, BLINK_PERIOD);
-		bgAnimPhase = (bgAnimPhase + 1) % 2; 
+		bgAnimPhase = (bgAnimPhase + 1) % 2;
 		bgEaseProgress = bgPeriodTimer / ANIMATION_DURATION;
 	}
 
@@ -558,16 +659,17 @@ void Demo::ThreadAlleyScene::DrawCheckerBackground(DX9GF::GraphicsDevice* gd, un
 
 	auto easeInOut = [](float t) {
 		return t < 0.5f ? 2.0f * t * t : -1.0f + (4.0f - 2.0f * t) * t;
-	};
+		};
 
 	float easedValue = easeInOut(bgEaseProgress) * SQUARE_SIZE;
-	
+
 	if (bgAnimPhase == 1) {
-		bgOddRowShift = -easedValue; 
-		bgEvenRowShift = -easedValue; 
-	} else {
-		bgOddRowShift = -SQUARE_SIZE - easedValue; 
-		bgEvenRowShift = -SQUARE_SIZE - easedValue; 
+		bgOddRowShift = -easedValue;
+		bgEvenRowShift = -easedValue;
+	}
+	else {
+		bgOddRowShift = -SQUARE_SIZE - easedValue;
+		bgEvenRowShift = -SQUARE_SIZE - easedValue;
 	}
 
 	int cols = (int)std::ceil(screenWidth / SQUARE_SIZE) + PADDING * 2;
@@ -581,13 +683,14 @@ void Demo::ThreadAlleyScene::DrawCheckerBackground(DX9GF::GraphicsDevice* gd, un
 
 			if (row % 2 != 0) {
 				y += bgOddRowShift;
-			} else {
+			}
+			else {
 				x += bgEvenRowShift;
 			}
 
 			bool isColor1 = (col + row) % 2 == 0;
 			D3DCOLOR baseColor = isColor1 ? bgBaseColor1 : bgBaseColor2;
-			
+
 			if (blinkFactor > 0.0f) {
 				int a = (baseColor >> 24) & 0xFF;
 				int r = ((baseColor >> 16) & 0xFF) + (int)((((bgBlinkColor >> 16) & 0xFF) - ((baseColor >> 16) & 0xFF)) * blinkFactor);

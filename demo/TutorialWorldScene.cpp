@@ -7,8 +7,10 @@
 #include "TransitionCommand.h"
 #include "resource.h"
 #include "PopupManager.h"
+#include "EncounterGenerator.h"
+#include "EnemyFactory.h"
 #include "QuestManager.h"
-
+#include "MapBattleScene.h"
 void Demo::TutorialWorldScene::Init()
 {
 	camera.SetZoom(2.0f);
@@ -21,29 +23,30 @@ void Demo::TutorialWorldScene::Init()
 	commandBuffer = std::make_shared<DX9GF::CommandBuffer>();
 	map = std::make_shared<DX9GF::Map>(game->GetGraphicsDevice());
 	map->Create(transformManager, colliderManager, "./assets/tutorial.tmx");
-	map->SetAreaUpdateHandler("triggers", GetRandomEncounterFunc(game, player, {
+	/*map->SetAreaUpdateHandler("triggers", GetRandomEncounterFunc(game, player, {
 		{"DemonEyeEnemy", 40},
 		{"MimicEnemy", 20},
-		}, drawBuffer, commandBuffer, &isGamePaused, & this->uiCamera, [this](DX9GF::GraphicsDevice* gd, unsigned long long deltaTime) { DrawBackground(gd, deltaTime); }));
+		}, drawBuffer, commandBuffer, &isGamePaused, & this->uiCamera, [this](DX9GF::GraphicsDevice* gd, unsigned long long deltaTime) { DrawBackground(gd, deltaTime); }));*/
 
-	map->SetAreaUpdateHandler("trigger_p", [this](const DX9GF::Map::ObjectArea& area) {if (isTransitioning) return;
-	isTransitioning = true;
-	auto transitionInCommand = std::make_shared<TransitionCommand>(game->GetGraphicsDevice(), &this->uiCamera, 1.f, true);
-	drawBuffer->PushCommand(transitionInCommand);
-	commandBuffer->PushCommand(std::make_shared<DX9GF::CustomCommand>([this, transitionInCommand](std::function<void(void)> markFinished) {
-		if (!transitionInCommand->IsFinished()) {
-			return;
-		}
-		nlohmann::json saveData;
-		player->GenerateSaveGlobalData(saveData["player"]);
-		auto sceMan = game->GetSceneManager();
-		MainMenu::gameSaveState->GetPlayerFromScene(sceMan->GetScene(static_cast<size_t>(sceMan->GetIndex()) + 2))->RestoreSaveGlobalData(saveData["player"]);
-		DX9GF::AudioManager::GetInstance()->PlayBGM_Fade("bgm_arcade", 0.2f, 1.5f);
-		sceMan->GoToScene(sceMan->GetIndex() + 2);
-		isTransitioning = false;
-		markFinished();
-		}));
-	drawBuffer->PushCommand(std::make_shared<TransitionCommand>(game->GetGraphicsDevice(), &this->uiCamera, 1.f, false));
+	map->SetAreaUpdateHandler("trigger_p", [this](const DX9GF::Map::ObjectArea& area) {
+		if (isTransitioning) return;
+		isTransitioning = true;
+		auto transitionInCommand = std::make_shared<TransitionCommand>(game->GetGraphicsDevice(), &this->uiCamera, 1.f, true);
+		drawBuffer->PushCommand(transitionInCommand);
+		commandBuffer->PushCommand(std::make_shared<DX9GF::CustomCommand>([this, transitionInCommand](std::function<void(void)> markFinished) {
+			if (!transitionInCommand->IsFinished()) {
+				return;
+			}
+			nlohmann::json saveData;
+			player->GenerateSaveGlobalData(saveData["player"]);
+			auto sceMan = game->GetSceneManager();
+			MainMenu::gameSaveState->GetPlayerFromScene(sceMan->GetScene(static_cast<size_t>(sceMan->GetIndex()) + 2))->RestoreSaveGlobalData(saveData["player"]);
+			DX9GF::AudioManager::GetInstance()->PlayBGM_Fade("bgm_arcade", 0.2f, 1.5f);
+			sceMan->GoToScene(sceMan->GetIndex() + 2);
+			isTransitioning = false;
+			markFinished();
+			}));
+		drawBuffer->PushCommand(std::make_shared<TransitionCommand>(game->GetGraphicsDevice(), &this->uiCamera, 1.f, false));
 		});
 
 	map->SetAreaUpdateHandler("trigger_secret", [this](const DX9GF::Map::ObjectArea& area) {if (isTransitioning) return;
@@ -82,8 +85,9 @@ void Demo::TutorialWorldScene::Init()
 	npcIntroduction->AddLine(L"Dau Dau", L"By the way, use the floppy disk icon over there to save your progress.");
 	npcExplainingEnemyEncounters = std::make_shared<DauDauNPC>(transformManager, 544.0f, -56.0f);
 	npcExplainingEnemyEncounters->Init(game->GetGraphicsDevice(), &camera, player, colliderManager, font, drawBuffer);
-	npcExplainingEnemyEncounters->AddLine(L"Dau Dau", L"Look out ahead! Those green patches are combat zones.");
-	npcExplainingEnemyEncounters->AddLine(L"Dau Dau", L"If you step on them, there is a chance you'll be ambushed.\n If so, you'll have to fight enemies.");
+	npcExplainingEnemyEncounters->AddLine(L"Dau Dau", L"Look out ahead! See those digital creeps roaming around?");
+	npcExplainingEnemyEncounters->AddLine(L"Dau Dau", L"If they spot you, they will chase you down! Touching them will drag you into a battle.");
+	npcExplainingEnemyEncounters->AddLine(L"Dau Dau", L"You can try to outrun them or hide behind walls to break their line of sight.");
 	npcExplainingEnemyEncounters->AddLine(L"Dau Dau", L"Don't worry, you can run away from battles if you want.\n But you won't get any rewards if you do that!");
 	npcExplainingHealingPoint = std::make_shared<DauDauNPC>(transformManager, 289.0f, -496.0f);
 	npcExplainingHealingPoint->Init(game->GetGraphicsDevice(), &camera, player, colliderManager, font, drawBuffer);
@@ -145,7 +149,6 @@ void Demo::TutorialWorldScene::Init()
 	}, true));
 	treasureChests.back()->Init(game->GetGraphicsDevice(), &camera, player, colliderManager, font, drawBuffer);
 
-
 	treasureChests.push_back(std::make_shared<TreasureChestNPC>(
 		transformManager, 164.f, -380.f,
 		std::vector<ChestReward>{
@@ -153,6 +156,65 @@ void Demo::TutorialWorldScene::Init()
 			ChestReward::Card("HeavyStrikeCard")
 	}, true));
 	treasureChests.back()->Init(game->GetGraphicsDevice(), &camera, player, colliderManager, font, drawBuffer);
+
+	BattleEncounter testEncounter;
+	testEncounter.mapEnemyID = "tutorial_mimic_01";
+	testEncounter.enemyTypes = { "MimicEnemy" };
+	testEncounter.bgmName = "battle_loop1";
+	testEncounter.bgDrawFunc = [this](DX9GF::GraphicsDevice* gd, unsigned long long deltaTime) {
+		DrawBackground(gd, deltaTime);
+		};
+	testEncounter.mapTexturePath = L"assets/notresponding-Sheet.png";
+	testEncounter.spriteWidth = 64;
+	testEncounter.spriteHeight = 64;
+
+	//map enemies
+	auto spawn = [&](float x, float y, std::string id, std::vector<std::string> types, bool isRand, bool isGlobal) {
+		auto bgDraw = [this](DX9GF::GraphicsDevice* gd, unsigned long long deltaTime) {
+			DrawBackground(gd, deltaTime);
+			};
+
+		auto enemy = EnemyFactory::CreateMapEnemy(
+			x, y, id, types, isRand, isGlobal, "battle_loop", bgDraw,
+			transformManager, game, colliderManager.get(), player
+		);
+
+		enemy->SetOnEncounterTriggered([this](std::shared_ptr<MapEnemy> e) {
+			if (this->isTransitioning) return;
+			this->isTransitioning = true;
+
+			auto transitionIn = std::make_shared<TransitionCommand>(game->GetGraphicsDevice(), &this->uiCamera, 1.f, true);
+			this->drawBuffer->PushCommand(transitionIn);
+
+			this->commandBuffer->PushCommand(std::make_shared<DX9GF::CustomCommand>([this, transitionIn, e](std::function<void(void)> markFinished) {
+				if (!transitionIn->IsFinished()) return;
+
+				auto app = DX9GF::Application::GetInstance();
+				auto sceMan = this->game->GetSceneManager();
+				auto battleScene = new MapBattleScene(this->game, this->player, app->GetScreenWidth(), app->GetScreenHeight(), e->GetEncounterData());
+
+				battleScene->SetOnVictoryCallback([e]() {
+					e->SetDefeatedState(true, 180.f);
+					});
+
+				sceMan->InsertScene(sceMan->GetIndex() + 1, battleScene);
+				sceMan->GoToNext();
+
+				this->isTransitioning = false;
+				markFinished();
+				}));
+
+			this->drawBuffer->PushCommand(std::make_shared<TransitionCommand>(game->GetGraphicsDevice(), &this->uiCamera, 1.f, false));
+			});
+
+		mapEnemies.push_back(enemy);
+		};
+
+	spawn(615.f, -170.f, "tutorial_keye_01", { "KeyeEnemy" }, false, false);
+	spawn(510.f, -380.f, "tutorial_demoneye_01", { "DemonEyeEnemy" }, false, false);
+	spawn(500.f, -590.f, "tutorial_random_01", { "KeyeEnemy", "DemonEyeEnemy" }, true, false);
+	spawn(-90.f, -400.f, "tutorial_mixed_01", { "KeyeEnemy", "DemonEyeEnemy" }, false, false);
+	spawn(50.f, -330.f, "tutorial_random_02", { "KeyeEnemy", "DemonEyeEnemy", "MimicEnemy" }, true, false);
 
 	draggableManager = std::make_shared<Demo::DraggableManager>();
 
@@ -338,6 +400,9 @@ void Demo::TutorialWorldScene::Update(unsigned long long deltaTime)
 	if (playerHUD && !isGamePaused) playerHUD->Update(deltaTime);
 
 	if (!isGamePaused) {
+		for (auto& enemy : mapEnemies) {
+			enemy->Update(deltaTime);
+		}
 		player->Update(deltaTime);
 		camera.Update();
 	}
@@ -380,6 +445,10 @@ void Demo::TutorialWorldScene::DrawWorld(unsigned long long deltaTime)
 			chest->Draw(camera, deltaTime);
 
 		if (npcExplainingPortal) npcExplainingPortal->Draw(camera, deltaTime);
+
+		for (auto& enemy : mapEnemies) {
+			enemy->Draw(&camera, deltaTime);
+		}
 		player->Draw(deltaTime);
 
 		gd->EndDraw();
@@ -489,6 +558,15 @@ void Demo::TutorialWorldScene::GenerateSaveData(nlohmann::json& outData)
 	nlohmann::json chestStates = nlohmann::json::array();
 	for (auto& c : treasureChests) chestStates.push_back(c->GetIsOpened());
 	outData["treasureChests"] = chestStates;
+
+	nlohmann::json enemiesState = nlohmann::json::object();
+	for (auto& enemy : mapEnemies) {
+		enemiesState[enemy->GetEnemyID()] = {
+			{"isDefeated", enemy->IsDefeated()},
+			{"respawnTimer", enemy->GetRespawnTimer()}
+		};
+	}
+	outData["mapEnemies"] = enemiesState;
 }
 
 void Demo::TutorialWorldScene::RestoreSaveData(const nlohmann::json& inData)
@@ -496,7 +574,7 @@ void Demo::TutorialWorldScene::RestoreSaveData(const nlohmann::json& inData)
 	player->RestoreSaveData(inData["player"]);
 	camera.SetPosition(inData["camera"]["x"], inData["camera"]["y"]);
 	camera.SetZoom(inData["camera"]["zoom"]);
-	
+
 	if (inData.contains("quest")) {
 		questStarted = inData["quest"].value("questStarted", false);
 		questRestoredFromSave = true;
@@ -506,6 +584,18 @@ void Demo::TutorialWorldScene::RestoreSaveData(const nlohmann::json& inData)
 		auto& arr = inData["treasureChests"];
 		for (size_t i = 0; i < treasureChests.size() && i < arr.size(); ++i)
 			treasureChests[i]->SetOpened(arr[i].get<bool>());
+	}
+
+	if (inData.contains("mapEnemies")) {
+		auto& enemiesState = inData["mapEnemies"];
+		for (auto& enemy : mapEnemies) {
+			std::string id = enemy->GetEnemyID();
+			if (enemiesState.contains(id)) {
+				bool def = enemiesState[id]["isDefeated"].get<bool>();
+				float timer = enemiesState[id]["respawnTimer"].get<float>();
+				enemy->SetDefeatedState(def, timer);
+			}
+		}
 	}
 }
 

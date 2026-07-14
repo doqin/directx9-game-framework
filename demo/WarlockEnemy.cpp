@@ -1,10 +1,7 @@
-#include "pch.h"
+﻿#include "pch.h"
 #include "WarlockEnemy.h"
 #include "resource.h"
-#include "SpiralProjectile.h"
-#include "TargetedProjectile.h"
-#include "RoundProjectile.h"
-#include <random>
+#include "RNG.h"
 
 void Demo::WarlockEnemy::Init(DX9GF::GraphicsDevice* graphicsDevice, DX9GF::Camera* camera) {
 	texture = std::make_shared<DX9GF::Texture>(graphicsDevice);
@@ -32,10 +29,7 @@ void Demo::WarlockEnemy::Draw(DX9GF::GraphicsDevice* graphicsDevice, DX9GF::Came
 }
 
 int Demo::WarlockEnemy::GetRandomPattern() {
-	std::random_device rd;
-	std::mt19937 gen(rd());
-	std::uniform_int_distribution<int> dist(1, 2);
-	return dist(gen);
+	return RNG::Range(1, 2);
 }
 
 void Demo::WarlockEnemy::StartAttack(std::shared_ptr<Player> player, std::vector<std::shared_ptr<IEnemy>>* enemies, std::shared_ptr<PopUpMessage> popUpMessage, DX9GF::GraphicsDevice* graphicsDevice, DX9GF::Camera* camera) {
@@ -46,29 +40,28 @@ void Demo::WarlockEnemy::StartAttack(std::shared_ptr<Player> player, std::vector
 	this->player = player;
 	float projDamage = GetOutgoingDamage(4.f);
 
-	if (GetRandomPattern() == 1) PatternDarkVortex(projDamage, enemies);
+	if (GetSmartRandomPattern(1, 2) == 1) PatternDarkVortex(projDamage, enemies);
 	else PatternHomingCurse(projDamage, enemies);
 
 	//commandBuffer.PushCommand(std::make_shared<DX9GF::DelayCommand>(4.f));
 }
 
 void Demo::WarlockEnemy::PatternDarkVortex(float projDamage, std::vector<std::shared_ptr<IEnemy>>* enemies) {
-	std::random_device rd;
-	std::default_random_engine gen(rd());
-	std::uniform_real_distribution<float> dist(0.f, 1.f);
 	bool isAlone = enemies->size() == 1;
 	const int RING_COUNT = isAlone ? 15 : 8;
 	const int PROJECTILES_PER_RING = isAlone ? 16 : 12;
 	const float VELOCITY = isAlone ? 320.f : 160.f;
 	const float DECAY_TIME = isAlone ? 2.2f : 4.2f;
 	const float DELAY_BETWEEN_RINGS = isAlone ? 0.7f : 1.4f;
+
 	for (int ring = 0; ring < RING_COUNT; ring++) {
-		float angle = dist(gen);
-		commandBuffer.PushCommand(std::make_shared<DX9GF::CustomCommand>([this, projDamage, ring, dist, angle, PROJECTILES_PER_RING, VELOCITY, DECAY_TIME](std::function<void(void)> markFinished) {
+		float gapRatio = RNG::Range(0.0f, 1.0f);
+
+		commandBuffer.PushCommand(std::make_shared<DX9GF::CustomCommand>([this, projDamage, ring, gapRatio, PROJECTILES_PER_RING, VELOCITY, DECAY_TIME](std::function<void(void)> markFinished) {
 			if (auto lock = this->player.lock()) {
 				int numProjectiles = PROJECTILES_PER_RING;
 				float radius = 640.f;
-				float gapAngle = 3.14159f * 2.f * angle;
+				float gapAngle = 3.14159f * 2.f * gapRatio;
 				float gapSize = 3.14159f / 4.f;
 
 				for (int i = 0; i < numProjectiles; ++i) {
@@ -84,21 +77,16 @@ void Demo::WarlockEnemy::PatternDarkVortex(float projDamage, std::vector<std::sh
 						continue;
 					}
 
-				auto projSprite = std::make_shared<DX9GF::StaticSprite>(projTexture.get());
-				projSprite->SetOrigin(16, 8);
-				projectiles.push_back(
-					RoundProjectile::Builder(transformManager, lock, projSprite, 16, 16, radius * std::cos(angle), radius * std::sin(angle))
-					.SetDelay(0.2f)
-					.SetDecayTime(DECAY_TIME)
-					.SetVelocity(VELOCITY)
-					.SetTrajectory(D3DXVECTOR2(-std::cos(angle), -std::sin(angle)))
-					.SetDamage(projDamage)
-					.Build()
-				);
-
-					projectiles.back()->Init();
+					projectiles.Spawn(
+						lock,
+						ProjectileDesc(projTexture.get(), 16, 8, 16, 16, radius * std::cos(angle), radius * std::sin(angle))
+						.SetDelay(0.2f)
+						.SetDecayTime(DECAY_TIME)
+						.SetVelocity(VELOCITY)
+						.SetTrajectory(D3DXVECTOR2(-std::cos(angle), -std::sin(angle)))
+						.SetDamage(projDamage)
+					);
 				}
-				transformManager.lock()->RebuildHierarchy();
 			}
 			markFinished();
 		}));
@@ -113,88 +101,69 @@ void Demo::WarlockEnemy::PatternHomingCurse(float projDamage, std::vector<std::s
 	auto topRightAttack = std::make_shared<DX9GF::CustomCommand>([this, projDamage, VELOCITY, TURN_SPEED](std::function<void(void)> markFinished) {
 		if (auto lock = this->player.lock()) {
 			auto [px, py] = lock->GetWorldPosition();
-			auto projSprite = std::make_shared<DX9GF::StaticSprite>(projTexture.get());
-			projSprite->SetOrigin(16, 8);
-			projectiles.push_back(
-				TargetedProjectile::Builder(transformManager, lock, projSprite, 16, 16, 512, 128)
+			projectiles.Spawn(
+				lock,
+				ProjectileDesc(projTexture.get(), 16, 8, 16, 16, 512, 128)
 				.SetTrajectory(D3DXVECTOR2(-1, 1))
 				.SetHoming(TURN_SPEED)
 				.SetDelay(0.f)
 				.SetDecayTime(5.f)
 				.SetVelocity(VELOCITY)
 				.SetDamage(projDamage)
-				.Build()
 			);
-			projectiles.back()->Init();
-			transformManager.lock()->RebuildHierarchy();
 		}
 		markFinished();
 	});
 	auto topLeftAttack = std::make_shared<DX9GF::CustomCommand>([this, projDamage, VELOCITY, TURN_SPEED](std::function<void(void)> markFinished) {
 		if (auto lock = this->player.lock()) {
 			auto [px, py] = lock->GetWorldPosition();
-			auto projSprite = std::make_shared<DX9GF::StaticSprite>(projTexture.get());
-			projSprite->SetOrigin(16, 8);
-			projectiles.push_back(
-				TargetedProjectile::Builder(transformManager, lock, projSprite, 16, 16, -512, 128)
+			projectiles.Spawn(
+				lock,
+				ProjectileDesc(projTexture.get(), 16, 8, 16, 16, -512, 128)
 				.SetTrajectory(D3DXVECTOR2(1, 1))
 				.SetHoming(TURN_SPEED)
 				.SetDelay(0.f)
 				.SetDecayTime(5.f)
 				.SetVelocity(VELOCITY)
 				.SetDamage(projDamage)
-				.Build()
 			);
-			projectiles.back()->Init();
-			transformManager.lock()->RebuildHierarchy();
 		}
 		markFinished();
 		});
 	auto bottomRightAttack = std::make_shared<DX9GF::CustomCommand>([this, projDamage, VELOCITY, TURN_SPEED](std::function<void(void)> markFinished) {
 		if (auto lock = this->player.lock()) {
 			auto [px, py] = lock->GetWorldPosition();
-			auto projSprite = std::make_shared<DX9GF::StaticSprite>(projTexture.get());
-			projSprite->SetOrigin(16, 8);
-			projectiles.push_back(
-				TargetedProjectile::Builder(transformManager, lock, projSprite, 16, 16, 512, -128)
+			projectiles.Spawn(
+				lock,
+				ProjectileDesc(projTexture.get(), 16, 8, 16, 16, 512, -128)
 				.SetTrajectory(D3DXVECTOR2(-1, -1))
 				.SetHoming(TURN_SPEED)
 				.SetDelay(0.f)
 				.SetDecayTime(5.f)
 				.SetVelocity(VELOCITY)
 				.SetDamage(projDamage)
-				.Build()
 			);
-			projectiles.back()->Init();
-			transformManager.lock()->RebuildHierarchy();
 		}
 		markFinished();
 		});
 	auto bottomLeftAttack = std::make_shared<DX9GF::CustomCommand>([this, projDamage, VELOCITY, TURN_SPEED](std::function<void(void)> markFinished) {
 		if (auto lock = this->player.lock()) {
 			auto [px, py] = lock->GetWorldPosition();
-			auto projSprite = std::make_shared<DX9GF::StaticSprite>(projTexture.get());
-			projSprite->SetOrigin(16, 8);
-			projectiles.push_back(
-				TargetedProjectile::Builder(transformManager, lock, projSprite, 16, 16, -512, -128)
+			projectiles.Spawn(
+				lock,
+				ProjectileDesc(projTexture.get(), 16, 8, 16, 16, -512, -128)
 				.SetTrajectory(D3DXVECTOR2(1, -1))
 				.SetHoming(TURN_SPEED)
 				.SetDelay(0.f)
 				.SetDecayTime(5.f)
 				.SetVelocity(VELOCITY)
 				.SetDamage(projDamage)
-				.Build()
 			);
-			projectiles.back()->Init();
-			transformManager.lock()->RebuildHierarchy();
 		}
 		markFinished();
 		});
-	std::random_device rd;
-	std::mt19937 gen(rd());
-	std::uniform_int_distribution<int> dist(0, 3);
 	for (int i = 0; i < 40; i++) {
-		int attackIndex = dist(gen);
+		int attackIndex = RNG::Range(0, 3);
 		switch (attackIndex) {
 			case 0:
 				commandBuffer.PushCommand(std::make_shared<DX9GF::CustomCommand>(*topRightAttack));

@@ -9,19 +9,15 @@
 #include "CupidEnemy.h"
 #include "KeyeEnemy.h"
 #include "KeyeproEnemy.h"
-
+#include "RNG.h"
 namespace Demo {
     void CustomBattleScene::Init() {
         IBattleScene::Init(); // Initialize hand etc. using base class base init
 
-        std::random_device rd;
-        std::mt19937 gen(rd());
-        std::uniform_int_distribution<> dis(1, 100);
-
         bool enemySpawned = false;
 
         for (const auto& [enemyName, chance] : possibleEnemies) {
-            int roll = dis(gen);
+            int roll = RNG::Range(1, 100);;
             if (roll <= chance) {
                 enemySpawned = true;
                 if (enemyName == "TestEnemy") {
@@ -72,8 +68,7 @@ namespace Demo {
 
         // Force spawn at least one enemy if none succeeded the chance roll
         if (!enemySpawned && !possibleEnemies.empty()) {
-            std::uniform_int_distribution<> indexDis(0, possibleEnemies.size() - 1);
-            int atIndex = indexDis(gen);
+            int atIndex = RNG::Range(0, possibleEnemies.size() - 1);
             auto it = possibleEnemies.begin();
             std::advance(it, atIndex);
             std::string enemyName = it->first;

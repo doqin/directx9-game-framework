@@ -1,9 +1,9 @@
-#include "pch.h"
+﻿#include "pch.h"
 #include "IEnemy.h"
 #include <cmath>
 #include <algorithm>
 #include "DrawUtils.h"
-
+#include "RNG.h"
 void Demo::IEnemy::InitCardSpawnTrigger(DX9GF::Camera* camera, float width, float height)
 {
     cardSpawnTrigger = std::make_shared<DX9GF::RectangleTrigger>(transformManager, shared_from_this(), width, height);
@@ -43,19 +43,7 @@ void Demo::IEnemy::Update(unsigned long long deltaTime)
     damageIndicators.erase(std::remove_if(damageIndicators.begin(), damageIndicators.end(), [](const DamageIndicator& indicator) {
         return indicator.elapsed >= 700;
     }), damageIndicators.end());
-    // Clear out dead projectiles 
-    for (size_t i = 0; i < projectiles.size(); i++) {
-        if (projectiles[i]->GetState() == DX9GF::IGameObject::State::Destroyed) {
-            projectiles.erase(projectiles.begin() + i);
-            --i;
-        }
-    }
-    tf::Executor executor;
-    tf::Taskflow taskflow;
-	taskflow.for_each(projectiles.begin(), projectiles.end(), [deltaTime](std::shared_ptr<IProjectile>& projectile) {
-		projectile->Update(deltaTime);
-	});
-	executor.run(taskflow).wait();
+    projectiles.Update(deltaTime);
     commandBuffer.Update(deltaTime);
     animationBuffer.Update(deltaTime);
 }
@@ -234,9 +222,7 @@ void Demo::IEnemy::Draw(DX9GF::GraphicsDevice* graphicsDevice, DX9GF::Camera* ca
     }
 
     fontSprite->End();
-    for (auto& projectile : projectiles) {
-        projectile->Draw(*camera, deltaTime);
-    }
+    projectiles.Draw(graphicsDevice, *camera, deltaTime);
 }
 
 bool Demo::IEnemy::TakeDamage(float damage)
@@ -250,17 +236,13 @@ bool Demo::IEnemy::TakeDamage(float damage)
     if (health < 0) health = 0;
     if (finalDamage > 0) {
         DX9GF::AudioManager::GetInstance()->PlayRandom("take_dmg", 0.8f);
-    }    std::random_device rd;
-    std::mt19937 gen(rd());
-    std::uniform_real_distribution<float> vxDis(-64.f, 64.f);
-    std::uniform_real_distribution<float> vyDis(-200.f, -100.f);
-
+    }    
     damageIndicators.push_back(DamageIndicator{
         L"-" + std::to_wstring(static_cast<int>(std::round(finalDamage))),
         0.f,
         0.f,
-        vxDis(gen),
-        vyDis(gen),
+        RNG::Range(-64.f, 64.f),
+        RNG::Range(-200.f, -100.f),
         0
     });
 	if (!hitImpactTexture && graphicsDevice) { // graphicsDevice should be not null by now
@@ -268,12 +250,10 @@ bool Demo::IEnemy::TakeDamage(float damage)
 		hitImpactTexture->LoadTexture(L"assets/hitimpact-Sheet.png");
 	}
 	hitImpactSprites.push_back(std::make_shared<DX9GF::AnimatedSprite>(hitImpactTexture.get(), DX9GF::Utils::CreateRectsHorizontal(0, 0, 32, 32, 4), 24, false));
-	std::uniform_real_distribution<float> dis(-16.f, 16.f);
-	std::uniform_real_distribution<float> scaleDis(2.f, 3.f);
-	std::uniform_real_distribution<float> rotDis(-0.5f, 0.5f);
-	hitImpactSprites.back()->SetPosition(GetWorldX() + dis(gen), GetWorldY() + dis(gen));
-	hitImpactSprites.back()->SetScale(scaleDis(gen));
-	hitImpactSprites.back()->SetRotation(rotDis(gen));
+
+	hitImpactSprites.back()->SetPosition(GetWorldX() + RNG::Range(-16.f, 16.f), GetWorldY() + RNG::Range(-16.f, 16.f));
+	hitImpactSprites.back()->SetScale(RNG::Range(2.f, 3.f));
+	hitImpactSprites.back()->SetRotation(RNG::Range(-0.5f, 0.5f));
 
 	// Queue shake animation
 	float ox = GetWorldX();
@@ -298,7 +278,7 @@ void Demo::IEnemy::SetState(bool isOnStandby)
 
 bool Demo::IEnemy::IsDoneAttacking()
 {
-    return !commandBuffer.IsBusy() && !animationBuffer.IsBusy() && projectiles.empty() && hitImpactSprites.empty();
+    return !commandBuffer.IsBusy() && !animationBuffer.IsBusy() && projectiles.IsEmpty() && hitImpactSprites.empty();
 }
 
 void Demo::IEnemy::ApplyStatus(StatusType type, int duration, float value) {
@@ -346,4 +326,27 @@ float Demo::IEnemy::GetOutgoingDamage(float baseDamage) const
     }
 
     return finalDamage;
+}
+
+int Demo::IEnemy::GetSmartRandomPattern(int minPattern, int maxPattern, int maxStreak, int breakChance)
+{
+    int patternId = RNG::Range(minPattern, maxPattern);
+
+    if (patternId == lastPattern) {
+        streakCount++;
+        if (streakCount >= maxStreak) {
+            if (RNG::Range(1, 100) <= breakChance) {
+                do {
+                    patternId = RNG::Range(minPattern, maxPattern);
+                } while (patternId == lastPattern);
+                streakCount = 0; //reset if switched skill
+            }
+        }
+    }
+    else {
+        streakCount = 0;
+    }
+
+    lastPattern = patternId;
+    return patternId;
 }

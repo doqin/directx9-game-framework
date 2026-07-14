@@ -13,7 +13,7 @@
 #include "RustyChestNPC.h"
 #include "TreasureChestNPC.h"
 #include "PlayerHUD.h"
-
+#include "MapEnemy.h"
 
 namespace Demo {
     class BossWorldScene : public DX9GF::IScene, public DX9GF::ISaveable {
@@ -41,6 +41,7 @@ namespace Demo {
 
         std::vector<std::shared_ptr<HackTerminal>> hackMachines;
         std::shared_ptr<HackTerminal> mainTerminal;
+        std::vector<std::shared_ptr<MapEnemy>> mapEnemies;
 
         int currentHackStep = 0;
         bool isBossDoorUnlocked = false;
