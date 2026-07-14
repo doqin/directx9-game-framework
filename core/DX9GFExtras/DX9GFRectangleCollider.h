@@ -38,6 +38,7 @@ namespace DX9GF {
 		float GetOriginX() const;
 		float GetOriginY() const;
 		bool IsCollidedRectangle(std::weak_ptr<RectangleCollider> other, bool checkOther);
+		AABB GetWorldAABB() override;
 		bool IsCollided(std::weak_ptr<ICollider> other) override;
 		std::optional<std::tuple<float, float>> IsIntersecting(std::weak_ptr<ICollider> other, float newX, float newY) override;
 		float GetWidth() const;

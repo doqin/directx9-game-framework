@@ -148,6 +148,9 @@ void DX9GF::Application::Run()
 	MSG msg;
 	int done = 0;
 	unsigned long long start = GetTickCount64();
+	// TEMP: FPS readout for performance measurement
+	unsigned long long fpsElapsed = 0;
+	unsigned int fpsFrames = 0;
 	while (!done) {
 		if (PeekMessage(&msg, NULL, 0, 0, PM_REMOVE))
 		{
@@ -163,6 +166,17 @@ void DX9GF::Application::Run()
 				p_game->Update(deltaTime);
 				audioManager->Update(deltaTime);
 				p_game->Draw(deltaTime);
+
+				fpsElapsed += deltaTime;
+				fpsFrames++;
+				if (fpsElapsed >= 1000) {
+					char title[128];
+					sprintf_s(title, "FPS: %u | %.2f ms/frame", fpsFrames,
+						static_cast<float>(fpsElapsed) / static_cast<float>(fpsFrames));
+					SetWindowTextA(p_game->GetHwnd(), title);
+					fpsElapsed = 0;
+					fpsFrames = 0;
+				}
 			}
 		}
 	}

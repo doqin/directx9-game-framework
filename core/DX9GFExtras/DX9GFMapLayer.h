@@ -19,15 +19,14 @@ namespace DX9GF {
 		};
 
 		struct Subset {
-         struct ChunkGeometry {
-				std::vector<TileVertex> vertexData;
-				float x;
-				float y;
-				float width;
-				float height;
+			struct ChunkRange {
+				UINT startVertex;
+				UINT primitiveCount;
+				float x, y, width, height;
 			};
-			std::vector<ChunkGeometry> chunks;
-			Texture* texture;
+			std::vector<ChunkRange> chunks;
+			Texture* texture = nullptr;
+			IDirect3DVertexBuffer9* vertexBuffer = nullptr;
 		};
 		
 		std::vector<Subset> subsets;
@@ -40,7 +39,10 @@ namespace DX9GF {
 		GraphicsDevice* graphicsDevice;
 	public:
 		MapLayer(GraphicsDevice* graphicsDevice) : graphicsDevice(graphicsDevice) {}
+		~MapLayer();
 		void Create(Map* map, std::uint32_t layerIndex);
-		void Draw(const Camera& camera);
+		
+		struct ViewBounds { float minX, minY, maxX, maxY; };
+		void Draw(const Camera& camera, const ViewBounds& viewBounds);
 	};
 }

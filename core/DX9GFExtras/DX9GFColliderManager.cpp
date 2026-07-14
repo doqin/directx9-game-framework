@@ -1,9 +1,11 @@
 #include "pch.h"
 #include "DX9GFColliderManager.h"
-#include "taskflow/taskflow.hpp"
-#include "taskflow/algorithm/for_each.hpp"
+#include <algorithm>
 #include <mutex>
-#include <atomic>
+
+namespace {
+    constexpr float broadPhaseEpsilon = 0.01f;
+}
 
 namespace DX9GF {
 
@@ -36,28 +38,31 @@ namespace DX9GF {
         float finalY = newY;
         bool hasCollision = false;
 
-        tf::Executor executor;
-        tf::Taskflow taskflow;
-        taskflow.for_each(colliders.begin(), colliders.end(), [&](std::shared_ptr<ICollider> other) {
+        // Broad phase: target's AABB over the whole current -> new span
+        ICollider::AABB sweptAABB = target->GetWorldAABB();
+        float offsetX = newX - target->GetWorldX();
+        float offsetY = newY - target->GetWorldY();
+        sweptAABB.minX += (std::min)(offsetX, 0.0f) - broadPhaseEpsilon;
+        sweptAABB.minY += (std::min)(offsetY, 0.0f) - broadPhaseEpsilon;
+        sweptAABB.maxX += (std::max)(offsetX, 0.0f) + broadPhaseEpsilon;
+        sweptAABB.maxY += (std::max)(offsetY, 0.0f) + broadPhaseEpsilon;
+
+        for (const auto& other : colliders) {
             if (other == target) {
-                return;
+                continue;
+            }
+            if (!sweptAABB.Overlaps(other->GetWorldAABB())) {
+                continue;
             }
 
-            float x;
-            float y;
-            {
-                x = finalX;
-                y = finalY;
-            }
-            auto result = target->IsIntersecting(other, x, y);
+            auto result = target->IsIntersecting(other, finalX, finalY);
             if (result.has_value()) {
                 auto& [correctedX, correctedY] = result.value();
                 finalX = correctedX;
                 finalY = correctedY;
                 hasCollision = true;
             }
-        });
-        executor.run(taskflow).wait();
+        }
 
         if (hasCollision) {
             return std::make_tuple(finalX, finalY);
@@ -80,31 +85,31 @@ namespace DX9GF {
         float finalDx = deltaX;
         float finalDy = deltaY;
 
-        tf::Executor executor;
-        tf::Taskflow taskflow;
-        taskflow.for_each(colliders.begin(), colliders.end(), [&](std::shared_ptr<ICollider> other) {
+        // Broad phase: target's AABB expanded by the movement deltas
+        ICollider::AABB sweptAABB = target->GetWorldAABB();
+        sweptAABB.minX += (std::min)(deltaX, 0.0f) - broadPhaseEpsilon;
+        sweptAABB.minY += (std::min)(deltaY, 0.0f) - broadPhaseEpsilon;
+        sweptAABB.maxX += (std::max)(deltaX, 0.0f) + broadPhaseEpsilon;
+        sweptAABB.maxY += (std::max)(deltaY, 0.0f) + broadPhaseEpsilon;
+
+        for (const auto& other : colliders) {
             if (other == target) {
-                return;
+                continue;
+            }
+            if (!sweptAABB.Overlaps(other->GetWorldAABB())) {
+                continue;
             }
 
-            float dx;
-            float dy;
-            {
-                dx = finalDx;
-                dy = finalDy;
-            }
-
-            if (auto pos = target->IsIntersecting(other, currentX + dx, currentY); pos.has_value()) {
+            if (auto pos = target->IsIntersecting(other, currentX + finalDx, currentY); pos.has_value()) {
                 auto& [correctedX, correctedY] = pos.value();
                 finalDx = correctedX - currentX;
             }
 
-            if (auto pos = target->IsIntersecting(other, currentX, currentY + dy); pos.has_value()) {
+            if (auto pos = target->IsIntersecting(other, currentX, currentY + finalDy); pos.has_value()) {
                 auto& [correctedX, correctedY] = pos.value();
                 finalDy = correctedY - currentY;
             }
-        });
-        executor.run(taskflow).wait();
+        }
 
         return std::make_tuple(finalDx, finalDy);
     }

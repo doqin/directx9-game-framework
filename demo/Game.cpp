@@ -1,4 +1,4 @@
-﻿#include "pch.h"
+#include "pch.h"
 #include "Game.h"
 #include "DebugScene.h"
 #include "World1Scene.h"
@@ -110,4 +110,22 @@ void Demo::Game::Init()
 
 #endif
 	this->sceneManager->GoToNext();
+}
+
+void Demo::Game::Update(unsigned long long deltaTime)
+{
+	IGame::Update(deltaTime);
+
+	fpsAccumulator += deltaTime;
+	fpsFrames++;
+
+	if (fpsAccumulator >= 1000) {
+		float msPerFrame = (float)fpsAccumulator / fpsFrames;
+		char buf[128];
+		sprintf_s(buf, "Demo - FPS: %d (%.2f ms/frame)", fpsFrames, msPerFrame);
+		SetWindowTextA(GetHwnd(), buf);
+
+		fpsAccumulator = 0;
+		fpsFrames = 0;
+	}
 }
