@@ -1,9 +1,6 @@
 ﻿#include "pch.h"
 #include "WarlockEnemy.h"
 #include "resource.h"
-#include "SpiralProjectile.h"
-#include "TargetedProjectile.h"
-#include "RoundProjectile.h"
 #include "RNG.h"
 
 void Demo::WarlockEnemy::Init(DX9GF::GraphicsDevice* graphicsDevice, DX9GF::Camera* camera) {
@@ -80,21 +77,16 @@ void Demo::WarlockEnemy::PatternDarkVortex(float projDamage, std::vector<std::sh
 						continue;
 					}
 
-				auto projSprite = std::make_shared<DX9GF::StaticSprite>(projTexture.get());
-				projSprite->SetOrigin(16, 8);
-				projectiles.push_back(
-					RoundProjectile::Builder(transformManager, lock, projSprite, 16, 16, radius * std::cos(angle), radius * std::sin(angle))
-					.SetDelay(0.2f)
-					.SetDecayTime(DECAY_TIME)
-					.SetVelocity(VELOCITY)
-					.SetTrajectory(D3DXVECTOR2(-std::cos(angle), -std::sin(angle)))
-					.SetDamage(projDamage)
-					.Build()
-				);
-
-					projectiles.back()->Init();
+					projectiles.Spawn(
+						lock,
+						ProjectileDesc(projTexture.get(), 16, 8, 16, 16, radius * std::cos(angle), radius * std::sin(angle))
+						.SetDelay(0.2f)
+						.SetDecayTime(DECAY_TIME)
+						.SetVelocity(VELOCITY)
+						.SetTrajectory(D3DXVECTOR2(-std::cos(angle), -std::sin(angle)))
+						.SetDamage(projDamage)
+					);
 				}
-				transformManager.lock()->RebuildHierarchy();
 			}
 			markFinished();
 		}));
@@ -109,80 +101,64 @@ void Demo::WarlockEnemy::PatternHomingCurse(float projDamage, std::vector<std::s
 	auto topRightAttack = std::make_shared<DX9GF::CustomCommand>([this, projDamage, VELOCITY, TURN_SPEED](std::function<void(void)> markFinished) {
 		if (auto lock = this->player.lock()) {
 			auto [px, py] = lock->GetWorldPosition();
-			auto projSprite = std::make_shared<DX9GF::StaticSprite>(projTexture.get());
-			projSprite->SetOrigin(16, 8);
-			projectiles.push_back(
-				TargetedProjectile::Builder(transformManager, lock, projSprite, 16, 16, 512, 128)
+			projectiles.Spawn(
+				lock,
+				ProjectileDesc(projTexture.get(), 16, 8, 16, 16, 512, 128)
 				.SetTrajectory(D3DXVECTOR2(-1, 1))
 				.SetHoming(TURN_SPEED)
 				.SetDelay(0.f)
 				.SetDecayTime(5.f)
 				.SetVelocity(VELOCITY)
 				.SetDamage(projDamage)
-				.Build()
 			);
-			projectiles.back()->Init();
-			transformManager.lock()->RebuildHierarchy();
 		}
 		markFinished();
 	});
 	auto topLeftAttack = std::make_shared<DX9GF::CustomCommand>([this, projDamage, VELOCITY, TURN_SPEED](std::function<void(void)> markFinished) {
 		if (auto lock = this->player.lock()) {
 			auto [px, py] = lock->GetWorldPosition();
-			auto projSprite = std::make_shared<DX9GF::StaticSprite>(projTexture.get());
-			projSprite->SetOrigin(16, 8);
-			projectiles.push_back(
-				TargetedProjectile::Builder(transformManager, lock, projSprite, 16, 16, -512, 128)
+			projectiles.Spawn(
+				lock,
+				ProjectileDesc(projTexture.get(), 16, 8, 16, 16, -512, 128)
 				.SetTrajectory(D3DXVECTOR2(1, 1))
 				.SetHoming(TURN_SPEED)
 				.SetDelay(0.f)
 				.SetDecayTime(5.f)
 				.SetVelocity(VELOCITY)
 				.SetDamage(projDamage)
-				.Build()
 			);
-			projectiles.back()->Init();
-			transformManager.lock()->RebuildHierarchy();
 		}
 		markFinished();
 		});
 	auto bottomRightAttack = std::make_shared<DX9GF::CustomCommand>([this, projDamage, VELOCITY, TURN_SPEED](std::function<void(void)> markFinished) {
 		if (auto lock = this->player.lock()) {
 			auto [px, py] = lock->GetWorldPosition();
-			auto projSprite = std::make_shared<DX9GF::StaticSprite>(projTexture.get());
-			projSprite->SetOrigin(16, 8);
-			projectiles.push_back(
-				TargetedProjectile::Builder(transformManager, lock, projSprite, 16, 16, 512, -128)
+			projectiles.Spawn(
+				lock,
+				ProjectileDesc(projTexture.get(), 16, 8, 16, 16, 512, -128)
 				.SetTrajectory(D3DXVECTOR2(-1, -1))
 				.SetHoming(TURN_SPEED)
 				.SetDelay(0.f)
 				.SetDecayTime(5.f)
 				.SetVelocity(VELOCITY)
 				.SetDamage(projDamage)
-				.Build()
 			);
-			projectiles.back()->Init();
-			transformManager.lock()->RebuildHierarchy();
 		}
 		markFinished();
 		});
 	auto bottomLeftAttack = std::make_shared<DX9GF::CustomCommand>([this, projDamage, VELOCITY, TURN_SPEED](std::function<void(void)> markFinished) {
 		if (auto lock = this->player.lock()) {
 			auto [px, py] = lock->GetWorldPosition();
-			auto projSprite = std::make_shared<DX9GF::StaticSprite>(projTexture.get());
-			projSprite->SetOrigin(16, 8);
-			projectiles.push_back(
-				TargetedProjectile::Builder(transformManager, lock, projSprite, 16, 16, -512, -128)
+			projectiles.Spawn(
+				lock,
+				ProjectileDesc(projTexture.get(), 16, 8, 16, 16, -512, -128)
 				.SetTrajectory(D3DXVECTOR2(1, -1))
 				.SetHoming(TURN_SPEED)
 				.SetDelay(0.f)
 				.SetDecayTime(5.f)
 				.SetVelocity(VELOCITY)
 				.SetDamage(projDamage)
-				.Build()
 			);
-			projectiles.back()->Init();
-			transformManager.lock()->RebuildHierarchy();
 		}
 		markFinished();
 		});

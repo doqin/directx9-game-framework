@@ -1,8 +1,6 @@
 ﻿#include "pch.h"
 #include "KeyeEnemy.h"
 #include "resource.h"
-#include "RoundProjectile.h"
-#include "BoomerangProjectile.h"
 #include "RNG.h"
 
 void Demo::KeyeEnemy::Init(DX9GF::GraphicsDevice* graphicsDevice, DX9GF::Camera* camera) {
@@ -57,33 +55,17 @@ void Demo::KeyeEnemy::PatternBoomerangCross(float projDamage) {
             for (int i = 0; i < 5; i++) {
                 float offset = i * 2.0f;
 
-                auto projSprite = std::make_shared<DX9GF::AnimatedSprite>(projTexture.get(), projFrames, 12);
-                projSprite->SetOrigin(16, 16);
-                projectiles.push_back(
-                    BoomerangProjectile::Builder(transformManager, lock, projSprite, 16, 16, RNG::Range(-128.f, 128.f), -256.f + offset)
+                projectiles.Spawn(
+                    lock,
+                    ProjectileDesc(projTexture.get(), projFrames, 12, 16, 16, 16, 16, RNG::Range(-128.f, 128.f), -256.f + offset)
                     .SetTargetPosition(px, py)
                     .SetInitialVelocity(300.f)
                     .SetReturnAcceleration(100.f)
                     .SetDelay(i * 0.1f)
                     .SetDecayTime(10.f)
                     .SetDamage(projDamage)
-                    .Build()
                 );
-                projectiles.back()->Init();
-
-                //projectiles.push_back(
-                //    BoomerangProjectile::Builder(transformManager, lock, projSprite, 16, 16, 200.f + offset, 50.f - offset)
-                //    .SetTargetPosition(px, py)
-                //    .SetInitialVelocity(350.f)
-                //    .SetReturnAcceleration(150.f)
-                //    .SetDelay(0.1)
-                //    .SetDecayTime(5.f)
-                //    .SetDamage(projDamage)
-                //    .Build()
-                //);
-                //projectiles.back()->Init();
             }
-            transformManager.lock()->RebuildHierarchy();
         }
         markFinished();
         });
@@ -98,18 +80,14 @@ void Demo::KeyeEnemy::PatternRoundCircle(float projDamage) {
         float randX = RNG::Range(-120.f, 120.f);
         commandBuffer.PushCommand(std::make_shared<DX9GF::CustomCommand>([this, projDamage, randX](std::function<void(void)> markFinished) {
             if (auto lock = this->player.lock()) {
-                auto projSprite = std::make_shared<DX9GF::AnimatedSprite>(projTexture.get(), projFrames, 12);
-                projSprite->SetOrigin(16, 16);
-                projectiles.push_back(
-                    RoundProjectile::Builder(transformManager, lock, projSprite, 16, 16, randX, -220.f)
+                projectiles.Spawn(
+                    lock,
+                    ProjectileDesc(projTexture.get(), projFrames, 12, 16, 16, 16, 16, randX, -220.f)
                     .SetTargetPosition(lock->GetCollider().lock()->GetWorldX(), lock->GetCollider().lock()->GetWorldY())
                     .SetVelocity(220.f)
                     .SetDecayTime(6.f)
                     .SetDamage(projDamage)
-                    .Build()
                 );
-                projectiles.back()->Init();
-                transformManager.lock()->RebuildHierarchy();
             }
             markFinished();
             }));

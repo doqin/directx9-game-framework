@@ -43,19 +43,7 @@ void Demo::IEnemy::Update(unsigned long long deltaTime)
     damageIndicators.erase(std::remove_if(damageIndicators.begin(), damageIndicators.end(), [](const DamageIndicator& indicator) {
         return indicator.elapsed >= 700;
     }), damageIndicators.end());
-    // Clear out dead projectiles 
-    for (size_t i = 0; i < projectiles.size(); i++) {
-        if (projectiles[i]->GetState() == DX9GF::IGameObject::State::Destroyed) {
-            projectiles.erase(projectiles.begin() + i);
-            --i;
-        }
-    }
-    tf::Executor executor;
-    tf::Taskflow taskflow;
-	taskflow.for_each(projectiles.begin(), projectiles.end(), [deltaTime](std::shared_ptr<IProjectile>& projectile) {
-		projectile->Update(deltaTime);
-	});
-	executor.run(taskflow).wait();
+    projectiles.Update(deltaTime);
     commandBuffer.Update(deltaTime);
     animationBuffer.Update(deltaTime);
 }
@@ -234,9 +222,7 @@ void Demo::IEnemy::Draw(DX9GF::GraphicsDevice* graphicsDevice, DX9GF::Camera* ca
     }
 
     fontSprite->End();
-    for (auto& projectile : projectiles) {
-        projectile->Draw(*camera, deltaTime);
-    }
+    projectiles.Draw(graphicsDevice, *camera, deltaTime);
 }
 
 bool Demo::IEnemy::TakeDamage(float damage)
@@ -292,7 +278,7 @@ void Demo::IEnemy::SetState(bool isOnStandby)
 
 bool Demo::IEnemy::IsDoneAttacking()
 {
-    return !commandBuffer.IsBusy() && !animationBuffer.IsBusy() && projectiles.empty() && hitImpactSprites.empty();
+    return !commandBuffer.IsBusy() && !animationBuffer.IsBusy() && projectiles.IsEmpty() && hitImpactSprites.empty();
 }
 
 void Demo::IEnemy::ApplyStatus(StatusType type, int duration, float value) {
