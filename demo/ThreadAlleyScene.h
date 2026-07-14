@@ -13,6 +13,7 @@
 #include "PlayerHUD.h"
 #include "DauDauNPC.h"
 
+#include "MapEnemy.h"
 
 namespace Demo {
 	class ThreadAlleyScene : public DX9GF::IScene, public DX9GF::ISaveable {
@@ -43,7 +44,7 @@ namespace Demo {
 
 		std::vector<std::shared_ptr<TreasureChestNPC>> treasureChests;
 		std::shared_ptr<IConversation> currentConversation;
-
+		std::vector<std::shared_ptr<MapEnemy>> mapEnemies;
 
 		float bgBaseScrollX = 0;
 		float bgBaseScrollY = 0;

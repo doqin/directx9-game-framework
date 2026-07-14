@@ -3,7 +3,7 @@
 #include "resource.h"
 #include "SpiralProjectile.h"
 #include "BoomerangProjectile.h"
-#include <random>
+#include "RNG.h"
 
 void Demo::MimicEnemy::Init(DX9GF::GraphicsDevice* graphicsDevice, DX9GF::Camera* camera) {
 	texture = std::make_shared<DX9GF::Texture>(graphicsDevice);
@@ -31,18 +31,16 @@ void Demo::MimicEnemy::Draw(DX9GF::GraphicsDevice* graphicsDevice, DX9GF::Camera
 }
 
 int Demo::MimicEnemy::GetRandomPattern() {
-	std::random_device rd;
-	std::mt19937 gen(rd());
-	std::uniform_int_distribution<int> dist(1, 2);
-	return dist(gen);
+	return RNG::Range(1, 2);
 }
 
 void Demo::MimicEnemy::StartAttack(std::shared_ptr<Player> player, std::vector<std::shared_ptr<IEnemy>>* enemies, std::shared_ptr<PopUpMessage> popUpMessage, DX9GF::GraphicsDevice* graphicsDevice, DX9GF::Camera* camera) {
 	this->player = player;
 	float projDamage = GetOutgoingDamage(4.f);
 
+	int patternId = GetSmartRandomPattern(1, 2);
 	//PatternJunkVomit(projDamage, enemies);
-	if (GetRandomPattern() == 1) PatternCoinCyclone(projDamage, enemies);
+	if (patternId == 1) PatternCoinCyclone(projDamage, enemies);
 	else PatternJunkVomit(projDamage, enemies);
 
 	commandBuffer.PushCommand(std::make_shared<DX9GF::DelayCommand>(4.f));
@@ -80,16 +78,12 @@ void Demo::MimicEnemy::PatternCoinCyclone(float projDamage, std::vector<std::sha
 }
 
 void Demo::MimicEnemy::PatternJunkVomit(float projDamage, std::vector<std::shared_ptr<IEnemy>>* enemies) {
-	static std::random_device rd;
-	static std::mt19937 gen(rd());
 	bool isAlone = enemies->size() == 1;
 	const int JUNK_COUNT = isAlone ? 100 : 50;
 	const float ATTACK_DELAY = isAlone ? 0.05f : 0.1f;
 
-	std::uniform_real_distribution<float> yDist(-196.f, 196.f);
-
 	for (int i = 0; i < JUNK_COUNT; i++) {
-		float randY = yDist(gen);
+		float randY = RNG::Range(-196.f, 196.f);
 		commandBuffer.PushCommand(std::make_shared<DX9GF::CustomCommand>([this, projDamage, randY](std::function<void(void)> markFinished) {
 			if (auto lock = this->player.lock()) {
 				auto [px, py] = lock->GetWorldPosition();

@@ -2,7 +2,7 @@
 #include "IDraggable.h"
 #include <DX9GF.h>
 #include <algorithm>
-#include <random>
+#include "RNG.h"
 
 // Define static member variables
 std::shared_ptr<DX9GF::Font> Demo::IDraggable::debugFont = nullptr;
@@ -245,10 +245,7 @@ void Demo::IDraggable::Init(std::shared_ptr<DraggableManager> manager, DX9GF::Gr
 		isDragging = false;
 		});
 	manager->Add(dynamic_pointer_cast<IDraggable>(shared_from_this()));
-	std::random_device rd;
-	std::mt19937 gen(rd());
-	std::uniform_real_distribution<float> dist(0, 1);
-	color = D3DXCOLOR(dist(gen), dist(gen), dist(gen), 1);
+	color = D3DXCOLOR(RNG::Range(0.0f, 1.0f) , RNG::Range(0.0f, 1.0f), RNG::Range(0.0f, 1.0f), 1);
 	if (debugFont.get() == nullptr) {
 		IDraggable::debugFont = std::make_shared<DX9GF::Font>(graphicsDevice, L"StatusPlz", 16);
 	}

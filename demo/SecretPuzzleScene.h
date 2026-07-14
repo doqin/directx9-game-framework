@@ -16,7 +16,7 @@
 #include "ItemShop.h"
 #include "TreasureChestNPC.h"
 #include "PlayerHUD.h"
-
+#include "MapEnemy.h"
 
 namespace Demo {
 	class SecretPuzzleScene : public DX9GF::IScene, public DX9GF::ISaveable {
@@ -35,6 +35,7 @@ namespace Demo {
 		std::shared_ptr<PlayerHUD> playerHUD;
 		std::shared_ptr<DX9GF::SaveManager> saveManager;
 
+		std::vector<std::shared_ptr<MapEnemy>> mapEnemies;
 		std::vector<std::shared_ptr<SavePoint>> savePoints;
 		std::vector<std::shared_ptr<ShopPoint>> shopPoints;
 		std::vector<std::shared_ptr<HealingPoint>> healingPoints;

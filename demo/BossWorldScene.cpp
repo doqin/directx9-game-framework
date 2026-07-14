@@ -13,8 +13,10 @@
 #include <cmath>
 #include "resource.h"
 #include "PopupManager.h"
+#include "EncounterGenerator.h"
+#include "EnemyFactory.h"
 #include "QuestManager.h"
-
+#include "MapBattleScene.h"
 void Demo::BossWorldScene::Init() {
 	camera.SetZoom(2.0f);
 	transformManager = std::make_shared<DX9GF::TransformManager>();
@@ -32,11 +34,11 @@ void Demo::BossWorldScene::Init() {
 	map = std::make_shared<DX9GF::Map>(game->GetGraphicsDevice());
 	map->Create(transformManager, colliderManager, "./assets/BossMatrix.tmx");
 
-	map->SetAreaUpdateHandler("trigger_encounters", GetRandomEncounterFunc(game, player, {
-		{"VampireBatEnemy", 40},
-		{"WarlockEnemy", 30},
-		//i removed the mimic here
-		}, drawBuffer, commandBuffer, &isGamePaused, & this->uiCamera, [this](DX9GF::GraphicsDevice* gd, unsigned long long deltaTime) { DrawBackground(gd, deltaTime, currentIslandID); }));
+	//map->SetAreaUpdateHandler("trigger_encounters", GetRandomEncounterFunc(game, player, {
+	//	{"VampireBatEnemy", 40},
+	//	{"WarlockEnemy", 30},
+	//	//i removed the mimic here
+	//	}, drawBuffer, commandBuffer, &isGamePaused, & this->uiCamera, [this](DX9GF::GraphicsDevice* gd, unsigned long long deltaTime) { DrawBackground(gd, deltaTime, currentIslandID); }));
 
 	//dialogue with NPC, rambles about lore regarding the optional battle to get the key, and hints at the correct color sequence for hacking the terminal
 	npcHint = std::make_shared<DauDauNPC>(transformManager, -950.0f, -220.0f);
@@ -51,10 +53,6 @@ void Demo::BossWorldScene::Init() {
 	npcHint->AddLine(L"Veteran Debugger", L"I keep hearing the old admin's logs echoing in my head...");
 	npcHint->AddLine(L"Veteran Debugger", L"...'The red sun sets over the blue ocean, giving life to the green earth, until it fades into\norange autumn'...");
 	npcHint->AddLine(L"Veteran Debugger", L"Bah, probably just corrupted junk data. Don't mind my rambling.");
-
-	//npcHint->AddLine(L"Veteran Debugger", L"Listen carefully. There is a heavily glitched battlefield up ahead.");
-	//npcHint->AddLine(L"Veteran Debugger", L"You don't need to clear it to proceed. Bypassing that mess won't affect your journey at all.");
-	//npcHint->AddLine(L"Veteran Debugger", L"I strongly advise you to keep your head down and walk away. It's not worth it.");
 
 	dauDauSpawn = std::make_shared<DauDauNPC>(transformManager, 300.f, 230.f);
 	dauDauSpawn->Init(game->GetGraphicsDevice(), &camera, player, colliderManager, font, drawBuffer);
@@ -117,7 +115,6 @@ void Demo::BossWorldScene::Init() {
 	healingPoints.back()->SetVisible(true);
 
 	//save
-
 	auto borderTex = std::make_shared<DX9GF::Texture>(game->GetGraphicsDevice());
 	borderTex->LoadTexture(L"assets/popup-borders.png");
 
@@ -159,6 +156,69 @@ void Demo::BossWorldScene::Init() {
 		[](Game* g, Player* p, int w, int h) { return new ItemShop(g, p, w, h, ShopTier::PREMIUM); }
 	);
 	shopPoints.back()->SetVisible(true);
+
+	//map enemies
+	auto spawn = [&](float x, float y, std::string id, std::vector<std::string> types, bool isRand, bool isGlobal) {
+		auto bgDraw = [this](DX9GF::GraphicsDevice* gd, unsigned long long deltaTime) {
+			DrawBackground(gd, deltaTime, this->currentIslandID);
+			};
+
+		auto enemy = EnemyFactory::CreateMapEnemy(
+			x, y, id, types, isRand, isGlobal, "battle_loop", bgDraw,
+			transformManager, game, colliderManager.get(), player
+		);
+
+		enemy->SetOnEncounterTriggered([this](std::shared_ptr<MapEnemy> e) {
+			if (this->isTransitioning) return;
+			this->isTransitioning = true;
+
+			auto transitionIn = std::make_shared<TransitionCommand>(game->GetGraphicsDevice(), &this->uiCamera, 1.f, true);
+			this->drawBuffer->PushCommand(transitionIn);
+
+			this->commandBuffer->PushCommand(std::make_shared<DX9GF::CustomCommand>([this, transitionIn, e](std::function<void(void)> markFinished) {
+				if (!transitionIn->IsFinished()) return;
+
+				auto app = DX9GF::Application::GetInstance();
+				auto sceMan = this->game->GetSceneManager();
+				auto battleScene = new MapBattleScene(this->game, this->player, app->GetScreenWidth(), app->GetScreenHeight(), e->GetEncounterData());
+
+				battleScene->SetOnVictoryCallback([e]() {
+					e->SetDefeatedState(true, 180.f);
+					});
+
+				sceMan->InsertScene(sceMan->GetIndex() + 1, battleScene);
+				sceMan->GoToNext();
+
+				this->isTransitioning = false;
+				markFinished();
+				}));
+
+			this->drawBuffer->PushCommand(std::make_shared<TransitionCommand>(game->GetGraphicsDevice(), &this->uiCamera, 1.f, false));
+			});
+
+		mapEnemies.push_back(enemy);
+		};
+
+	spawn(-680.f, 125.f, "bw_q_01", { "DemonEyeEnemy", "VampireBatEnemy" }, true, false);
+	spawn(-760.f, -180.f, "bw_q_02", { "KeyeEnemy", "KeyeEnemy" }, false, false);
+	spawn(-550.f, -320.f, "bw_q_03", { "WarlockEnemy" }, false, false);
+	spawn(-635.f, -600.f, "bw_q_04", { "MimicEnemy", "DemonEyeEnemy" }, true, false);
+	spawn(1030.f, 10.f, "bw_c_01", { "VampireBatEnemy", "WarlockEnemy" }, false, false);
+	spawn(1520.f, 145.f, "bw_c_02", {}, false, true);
+	spawn(1635.f, 325.f, "bw_c_03", { "DemonEyeEnemy" }, false, false);
+	spawn(1740.f, 525.f, "bw_c_04", { "MimicEnemy" }, false, false);
+	spawn(1500.f, -360.f, "bw_c_05", { "WarlockEnemy", "KeyeEnemy" }, true, false);
+	spawn(1620.f, -625.f, "bw_c_06", { "WarlockEnemy", "WarlockEnemy" }, false, false);
+	spawn(1890.f, -445.f, "bw_c_07", { "MimicEnemy" }, false, false);
+	spawn(1850.f, -625.f, "bw_c_08", { "VampireBatEnemy", "DemonEyeEnemy", "KeyeEnemy" }, true, false);
+	spawn(2085.f, 400.f, "bw_f_01", { "WarlockEnemy", "DemonEyeEnemy" }, false, false);
+	spawn(2080.f, 520.f, "bw_f_02", { "KeyeEnemy", "MimicEnemy" }, true, false);
+	spawn(2130.f, -285.f, "bw_f_03", {}, false, true);
+	spawn(2270.f, -120.f, "bw_f_04", { "WarlockEnemy", "WarlockEnemy", "VampireBatEnemy" }, false, false);
+	spawn(2350.f, -630.f, "bw_f_05", { "DemonEyeEnemy", "DemonEyeEnemy" }, false, false);
+	spawn(2460.f, 390.f, "bw_f_06", { "WarlockEnemy", "KeyeEnemy", "DemonEyeEnemy" }, true, false);
+	spawn(2500.f, 20.f, "bw_f_07", { "VampireBatEnemy", "VampireBatEnemy" }, false, false);
+	spawn(2540.f, -490.f, "bw_f_08", {}, false, true);
 
 	// link with portal triggers on map
 	map->SetAreaUpdateHandler("trigger_p_1_2", [this](const DX9GF::Map::ObjectArea& area) {
@@ -546,6 +606,8 @@ void Demo::BossWorldScene::Update(unsigned long long deltaTime) {
 		for (auto& m : hackMachines) m->Update(deltaTime);
 		mainTerminal->Update(deltaTime);
 
+		for (auto& enemy : mapEnemies) enemy->Update(deltaTime);
+
 		player->Update(deltaTime);
 		camera.Update();
 	}
@@ -590,7 +652,7 @@ void Demo::BossWorldScene::DrawWorld(unsigned long long deltaTime) {
 		for (auto& shopPoint : shopPoints) shopPoint->Draw(camera, deltaTime);
 		for (auto& healPoint : healingPoints) healPoint->Draw(camera, deltaTime);
 		for (auto& chest : treasureChests) chest->Draw(camera, deltaTime);
-
+		for (auto& enemy : mapEnemies) enemy->Draw(&camera, deltaTime);
 		player->Draw(deltaTime);
 
 		gd->EndDraw();
@@ -662,6 +724,15 @@ void Demo::BossWorldScene::GenerateSaveData(nlohmann::json& outData) {
 	nlohmann::json chestStates = nlohmann::json::array();
 	for (auto& c : treasureChests) chestStates.push_back(c->GetIsOpened());
 	outData["treasureChests"] = chestStates;
+
+	nlohmann::json enemiesState = nlohmann::json::object();
+	for (auto& enemy : mapEnemies) {
+		enemiesState[enemy->GetEnemyID()] = {
+			{"isDefeated", enemy->IsDefeated()},
+			{"respawnTimer", enemy->GetRespawnTimer()}
+		};
+	}
+	outData["mapEnemies"] = enemiesState;
 }
 
 void Demo::BossWorldScene::RestoreSaveData(const nlohmann::json& inData) {
@@ -699,6 +770,18 @@ void Demo::BossWorldScene::RestoreSaveData(const nlohmann::json& inData) {
 		auto& arr = inData["treasureChests"];
 		for (size_t i = 0; i < treasureChests.size() && i < arr.size(); ++i)
 			treasureChests[i]->SetOpened(arr[i].get<bool>());
+	}
+
+	if (inData.contains("mapEnemies")) {
+		auto& enemiesState = inData["mapEnemies"];
+		for (auto& enemy : mapEnemies) {
+			std::string id = enemy->GetEnemyID();
+			if (enemiesState.contains(id)) {
+				bool def = enemiesState[id]["isDefeated"].get<bool>();
+				float timer = enemiesState[id]["respawnTimer"].get<float>();
+				enemy->SetDefeatedState(def, timer);
+			}
+		}
 	}
 }
 

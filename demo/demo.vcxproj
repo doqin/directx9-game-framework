@@ -216,6 +216,7 @@
     <ClCompile Include="DebugScene.cpp" />
     <ClCompile Include="DemonEyeEnemy.cpp" />
     <ClCompile Include="DrawUtils.cpp" />
+    <ClCompile Include="EnemyFactory.cpp" />
     <ClCompile Include="KeyboardNavigator.cpp" />
     <ClCompile Include="Game.cpp" />
     <ClCompile Include="GameItems.cpp" />
@@ -232,6 +233,8 @@
     <ClCompile Include="INPC.cpp" />
     <ClCompile Include="InventoryMenu.cpp" />
     <ClCompile Include="IStatementCard.cpp" />
+    <ClCompile Include="MapBattleScene.cpp" />
+    <ClCompile Include="MapEnemy.cpp" />
     <ClCompile Include="PlayerHUD.cpp" />
     <ClCompile Include="ItemShop.cpp" />
     <ClCompile Include="KeyeEnemy.cpp" />
@@ -285,6 +288,7 @@
   </ItemGroup>
   <ItemGroup>
     <ClInclude Include="AdvancedCards.h" />
+    <ClInclude Include="BattleEncounter.h" />
     <ClInclude Include="BoomerangProjectile.h" />
     <ClInclude Include="BossWorldScene.h" />
     <ClInclude Include="CardShop.h" />
@@ -297,8 +301,10 @@
     <ClInclude Include="DemonEyeEnemy.h" />
     <ClInclude Include="DialogueLine.h" />
     <ClInclude Include="DrawUtils.h" />
+    <ClInclude Include="EncounterGenerator.h" />
     <ClInclude Include="KeyboardNavigator.h" />
     <ClInclude Include="EnemyCard.h" />
+    <ClInclude Include="EnemyFactory.h" />
     <ClInclude Include="Game.h" />
     <ClInclude Include="GameItems.h" />
     <ClInclude Include="HackTerminal.h" />
@@ -316,6 +322,8 @@
     <ClInclude Include="INPC.h" />
     <ClInclude Include="InventoryMenu.h" />
     <ClInclude Include="ItemShop.h" />
+    <ClInclude Include="MapBattleScene.h" />
+    <ClInclude Include="MapEnemy.h" />
     <ClInclude Include="PlayerHUD.h" />
     <ClInclude Include="KeyeEnemy.h" />
     <ClInclude Include="OutroScene.h" />
@@ -335,6 +343,7 @@
     <ClInclude Include="QuestManager.h" />
     <ClInclude Include="RandomEncounter.h" />
     <ClInclude Include="resource.h" />
+    <ClInclude Include="RNG.h" />
     <ClInclude Include="RustyChestNPC.h" />
     <ClInclude Include="SaveGameState.h" />
     <ClInclude Include="SavePoint.h" />

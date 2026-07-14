@@ -4,8 +4,7 @@
 #include "RoundProjectile.h"
 #include "SineWaveProjectile.h"
 #include "TargetedProjectile.h"
-#include <random>
-
+#include "RNG.h"
 const float PI = 3.14159265359f;
 
 void Demo::CupidEnemy::Init(DX9GF::GraphicsDevice* graphicsDevice, DX9GF::Camera* camera)
@@ -40,10 +39,7 @@ void Demo::CupidEnemy::Draw(DX9GF::GraphicsDevice* graphicsDevice, DX9GF::Camera
 
 int Demo::CupidEnemy::GetRandomPattern()
 {
-	std::random_device rd;
-	std::mt19937 gen(rd());
-	std::uniform_int_distribution<int> dist(1, 3);
-	return dist(gen);
+	return RNG::Range(1, 3);
 }
 
 void Demo::CupidEnemy::StartAttack(std::shared_ptr<Player> player, std::vector<std::shared_ptr<IEnemy>>* enemies, std::shared_ptr<PopUpMessage> popUpMessage, DX9GF::GraphicsDevice* graphicsDevice, DX9GF::Camera* camera)
@@ -56,7 +52,7 @@ void Demo::CupidEnemy::StartAttack(std::shared_ptr<Player> player, std::vector<s
 	float baseDamage = 4.f;
 	float projDamage = GetOutgoingDamage(baseDamage);
 
-	int patternId = GetRandomPattern();
+	int patternId = GetSmartRandomPattern(1, 3);
 
 	//PatternHeartWave(projDamage);
 	if (patternId == 1) PatternHeartWave(projDamage);
@@ -78,17 +74,12 @@ void Demo::CupidEnemy::PatternHeartWave(float projDamage)
 	const float MAX_ANGLE = PI * 0.5f;
 	const float MIN_STEP = PI * 0.08f;
 	const float MAX_STEP = PI * 0.22f;
-
-	std::random_device rd;
-	std::mt19937 gen(rd());
-	std::uniform_real_distribution<float> stepDist(MIN_STEP, MAX_STEP);
-
 	float angle = MIN_ANGLE;
 	float direction = 1.f;
 	for (int i = 0; i < BULLET_COUNT; i++) {
 		float currentAngle = angle;
 
-		angle += direction * stepDist(gen);
+		angle += direction * RNG::Range(MIN_STEP, MAX_STEP);
 		if (angle > MAX_ANGLE) {
 			angle = MAX_ANGLE - (angle - MAX_ANGLE);
 			direction = -1.f;
@@ -131,12 +122,8 @@ void Demo::CupidEnemy::PatternHomingArrow(float projDamage)
 	const float OFFSET_RANGE = 250.f;
 	const float DROP_HEIGHT = 350.f; 
 
-	std::random_device rd;
-	std::mt19937 gen(rd());
-	std::uniform_real_distribution<float> offsetDist(-OFFSET_RANGE, OFFSET_RANGE);
-
 	for (int i = 0; i < ARROW_COUNT; i++) {
-		float offsetX = offsetDist(gen);
+		float offsetX = RNG::Range(-OFFSET_RANGE, OFFSET_RANGE);
 
 		commandBuffer.PushCommand(std::make_shared<DX9GF::CustomCommand>([this, projDamage, offsetX, BULLET_SPEED, TURN_SPEED, DROP_HEIGHT](std::function<void(void)> markFinished) {
 			if (auto lock = this->player.lock()) {

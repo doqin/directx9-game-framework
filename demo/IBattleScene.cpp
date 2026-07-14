@@ -13,6 +13,7 @@
 #include "SettingsManager.h"
 #include "DrawUtils.h"
 
+#include "RNG.h"
 namespace {
 	constexpr float HiddenPileX = -10000.f;
 	constexpr float HiddenPileY = -10000.f;
@@ -64,8 +65,8 @@ void Demo::IBattleScene::StartBattle()
 	isDefeatSequence = false;
 	defeatElapsedMs = 0.f;
 	defeatFadeAlpha = 0.f;
-	std::random_device rd;
-	std::mt19937 gen(rd());
+	static std::random_device rd;
+	static std::mt19937 gen(rd());
 	std::shuffle(drawPile.begin(), drawPile.end(), gen);
 	currentTurn = 1;
 	DrawCards(5);
@@ -182,8 +183,8 @@ void Demo::IBattleScene::ShuffleDiscardIntoDrawPile()
 	if (discardPile.empty()) {
 		return;
 	}
-	std::random_device rd;
-	std::mt19937 gen(rd());
+	static std::random_device rd;
+	static std::mt19937 gen(rd());
 	std::shuffle(discardPile.begin(), discardPile.end(), gen);
 	for (auto& card : discardPile) {
 		HidePileCard(card);
@@ -296,8 +297,8 @@ void Demo::IBattleScene::QueueEnemyLayoutTransition(State targetState)
 
 void Demo::IBattleScene::CreateEnemyCard(std::shared_ptr<IEnemy> enemy)
 {
-	std::random_device rd;
-	std::mt19937 gen(rd());
+	static std::random_device rd;
+	static std::mt19937 gen(rd());
 	std::uniform_int_distribution<int> xdist(-10, 10);
 	std::uniform_int_distribution<int> ydist(-10, 10);
 
@@ -1469,10 +1470,7 @@ void Demo::IBattleScene::Init()
 		popUpMessage->QueueMessage(&commandBuffer, L"You tried to flee...");
 		isFleeing = true;
 		commandBuffer.PushCommand(std::make_shared<DX9GF::CustomCommand>([this](std::function<void(void)> markFinished) {
-			std::random_device rd;
-			std::mt19937 gen(rd());
-			std::uniform_int_distribution<> dis(0, 1);
-			if (dis(gen) == 0) {
+			if (RNG::Range(0, 1) == 0) {
 				popUpMessage->QueueMessage(&commandBuffer, L"You successfully fled!");
 				auto transitionInCommand = std::make_shared<TransitionCommand>(game->GetGraphicsDevice(), &this->uiCamera, 1.f, true);
 				drawBuffer->PushCommand(std::make_shared<DX9GF::DelayCommand>(1.5f));
@@ -1641,7 +1639,7 @@ void Demo::IBattleScene::Init()
 	btnPrevPage = std::make_shared<Demo::TextIconButton>(transformManager, 0, 0, 30.0f, 30.0f, uiSheetTex, font.get(), L"<", 3);
 	btnPrevPage->SetSpriteRects({ {0, 0, 16, 16}, {0, 16, 16, 32}, {0, 32, 16, 48} });
 	btnPrevPage->SetSpriteScale(2.0f, 2.0f);
-	btnPrevPage->SetTextColor(0xFF111111); // Set chữ màu đen
+	btnPrevPage->SetTextColor(0xFF111111);
 	btnPrevPage->SetOnReleaseLeft([&](DX9GF::ITrigger* thisObj) {
 		if (currentItemPage > 0) {
 			currentItemPage--;
