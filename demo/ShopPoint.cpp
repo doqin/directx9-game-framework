@@ -16,7 +16,7 @@ namespace Demo {
         fontSprite = std::make_shared<DX9GF::FontSprite>(font.get());
         this->drawBuffer = drawBuffer;
         this->gd = gd;
-        collider = std::make_shared<DX9GF::RectangleCollider>(transformManager, 80.f, 80.f, GetWorldX(), GetWorldY());
+        collider = std::make_shared<DX9GF::RectangleCollider>(transformManager, 80.f, 20.f, GetWorldX(), GetWorldY() + 30.f);
         collider->SetOriginCenter();
         cm->Add(collider);
 

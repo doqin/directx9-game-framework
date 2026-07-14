@@ -1,4 +1,4 @@
-﻿#include "pch.h"
+#include "pch.h"
 #include "SettingsManager.h"
 #include "TutorialWorldScene.h"
 #include "RandomEncounter.h"
@@ -432,24 +432,37 @@ void Demo::TutorialWorldScene::DrawWorld(unsigned long long deltaTime)
 
 		DrawBackground(gd, deltaTime);
 		map->Draw(camera);
-		if (npcIntroduction) npcIntroduction->Draw(camera, deltaTime);
-		if (npcExplainingHealingPoint) npcExplainingHealingPoint->Draw(camera, deltaTime);
-		if (npcExplainingEnemyEncounters) npcExplainingEnemyEncounters->Draw(camera, deltaTime);
+		struct DepthNode {
+			float y;
+			std::function<void()> drawCall;
+			bool operator<(const DepthNode& other) const { return y < other.y; }
+		};
+		std::vector<DepthNode> depthNodes;
+
+		if (npcIntroduction) depthNodes.push_back({ npcIntroduction->GetWorldY(), [&]() { npcIntroduction->Draw(camera, deltaTime); } });
+		if (npcExplainingHealingPoint) depthNodes.push_back({ npcExplainingHealingPoint->GetWorldY(), [&]() { npcExplainingHealingPoint->Draw(camera, deltaTime); } });
+		if (npcExplainingEnemyEncounters) depthNodes.push_back({ npcExplainingEnemyEncounters->GetWorldY(), [&]() { npcExplainingEnemyEncounters->Draw(camera, deltaTime); } });
+		if (npcExplainingPortal) depthNodes.push_back({ npcExplainingPortal->GetWorldY(), [&]() { npcExplainingPortal->Draw(camera, deltaTime); } });
+		if (shopPoint_Card) depthNodes.push_back({ shopPoint_Card->GetWorldY(), [&]() { shopPoint_Card->Draw(camera, deltaTime); } });
+		if (shopPoint_BSItem) depthNodes.push_back({ shopPoint_BSItem->GetWorldY(), [&]() { shopPoint_BSItem->Draw(camera, deltaTime); } });
+		if (healingPoint) depthNodes.push_back({ healingPoint->GetWorldY(), [&]() { healingPoint->Draw(camera, deltaTime); } });
+
 		for (auto& savePoint : savePoints) {
-			savePoint->Draw(camera, deltaTime);
+			depthNodes.push_back({ savePoint->GetWorldY(), [&, savePoint]() { savePoint->Draw(camera, deltaTime); } });
 		}
-		if (shopPoint_Card) shopPoint_Card->Draw(camera, deltaTime);
-		if (shopPoint_BSItem) shopPoint_BSItem->Draw(camera, deltaTime);
-		if (healingPoint) healingPoint->Draw(camera, deltaTime);
-		for (auto& chest : treasureChests)
-			chest->Draw(camera, deltaTime);
-
-		if (npcExplainingPortal) npcExplainingPortal->Draw(camera, deltaTime);
-
+		for (auto& chest : treasureChests) {
+			depthNodes.push_back({ chest->GetWorldY(), [&, chest]() { chest->Draw(camera, deltaTime); } });
+		}
 		for (auto& enemy : mapEnemies) {
-			enemy->Draw(&camera, deltaTime);
+			depthNodes.push_back({ enemy->GetWorldY(), [&, enemy]() { enemy->Draw(&camera, deltaTime); } });
 		}
-		player->Draw(deltaTime);
+		
+		if (player) depthNodes.push_back({ player->GetWorldY(), [&]() { player->Draw(deltaTime); } });
+
+		std::sort(depthNodes.begin(), depthNodes.end());
+		for (auto& node : depthNodes) {
+			node.drawCall();
+		}
 
 		gd->EndDraw();
 	}
