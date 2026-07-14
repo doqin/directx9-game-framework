@@ -1,7 +1,6 @@
 #include "pch.h"
 #include "TestEnemy.h"
 #include "resource.h"
-#include "RoundProjectile.h"
 #include "RNG.h"
 void Demo::TestEnemy::Init(DX9GF::GraphicsDevice* graphicsDevice, DX9GF::Camera* camera)
 {
@@ -41,25 +40,15 @@ void Demo::TestEnemy::StartAttack(std::shared_ptr<Player> player, std::vector<st
         auto y = RNG::Range(-200, 200);
         commandBuffer.PushCommand(std::make_shared<DX9GF::CustomCommand>([this, x, y, projDamage](std::function<void(void)> markFinished) {
             if (auto lock = this->player.lock()) {
-                auto projSprite = std::make_shared<DX9GF::StaticSprite>(roundProjectileTexture.get());
-                projSprite->SetOrigin(8, 8);
-                projectiles.push_back(
-                    RoundProjectile::Builder(
-                        transformManager,
-                        lock,
-                        projSprite,
-                        16, 16,
-                        x, y
-                    )
+                projectiles.Spawn(
+                    lock,
+                    ProjectileDesc(roundProjectileTexture.get(), 8, 8, 16, 16, x, y)
                     .SetTargetPosition(lock->GetCollider().lock()->GetWorldX(), lock->GetCollider().lock()->GetWorldY())
                     .SetDelay(.2f)
                     .SetDecayTime(4.f)
                     .SetVelocity(200.f)
                     .SetDamage(projDamage)
-                    .Build()
                 );
-                projectiles.back()->Init();
-                transformManager.lock()->RebuildHierarchy();
             }
             else {
                 throw std::runtime_error("player is null");

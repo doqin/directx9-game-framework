@@ -1,7 +1,6 @@
 ﻿#include "pch.h"
 #include "DemonEyeEnemy.h"
 #include "resource.h"
-#include "RoundProjectile.h"
 #include "RNG.h"
 
 void Demo::DemonEyeEnemy::Init(DX9GF::GraphicsDevice* graphicsDevice, DX9GF::Camera* camera)
@@ -76,19 +75,15 @@ void Demo::DemonEyeEnemy::PatternBloodRain(float projDamage, std::vector<std::sh
 				float finalX = playerX + offsetX;
 				float finalY = playerY - DROP_HEIGHT;
 
-				auto projSprite = std::make_shared<DX9GF::AnimatedSprite>(tearProjectileTexture.get(), tearProjectileFrames, 12);
-				projSprite->SetOrigin(8, 8);
-				projectiles.push_back(
-					RoundProjectile::Builder(transformManager, lock, projSprite, 16, 16, finalX, finalY)
+				projectiles.Spawn(
+					lock,
+					ProjectileDesc(tearProjectileTexture.get(), tearProjectileFrames, 12, 8, 8, 16, 16, finalX, finalY)
 					.SetTrajectory(D3DXVECTOR2(0, 1))
 					.SetDelay(0.f)
 					.SetDecayTime(4.f)
 					.SetVelocity(BULLET_SPEED)
 					.SetDamage(projDamage)
-					.Build()
 				);
-				projectiles.back()->Init();
-				transformManager.lock()->RebuildHierarchy();
 			}
 			markFinished();
 			}));
@@ -123,20 +118,16 @@ void Demo::DemonEyeEnemy::PatternBloodWall(float projDamage, std::vector<std::sh
 					float finalX = playerX + offsetX;
 					float finalY = playerY - DROP_HEIGHT;
 
-					auto projSprite = std::make_shared<DX9GF::AnimatedSprite>(tearProjectileTexture.get(), tearProjectileFrames, 12);
-					projSprite->SetOrigin(8, 8);
-					projectiles.push_back(
-						RoundProjectile::Builder(transformManager, lock, projSprite, 16, 16, finalX, finalY)
+					projectiles.Spawn(
+						lock,
+						ProjectileDesc(tearProjectileTexture.get(), tearProjectileFrames, 12, 8, 8, 16, 16, finalX, finalY)
 						.SetTrajectory(D3DXVECTOR2(0, 1))
 						.SetDelay(0.f)
 						.SetDecayTime(BULLET_DECAY_TIME)
 						.SetVelocity(BULLET_SPEED)
 						.SetDamage(projDamage)
-						.Build()
 					);
-					projectiles.back()->Init();
 				}
-				transformManager.lock()->RebuildHierarchy();
 			}
 			markFinished();
 			}));
@@ -166,19 +157,15 @@ void Demo::DemonEyeEnemy::PatternBloodCross(float projDamage, std::vector<std::s
 			float finalX = playerX + offsetX;
 			float finalY = playerY - DROP_HEIGHT;
 
-			auto projSprite = std::make_shared<DX9GF::AnimatedSprite>(tearProjectileTexture.get(), tearProjectileFrames, 12);
-			projSprite->SetOrigin(8, 8);
-			projectiles.push_back(
-				RoundProjectile::Builder(transformManager, lock, projSprite, 16, 16, finalX, finalY)
+			projectiles.Spawn(
+				lock,
+				ProjectileDesc(tearProjectileTexture.get(), tearProjectileFrames, 12, 8, 8, 16, 16, finalX, finalY)
 				.SetTrajectory(D3DXVECTOR2(0.5f, 1.0f))
 				.SetDelay(0.f)
 				.SetDecayTime(4.f)
 				.SetVelocity(BULLET_SPEED)
 				.SetDamage(projDamage)
-				.Build()
 			);
-			projectiles.back()->Init();
-			transformManager.lock()->RebuildHierarchy();
 			}
 			markFinished();
 			}));

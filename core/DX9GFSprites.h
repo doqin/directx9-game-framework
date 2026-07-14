@@ -9,7 +9,8 @@ namespace DX9GF {
 
 	class StaticSprite : public ISprite {
 	private:
-		RECT* p_src = nullptr;
+		RECT src{};
+		bool hasSrc = false;
 		Texture* texture;
 		UINT width = 0, height = 0;
 	public:

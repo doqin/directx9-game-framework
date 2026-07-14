@@ -2,7 +2,7 @@
 #include "DX9GF.h"
 #include "DX9GFExtras.h"
 #include "Player.h"
-#include "IProjectile.h"
+#include "ProjectileSystem.h"
 #include <functional>
 #include <vector>
 
@@ -36,7 +36,7 @@ namespace Demo {
         std::vector<DamageIndicator> damageIndicators;
 		std::shared_ptr<DX9GF::Font> font;
 		std::shared_ptr<DX9GF::FontSprite> fontSprite;
-		std::vector<std::shared_ptr<IProjectile>> projectiles;
+		ProjectileSystem projectiles;
 		DX9GF::CommandBuffer commandBuffer;
 		DX9GF::CommandBuffer animationBuffer;
 		std::shared_ptr<DX9GF::Texture> hitImpactTexture;

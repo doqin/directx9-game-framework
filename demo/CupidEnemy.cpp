@@ -1,9 +1,6 @@
 ﻿#include "pch.h"
 #include "CupidEnemy.h"
 #include "resource.h"
-#include "RoundProjectile.h"
-#include "SineWaveProjectile.h"
-#include "TargetedProjectile.h"
 #include "RNG.h"
 const float PI = 3.14159265359f;
 
@@ -93,19 +90,15 @@ void Demo::CupidEnemy::PatternHeartWave(float projDamage)
 			if (auto lock = this->player.lock()) {
 				D3DXVECTOR2 dir(std::cos(currentAngle), std::sin(currentAngle));
 
-				auto newSprite = std::make_shared<DX9GF::StaticSprite>(heartTexture.get());
-				newSprite->SetOrigin(8, 8);
-				projectiles.push_back(
-					RoundProjectile::Builder(transformManager, lock, newSprite, 16, 16, START_X, START_Y)
+				projectiles.Spawn(
+					lock,
+					ProjectileDesc(heartTexture.get(), 8, 8, 16, 16, START_X, START_Y)
 						.SetTrajectory(dir)
 						.SetDelay(0.f)
 						.SetDecayTime(DECAY_TIME)
 						.SetVelocity(BULLET_SPEED)
 						.SetDamage(projDamage)
-						.Build()
 				);
-				projectiles.back()->Init();
-				transformManager.lock()->RebuildHierarchy();
 			}
 			markFinished();
 			}));
@@ -131,20 +124,16 @@ void Demo::CupidEnemy::PatternHomingArrow(float projDamage)
 				float finalX = playerX + offsetX;
 				float finalY = playerY - DROP_HEIGHT;
 
-			auto newSprite = std::make_shared<DX9GF::StaticSprite>(arrowTexture.get());
-			newSprite->SetOrigin(8, 8);
-			projectiles.push_back(
-				TargetedProjectile::Builder(transformManager, lock, newSprite, 16, 16, finalX, finalY)
+			projectiles.Spawn(
+				lock,
+				ProjectileDesc(arrowTexture.get(), 8, 8, 16, 16, finalX, finalY)
 					.SetTrajectory(D3DXVECTOR2(0, 1))
 					.SetHoming(TURN_SPEED)
 					.SetDelay(0.f)
 					.SetDecayTime(4.f)
 					.SetVelocity(BULLET_SPEED)
 					.SetDamage(projDamage)
-					.Build()
 				);
-				projectiles.back()->Init();
-				transformManager.lock()->RebuildHierarchy();
 			}
 			markFinished();
 			}));
@@ -179,20 +168,16 @@ void Demo::CupidEnemy::PatternHeartNova(float projDamage)
 						float currentAngle = startAngle + i * angleStep + angleOffset;
 						D3DXVECTOR2 dir(std::cos(currentAngle), std::sin(currentAngle));
 
-						auto newSprite = std::make_shared<DX9GF::StaticSprite>(heartTexture.get());
-						newSprite->SetOrigin(8, 8);
-						projectiles.push_back(
-							RoundProjectile::Builder(transformManager, lock, newSprite, 16, 16, originX, originY)
+						projectiles.Spawn(
+							lock,
+							ProjectileDesc(heartTexture.get(), 8, 8, 16, 16, originX, originY)
 							.SetTrajectory(dir)
 							.SetDelay(0.f)
 							.SetDecayTime(DECAY_TIME)
 							.SetVelocity(BULLET_SPEED)
 							.SetDamage(projDamage)
-							.Build()
 						);
-						projectiles.back()->Init();
 					}
-					transformManager.lock()->RebuildHierarchy();
 				}
 				markFinished();
 				}));

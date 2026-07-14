@@ -1,11 +1,6 @@
 #include "pch.h"
 #include "KeyeproEnemy.h"
 #include "resource.h"
-#include "SineWaveProjectile.h"
-#include "RoundProjectile.h"
-#include "TargetedProjectile.h"
-#include "BoomerangProjectile.h"
-#include "SpiralProjectile.h"
 #include "KeyeEnemy.h"
 #include "PopUpMessage.h"
 #include "RNG.h"
@@ -119,10 +114,9 @@ void Demo::KeyeproEnemy::PatternSineWaveStorm(float projDamage) {
                 for (int i = 0; i < BULLETS; i++) {
                     float startY = (i - BULLETS / 2.f) * SPACING;
 
-                    auto projSprite = std::make_shared<DX9GF::AnimatedSprite>(projTexture.get(), projFrames, 12);
-                    projSprite->SetOrigin(16, 16);
-                    projectiles.push_back(
-                        SineWaveProjectile::Builder(transformManager, lock, projSprite, 16, 16, -350.f, startY)
+                    projectiles.Spawn(
+                        lock,
+                        ProjectileDesc(projTexture.get(), projFrames, 12, 16, 16, 16, 16, -350.f, startY)
                         .SetTrajectory(D3DXVECTOR2(1, 0))
                         .SetWave(20.f, 4.0f)
                         .SetDelay((waveCount * 0.25f) + (i * 0.05f))
@@ -130,12 +124,9 @@ void Demo::KeyeproEnemy::PatternSineWaveStorm(float projDamage) {
                         .SetVelocity(100.f)
                         .SetDamage(projDamage)
                         .SetGhostSprite(projTexture.get(), projFrames.front(), 16, 16)
-                        .Build()
                     );
-                    projectiles.back()->Init();
                 }
             }
-            transformManager.lock()->RebuildHierarchy();
         }
         markFinished();
         });
@@ -194,19 +185,15 @@ void Demo::KeyeproEnemy::PatternTargetedSniping(float projDamage) {
 					break;
 				}
 
-                auto projSprite = std::make_shared<DX9GF::AnimatedSprite>(projTexture.get(), projFrames, 12);
-                projSprite->SetOrigin(16, 16);
-                projectiles.push_back(
-                    RoundProjectile::Builder(transformManager, lock, projSprite, 16, 16, x, y)
+                projectiles.Spawn(
+                    lock,
+                    ProjectileDesc(projTexture.get(), projFrames, 12, 16, 16, 16, 16, x, y)
                     .SetTargetPosition(lock->GetCollider().lock()->GetWorldX(), lock->GetCollider().lock()->GetWorldY())
-                    .SetVelocity(200.f) 
+                    .SetVelocity(200.f)
                     .SetDelay(0.f)
                     .SetDecayTime(4.f)
                     .SetDamage(projDamage)
-                    .Build()
                 );
-                projectiles.back()->Init();
-                transformManager.lock()->RebuildHierarchy();
             }
             markFinished();
             }));
@@ -224,10 +211,9 @@ void Demo::KeyeproEnemy::PatternEcholocation(float projDamage)
         for (int i = 0; i < BULLETS; i++) {
             if (auto lock = this->player.lock()) {
                 float startY = (i - BULLETS / 2.f) * SPACING;
-                auto projSprite = std::make_shared<DX9GF::AnimatedSprite>(projTexture.get(), projFrames, 12);
-                projSprite->SetOrigin(16, 16);
-                projectiles.push_back(
-                    SineWaveProjectile::Builder(transformManager, lock, projSprite, 16, 16, 320, startY)
+                projectiles.Spawn(
+                    lock,
+                    ProjectileDesc(projTexture.get(), projFrames, 12, 16, 16, 16, 16, 320, startY)
                     .SetTrajectory(D3DXVECTOR2(-1, 0))
                     .SetWave(50.f, 4.f)
                     .SetDelay(i * 0.1f)
@@ -235,10 +221,7 @@ void Demo::KeyeproEnemy::PatternEcholocation(float projDamage)
                     .SetVelocity(VELOCITY)
                     .SetDamage(projDamage)
                     .SetGhostSprite(projTexture.get(), projFrames.front(), 16, 16)
-                    .Build()
                 );
-                projectiles.back()->Init();
-                transformManager.lock()->RebuildHierarchy();
             }
         }
         markFinished();
@@ -247,10 +230,9 @@ void Demo::KeyeproEnemy::PatternEcholocation(float projDamage)
         for (int i = 0; i < BULLETS; i++) {
             if (auto lock = this->player.lock()) {
                 float startY = (i - BULLETS / 2.f) * SPACING;
-                auto projSprite = std::make_shared<DX9GF::AnimatedSprite>(projTexture.get(), projFrames, 12);
-                projSprite->SetOrigin(16, 16);
-                projectiles.push_back(
-                    SineWaveProjectile::Builder(transformManager, lock, projSprite, 16, 16, -320, startY)
+                projectiles.Spawn(
+                    lock,
+                    ProjectileDesc(projTexture.get(), projFrames, 12, 16, 16, 16, 16, -320, startY)
                     .SetTrajectory(D3DXVECTOR2(1, 0))
                     .SetWave(50.f, 4.f)
                     .SetDelay(i * 0.1f)
@@ -258,10 +240,7 @@ void Demo::KeyeproEnemy::PatternEcholocation(float projDamage)
                     .SetVelocity(VELOCITY)
                     .SetDamage(projDamage)
                     .SetGhostSprite(projTexture.get(), projFrames.front(), 16, 16)
-                    .Build()
                 );
-                projectiles.back()->Init();
-                transformManager.lock()->RebuildHierarchy();
             }
         }
         markFinished();
@@ -297,21 +276,17 @@ void Demo::KeyeproEnemy::PatternSwoopBite(float projDamage)
                 float spawnX = x + (i - (BULLET_COUNT / 2)) * 15.f;
                 float spawnY = y - 10.f;
 
-                auto projSprite = std::make_shared<DX9GF::AnimatedSprite>(projTexture.get(), projFrames, 12);
-                projSprite->SetOrigin(16, 16);
-                projectiles.push_back(
-                    BoomerangProjectile::Builder(transformManager, lock, projSprite, 16, 16, spawnX, spawnY)
+                projectiles.Spawn(
+                    lock,
+                    ProjectileDesc(projTexture.get(), projFrames, 12, 16, 16, 16, 16, spawnX, spawnY)
                     .SetTargetPosition(targetX, targetY)
                     .SetInitialVelocity(INITIAL_VELOCITY)
                     .SetReturnAcceleration(180.f)
                     .SetDelay(i * 0.05f)
                     .SetDecayTime(8.f)
                     .SetDamage(projDamage)
-                    .Build()
                 );
-                projectiles.back()->Init();
             }
-            transformManager.lock()->RebuildHierarchy();
         }
         markFinished();
         });
@@ -334,21 +309,17 @@ void Demo::KeyeproEnemy::PatternSwoopBite(float projDamage)
                 float spawnX = x + (i - (BULLET_COUNT / 2)) * 15.f;
                 float spawnY = y - 10.f;
 
-                auto projSprite = std::make_shared<DX9GF::AnimatedSprite>(projTexture.get(), projFrames, 12);
-                projSprite->SetOrigin(16, 16);
-                projectiles.push_back(
-                    BoomerangProjectile::Builder(transformManager, lock, projSprite, 16, 16, spawnX, spawnY)
+                projectiles.Spawn(
+                    lock,
+                    ProjectileDesc(projTexture.get(), projFrames, 12, 16, 16, 16, 16, spawnX, spawnY)
                     .SetTargetPosition(targetX, targetY)
                     .SetInitialVelocity(INITIAL_VELOCITY)
                     .SetReturnAcceleration(180.f)
                     .SetDelay(i * 0.05f)
                     .SetDecayTime(8.f)
                     .SetDamage(projDamage)
-                    .Build()
                 );
-                projectiles.back()->Init();
             }
-            transformManager.lock()->RebuildHierarchy();
 
         }
         markFinished();
@@ -382,19 +353,15 @@ void Demo::KeyeproEnemy::PatternSpiralBloom(float projDamage)
                 for (int i = 0; i < BULLETS_PER_WAVE; i++) {
                     float angle = waveOffset + i * (2.f * 3.14159265359f / BULLETS_PER_WAVE);
 
-                    auto projSprite = std::make_shared<DX9GF::AnimatedSprite>(projTexture.get(), projFrames, 12);
-                    projSprite->SetOrigin(16, 16);
-                    projectiles.push_back(
-                        SpiralProjectile::Builder(transformManager, lock, projSprite, 16, 16, ORIGIN_X, ORIGIN_Y)
+                    projectiles.Spawn(
+                        lock,
+                        ProjectileDesc(projTexture.get(), projFrames, 12, 16, 16, 16, 16, ORIGIN_X, ORIGIN_Y)
                             .SetSpiralParams(angle, RADIAL_SPEED, spinDirection * ANGULAR_SPEED)
                             .SetDelay(0.f)
                             .SetDecayTime(DECAY_TIME)
                             .SetDamage(projDamage)
-                            .Build()
                     );
-                    projectiles.back()->Init();
                 }
-                transformManager.lock()->RebuildHierarchy();
             }
             markFinished();
             }));
@@ -418,32 +385,25 @@ void Demo::KeyeproEnemy::PatternCrossfireSweep(float projDamage)
         float sweep = std::sin(i * 0.65f) * SWEEP_RANGE;
         commandBuffer.PushCommand(std::make_shared<DX9GF::CustomCommand>([this, projDamage, BULLET_SPEED, DECAY_TIME, START_X, TOP_Y, BOTTOM_Y, sweep](std::function<void(void)> markFinished) {
             if (auto lock = this->player.lock()) {
-                auto topSprite = std::make_shared<DX9GF::AnimatedSprite>(projTexture.get(), projFrames, 12);
-                topSprite->SetOrigin(16, 16);
-                projectiles.push_back(
-                    RoundProjectile::Builder(transformManager, lock, topSprite, 16, 16, START_X, TOP_Y)
+                projectiles.Spawn(
+                    lock,
+                    ProjectileDesc(projTexture.get(), projFrames, 12, 16, 16, 16, 16, START_X, TOP_Y)
                         .SetTrajectory(D3DXVECTOR2(std::sin(sweep), 1.f))
                         .SetVelocity(BULLET_SPEED)
                         .SetDelay(0.f)
                         .SetDecayTime(DECAY_TIME)
                         .SetDamage(projDamage)
-                        .Build()
                 );
-                projectiles.back()->Init();
 
-                auto bottomSprite = std::make_shared<DX9GF::AnimatedSprite>(projTexture.get(), projFrames, 12);
-                bottomSprite->SetOrigin(16, 16);
-                projectiles.push_back(
-                    RoundProjectile::Builder(transformManager, lock, bottomSprite, 16, 16, -START_X, BOTTOM_Y)
+                projectiles.Spawn(
+                    lock,
+                    ProjectileDesc(projTexture.get(), projFrames, 12, 16, 16, 16, 16, -START_X, BOTTOM_Y)
                         .SetTrajectory(D3DXVECTOR2(-std::sin(sweep), -1.f))
                         .SetVelocity(BULLET_SPEED)
                         .SetDelay(0.f)
                         .SetDecayTime(DECAY_TIME)
                         .SetDamage(projDamage)
-                        .Build()
                 );
-                projectiles.back()->Init();
-                transformManager.lock()->RebuildHierarchy();
             }
             markFinished();
             }));
@@ -478,21 +438,17 @@ void Demo::KeyeproEnemy::PatternHomingConstellation(float projDamage)
                     float tangentDirection = (wave % 2 == 0) ? 1.f : -1.f;
                     D3DXVECTOR2 tangent(-std::sin(angle) * tangentDirection, std::cos(angle) * tangentDirection);
 
-                    auto projSprite = std::make_shared<DX9GF::AnimatedSprite>(projTexture.get(), projFrames, 12);
-                    projSprite->SetOrigin(16, 16);
-                    projectiles.push_back(
-                        TargetedProjectile::Builder(transformManager, lock, projSprite, 16, 16, spawnX, spawnY)
+                    projectiles.Spawn(
+                        lock,
+                        ProjectileDesc(projTexture.get(), projFrames, 12, 16, 16, 16, 16, spawnX, spawnY)
                             .SetTrajectory(tangent)
                             .SetHoming(TURN_SPEED)
                             .SetVelocity(BULLET_SPEED)
                             .SetDelay(i * BULLET_DELAY)
                             .SetDecayTime(DECAY_TIME)
                             .SetDamage(projDamage)
-                            .Build()
                     );
-                    projectiles.back()->Init();
                 }
-                transformManager.lock()->RebuildHierarchy();
             }
             markFinished();
             }));

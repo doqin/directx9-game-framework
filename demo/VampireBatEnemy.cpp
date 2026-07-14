@@ -1,8 +1,6 @@
 #include "pch.h"
 #include "VampireBatEnemy.h"
 #include "resource.h"
-#include "SineWaveProjectile.h"
-#include "BoomerangProjectile.h"
 #include "RNG.h"
 
 void Demo::VampireBatEnemy::Init(DX9GF::GraphicsDevice* graphicsDevice, DX9GF::Camera* camera) {
@@ -58,11 +56,10 @@ void Demo::VampireBatEnemy::PatternEcholocation(float projDamage, std::vector<st
 		for (int i = 0; i < BULLETS; i++) {
 			if (auto lock = this->player.lock()) {
 				float startY = (i - BULLETS / 2.f) * SPACING;
-				auto projSprite = std::make_shared<DX9GF::StaticSprite>(projTexture.get());
-				projSprite->SetOrigin(16, 8);
 				auto [sineProjTexWidth, sineProjTexHeight] = projTexture->GetSize();
-				projectiles.push_back(
-					SineWaveProjectile::Builder(transformManager, lock, projSprite, 16, 16, 320, startY)
+				projectiles.Spawn(
+					lock,
+					ProjectileDesc(projTexture.get(), 16, 8, 16, 16, 320, startY)
 					.SetTrajectory(D3DXVECTOR2(-1, 0))
 					.SetWave(AMPLITUDE, 4.f)
 					.SetDelay(i * 0.1f)
@@ -70,10 +67,7 @@ void Demo::VampireBatEnemy::PatternEcholocation(float projDamage, std::vector<st
 					.SetVelocity(VELOCITY)
 					.SetDamage(projDamage)
 					.SetGhostSprite(projTexture.get(), RECT{ 0, 0, (LONG)sineProjTexWidth, (LONG)sineProjTexHeight }, 16, 8)
-					.Build()
 				);
-				projectiles.back()->Init();
-				transformManager.lock()->RebuildHierarchy();
 			}
 		}
 		markFinished();
@@ -82,11 +76,10 @@ void Demo::VampireBatEnemy::PatternEcholocation(float projDamage, std::vector<st
 		for (int i = 0; i < BULLETS; i++) {
 			if (auto lock = this->player.lock()) {
 				float startY = (i - BULLETS / 2.f) * SPACING;
-				auto projSprite = std::make_shared<DX9GF::StaticSprite>(projTexture.get());
-				projSprite->SetOrigin(16, 8);
 				auto [sineProjTexWidth, sineProjTexHeight] = projTexture->GetSize();
-				projectiles.push_back(
-					SineWaveProjectile::Builder(transformManager, lock, projSprite, 16, 16, -320, startY)
+				projectiles.Spawn(
+					lock,
+					ProjectileDesc(projTexture.get(), 16, 8, 16, 16, -320, startY)
 					.SetTrajectory(D3DXVECTOR2(1, 0))
 					.SetWave(AMPLITUDE, 4.f)
 					.SetDelay(i * 0.1f)
@@ -94,10 +87,7 @@ void Demo::VampireBatEnemy::PatternEcholocation(float projDamage, std::vector<st
 					.SetVelocity(VELOCITY)
 					.SetDamage(projDamage)
 					.SetGhostSprite(projTexture.get(), RECT{ 0, 0, (LONG)sineProjTexWidth, (LONG)sineProjTexHeight }, 16, 8)
-					.Build()
 				);
-				projectiles.back()->Init();
-				transformManager.lock()->RebuildHierarchy();
 			}
 		}
 		markFinished();
@@ -133,11 +123,10 @@ void Demo::VampireBatEnemy::PatternSwoopBite(float projDamage) {
 				float spawnX = x + (i - (BULLET_COUNT / 2)) * 15.f;
 				float spawnY = y - 10.f;
 
-				auto projSprite = std::make_shared<DX9GF::StaticSprite>(projTexture.get());
-				projSprite->SetOrigin(16, 8);
 				auto [projTexWidth, projTexHeight] = projTexture->GetSize();
-				projectiles.push_back(
-					BoomerangProjectile::Builder(transformManager, lock, projSprite, 16, 16, spawnX, spawnY)
+				projectiles.Spawn(
+					lock,
+					ProjectileDesc(projTexture.get(), 16, 8, 16, 16, spawnX, spawnY)
 					.SetTargetPosition(targetX, targetY)
 					.SetInitialVelocity(400.f)
 					.SetReturnAcceleration(180.f)
@@ -145,11 +134,8 @@ void Demo::VampireBatEnemy::PatternSwoopBite(float projDamage) {
 					.SetDecayTime(8.f)
 					.SetDamage(projDamage)
 					.SetGhostSprite(projTexture.get(), RECT{ 0, 0, (LONG)projTexWidth, (LONG)projTexHeight }, 16, 8)
-					.Build()
 				);
-				projectiles.back()->Init();
 			}
-			transformManager.lock()->RebuildHierarchy();
 		}
 		markFinished();
 	});
@@ -172,11 +158,10 @@ void Demo::VampireBatEnemy::PatternSwoopBite(float projDamage) {
 				float spawnX = x + (i - (BULLET_COUNT / 2)) * 15.f;
 				float spawnY = y - 10.f;
 
-				auto projSprite = std::make_shared<DX9GF::StaticSprite>(projTexture.get());
-				projSprite->SetOrigin(16, 8);
 				auto [projTexWidth, projTexHeight] = projTexture->GetSize();
-				projectiles.push_back(
-					BoomerangProjectile::Builder(transformManager, lock, projSprite, 16, 16, spawnX, spawnY)
+				projectiles.Spawn(
+					lock,
+					ProjectileDesc(projTexture.get(), 16, 8, 16, 16, spawnX, spawnY)
 					.SetTargetPosition(targetX, targetY)
 					.SetInitialVelocity(400.f)
 					.SetReturnAcceleration(180.f)
@@ -184,11 +169,8 @@ void Demo::VampireBatEnemy::PatternSwoopBite(float projDamage) {
 					.SetDecayTime(8.f)
 					.SetDamage(projDamage)
 					.SetGhostSprite(projTexture.get(), RECT{ 0, 0, (LONG)projTexWidth, (LONG)projTexHeight }, 16, 8)
-					.Build()
 				);
-				projectiles.back()->Init();
 			}
-			transformManager.lock()->RebuildHierarchy();
 		}
 		markFinished();
 		});

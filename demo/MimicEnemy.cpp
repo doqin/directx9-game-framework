@@ -1,8 +1,6 @@
 #include "pch.h"
 #include "MimicEnemy.h"
 #include "resource.h"
-#include "SpiralProjectile.h"
-#include "BoomerangProjectile.h"
 #include "RNG.h"
 
 void Demo::MimicEnemy::Init(DX9GF::GraphicsDevice* graphicsDevice, DX9GF::Camera* camera) {
@@ -55,19 +53,15 @@ void Demo::MimicEnemy::PatternCoinCyclone(float projDamage, std::vector<std::sha
 		if (auto lock = this->player.lock()) {
 			for (int i = 0; i < 12; i++) {
 				float angle = i * (3.14159f * 2.f / 12.f);
-			auto projSprite = std::make_shared<DX9GF::StaticSprite>(projTexture.get());
-			projSprite->SetOrigin(8, 8);
-			projectiles.push_back(
-				SpiralProjectile::Builder(transformManager, lock, projSprite, 16, 16, 256.f, 0)
+				projectiles.Spawn(
+					lock,
+					ProjectileDesc(projTexture.get(), 8, 8, 16, 16, 256.f, 0)
 					.SetSpiralParams(angle, RADICAL_SPEED, ANGULAR_SPEED)
 					.SetDelay(i * 0.05f)
 					.SetDecayTime(6.f)
 					.SetDamage(projDamage)
-					.Build()
 				);
-				projectiles.back()->Init();
 			}
-			transformManager.lock()->RebuildHierarchy();
 		}
 		markFinished();
 	});
@@ -87,10 +81,9 @@ void Demo::MimicEnemy::PatternJunkVomit(float projDamage, std::vector<std::share
 		commandBuffer.PushCommand(std::make_shared<DX9GF::CustomCommand>([this, projDamage, randY](std::function<void(void)> markFinished) {
 			if (auto lock = this->player.lock()) {
 				auto [px, py] = lock->GetWorldPosition();
-			auto projSprite = std::make_shared<DX9GF::StaticSprite>(projTexture.get());
-			projSprite->SetOrigin(8, 8);
-			projectiles.push_back(
-				BoomerangProjectile::Builder(transformManager, lock, projSprite, 16, 16, 512.f, 0.f)
+				projectiles.Spawn(
+					lock,
+					ProjectileDesc(projTexture.get(), 8, 8, 16, 16, 512.f, 0.f)
 					.SetTargetPosition(px, py + randY)
 
 					.SetInitialVelocity(450.f)
@@ -99,10 +92,7 @@ void Demo::MimicEnemy::PatternJunkVomit(float projDamage, std::vector<std::share
 					.SetDelay(0.f)
 					.SetDecayTime(6.f)
 					.SetDamage(projDamage)
-					.Build()
 				);
-				projectiles.back()->Init();
-				transformManager.lock()->RebuildHierarchy();
 			}
 			markFinished();
 			}));
