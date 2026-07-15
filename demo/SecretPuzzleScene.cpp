@@ -1,4 +1,4 @@
-﻿#include "pch.h"
+#include "pch.h"
 #include "SettingsManager.h"
 #include "SecretPuzzleScene.h"
 #include "CustomBattleScene.h"
@@ -496,19 +496,27 @@ void Demo::SecretPuzzleScene::DrawWorld(unsigned long long deltaTime)
 		DrawBackground(gd, deltaTime);
 		map->Draw(camera);
 
-		for (auto& savePoint : savePoints) savePoint->Draw(camera, deltaTime);
-		for (auto& shopPoint : shopPoints) shopPoint->Draw(camera, deltaTime);
-		for (auto& healingPoint : healingPoints) healingPoint->Draw(camera, deltaTime);
-		for (auto& chest : treasureChests) chest->Draw(camera, deltaTime);
+		struct DepthNode {
+			float y;
+			std::function<void()> drawCall;
+			bool operator<(const DepthNode& other) const { return y < other.y; }
+		};
+		std::vector<DepthNode> depthNodes;
+
+		for (auto& savePoint : savePoints) depthNodes.push_back({ savePoint->GetWorldY(), [&, savePoint]() { savePoint->Draw(camera, deltaTime); } });
+		for (auto& shopPoint : shopPoints) depthNodes.push_back({ shopPoint->GetWorldY(), [&, shopPoint]() { shopPoint->Draw(camera, deltaTime); } });
+		for (auto& healingPoint : healingPoints) depthNodes.push_back({ healingPoint->GetWorldY(), [&, healingPoint]() { healingPoint->Draw(camera, deltaTime); } });
+		for (auto& chest : treasureChests) depthNodes.push_back({ chest->GetWorldY(), [&, chest]() { chest->Draw(camera, deltaTime); } });
+		for (auto& enemy : mapEnemies) depthNodes.push_back({ enemy->GetWorldY(), [&, enemy]() { enemy->Draw(&camera, deltaTime); } });
 		
-		if (dauDauSpawn) dauDauSpawn->Draw(camera, deltaTime);
-		dauDau->Draw(camera, deltaTime);
+		if (dauDauSpawn) depthNodes.push_back({ dauDauSpawn->GetWorldY(), [&]() { dauDauSpawn->Draw(camera, deltaTime); } });
+		if (dauDau) depthNodes.push_back({ dauDau->GetWorldY(), [&]() { dauDau->Draw(camera, deltaTime); } });
+		if (player) depthNodes.push_back({ player->GetWorldY(), [&]() { player->Draw(deltaTime); } });
 
-		for (auto& enemy : mapEnemies) {
-			enemy->Draw(&camera, deltaTime);
+		std::sort(depthNodes.begin(), depthNodes.end());
+		for (auto& node : depthNodes) {
+			node.drawCall();
 		}
-
-		player->Draw(deltaTime);
 
 		gd->EndDraw();
 	}

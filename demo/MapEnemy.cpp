@@ -1,4 +1,4 @@
-﻿#include "pch.h"
+#include "pch.h"
 #include "MapEnemy.h"
 #include "MapBattleScene.h"
 #include "EncounterGenerator.h"
@@ -36,10 +36,11 @@ namespace Demo {
 		sprite->SetScale(0.8f, 0.8f); //map enemy's size
 
 		float hitBoxW = encounterData.hitBoxWidth;
-		float hitBoxH = encounterData.hitBoxHeight;
+		float originalHitBoxH = encounterData.hitBoxHeight;
+		float hitBoxH = originalHitBoxH * 0.25f;
 
 		float offsetX = -hitBoxW / 2.0f;
-		float offsetY = -hitBoxH / 2.0f;
+		float offsetY = (originalHitBoxH / 2.0f) - hitBoxH;
 
 		collider = std::make_shared<DX9GF::RectangleCollider>(
 			transformManager,
@@ -63,10 +64,11 @@ namespace Demo {
 
 				if (colliderManager) {
 					float hitBoxW = encounterData.hitBoxWidth;
-					float hitBoxH = encounterData.hitBoxHeight;
+					float originalHitBoxH = encounterData.hitBoxHeight;
+					float hitBoxH = originalHitBoxH * 0.25f;
 
 					float offsetX = -hitBoxW / 2.0f;
-					float offsetY = -hitBoxH / 2.0f;
+					float offsetY = (originalHitBoxH / 2.0f) - hitBoxH;
 
 					collider = std::make_shared<DX9GF::RectangleCollider>(
 						transformManager,

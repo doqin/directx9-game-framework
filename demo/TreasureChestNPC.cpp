@@ -16,7 +16,7 @@ namespace Demo {
         INPC::Init(gd, camera, p, cm, font, drawBuffer);
 
         collider = std::make_shared<DX9GF::RectangleCollider>(
-            transformManager, 32.f, 32.f, this->GetWorldX(), this->GetWorldY());
+            transformManager, 32.f, 8.f, this->GetWorldX(), this->GetWorldY() + 12.f);
         collider->SetOriginCenter();
         cm->Add(collider);
         spritesheet = std::make_shared<DX9GF::Texture>(gd);
