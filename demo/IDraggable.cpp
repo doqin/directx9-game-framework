@@ -1,9 +1,10 @@
-﻿#include "pch.h"
+#include "pch.h"
 #include "IDraggable.h"
 #include <DX9GF.h>
 #include <algorithm>
+#include <cmath>
+#include "ICard.h"
 #include "RNG.h"
-
 // Define static member variables
 std::shared_ptr<DX9GF::Font> Demo::IDraggable::debugFont = nullptr;
 std::shared_ptr<DX9GF::FontSprite> Demo::IDraggable::debugFontSprite = nullptr;
@@ -325,6 +326,22 @@ void Demo::IDraggable::Draw(unsigned long long deltaTime)
 	}
 	if (isCropped) {
 		graphicsDevice->SetScissorTest(false);
+	}
+	
+	if (trigger->IsHovering(deltaTime) && dynamic_cast<Demo::ICard*>(this) != nullptr) {
+		auto width = trigger->GetWidth();
+		auto height = trigger->GetHeight();
+		auto gd = this->graphicsDevice;
+		auto cam = this->camera;
+		draggableManager->QueueDraw(std::make_shared<DX9GF::CustomCommand>([gd, cam, thisX, thisY, width, height](std::function<void(void)> markFinished) {
+			gd->SetAlphaBlending(true);
+			float alphaPhase = (sin(GetTickCount64() / 150.0f) + 1.0f) / 2.0f;
+			int alpha = static_cast<int>(alphaPhase * 80.0f);
+			D3DCOLOR color = D3DCOLOR_ARGB(alpha, 255, 255, 255);
+			gd->DrawRectangle(*cam, thisX, thisY, width, height, color, true);
+			gd->SetAlphaBlending(false);
+			markFinished();
+		}));
 	}
 }
 
