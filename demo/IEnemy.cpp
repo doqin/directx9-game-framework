@@ -1,9 +1,10 @@
-﻿#include "pch.h"
+#include "pch.h"
 #include "IEnemy.h"
 #include <cmath>
 #include <algorithm>
 #include "DrawUtils.h"
 #include "RNG.h"
+#include "DX9GFInputManager.h"
 void Demo::IEnemy::InitCardSpawnTrigger(DX9GF::Camera* camera, float width, float height)
 {
     cardSpawnTrigger = std::make_shared<DX9GF::RectangleTrigger>(transformManager, shared_from_this(), width, height);
@@ -58,6 +59,12 @@ void Demo::IEnemy::Draw(DX9GF::GraphicsDevice* graphicsDevice, DX9GF::Camera* ca
     if (!font) {
         font = std::make_shared<DX9GF::Font>(graphicsDevice, L"StatusPlz", 16);
         fontSprite = std::make_shared<DX9GF::FontSprite>(font.get());
+    }
+    if (!uiTexture) {
+        uiTexture = std::make_shared<DX9GF::Texture>(graphicsDevice);
+        uiTexture->LoadTexture(L"assets/ui.png");
+        uiSprite = std::make_shared<DX9GF::StaticSprite>(uiTexture.get());
+        uiSprite->SetScale(2.0f);
     }
 
     if (!isOnStandby && cardSpawnTrigger) {
@@ -201,23 +208,90 @@ void Demo::IEnemy::Draw(DX9GF::GraphicsDevice* graphicsDevice, DX9GF::Camera* ca
     float statusOffsetY = -20.f;
 
     if (!isOnStandby) {
+        auto [screenX, screenY] = DX9GF::InputManager::GetInstance()->GetVirtualAbsoluteMousePos(camera);
+        auto [mouseX, mouseY] = DX9GF::Utils::WindowToWorldCoords(*camera, screenX, screenY);
+
         for (const auto& status : activeStatuses) {
             std::wstring statusName = L"Unknown";
-            if (status.type == StatusType::POISON) statusName = L"Poison";
-            else if (status.type == StatusType::VULNERABLE) statusName = L"Vulnerable";
-            else if (status.type == StatusType::WEAK) statusName = L"Weak";
-            else if (status.type == StatusType::STUN) statusName = L"Stun";
+            std::wstring statusDescription = L"";
+            RECT sourceRect = {0, 0, 0, 0};
+            if (status.type == StatusType::POISON) {
+                statusName = L"Poison";
+                statusDescription = L"Takes damage equal to remaining turns at end of turn.";
+                sourceRect = {128, 240, 144, 256};
+            }
+            else if (status.type == StatusType::VULNERABLE) {
+                statusName = L"Vulnerable";
+                statusDescription = L"Takes 50% more damage from attacks.";
+                sourceRect = {96, 256, 112, 272};
+            }
+            else if (status.type == StatusType::WEAK) {
+                statusName = L"Weak";
+                statusDescription = L"Deals 25% less damage with attacks.";
+                sourceRect = {112, 256, 128, 272};
+            }
+            else if (status.type == StatusType::STUN) {
+                statusName = L"Stun";
+                statusDescription = L"Cannot take action this turn.";
+            }
 
-            std::wstring statusText = statusName + L" (" + std::to_wstring(status.duration) + L")";
+            float iconX = GetWorldX() + statusOffsetX;
+            float iconY = GetWorldY() + statusOffsetY;
 
-            fontSprite->SetColor(0xFFfffc40);
-            fontSprite->SetOutline(true, 0xFF000000, 2.f);
-            fontSprite->SetPosition(GetWorldX() + statusOffsetX, GetWorldY() + statusOffsetY);
+            if (sourceRect.right > 0) {
+                uiSprite->SetSrcRect(sourceRect);
+                uiSprite->SetPosition(iconX, iconY);
+                uiSprite->Begin();
+                uiSprite->Draw(*camera, deltaTime);
+                uiSprite->End();
+                
+                std::wstring durationText = std::to_wstring(status.duration);
+                fontSprite->SetColor(0xFFfffc40);
+                fontSprite->SetOutline(true, 0xFF000000, 1.f);
+                fontSprite->SetPosition(iconX + 36.f, iconY);
+                fontSprite->SetText(std::wstring(durationText));
+                fontSprite->Draw(*camera, deltaTime);
 
-            fontSprite->SetText(std::move(statusText));
-            fontSprite->Draw(*camera, deltaTime);
+                bool isHovered = mouseX >= iconX && mouseX <= iconX + 32 && mouseY >= iconY && mouseY <= iconY + 32;
+                if (isHovered) {
+                    std::wstring tooltipText = statusName + L" (" + durationText + L" turns remaining)\n" + statusDescription;
+                    fontSprite->SetText(std::move(tooltipText));
+                    float tooltipWidth = fontSprite->GetWidth() + 8.f;
+                    float tooltipHeight = fontSprite->GetHeight() + 8.f;
+                    
+                    auto [screenW, screenH] = camera->GetScreenResolution();
+                    float targetScreenX = screenX;
+                    float targetScreenY = screenY - tooltipHeight;
+                    
+                    if (targetScreenX + tooltipWidth > screenW) {
+                        targetScreenX = screenW - tooltipWidth;
+                    }
+                    if (targetScreenY < 0) {
+                        targetScreenY = screenY + 32.f;
+                    }
+                    
+                    auto [worldDrawX, worldDrawY] = DX9GF::Utils::WindowToWorldCoords(*camera, targetScreenX, targetScreenY);
+                    
+                    fontSprite->End();
+                    graphicsDevice->SetAlphaBlending(true);
+                    graphicsDevice->DrawRectangle(*camera, worldDrawX, worldDrawY, tooltipWidth, tooltipHeight, 0, 1, 1, 0, 0, D3DCOLOR_ARGB(220, 0, 0, 0), true);
+                    fontSprite->Begin();
+                    
+                    fontSprite->SetColor(0xFFFFFFFF);
+                    fontSprite->SetOutline(true, 0xFF000000, 1.f);
+                    fontSprite->SetPosition(worldDrawX + 4.f, worldDrawY + 4.f);
+                    fontSprite->Draw(*camera, deltaTime);
+                }
+            } else {
+                std::wstring statusText = statusName + L" (" + std::to_wstring(status.duration) + L")";
+                fontSprite->SetColor(0xFFfffc40);
+                fontSprite->SetOutline(true, 0xFF000000, 2.f);
+                fontSprite->SetPosition(iconX, iconY);
+                fontSprite->SetText(std::move(statusText));
+                fontSprite->Draw(*camera, deltaTime);
+            }
 
-            statusOffsetY += 16.f;
+            statusOffsetY += 36.f;
         }
     }
 

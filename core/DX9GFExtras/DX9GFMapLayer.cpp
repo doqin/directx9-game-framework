@@ -86,7 +86,9 @@ void DX9GF::MapLayer::Create(Map* map, std::uint32_t layerIndex)
 					const auto tileX = idIndex % tileCountX;
 					const auto tileY = idIndex / tileCountX;
 
-					const float EPSILON = 0.00001f;
+					// Inset the src rect by 1/64 texel so interpolation error at
+					// quad edges can't sample the neighbouring tileset tile.
+					const float EPSILON = 1.0f / 64.0f;
 
 					float u0 = (static_cast<float>(tileMargin + tileX * (tileSetTileSize.x + tileSpacing)) + EPSILON) / textureSizeX;
 					float v0 = (static_cast<float>(tileMargin + tileY * (tileSetTileSize.y + tileSpacing)) + EPSILON) / textureSizeY;

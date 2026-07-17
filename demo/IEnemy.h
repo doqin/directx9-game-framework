@@ -39,6 +39,8 @@ namespace Demo {
 		ProjectileSystem projectiles;
 		DX9GF::CommandBuffer commandBuffer;
 		DX9GF::CommandBuffer animationBuffer;
+		std::shared_ptr<DX9GF::Texture> uiTexture;
+		std::shared_ptr<DX9GF::StaticSprite> uiSprite;
 		std::shared_ptr<DX9GF::Texture> hitImpactTexture;
 		std::vector<std::shared_ptr<DX9GF::AnimatedSprite>> hitImpactSprites;
 		std::vector<StatusEffect> activeStatuses;
