@@ -64,6 +64,30 @@ namespace Demo {
 
 				for (float v : laserVerticals) graphicsDevice->DrawRectangle(*camera, v - 1.f, -128.f, 2.f, 256.f, warnColor, true);
 				for (float h : laserHorizontals) graphicsDevice->DrawRectangle(*camera, -128.f, h - 1.f, 256.f, 2.f, warnColor, true);
+
+				if (auto p = player.lock()) {
+					auto [px, py] = p->GetWorldPosition();
+					float minX = -128.f, maxX = 128.f;
+					float minY = -128.f, maxY = 128.f;
+
+					for (float v : laserVerticals) {
+						if (px > v) minX = (std::max)(minX, v);
+						if (px < v) maxX = (std::min)(maxX, v);
+					}
+					for (float h : laserHorizontals) {
+						if (py > h) minY = (std::max)(minY, h);
+						if (py < h) maxY = (std::min)(maxY, h);
+					}
+
+					float centerX = (minX + maxX) * 0.5f;
+					float centerY = (minY + maxY) * 0.5f;
+
+					float targetAlphaMult = sin(timeSinceStart * 0.04f) * 0.5f + 0.5f;
+					D3DCOLOR targetColor = D3DCOLOR_ARGB(static_cast<int>(200 * targetAlphaMult), 255, 50, 50);
+
+					graphicsDevice->DrawRectangle(*camera, centerX - 8.f, centerY - 8.f, 16.f, 16.f, targetColor, true);
+					graphicsDevice->DrawRectangle(*camera, centerX - 16.f, centerY - 16.f, 32.f, 32.f, targetColor, false);
+				}
 			}
 			else if (laserState == 2) {
 				D3DCOLOR glowColor = D3DCOLOR_ARGB(120, 255, 20, 147);
@@ -99,8 +123,8 @@ namespace Demo {
 		float projDamage = GetOutgoingDamage(baseDamage);
 		this->storedProjDamage = projDamage;
 
-		int patternId = GetSmartRandomPattern(1, 3);
-
+		int patternId = 3;
+		/*int patternId = GetSmartRandomPattern(1, 3);*/
 		if (patternId == 1) PatternDefrag(projDamage);
 		else if (patternId == 2) PatternPing999(projDamage);
 		else PatternBadSector(projDamage);
@@ -177,29 +201,14 @@ namespace Demo {
 	}
 
 	void KernelEnemy::PatternBadSector(float projDamage) {
-		//random wave count
 		const int WAVES = RNG::Range(2, 4);
-		
+
 		for (int w = 0; w < WAVES; ++w) {
 			commandBuffer.PushCommand(std::make_shared<DX9GF::CustomCommand>([this](auto markFinished) {
 				this->laserVerticals.clear();
 				this->laserHorizontals.clear();
-
-				//random grid
-				int vCount = RNG::Range(1, 3);
-				int hCount = RNG::Range(1, 3);
-
-				float vSegment = 200.f / vCount;
-				for (int i = 0; i < vCount; ++i) {
-					float start = -100.f + (i * vSegment);
-					this->laserVerticals.push_back(RNG::Range(start + 15.f, start + vSegment - 15.f));
-				}
-
-				float hSegment = 200.f / hCount;
-				for (int i = 0; i < hCount; ++i) {
-					float start = -100.f + (i * hSegment);
-					this->laserHorizontals.push_back(RNG::Range(start + 15.f, start + hSegment - 15.f));
-				}
+				this->laserVerticals.push_back(RNG::Range(-80.f, 80.f));
+				this->laserHorizontals.push_back(RNG::Range(-80.f, 80.f));
 
 				this->laserState = 1;
 				markFinished();
@@ -207,50 +216,55 @@ namespace Demo {
 
 			commandBuffer.PushCommand(std::make_shared<DX9GF::DelayCommand>(1.5f));
 
-			// Random số đợt xả đạn (burst) từ 2 đến 4 lần
-			int burstCount = RNG::Range(2, 4);
-			for (int burst = 0; burst < burstCount; ++burst) {
-				commandBuffer.PushCommand(std::make_shared<DX9GF::CustomCommand>([this, projDamage, burst, burstCount](auto markFinished) {
-					if (burst == 0) this->laserState = 2;
+			commandBuffer.PushCommand(std::make_shared<DX9GF::CustomCommand>([this, projDamage](auto markFinished) {
+				this->laserState = 2;
 
-					if (auto p = this->player.lock()) {
-						auto [px, py] = p->GetWorldPosition();
+				if (auto p = this->player.lock()) {
+					auto [px, py] = p->GetWorldPosition();
 
-						float minX = -128.f, maxX = 128.f;
-						float minY = -128.f, maxY = 128.f;
+					float minX = -128.f, maxX = 128.f;
+					float minY = -128.f, maxY = 128.f;
 
-						for (float v : this->laserVerticals) {
-							if (px > v) minX = (std::max)(minX, v);
-							if (px < v) maxX = (std::min)(maxX, v);
-						}
-						for (float h : this->laserHorizontals) {
-							if (py > h) minY = (std::max)(minY, h);
-							if (py < h) maxY = (std::min)(maxY, h);
-						}
-
-						float centerX = (minX + maxX) * 0.5f;
-						float centerY = (minY + maxY) * 0.5f;
-
-						float syncDecayTime = (burstCount * 1.5f) - (burst * 1.5f);
-
-						float radialSpeed1 = RNG::Range(25.f, 40.f);
-						float radialSpeed2 = RNG::Range(15.f, 25.f);
-
-						projectiles.Spawn(p, ProjectileDesc(bulletTexture.get(), 8, 8, 16, 16, centerX, centerY)
-							.SetSpiralParams(0.f, radialSpeed1, PI * 1.5f)
-							.SetDamage(projDamage)
-							.SetDecayTime(syncDecayTime));
-
-						projectiles.Spawn(p, ProjectileDesc(bulletTexture.get(), 8, 8, 16, 16, centerX, centerY)
-							.SetSpiralParams(PI, radialSpeed2, -PI * 1.2f)
-							.SetDamage(projDamage)
-							.SetDecayTime(syncDecayTime));
+					for (float v : this->laserVerticals) {
+						if (px > v) minX = (std::max)(minX, v);
+						if (px < v) maxX = (std::min)(maxX, v);
 					}
-					markFinished();
-					}));
+					for (float h : this->laserHorizontals) {
+						if (py > h) minY = (std::max)(minY, h);
+						if (py < h) maxY = (std::min)(maxY, h);
+					}
 
-				commandBuffer.PushCommand(std::make_shared<DX9GF::DelayCommand>(1.5f));
-			}
+					float centerX = (minX + maxX) * 0.5f;
+					float centerY = (minY + maxY) * 0.5f;
+					float holdTime = 4.0f;
+
+					projectiles.Spawn(p, ProjectileDesc(bulletTexture.get(), 8, 8, 16, 16, centerX, centerY)
+						.SetVelocity(0.f)
+						.SetDamage(projDamage)
+						.SetDecayTime(holdTime));
+
+					int numArms = RNG::Range(1, 4);
+					float direction = (RNG::Range(0, 1) == 0) ? 1.0f : -1.0f;
+					const int BULLETS_PER_ARM = 12;
+
+					for (int arm = 0; arm < numArms; ++arm) {
+						float startAngle = arm * (2.0f * PI / numArms);
+
+						for (int i = 1; i <= BULLETS_PER_ARM; ++i) {
+							float radialSpeed = i * 12.f;
+							float angularSpeed = (PI * 0.7f - (i * 0.03f)) * direction;
+
+							projectiles.Spawn(p, ProjectileDesc(bulletTexture.get(), 8, 8, 16, 16, centerX, centerY)
+								.SetSpiralParams(startAngle, radialSpeed, angularSpeed)
+								.SetDamage(projDamage)
+								.SetDecayTime(holdTime));
+						}
+					}
+				}
+				markFinished();
+				}));
+
+			commandBuffer.PushCommand(std::make_shared<DX9GF::DelayCommand>(4.0f));
 
 			commandBuffer.PushCommand(std::make_shared<DX9GF::CustomCommand>([this](auto markFinished) {
 				this->laserState = 0;
