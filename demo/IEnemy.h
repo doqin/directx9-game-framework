@@ -8,13 +8,6 @@
 
 namespace Demo {
 	class PopUpMessage;
-	enum class StatusType { POISON, VULNERABLE, WEAK, STUN };
-
-	struct StatusEffect {
-		StatusType type;
-		int duration; 
-		float value; 
-	};
 
 	class IEnemy : public DX9GF::IGameObject {
 	private:
@@ -30,6 +23,7 @@ namespace Demo {
 			unsigned long long elapsed = 0;
 		};
 		bool isOnStandby = true;
+		std::function<void(int)> onRequestLockCard = nullptr;
 		float health;
         std::shared_ptr<DX9GF::RectangleTrigger> cardSpawnTrigger;
 		std::function<void(std::shared_ptr<IEnemy>)> onRequestEnemyCard = [](std::shared_ptr<IEnemy>) {};
@@ -58,7 +52,7 @@ namespace Demo {
 		virtual void Update(unsigned long long deltaTime);
 		virtual void Draw(DX9GF::GraphicsDevice* graphicsDevice, DX9GF::Camera* camera, unsigned long long deltaTime);
 		virtual bool TakeDamage(float damage);
-		virtual void StartAttack(std::shared_ptr<Player> player, std::vector<std::shared_ptr<IEnemy>>* enemies = nullptr, std::shared_ptr<PopUpMessage> popUpMessage = nullptr, DX9GF::GraphicsDevice* graphicsDevice = nullptr, DX9GF::Camera* camera = nullptr) = 0;
+		virtual void StartAttack(std::shared_ptr<Player> player, std::vector<std::shared_ptr<IEnemy>>* enemies = nullptr, std::shared_ptr<PopUpMessage> popUpMessage = nullptr, DX9GF::GraphicsDevice* graphicsDevice = nullptr, DX9GF::Camera* camera = nullptr, int currentTurn = 1) = 0;
 		void SetState(bool isOnStandby);
 		bool IsOnStandby() const { return isOnStandby; }
 		bool IsDoneAttacking();
@@ -70,5 +64,7 @@ namespace Demo {
 		bool HasStatus(StatusType type) const;
 		float GetOutgoingDamage(float baseDamage) const;
 		std::weak_ptr<DX9GF::RectangleTrigger> GetCardSpawnTrigger() const { return cardSpawnTrigger; }
+		void SetOnRequestLockCard(std::function<void(int)> callback) { onRequestLockCard = callback; }
+		virtual void OnTurnBegin(std::shared_ptr<Player> player, std::shared_ptr<PopUpMessage> popUpMessage, int currentTurn) {}
 	};
 }

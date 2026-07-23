@@ -37,7 +37,7 @@ int Demo::KeyeproEnemy::GetRandomPattern() {
     return RNG::Range(1, 6);
 }
 
-void Demo::KeyeproEnemy::StartAttack(std::shared_ptr<Player> player, std::vector<std::shared_ptr<IEnemy>>* enemies, std::shared_ptr<PopUpMessage> popUpMessage, DX9GF::GraphicsDevice* graphicsDevice, DX9GF::Camera* camera) {
+void Demo::KeyeproEnemy::StartAttack(std::shared_ptr<Player> player, std::vector<std::shared_ptr<IEnemy>>* enemies, std::shared_ptr<PopUpMessage> popUpMessage, DX9GF::GraphicsDevice* graphicsDevice, DX9GF::Camera* camera, int currentTurn) {
     this->player = player;
     float projDamage = 5.f; 
     if (enemies != nullptr && graphicsDevice != nullptr && camera != nullptr) {

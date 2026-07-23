@@ -481,9 +481,14 @@ bool Demo::Player::TakeDamage(float damage)
 {
 	if (isInvincible) return IsDead();
 
-  const float blockedDamage = (std::min)(temporaryDefense, damage);
+	float finalDamage = damage;
+	if (HasStatus(StatusType::VULNERABLE)) {
+		finalDamage *= 1.5f;
+	}
+
+	const float blockedDamage = (std::min)(temporaryDefense, finalDamage);
 	temporaryDefense = (std::max)(0.f, temporaryDefense - blockedDamage);
-	const float actualDamage = (std::max)(0.f, damage - blockedDamage);
+	const float actualDamage = (std::max)(0.f, finalDamage - blockedDamage);
 
 	health -= actualDamage;
 	isInvincible = true;
@@ -506,9 +511,12 @@ bool Demo::Player::TakeDamage(float damage)
 void Demo::Player::DealDamage(IEnemy* target, float cardBaseDamage)
 {
 	if (!target) return;
-
 	float currentAtk = GetBuffStat(ItemBuffType::BuffDamage);
 	float finalDamage = cardBaseDamage + currentAtk;
+
+	if (HasStatus(StatusType::WEAK)) {
+		finalDamage *= 0.75f;
+	}
 
 	target->TakeDamage(finalDamage);
 }
@@ -597,4 +605,39 @@ void Demo::Player::SetFootprintsEnabled(bool enabled)
 {
 	this->footprintsEnabled = enabled;
 	footprintEmitter->SetEnabled(enabled);
+}
+void Demo::Player::ApplyStatus(StatusType type, int duration, float value) {
+	for (auto& status : activeStatuses) {
+		if (status.type == type) {
+			status.duration = duration;
+			status.value = (std::max)(status.value, value);
+			return;
+		}
+	}
+	activeStatuses.push_back({ type, duration, value });
+}
+
+bool Demo::Player::HasStatus(StatusType type) const {
+	for (const auto& status : activeStatuses) {
+		if (status.type == type && status.duration > 0) return true;
+	}
+	return false;
+}
+
+void Demo::Player::TickStatuses() {
+	for (auto it = activeStatuses.begin(); it != activeStatuses.end(); ) {
+		if (it->type == StatusType::POISON && it->duration > 0) {
+			const float poisonDamage = (it->value > 0.f) ? it->value : static_cast<float>(it->duration);
+			this->TakeDamage(poisonDamage);
+		}
+
+		it->duration--;
+
+		if (it->duration <= 0) {
+			it = activeStatuses.erase(it);
+		}
+		else {
+			++it;
+		}
+	}
 }

@@ -35,6 +35,30 @@ namespace Demo {
                 enemy->SetOnRequestEnemyCard([this](std::shared_ptr<IEnemy> e) {
                     this->CreateEnemyCard(e);
                     });
+                enemy->SetOnRequestLockCard([this](int turns) {
+                    std::vector<std::shared_ptr<ICard>> visibleCards;
+
+                    for (auto& card : this->cardHand) if (!card->IsLocked()) visibleCards.push_back(card);
+                    for (auto& card : this->queuedToDraw) if (!card->IsLocked()) visibleCards.push_back(card);
+
+                    //lock hand cards
+                    if (!visibleCards.empty()) {
+                        int randIdx = RNG::Range(0, static_cast<int>(visibleCards.size() - 1));
+                        visibleCards[randIdx]->SetLocked(turns);
+                        this->pendingLockMessage = true;
+                        return;
+                    }
+
+                    // if hands card is empty, then lock card in draw pile
+                    std::vector<std::shared_ptr<ICard>> hiddenCards;
+                    for (auto& card : this->drawPile) if (!card->IsLocked()) hiddenCards.push_back(card);
+
+                    if (!hiddenCards.empty()) {
+                        int randIdx = RNG::Range(0, static_cast<int>(hiddenCards.size() - 1));
+                        hiddenCards[randIdx]->SetLocked(turns);
+                        this->pendingLockMessage = true;
+                    }
+                    });
                 this->enemies.push_back(enemy);
             }
         }

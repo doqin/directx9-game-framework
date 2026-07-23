@@ -10,6 +10,13 @@ namespace Demo
 		//...Add more if you have ideas
 	};
 
+	enum class StatusType { POISON, VULNERABLE, WEAK, STUN };
+
+	struct StatusEffect {
+		StatusType type;
+		int duration;
+		float value;
+	};
 	struct ActiveBuff
 	{
 		ItemBuffType type;

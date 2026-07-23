@@ -70,6 +70,9 @@ void Demo::IBattleScene::StartBattle()
 	std::shuffle(drawPile.begin(), drawPile.end(), gen);
 	currentTurn = 1;
 	DrawCards(5);
+	for (auto& enemy : enemies) {
+		enemy->OnTurnBegin(this->battlePlayer, this->popUpMessage, this->currentTurn);
+	}
 	if (!customBGMName.empty()) {
 		DX9GF::AudioManager::GetInstance()->PlayBGM_Fade(customBGMName, 0.3f, 1.5f);
 	}
@@ -147,6 +150,7 @@ void Demo::IBattleScene::DrawCards(size_t count)
 		}
 		auto card = drawPile.back();
 		drawPile.pop_back();
+		this->queuedToDraw.push_back(card);
 		card->SetOwner(battlePlayer.get());
 		auto draggable = dynamic_pointer_cast<IDraggable>(card);
 		if (draggable) {
@@ -158,7 +162,6 @@ void Demo::IBattleScene::DrawCards(size_t count)
 			std::make_shared<DX9GF::SetPositionCommand>(card, -static_cast<float>(screenWidth), y),
 			std::make_shared<DX9GF::CustomCommand>([this, card](std::function<void(void)> markFinished) {
 				DX9GF::AudioManager::GetInstance()->PlayRandom("card_draw", 0.3f);
-				this->queuedToDraw.push_back(card);
 				markFinished();
 			}),
 			std::make_shared<DX9GF::DelayCommand>(i * .2f),
@@ -230,6 +233,9 @@ void Demo::IBattleScene::MoveExecutedHandCardsToPlayedPile()
 void Demo::IBattleScene::MoveHandCardsToDiscardPile()
 {
 	for (size_t i = 0; i < cardHand.size(); ++i) {
+		if (cardHand[i]->IsLocked()) {
+			continue;
+		}
 		HidePileCard(cardHand[i]);
 		discardPile.push_back(cardHand[i]);
 		cardHand.erase(cardHand.begin() + i);
@@ -245,6 +251,9 @@ void Demo::IBattleScene::BeginNextTurn()
 	DrawCards(5);
 	energy = MAX_ENERGY;
 	usedEnergy = 0;
+	for (auto& enemy : enemies) {
+		enemy->OnTurnBegin(this->battlePlayer, this->popUpMessage, this->currentTurn);
+	}
 }
 
 void Demo::IBattleScene::QueueEnemyLayoutTransition(State targetState)
@@ -974,6 +983,12 @@ void Demo::IBattleScene::QueueToEnemyAttack(unsigned long long deltaTime)
 
 			this->MoveExecutedHandCardsToPlayedPile();
 			this->MoveHandCardsToDiscardPile();
+
+			for (auto& card : this->cardHand) {
+				card->TickLock();
+			}
+			this->battlePlayer->TickStatuses();
+
 			// Remove unused enemy cards or enemy cards of dead enemies
 			for (size_t i = 0; i < this->enemyCards.size(); ++i) {
 				auto& enemyCard = this->enemyCards[i];
@@ -1124,7 +1139,7 @@ bool Demo::IBattleScene::EnemyAttackUpdate(unsigned long long deltaTime)
 			if (isStunned) {
 				continue;
 			}
-			enemy->StartAttack(this->battlePlayer, &this->enemies, this->popUpMessage, game->GetGraphicsDevice(), &this->camera);
+			enemy->StartAttack(this->battlePlayer, &this->enemies, this->popUpMessage, game->GetGraphicsDevice(), &this->camera, this->currentTurn);
 		}
 		enemyAttackStartPending = false;
 	}
@@ -1408,6 +1423,11 @@ void Demo::IBattleScene::Init()
 			}
 			QueueEnemyLayoutTransition(State::PlayerAttack);
 			lastEnemyLayoutState = State::PlayerAttack;
+			//lock card message
+			if (this->pendingLockMessage) {
+				this->popUpMessage->QueueMessage(&this->commandBuffer, L"Enemy locked a card!", 2.0f);
+				this->pendingLockMessage = false;
+			}
 			//popUpMessage->QueueMessage(&commandBuffer, L"Click on the enemy sprite to create an Enemy Card and drag it to your attacking card to target it!", 2.5f);
 			markFinished();
 			}));
@@ -1763,6 +1783,29 @@ void Demo::IBattleScene::Init()
 	transformManager->RebuildHierarchy();
 	DamageTextManager::GetInstance()->Init(this->game);
 	ItemData::GetInstance()->LoadData();
+
+	for (auto& enemy : enemies) {
+		enemy->SetOnRequestLockCard([this](int turns) {
+			std::vector<std::shared_ptr<ICard>> availableCardsToLock;
+
+			for (auto& card : this->cardHand) {
+				if (!card->IsLocked()) availableCardsToLock.push_back(card);
+			}
+
+			for (auto& card : this->queuedToDraw) {
+				if (!card->IsLocked()) availableCardsToLock.push_back(card);
+			}
+
+			for (auto& card : this->drawPile) {
+				if (!card->IsLocked()) availableCardsToLock.push_back(card);
+			}
+
+			if (!availableCardsToLock.empty()) {
+				int randIndex = RNG::Range(0, static_cast<int>(availableCardsToLock.size() - 1));
+				availableCardsToLock[randIndex]->SetLocked(turns);
+			}
+			});
+	}
 	drawBuffer->PushCommand(std::make_shared<TransitionCommand>(game->GetGraphicsDevice(), &this->uiCamera, 1.f, false)); 
 }
 
@@ -1791,7 +1834,7 @@ void Demo::IBattleScene::Update(unsigned long long deltaTime)
 					if (enemy->IsDead()) {
 						continue;
 					}
-					enemy->StartAttack(this->battlePlayer, &this->enemies, this->popUpMessage, game->GetGraphicsDevice(), &this->camera);
+					enemy->StartAttack(this->battlePlayer, &this->enemies, this->popUpMessage, game->GetGraphicsDevice(), &this->camera, this->currentTurn);
 				}
 				countdownAttackingEnemies.reset();
 			}

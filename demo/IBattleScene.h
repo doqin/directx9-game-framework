@@ -124,13 +124,13 @@ namespace Demo {
 		std::shared_ptr<PopUpMessage> popUpMessage;
 		std::shared_ptr<DX9GF::StaticSprite> energyIcon;
 		std::shared_ptr<DX9GF::StaticSprite> hourglassIcon;
-		std::shared_ptr<DX9GF::NineSliceSprite> itemMenuBackground; //
+		std::shared_ptr<DX9GF::NineSliceSprite> itemMenuBackground;
 		std::shared_ptr<DX9GF::StaticSprite> attackBuffIcon;
 		std::shared_ptr<DX9GF::StaticSprite> defenseBuffIcon;
-		//
+		bool pendingLockMessage = false;
 		std::function<void()> onVictoryCallback = nullptr;
 		std::string customBGMName;
-		//
+
 		void CreateEnemyCard(std::shared_ptr<IEnemy> enemy);
 		void StartBattle();
 		void OnAllEnemiesDefeated();

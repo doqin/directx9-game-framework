@@ -74,6 +74,7 @@ namespace Demo {
 		std::vector<std::string> inventoryCards;
 		ItemInventory inventoryItems;
 		std::vector<ActiveBuff> activeBuffs;
+		std::vector<StatusEffect> activeStatuses;
 
 		//for audio
 		float stepTimer = 0.0f;
@@ -143,5 +144,8 @@ namespace Demo {
 			this->baseSurface = surface;
 			this->currentSurface = surface;
 		}
+		void ApplyStatus(StatusType type, int duration, float value = 0.0f);
+		void TickStatuses();
+		bool HasStatus(StatusType type) const;
 	};
 }

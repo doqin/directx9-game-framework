@@ -1,8 +1,31 @@
-#include "pch.h"
+﻿#include "pch.h"
 #include "IStatementCard.h"
 
 void Demo::IStatementCard::Draw(unsigned long long deltaTime) {
 	IDraggable::Draw(deltaTime);
+
+	if (this->IsLocked()) {
+		auto thisX = trigger->GetWorldX() - trigger->GetOriginX();
+		auto thisY = trigger->GetWorldY() - trigger->GetOriginY();
+
+		graphicsDevice->SetAlphaBlending(true);
+		graphicsDevice->DrawRectangle(*camera, thisX, thisY, trigger->GetWidth(), trigger->GetHeight(), D3DCOLOR_ARGB(180, 50, 50, 50), true);
+		graphicsDevice->SetAlphaBlending(false);
+
+		if (!descFont) {
+			descFont = std::make_shared<DX9GF::Font>(graphicsDevice, L"StatusPlz", 16);
+			descFontSprite = std::make_shared<DX9GF::FontSprite>(descFont.get());
+		}
+
+		descFontSprite->Begin();
+		descFontSprite->SetColor(0xFFff4444);
+		descFontSprite->SetOutline(true, 0xFF000000, 2.f);
+		descFontSprite->SetPosition(thisX + trigger->GetWidth() / 2 - 35, thisY + trigger->GetHeight() / 2 - 10);
+		descFontSprite->SetText(L"LOCKED(" + std::to_wstring(this->GetLockedTurns()) + L")");
+		descFontSprite->Draw(*camera, deltaTime);
+		descFontSprite->End();
+	}
+
 	if (trigger && trigger->IsHovering(deltaTime)) {
 		if (!descFont) {
 			descFont = std::make_shared<DX9GF::Font>(graphicsDevice, L"StatusPlz", 16);
