@@ -527,7 +527,7 @@ bool Demo::Player::TakeIndirectDamage(float damage, DamageType type) {
 
 void Demo::Player::DealDamage(IEnemy* target, float cardBaseDamage) {
 	if (!target) return;
-	float finalDamage = CalculateOutgoingDamage(cardBaseDamage); // Gọi hàm lõi
+	float finalDamage = CalculateOutgoingDamage(cardBaseDamage);
 	target->TakeDamage(finalDamage);
 }
 

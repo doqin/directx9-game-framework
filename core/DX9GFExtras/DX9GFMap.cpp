@@ -133,8 +133,11 @@ void DX9GF::Map::Draw(const Camera& camera)
 		(std::max)({ corner00Y, corner10Y, corner01Y, corner11Y })
 	};
 
+	// D3D9 offsets pixel centers from texel centers by half a pixel
+	// ("Directly Mapping Texels to Pixels"). Shift the view by -0.5 so
+	// point-sampled UVs land inside texels instead of on their boundaries.
 	D3DXMATRIX matView;
-	D3DXMatrixIdentity(&matView);
+	D3DXMatrixTranslation(&matView, -0.5f, -0.5f, 0.0f);
 	D3DXMATRIX matProj;
 	D3DXMatrixOrthoOffCenterLH(
 		&matProj,

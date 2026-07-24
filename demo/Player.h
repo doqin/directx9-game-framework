@@ -21,7 +21,6 @@ namespace Demo {
 			DownRight
 		};
 		// Constants
-        const float MAX_HEALTH = 50;
 		float VELOCITY = 85;
 		const float SPRINT_MULTIPLIER = 1.5f;
 		const float CAMERA_VELOCITY = 25;
@@ -79,7 +78,7 @@ namespace Demo {
 		std::string currentSurface = "default";
 		float surfaceTimeout = 0.0f;
 	public:
-		Player(std::weak_ptr<DX9GF::TransformManager> tm) : ICombatant(tm, MAX_HEALTH) {}
+		Player(std::weak_ptr<DX9GF::TransformManager> tm) : ICombatant(tm, 50.0) {}
 		Player(std::weak_ptr<DX9GF::TransformManager> tm,
 			float x, float y, float rot = 0, float sx = 1, float sy = 1)
 			: ICombatant(tm, 50.f, x, y, rot, sx, sy) {
