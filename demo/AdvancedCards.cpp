@@ -161,8 +161,8 @@ bool Demo::PoisonCard::Execute() {
 		if (auto enemy = targets[0].lock()) {
           if (auto e = enemy->GetValue()) {
 				const int poisonTurns = 3;
-				e->ApplyStatus(StatusType::POISON, poisonTurns);
-			}
+				e->AddModifier(ModifierType::Poison, poisonTurns, 0.f, false);
+		  }
 		}
 	}
 	isDone = true;
@@ -197,7 +197,7 @@ bool Demo::VulnerableCard::Execute() {
 	if (isDone) return true;
 	if (!targets.empty()) {
 		if (auto enemy = targets[0].lock()) {
-			if (auto e = enemy->GetValue()) e->ApplyStatus(StatusType::VULNERABLE, 1);
+			if (auto e = enemy->GetValue()) e->AddModifier(ModifierType::Vulnerable, 1, 0.f, false);
 		}
 	}
 	isDone = true;
@@ -233,7 +233,7 @@ bool Demo::WeaknessCard::Execute() {
 	if (isDone) return true;
 	for (auto& wp : targets) {
 		if (auto enemy = wp.lock()) {
-			if (auto e = enemy->GetValue()) e->ApplyStatus(StatusType::WEAK, 2);
+			if (auto e = enemy->GetValue()) e->AddModifier(ModifierType::Weak, 2, 0.f, false);
 		}
 	}
 	isDone = true;
@@ -268,7 +268,7 @@ bool Demo::StunCard::Execute() {
 	if (isDone) return true;
 	if (!targets.empty()) {
 		if (auto enemy = targets[0].lock()) {
-			if (auto e = enemy->GetValue()) e->ApplyStatus(StatusType::STUN, 1);
+			if (auto e = enemy->GetValue()) e->AddModifier(ModifierType::Stun, 1, 0.f, false);
 		}
 	}
 	isDone = true;

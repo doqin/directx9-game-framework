@@ -1,5 +1,6 @@
-#include "pch.h"
+﻿#include "pch.h"
 #include "MimicEnemy.h"
+#include "PopUpMessage.h"
 #include "resource.h"
 #include "RNG.h"
 
@@ -13,7 +14,7 @@ void Demo::MimicEnemy::Init(DX9GF::GraphicsDevice* graphicsDevice, DX9GF::Camera
 	projTexture = std::make_shared<DX9GF::Texture>(graphicsDevice);
 	projTexture->LoadTexture(L"assets/xprojectile.png");
 
-   SetGoldReward(static_cast<int>(std::round(GetMaxHealth())));
+	SetGoldReward(static_cast<int>(std::round(GetMaxHealth())));
 	InitCardSpawnTrigger(camera, 128.f, 128.f);
 }
 
@@ -32,25 +33,76 @@ int Demo::MimicEnemy::GetRandomPattern() {
 	return RNG::Range(1, 2);
 }
 
+void Demo::MimicEnemy::OnTurnBegin(std::shared_ptr<Player> player, std::shared_ptr<PopUpMessage> popUpMessage, int currentTurn) {
+	this->player = player;
+
+	int cycle = (currentTurn - 1) / 3;
+
+	if (currentCycle != cycle) {
+		currentCycle = cycle;
+
+		if (RNG::Range(0, 100) <= 40) {
+			skillTurnThisCycle = RNG::Range(1, 3);
+		}
+		else {
+			skillTurnThisCycle = -1;
+		}
+	}
+
+	int turnInCycle = (currentTurn - 1) % 3 + 1;
+
+	if (turnInCycle == skillTurnThisCycle) {
+		int skillType = RNG::Range(1, 2);
+
+		if (skillType == 1) AbilityBuffDefense();
+		else AbilityPoisonPlayer();
+
+		if (popUpMessage) {
+			popUpMessage->QueueMessage(&commandBuffer, L"Pop-ups have taken over your screen!", 1.5f);
+		}
+	}
+}
+
+void Demo::MimicEnemy::AbilityBuffDefense() {
+	commandBuffer.PushCommand(std::make_shared<DX9GF::CustomCommand>([this](std::function<void(void)> markFinished) {
+		this->AddModifier(ModifierType::BuffDefense, 2, 15.0f, true);
+		markFinished();
+		}));
+	commandBuffer.PushCommand(std::make_shared<DX9GF::DelayCommand>(0.5f));
+}
+
+void Demo::MimicEnemy::AbilityPoisonPlayer() {
+	commandBuffer.PushCommand(std::make_shared<DX9GF::CustomCommand>([this](std::function<void(void)> markFinished) {
+		if (auto lock = this->player.lock()) {
+			lock->AddModifier(ModifierType::Poison, 2, 2.0f, false);
+		}
+		markFinished();
+		}));
+	commandBuffer.PushCommand(std::make_shared<DX9GF::DelayCommand>(0.5f));
+}
+
 void Demo::MimicEnemy::StartAttack(std::shared_ptr<Player> player, std::vector<std::shared_ptr<IEnemy>>* enemies, std::shared_ptr<PopUpMessage> popUpMessage, DX9GF::GraphicsDevice* graphicsDevice, DX9GF::Camera* camera, int currentTurn) {
 	this->player = player;
-	float projDamage = GetOutgoingDamage(4.f);
+
+	float baseDamage = 4.f;
 
 	int patternId = GetSmartRandomPattern(1, 2);
-	//PatternJunkVomit(projDamage, enemies);
-	if (patternId == 1) PatternCoinCyclone(projDamage, enemies);
-	else PatternJunkVomit(projDamage, enemies);
+	if (patternId == 1) PatternCoinCyclone(baseDamage, enemies);
+	else PatternJunkVomit(baseDamage, enemies);
 
 	commandBuffer.PushCommand(std::make_shared<DX9GF::DelayCommand>(4.f));
 }
 
-void Demo::MimicEnemy::PatternCoinCyclone(float projDamage, std::vector<std::shared_ptr<IEnemy>>* enemies) {
+void Demo::MimicEnemy::PatternCoinCyclone(float baseDamage, std::vector<std::shared_ptr<IEnemy>>* enemies) {
 	bool isAlone = enemies->size() == 1;
 	const int ATTACK_COUNT = isAlone ? 10 : 5;
-	const int RADICAL_SPEED = isAlone ? 100.f : 150.f;
-	const int ANGULAR_SPEED = isAlone ? 1.2f : 0.6f;
-	auto attack = std::make_shared<DX9GF::CustomCommand>([this, projDamage, RADICAL_SPEED, ANGULAR_SPEED](std::function<void(void)> markFinished) {
+	const float RADICAL_SPEED = isAlone ? 100.f : 150.f;
+	const float ANGULAR_SPEED = isAlone ? 1.2f : 0.6f;
+
+	auto attack = std::make_shared<DX9GF::CustomCommand>([this, baseDamage, RADICAL_SPEED, ANGULAR_SPEED](std::function<void(void)> markFinished) {
 		if (auto lock = this->player.lock()) {
+			float finalDamage = this->CalculateOutgoingDamage(baseDamage);
+
 			for (int i = 0; i < 12; i++) {
 				float angle = i * (3.14159f * 2.f / 12.f);
 				projectiles.Spawn(
@@ -59,27 +111,31 @@ void Demo::MimicEnemy::PatternCoinCyclone(float projDamage, std::vector<std::sha
 					.SetSpiralParams(angle, RADICAL_SPEED, ANGULAR_SPEED)
 					.SetDelay(i * 0.05f)
 					.SetDecayTime(6.f)
-					.SetDamage(projDamage)
+					.SetDamage(finalDamage) 
 				);
 			}
 		}
 		markFinished();
-	});
+		});
+
 	for (int i = 0; i < ATTACK_COUNT; i++) {
 		commandBuffer.PushCommand(std::make_shared<DX9GF::CustomCommand>(*attack));
 		commandBuffer.PushCommand(std::make_shared<DX9GF::DelayCommand>(1.f));
 	}
 }
 
-void Demo::MimicEnemy::PatternJunkVomit(float projDamage, std::vector<std::shared_ptr<IEnemy>>* enemies) {
+void Demo::MimicEnemy::PatternJunkVomit(float baseDamage, std::vector<std::shared_ptr<IEnemy>>* enemies) {
 	bool isAlone = enemies->size() == 1;
 	const int JUNK_COUNT = isAlone ? 100 : 50;
 	const float ATTACK_DELAY = isAlone ? 0.05f : 0.1f;
 
 	for (int i = 0; i < JUNK_COUNT; i++) {
 		float randY = RNG::Range(-196.f, 196.f);
-		commandBuffer.PushCommand(std::make_shared<DX9GF::CustomCommand>([this, projDamage, randY](std::function<void(void)> markFinished) {
+
+		commandBuffer.PushCommand(std::make_shared<DX9GF::CustomCommand>([this, baseDamage, randY](std::function<void(void)> markFinished) {
 			if (auto lock = this->player.lock()) {
+				float finalDamage = this->CalculateOutgoingDamage(baseDamage);
+
 				auto [px, py] = lock->GetWorldPosition();
 				projectiles.Spawn(
 					lock,
@@ -91,7 +147,7 @@ void Demo::MimicEnemy::PatternJunkVomit(float projDamage, std::vector<std::share
 
 					.SetDelay(0.f)
 					.SetDecayTime(6.f)
-					.SetDamage(projDamage)
+					.SetDamage(finalDamage)
 				);
 			}
 			markFinished();

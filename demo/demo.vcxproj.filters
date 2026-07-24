@@ -76,6 +76,8 @@
     <ClCompile Include="TextIconButton.cpp" />
     <ClCompile Include="QuestManager.cpp" />
     <ClCompile Include="EnemyFactory.cpp" />
+    <ClCompile Include="KernelEnemy.cpp" />
+    <ClCompile Include="ICombatant.cpp" />
   </ItemGroup>
   <ItemGroup>
     <ClInclude Include="AdvancedCards.h" />
@@ -156,6 +158,8 @@
     <ClInclude Include="EncounterGenerator.h" />
     <ClInclude Include="RNG.h" />
     <ClInclude Include="QuestManager.h" />
+    <ClInclude Include="KernelEnemy.h" />
+    <ClInclude Include="ICombatant.h" />
   </ItemGroup>
   <ItemGroup>
     <ResourceCompile Include="demo.rc" />

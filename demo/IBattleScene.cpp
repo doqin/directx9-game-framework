@@ -245,13 +245,15 @@ void Demo::IBattleScene::MoveHandCardsToDiscardPile()
 
 void Demo::IBattleScene::BeginNextTurn()
 {
-	battlePlayer->UpdateBuffs();
 	++currentTurn;
 	MovePlayedPileToDiscardPileIfNeeded();
 	DrawCards(5);
 	energy = MAX_ENERGY;
 	usedEnergy = 0;
+
+	battlePlayer->TickDurations(TickPhase::EndOfRound);
 	for (auto& enemy : enemies) {
+		enemy->TickDurations(TickPhase::EndOfRound);
 		enemy->OnTurnBegin(this->battlePlayer, this->popUpMessage, this->currentTurn);
 	}
 }
@@ -261,9 +263,6 @@ void Demo::IBattleScene::QueueEnemyLayoutTransition(State targetState)
 	if (enemies.empty()) {
 		return;
 	}
-	//if (targetState == lastEnemyLayoutState) {
-	//	return;
-	//}
 
 	const auto app = DX9GF::Application::GetInstance();
 	const float centerLineY = -120.f;
@@ -361,16 +360,6 @@ void Demo::IBattleScene::RefreshItemMenu()
 		}
 	}
 
-	//test items list ui pages
-	//for (int i = 0; i < inventory.size(); i++) {
-	//	if (inventory[i].quantity > 0 && Demo::ItemData::GetInstance()->GetItemBlueprint(inventory[i].itemID)) {
-	//		for (int q = 0; q < inventory[i].quantity; ++q) {
-	//			validIndices.push_back(i);
-	//		}
-	//	}
-	//}
-
-
 	float targetWidth = itemMenuBackground->GetTargetWidth();
 	float targetHeight = itemMenuBackground->GetTargetHeight();
 
@@ -416,12 +405,12 @@ void Demo::IBattleScene::RefreshItemMenu()
 		btn->SetOnReleaseLeft([this, slot, blueprint](DX9GF::ITrigger* thisObj) {
 			commandBuffer.PushCommand(std::make_shared<DX9GF::CustomCommand>([this, slot, blueprint](std::function<void(void)> markFinished) {
 				if (player->GetInventoryItems().ConsumeItem(slot.itemID)) {
-					for (auto& buff : blueprint->GetBuffs()) {
-						if (buff.type == Demo::ItemBuffType::HealHP) {
-							battlePlayer->Heal(buff.value);
+					for (auto& mod : blueprint->GetModifiers()) {
+						if (mod.type == Demo::ModifierType::HealHP) {
+							battlePlayer->Heal(mod.value);
 						}
 						else {
-							battlePlayer->AddActiveBuff(buff);
+							battlePlayer->AddModifier(mod.type, mod.duration, mod.value, mod.isBuff);
 						}
 					}
 					std::wstring msg = L"Used " + blueprint->GetName() + L"!";
@@ -499,7 +488,6 @@ void Demo::IBattleScene::PlayerAttackUpdate(unsigned long long deltaTime)
 		// When finished executing attack
 		if (isExecutingAttacks) {
 			isExecutingAttacks = false;
-
 			return QueueToEnemyAttack(deltaTime);
 		}
 		if (!isTransitioning) {
@@ -624,6 +612,10 @@ std::vector<Demo::KeyboardNavigator::Candidate> Demo::IBattleScene::CollectKeybo
 		// Hand cards, plus orphaned cards floating in space (e.g. a card whose drop onto the
 		// block was rejected for lack of energy) - block-parented cards are handled below.
 		for (auto& card : cardHand) {
+			if (card->IsLocked()) {
+				continue;
+			}
+
 			auto statementCard = std::dynamic_pointer_cast<IStatementCard>(card);
 			if (!statementCard) {
 				continue;
@@ -650,9 +642,11 @@ std::vector<Demo::KeyboardNavigator::Candidate> Demo::IBattleScene::CollectKeybo
 		// StatementCards already queued in the block can also be targeted, to reorder them.
 		for (auto& weakChild : mainBlockCard->GetChildren()) {
 			auto placedStatementCard = std::dynamic_pointer_cast<IStatementCard>(weakChild.lock());
-			if (!placedStatementCard) {
+
+			if (!placedStatementCard || placedStatementCard->IsLocked()) {
 				continue;
 			}
+
 			candidates.push_back({
 				placedStatementCard,
 				placedStatementCard->GetWorldX(),
@@ -972,7 +966,17 @@ void Demo::IBattleScene::QueueToEnemyAttack(unsigned long long deltaTime)
 	// Use shared_ptr to share state between multiple commands in the MultiCommand
 	auto attackingEnemies = std::make_shared<std::vector<std::shared_ptr<IEnemy>>>();
 	std::vector<std::shared_ptr<DX9GF::ICommand>> commands = {
-		std::make_shared<DX9GF::DelayCommand>(0.5f),
+
+		//trigger effects: poison
+		std::make_shared<DX9GF::CustomCommand>([this](std::function<void(void)> markFinished) {
+			for (auto& enemy : this->enemies) {
+				enemy->TriggerEffects(TickPhase::EndOfTurn);
+			}
+			markFinished();
+		}),
+
+		std::make_shared<DX9GF::DelayCommand>(0.6f),
+
 		std::make_shared<DX9GF::CustomCommand>([this, deltaTime, attackingEnemies](std::function<void(void)> markFinished) {
 			// Wait for dead enemies to finish animations before collecting them
 			for (auto& enemy : this->enemies) {
@@ -987,7 +991,6 @@ void Demo::IBattleScene::QueueToEnemyAttack(unsigned long long deltaTime)
 			for (auto& card : this->cardHand) {
 				card->TickLock();
 			}
-			this->battlePlayer->TickStatuses();
 
 			// Remove unused enemy cards or enemy cards of dead enemies
 			for (size_t i = 0; i < this->enemyCards.size(); ++i) {
@@ -1001,8 +1004,8 @@ void Demo::IBattleScene::QueueToEnemyAttack(unsigned long long deltaTime)
 				}
 			}
 			for (auto enemy : this->enemies) {
-				bool isStunned = enemy->HasStatus(StatusType::STUN);
-				enemy->TickStatuses();
+				bool isStunned = enemy->HasModifier(ModifierType::Stun);
+
 				if (enemy->IsDead()) {
 					continue;
 				}
@@ -1043,28 +1046,47 @@ void Demo::IBattleScene::QueueToEnemyAttack(unsigned long long deltaTime)
 			}
 
 			if (attackingEnemies->empty()) {
-				this->BeginNextTurn();
-				this->state = State::PlayerStandBy;
-				this->QueueEnemyLayoutTransition(State::PlayerStandBy);
-				this->lastEnemyLayoutState = State::PlayerStandBy;
-				this->enemyLayoutInitialized = true;
-				this->isTransitioning = false;
-				markFinished();
-				return;
-			}
 
-			this->state = State::EnemyAttack;
-			this->QueueEnemyLayoutTransition(State::EnemyAttack);
-			for (auto& enemy : this->enemies) {
-				enemy->SetState(true);
-			}
+				//even if the enemy is stunned, poison effect on player still hits
+				this->battlePlayer->TriggerEffects(TickPhase::EndOfTurn);
 
-			this->battlePlayer->SetLocalPosition(0, 0);
-			this->StartAttackCountdown(attackingEnemies);
+				std::vector<std::shared_ptr<DX9GF::ICommand>> commands = {
+					std::make_shared<DX9GF::DelayCommand>(0.8f),
+					std::make_shared<DX9GF::CustomCommand>([this](std::function<void(void)> markFinished2) {
+						if (this->battlePlayer->IsDead()) {
+							this->isDefeatSequence = true;
+							this->defeatElapsedMs = 0.f;
+							this->defeatFadeAlpha = 0.f;
+							this->popUpMessage->QueueMessage(&this->commandBuffer, L"You were defeated", 1.5f);
+						}
+ else {
+  this->BeginNextTurn();
+  this->state = State::PlayerStandBy;
+  this->QueueEnemyLayoutTransition(State::PlayerStandBy);
+  this->lastEnemyLayoutState = State::PlayerStandBy;
+  this->enemyLayoutInitialized = true;
+}
+this->isTransitioning = false;
+markFinished2();
+})
+};
+this->commandBuffer.PushCommand(std::make_shared<DX9GF::MultiCommand>(std::move(commands)));
+markFinished();
+return;
+}
 
-			this->isTransitioning = false;
-			markFinished();
-			})
+this->state = State::EnemyAttack;
+this->QueueEnemyLayoutTransition(State::EnemyAttack);
+for (auto& enemy : this->enemies) {
+	enemy->SetState(true);
+}
+
+this->battlePlayer->SetLocalPosition(0, 0);
+this->StartAttackCountdown(attackingEnemies);
+
+this->isTransitioning = false;
+markFinished();
+})
 	};
 	commandBuffer.PushCommand(std::make_shared<DX9GF::MultiCommand>(std::move(commands)));
 	return;
@@ -1113,8 +1135,8 @@ bool Demo::IBattleScene::EnemyAttackUpdate(unsigned long long deltaTime)
 		}
 		return false;
 	}
-	if (!isAttackCountdownActive) {       
-		battlePlayer->Update(deltaTime); 
+	if (!isAttackCountdownActive) {
+		battlePlayer->Update(deltaTime);
 	}
 	if (battlePlayer->IsDead()) {
 		isDefeatSequence = true;
@@ -1131,8 +1153,8 @@ bool Demo::IBattleScene::EnemyAttackUpdate(unsigned long long deltaTime)
 			enemy->SetState(true);
 		}
 		for (auto& enemy : enemies) {
-			bool isStunned = enemy->HasStatus(StatusType::STUN);
-			enemy->TickStatuses();
+			bool isStunned = enemy->HasModifier(ModifierType::Stun);
+
 			if (enemy->IsDead()) {
 				continue;
 			}
@@ -1151,18 +1173,33 @@ bool Demo::IBattleScene::EnemyAttackUpdate(unsigned long long deltaTime)
 	if (isAttackCountdownActive) {
 		isDoneAttacking = false;
 	}
-	if (isDoneAttacking) {
+	if (isDoneAttacking && !isTransitioning) {
 		CollectDeadEnemies();
 		if (enemies.empty()) {
 			OnAllEnemiesDefeated();
 			return false;
 		}
-		BeginNextTurn();
-		state = State::PlayerStandBy;
-		QueueEnemyLayoutTransition(State::PlayerStandBy);
-		lastEnemyLayoutState = State::PlayerStandBy;
-		enemyLayoutInitialized = true;
-		PlayerStandByUpdate(deltaTime);
+
+		isTransitioning = true;
+
+		// poison hits at the end of enemy's turn
+		battlePlayer->TriggerEffects(TickPhase::EndOfTurn);
+
+		std::vector<std::shared_ptr<DX9GF::ICommand>> commands = {
+			std::make_shared<DX9GF::DelayCommand>(0.8f),
+			std::make_shared<DX9GF::CustomCommand>([this](std::function<void(void)> markFinished) {
+				if (!battlePlayer->IsDead()) {
+					BeginNextTurn();
+					state = State::PlayerStandBy;
+					QueueEnemyLayoutTransition(State::PlayerStandBy);
+					lastEnemyLayoutState = State::PlayerStandBy;
+					enemyLayoutInitialized = true;
+				}
+				isTransitioning = false;
+				markFinished();
+			})
+		};
+		commandBuffer.PushCommand(std::make_shared<DX9GF::MultiCommand>(std::move(commands)));
 	}
 	return false;
 }
@@ -1242,15 +1279,6 @@ void Demo::IBattleScene::PlayerOpenItemsDraw(unsigned long long deltaTime)
 		}
 	}
 
-	//test items list ui pages
-	//for (int i = 0; i < inventory.size(); i++) {
-	//	if (inventory[i].quantity > 0 && Demo::ItemData::GetInstance()->GetItemBlueprint(inventory[i].itemID)) {
-	//		for (int q = 0; q < inventory[i].quantity; ++q) {
-	//			validIndices.push_back(i);
-	//		}
-	//	}
-	//}
-
 	float targetWidth = itemMenuBackground->GetTargetWidth();
 	float targetHeight = itemMenuBackground->GetTargetHeight();
 
@@ -1261,7 +1289,7 @@ void Demo::IBattleScene::PlayerOpenItemsDraw(unsigned long long deltaTime)
 
 	int itemsPerPage = columns * rows;
 	int startIndex = currentItemPage * itemsPerPage;
-	int endIndex = std::min(static_cast<int>(validIndices.size()), startIndex + itemsPerPage);
+	int endIndex = (std::min)(static_cast<int>(validIndices.size()), startIndex + itemsPerPage);
 
 	int displayIndex = 0;
 	for (int i = startIndex; i < endIndex; i++) {
@@ -1285,6 +1313,18 @@ void Demo::IBattleScene::PlayerOpenItemsDraw(unsigned long long deltaTime)
 		auto slot = inventory[originalIndex];
 		auto btn = buffItems[displayIndex];
 
+		fontSprite->SetColor(0xFFFFFFFF);
+		fontSprite->SetOutline(true, 0xFF000000, 3.f);
+
+		fontSprite->SetText(L"x" + std::to_wstring(slot.quantity));
+
+		float textW = fontSprite->GetWidth();
+		float textX = btn->GetWorldX() + (ITEM_W / 2.0f) - (textW / 2.0f);
+		float textY = btn->GetWorldY() + ITEM_H + 5.0f;
+
+		fontSprite->SetPosition(textX, textY);
+		fontSprite->Draw(this->uiCamera, deltaTime);
+
 		if (btn->GetTrigger()->IsHovering(deltaTime)) {
 			auto blueprint = Demo::ItemData::GetInstance()->GetItemBlueprint(slot.itemID);
 			if (blueprint) {
@@ -1295,6 +1335,8 @@ void Demo::IBattleScene::PlayerOpenItemsDraw(unsigned long long deltaTime)
 	}
 
 	if (maxItemPage > 0) {
+		fontSprite->SetColor(0xFFFFFFFF);
+		fontSprite->SetOutline(true, 0xFF000000, 3.f);
 		std::wstring pageText = L"Page " + std::to_wstring(currentItemPage + 1) + L"/" + std::to_wstring(maxItemPage + 1);
 		fontSprite->SetPosition(-35.0f, targetHeight / 2.0f - PADDING_Y - 9.0f);
 		fontSprite->SetText(std::move(pageText));
@@ -1305,13 +1347,15 @@ void Demo::IBattleScene::PlayerOpenItemsDraw(unsigned long long deltaTime)
 		float descX = -targetWidth / 2.0f + PADDING_X;
 		float descY = -targetHeight / 2.0f + 15.0f;
 
+		fontSprite->SetColor(0xFFFFFFFF);
+		fontSprite->SetOutline(true, 0xFF000000, 3.f);
 		fontSprite->SetPosition(descX, descY);
 		fontSprite->SetText(std::move(hoverDescription));
 		fontSprite->Draw(this->uiCamera, deltaTime);
 	}
 
 	fontSprite->End();
-	fontSprite->SetOutline(true);
+	fontSprite->SetOutline(false);
 }
 
 void Demo::IBattleScene::EnemyAttackDraw(unsigned long long deltaTime)
@@ -1342,45 +1386,75 @@ void Demo::IBattleScene::DrawHealthAndDefenseBar(const float y, DX9GF::GraphicsD
 	gd->DrawRectangle(this->uiCamera, x, y, w_, 10, 0xFF9cdb43, true);
 	gd->DrawRectangle(this->uiCamera, x, y, w, 20, 0xFF000000, false);
 
-	auto buffs = battlePlayer->GetActiveBuffs();
-	auto buffY = y - 48.f;
-	for (auto buff : buffs) {
-		int value = buff.value;
-		auto turnsLeft = buff.turnsLeft;
-		if (buff.type == ItemBuffType::BuffDamage || buff.type == ItemBuffType::BuffDefense) {
-			if (buff.type == ItemBuffType::BuffDamage) fontSprite->SetColor(0xFFfa6a0a);
-			else fontSprite->SetColor(0xFF588dbe);
+	auto modifiers = battlePlayer->GetModifiers();
+	auto modY = y - 48.f;
 
-			fontSprite->SetOutline(true, 0xFF000000, 3.f);
-			fontSprite->SetPosition(x, buffY);
-			fontSprite->SetText(std::to_wstring(value));
-			fontSprite->Begin();
-			fontSprite->Draw(this->uiCamera, 0);
-			fontSprite->End();
+	for (const auto& mod : modifiers) {
+		if (mod.duration <= 0) continue;
 
-			auto textWidth = fontSprite->GetWidth();
-			if (buff.type == ItemBuffType::BuffDamage) {
-				attackBuffIcon->SetPosition(x + textWidth, buffY - 8.f);
-				attackBuffIcon->SetScale(2.f, 2.f);
-				attackBuffIcon->Begin();
-				attackBuffIcon->Draw(this->uiCamera, 0);
-				attackBuffIcon->End();
-			}
-			else {
-				defenseBuffIcon->SetPosition(x + textWidth, buffY - 8.f);
-				defenseBuffIcon->SetScale(2.f, 2.f);
-				defenseBuffIcon->Begin();
-				defenseBuffIcon->Draw(this->uiCamera, 0);
-				defenseBuffIcon->End();
-			}
-			fontSprite->SetColor(0xFFFFFFFF);
-			fontSprite->SetPosition(x + textWidth + 32.f, buffY);
-			fontSprite->SetText(std::to_wstring(turnsLeft) + L" turns");
-			fontSprite->Begin();
-			fontSprite->Draw(this->uiCamera, 0);
-			fontSprite->End();
-			buffY -= 32.f;
+		std::wstring modName = L"";
+		D3DCOLOR modColor = 0xFFFFFFFF;
+		bool showIcon = false;
+
+		if (mod.type == ModifierType::BuffDamage) {
+			modName = std::to_wstring(static_cast<int>(mod.value));
+			modColor = 0xFFfa6a0a;
+			showIcon = true;
 		}
+		else if (mod.type == ModifierType::BuffDefense) {
+			modName = std::to_wstring(static_cast<int>(mod.value));
+			modColor = 0xFF588dbe;
+			showIcon = true;
+		}
+		else if (mod.type == ModifierType::Poison) {
+			modName = L"Poison";
+			modColor = 0xFFba4aed;
+		}
+		else if (mod.type == ModifierType::Vulnerable) {
+			modName = L"Vuln";
+			modColor = 0xFFff4444;
+		}
+		else if (mod.type == ModifierType::Weak) {
+			modName = L"Weak";
+			modColor = 0xFFa0a0a0;
+		}
+		else if (mod.type == ModifierType::Stun) {
+			modName = L"Stun";
+			modColor = 0xFFfffc40;
+		}
+		else {
+			continue;
+		}
+
+		fontSprite->SetColor(modColor);
+		fontSprite->SetOutline(true, 0xFF000000, 3.f);
+		fontSprite->SetPosition(x, modY);
+		fontSprite->SetText(std::move(modName));
+
+		fontSprite->Begin();
+		fontSprite->Draw(this->uiCamera, 0);
+		fontSprite->End();
+
+		auto textWidth = fontSprite->GetWidth();
+
+		if (showIcon) {
+			auto iconToDraw = (mod.type == ModifierType::BuffDamage) ? attackBuffIcon : defenseBuffIcon;
+			iconToDraw->SetPosition(x + textWidth, modY - 8.f);
+			iconToDraw->SetScale(2.f, 2.f);
+			iconToDraw->Begin();
+			iconToDraw->Draw(this->uiCamera, 0);
+			iconToDraw->End();
+			textWidth += 32.f;
+		}
+
+		fontSprite->SetColor(0xFFFFFFFF);
+		fontSprite->SetPosition(x + textWidth + 8.f, modY);
+		fontSprite->SetText(std::to_wstring(mod.duration) + L" turns");
+		fontSprite->Begin();
+		fontSprite->Draw(this->uiCamera, 0);
+		fontSprite->End();
+
+		modY -= 32.f;
 	}
 }
 
@@ -1626,7 +1700,6 @@ void Demo::IBattleScene::Init()
 		});
 	executeButton->SetSpriteScale(2.f, 2.f);
 
-	//temporary copy backbutton texture
 	closeItemMenuButton = std::make_shared<IconButton>(transformManager, 0, 0, buttonWidth, buttonHeight, uiSheetTex);
 	closeItemMenuButton->SetOnReleaseLeft([&](DX9GF::ITrigger* thisObj) {
 		commandBuffer.PushCommand(std::make_shared<DX9GF::CustomCommand>([&](std::function<void(void)> markFinished) {
@@ -1806,7 +1879,7 @@ void Demo::IBattleScene::Init()
 			}
 			});
 	}
-	drawBuffer->PushCommand(std::make_shared<TransitionCommand>(game->GetGraphicsDevice(), &this->uiCamera, 1.f, false)); 
+	drawBuffer->PushCommand(std::make_shared<TransitionCommand>(game->GetGraphicsDevice(), &this->uiCamera, 1.f, false));
 }
 
 void Demo::IBattleScene::Update(unsigned long long deltaTime)

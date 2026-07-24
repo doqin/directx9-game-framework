@@ -2,6 +2,7 @@
 #include "CupidEnemy.h"
 #include "resource.h"
 #include "RNG.h"
+#include "PopUpMessage.h"
 const float PI = 3.14159265359f;
 
 void Demo::CupidEnemy::Init(DX9GF::GraphicsDevice* graphicsDevice, DX9GF::Camera* camera)
@@ -39,24 +40,67 @@ int Demo::CupidEnemy::GetRandomPattern()
 	return RNG::Range(1, 3);
 }
 
+void Demo::CupidEnemy::OnTurnBegin(std::shared_ptr<Player> player, std::shared_ptr<PopUpMessage> popUpMessage, int currentTurn) {
+	this->player = player;
+
+	int cycle = (currentTurn - 1) / 4;
+
+	if (currentCycle != cycle) {
+		currentCycle = cycle;
+		if (RNG::Range(1, 100) <= 40) {
+			skillTurnThisCycle = RNG::Range(1, 4); 
+		}
+		else {
+			skillTurnThisCycle = -1;
+		}
+	}
+
+	int turnInCycle = (currentTurn - 1) % 4 + 1;
+
+	if (turnInCycle == skillTurnThisCycle) {
+		int skillType = RNG::Range(1,2);
+
+		if (skillType == 1) AbilityHealSelf();
+		else AbilityVulnerablePlayer();
+
+		if (popUpMessage) {
+			popUpMessage->QueueMessage(&commandBuffer, L"Pacman is hungry for data!", 1.5f);
+		}
+	}
+}
+
+void Demo::CupidEnemy::AbilityHealSelf() {
+	commandBuffer.PushCommand(std::make_shared<DX9GF::CustomCommand>([this](std::function<void(void)> markFinished) {
+		this->Heal(15.f);
+		markFinished();
+		}));
+	commandBuffer.PushCommand(std::make_shared<DX9GF::DelayCommand>(0.5f));
+}
+
+void Demo::CupidEnemy::AbilityVulnerablePlayer() {
+	commandBuffer.PushCommand(std::make_shared<DX9GF::CustomCommand>([this](std::function<void(void)> markFinished) {
+		if (auto lock = this->player.lock()) {
+			lock->AddModifier(ModifierType::Vulnerable, 2, 0.f, false);
+		}
+		markFinished();
+		}));
+	commandBuffer.PushCommand(std::make_shared<DX9GF::DelayCommand>(0.5f));
+}
+
 void Demo::CupidEnemy::StartAttack(std::shared_ptr<Player> player, std::vector<std::shared_ptr<IEnemy>>* enemies, std::shared_ptr<PopUpMessage> popUpMessage, DX9GF::GraphicsDevice* graphicsDevice, DX9GF::Camera* camera, int currentTurn)
 {
 	(void)enemies;
-	(void)popUpMessage;
 	(void)graphicsDevice;
 	(void)camera;
 	this->player = player;
+	//remember to calc the finaldmg
 	float baseDamage = 4.f;
-	float projDamage = GetOutgoingDamage(baseDamage);
+	float finalDamage = CalculateOutgoingDamage(baseDamage);
 
 	int patternId = GetSmartRandomPattern(1, 3);
-
-	//PatternHeartWave(projDamage);
-	if (patternId == 1) PatternHeartWave(projDamage);
-	else if (patternId == 2) PatternHomingArrow(projDamage);
-	else PatternHeartNova(projDamage);
-
-	//commandBuffer.PushCommand(std::make_shared<DX9GF::DelayCommand>(4.f));
+	if (patternId == 1) PatternHeartWave(finalDamage);
+	else if (patternId == 2) PatternHomingArrow(finalDamage);
+	else PatternHeartNova(finalDamage);
 }
 
 void Demo::CupidEnemy::PatternHeartWave(float projDamage)
@@ -93,11 +137,11 @@ void Demo::CupidEnemy::PatternHeartWave(float projDamage)
 				projectiles.Spawn(
 					lock,
 					ProjectileDesc(heartTexture.get(), 8, 8, 16, 16, START_X, START_Y)
-						.SetTrajectory(dir)
-						.SetDelay(0.f)
-						.SetDecayTime(DECAY_TIME)
-						.SetVelocity(BULLET_SPEED)
-						.SetDamage(projDamage)
+					.SetTrajectory(dir)
+					.SetDelay(0.f)
+					.SetDecayTime(DECAY_TIME)
+					.SetVelocity(BULLET_SPEED)
+					.SetDamage(projDamage)
 				);
 			}
 			markFinished();
@@ -113,7 +157,7 @@ void Demo::CupidEnemy::PatternHomingArrow(float projDamage)
 	const float BULLET_SPEED = 180.f;	// should set this slightly higher than player's speed
 	const float TURN_SPEED = 3.f;		// sharpness of turn
 	const float OFFSET_RANGE = 250.f;
-	const float DROP_HEIGHT = 350.f; 
+	const float DROP_HEIGHT = 350.f;
 
 	for (int i = 0; i < ARROW_COUNT; i++) {
 		float offsetX = RNG::Range(-OFFSET_RANGE, OFFSET_RANGE);
@@ -124,9 +168,9 @@ void Demo::CupidEnemy::PatternHomingArrow(float projDamage)
 				float finalX = playerX + offsetX;
 				float finalY = playerY - DROP_HEIGHT;
 
-			projectiles.Spawn(
-				lock,
-				ProjectileDesc(arrowTexture.get(), 8, 8, 16, 16, finalX, finalY)
+				projectiles.Spawn(
+					lock,
+					ProjectileDesc(arrowTexture.get(), 8, 8, 16, 16, finalX, finalY)
 					.SetTrajectory(D3DXVECTOR2(0, 1))
 					.SetHoming(TURN_SPEED)
 					.SetDelay(0.f)
@@ -146,9 +190,9 @@ void Demo::CupidEnemy::PatternHeartNova(float projDamage)
 	const int WAVE_COUNT = 10;
 	const int BURST_COUNT = 5;
 	const int BULLET_PER_ARC = 8;
-	const float BURST_DELAY = 0.05f; 
+	const float BURST_DELAY = 0.05f;
 	const float BULLET_SPEED = 200.f;
-	const float SPAWN_OFFSET_Y = -200.f; 
+	const float SPAWN_OFFSET_Y = -200.f;
 	const float DECAY_TIME = 2.f;
 
 	for (int wave = 0; wave < WAVE_COUNT; wave++) {

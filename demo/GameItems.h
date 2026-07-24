@@ -2,27 +2,24 @@
 #include "DX9GF.h"
 namespace Demo
 {
-	enum class ItemBuffType
-	{
+
+	enum class ModifierType {
 		HealHP,
 		BuffDamage,
-		BuffDefense
+		BuffDefense,
+		Poison,
+		Vulnerable,
+		Weak,
+		Stun
 		//...Add more if you have ideas
 	};
 
-	enum class StatusType { POISON, VULNERABLE, WEAK, STUN };
-
-	struct StatusEffect {
-		StatusType type;
+	struct CombatModifier {
+		ModifierType type;
 		int duration;
 		float value;
-	};
-	struct ActiveBuff
-	{
-		ItemBuffType type;
-		float value;
-		int turnsLeft;
-		bool isNewlyAdded = true; //got trouble with turns, use item cost 1 turn so I use this flag to prevent "Turn Eater"
+		bool isBuff;
+		bool isNewlyAdded = true;  //got trouble with turns, use item cost 1 turn so I use this flag to prevent "Turn Eater"
 	};
 
 	class ConsumableItem
@@ -31,17 +28,17 @@ namespace Demo
 		int id;
 		std::wstring name;
 		std::wstring description;
-		std::vector<ActiveBuff> buffs;
+		std::vector<CombatModifier> modifiers; 
 		RECT itemRect;
 	public:
-		ConsumableItem(int _id = -1, std::wstring _name = L"NULL", std::wstring _desc = L"", std::vector<ActiveBuff> _buffs = {}, RECT _itemRect = RECT{ 0,0,0,0 })
-			: id(_id), name(_name), description(_desc), buffs(_buffs), itemRect(_itemRect) {
+		ConsumableItem(int _id = -1, std::wstring _name = L"NULL", std::wstring _desc = L"", std::vector<CombatModifier> _modifiers = {}, RECT _itemRect = RECT{ 0,0,0,0 })
+			: id(_id), name(_name), description(_desc), modifiers(_modifiers), itemRect(_itemRect) {
 		}
 
 		int GetID() const { return id; }
 		const std::wstring& GetName() const { return name; }
 		const std::wstring& GetDescription() const { return description; }
-		const std::vector<ActiveBuff>& GetBuffs() const { return buffs; }
+		const std::vector<CombatModifier>& GetModifiers() const { return modifiers; }
 		RECT GetItemRect() const { return itemRect; }
 	};
 

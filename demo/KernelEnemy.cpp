@@ -1,5 +1,6 @@
 ﻿#include "pch.h"
 #include "KernelEnemy.h"
+#include "PopUpMessage.h"
 #include "resource.h"
 #include "RNG.h"
 
@@ -115,22 +116,65 @@ namespace Demo {
 		IEnemy::Draw(graphicsDevice, camera, deltaTime);
 	}
 
+	void KernelEnemy::OnTurnBegin(std::shared_ptr<Player> player, std::shared_ptr<PopUpMessage> popUpMessage, int currentTurn) {
+		this->player = player;
+
+		int cycle = (currentTurn - 1) / 4;
+
+		if (currentCycle != cycle) {
+			currentCycle = cycle;
+
+			if (RNG::Range(0, 100) <= 35) {
+				skillTurnThisCycle = RNG::Range(1, 4);
+			}
+			else {
+				skillTurnThisCycle = -1;
+			}
+		}
+
+		int turnInCycle = (currentTurn - 1) % 4 + 1;
+
+		if (turnInCycle == skillTurnThisCycle) {
+			int skillType = RNG::Range(1, 2);
+
+			if (skillType == 1) AbilityHealSelf();
+			else AbilityBuffDamage();
+
+			if (popUpMessage) {
+				popUpMessage->QueueMessage(&commandBuffer, L"Kernel runs a process!", 1.5f);
+			}
+		}
+	}
+
+	void KernelEnemy::AbilityHealSelf() {
+		commandBuffer.PushCommand(std::make_shared<DX9GF::CustomCommand>([this](std::function<void(void)> markFinished) {
+			this->Heal(20.f);
+			markFinished();
+			}));
+		commandBuffer.PushCommand(std::make_shared<DX9GF::DelayCommand>(0.5f));
+	}
+
+	void KernelEnemy::AbilityBuffDamage() {
+		commandBuffer.PushCommand(std::make_shared<DX9GF::CustomCommand>([this](std::function<void(void)> markFinished) {
+			this->AddModifier(ModifierType::BuffDamage, 2, 2.0f, true);
+			markFinished();
+			}));
+		commandBuffer.PushCommand(std::make_shared<DX9GF::DelayCommand>(0.5f));
+	}
+
 	void KernelEnemy::StartAttack(std::shared_ptr<Player> player, std::vector<std::shared_ptr<IEnemy>>* enemies, std::shared_ptr<PopUpMessage> popUpMessage, DX9GF::GraphicsDevice* graphicsDevice, DX9GF::Camera* camera, int currentTurn) {
 		(void)enemies; (void)popUpMessage; (void)graphicsDevice; (void)camera;
 
 		this->player = player;
 		float baseDamage = 5.f;
-		float projDamage = GetOutgoingDamage(baseDamage);
-		this->storedProjDamage = projDamage;
 
-		int patternId = 3;
-		/*int patternId = GetSmartRandomPattern(1, 3);*/
-		if (patternId == 1) PatternDefrag(projDamage);
-		else if (patternId == 2) PatternPing999(projDamage);
-		else PatternBadSector(projDamage);
+		int patternId = GetSmartRandomPattern(1, 3);
+		if (patternId == 1) PatternDefrag(baseDamage);
+		else if (patternId == 2) PatternPing999(baseDamage);
+		else PatternBadSector(baseDamage);
 	}
 
-	void KernelEnemy::PatternDefrag(float projDamage) {
+	void KernelEnemy::PatternDefrag(float baseDamage) {
 		struct MineData { float x, y; bool isCross; };
 		std::vector<MineData> mines;
 		const int MINE_COUNT = RNG::Range(3, 5);
@@ -150,8 +194,10 @@ namespace Demo {
 
 		commandBuffer.PushCommand(std::make_shared<DX9GF::DelayCommand>(1.5f));
 
-		commandBuffer.PushCommand(std::make_shared<DX9GF::CustomCommand>([this, mines, projDamage](auto markFinished) {
+		commandBuffer.PushCommand(std::make_shared<DX9GF::CustomCommand>([this, mines, baseDamage](auto markFinished) {
 			if (auto p = this->player.lock()) {
+				float finalDamage = this->CalculateOutgoingDamage(baseDamage);
+
 				for (auto& m : mines) {
 					float angles[4];
 					if (m.isCross) { angles[0] = 0; angles[1] = PI / 2; angles[2] = PI; angles[3] = 3 * PI / 2; }
@@ -160,7 +206,7 @@ namespace Demo {
 					for (int i = 0; i < 4; ++i) {
 						D3DXVECTOR2 dir(cos(angles[i]), sin(angles[i]));
 						projectiles.Spawn(p, ProjectileDesc(bulletTexture.get(), 8, 8, 16, 16, m.x, m.y)
-							.SetTrajectory(dir).SetVelocity(250.f).SetDamage(projDamage).SetDecayTime(3.f));
+							.SetTrajectory(dir).SetVelocity(250.f).SetDamage(finalDamage).SetDecayTime(3.f));
 					}
 				}
 			}
@@ -168,12 +214,14 @@ namespace Demo {
 			}));
 	}
 
-	void KernelEnemy::PatternPing999(float projDamage) {
+	void KernelEnemy::PatternPing999(float baseDamage) {
 		const int WAVE_COUNT = 6;
 
 		for (int w = 0; w < WAVE_COUNT; ++w) {
-			commandBuffer.PushCommand(std::make_shared<DX9GF::CustomCommand>([this, projDamage](auto markFinished) {
+			commandBuffer.PushCommand(std::make_shared<DX9GF::CustomCommand>([this, baseDamage](auto markFinished) {
 				if (auto p = this->player.lock()) {
+					float finalDamage = this->CalculateOutgoingDamage(baseDamage);
+
 					const int BULLET_COUNT = 15;
 					int safeHole = RNG::Range(1, BULLET_COUNT - 4);
 					float totalWidth = 500.f;
@@ -190,7 +238,7 @@ namespace Demo {
 							.SetTrajectory(D3DXVECTOR2(0, 1))
 							.SetVelocity(420.f)
 							.SetReturnAcceleration(290.f)
-							.SetDamage(projDamage)
+							.SetDamage(finalDamage)
 							.SetDecayTime(4.0f));
 					}
 				}
@@ -200,7 +248,7 @@ namespace Demo {
 		}
 	}
 
-	void KernelEnemy::PatternBadSector(float projDamage) {
+	void KernelEnemy::PatternBadSector(float baseDamage) {
 		const int WAVES = RNG::Range(2, 4);
 
 		for (int w = 0; w < WAVES; ++w) {
@@ -210,14 +258,17 @@ namespace Demo {
 				this->laserVerticals.push_back(RNG::Range(-80.f, 80.f));
 				this->laserHorizontals.push_back(RNG::Range(-80.f, 80.f));
 
-				this->laserState = 1;
+				this->laserState = 1; //warning line
 				markFinished();
 				}));
 
 			commandBuffer.PushCommand(std::make_shared<DX9GF::DelayCommand>(1.5f));
 
-			commandBuffer.PushCommand(std::make_shared<DX9GF::CustomCommand>([this, projDamage](auto markFinished) {
+			commandBuffer.PushCommand(std::make_shared<DX9GF::CustomCommand>([this, baseDamage](auto markFinished) {
 				this->laserState = 2;
+
+				this->storedProjDamage = this->CalculateOutgoingDamage(baseDamage);
+				float finalDamage = this->storedProjDamage;
 
 				if (auto p = this->player.lock()) {
 					auto [px, py] = p->GetWorldPosition();
@@ -240,7 +291,7 @@ namespace Demo {
 
 					projectiles.Spawn(p, ProjectileDesc(bulletTexture.get(), 8, 8, 16, 16, centerX, centerY)
 						.SetVelocity(0.f)
-						.SetDamage(projDamage)
+						.SetDamage(finalDamage)
 						.SetDecayTime(holdTime));
 
 					int numArms = RNG::Range(1, 4);
@@ -256,7 +307,7 @@ namespace Demo {
 
 							projectiles.Spawn(p, ProjectileDesc(bulletTexture.get(), 8, 8, 16, 16, centerX, centerY)
 								.SetSpiralParams(startAngle, radialSpeed, angularSpeed)
-								.SetDamage(projDamage)
+								.SetDamage(finalDamage)
 								.SetDecayTime(holdTime));
 						}
 					}

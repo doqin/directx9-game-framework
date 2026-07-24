@@ -16,9 +16,8 @@ namespace Demo {
         void PatternBoomerangCross(float projDamage);
         void PatternRoundCircle(float projDamage);
 
-        void PatternTestBuffSelf();
-        void PatternTestDebuffPlayer();
-        void PatternTestLockCard();
+        void PatternBuffSelf();
+        void PatternDebuffPlayer();
     public:
         using IEnemy::IEnemy;
         void Init(DX9GF::GraphicsDevice* graphicsDevice, DX9GF::Camera* camera);

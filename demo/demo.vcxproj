@@ -216,6 +216,7 @@
     <ClCompile Include="DemonEyeEnemy.cpp" />
     <ClCompile Include="DrawUtils.cpp" />
     <ClCompile Include="EnemyFactory.cpp" />
+    <ClCompile Include="ICombatant.cpp" />
     <ClCompile Include="KernelEnemy.cpp" />
     <ClCompile Include="KeyboardNavigator.cpp" />
     <ClCompile Include="Game.cpp" />
@@ -298,6 +299,7 @@
     <ClInclude Include="DialogueLine.h" />
     <ClInclude Include="DrawUtils.h" />
     <ClInclude Include="EncounterGenerator.h" />
+    <ClInclude Include="ICombatant.h" />
     <ClInclude Include="KernelEnemy.h" />
     <ClInclude Include="KeyboardNavigator.h" />
     <ClInclude Include="EnemyCard.h" />

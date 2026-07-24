@@ -8,6 +8,7 @@
 #include "SettingsManager.h"
 #include "IDraggable.h"
 #include "IEnemy.h"
+
 std::shared_ptr<Demo::ICard> Demo::ICard::CreateCard(const std::string& id, std::weak_ptr<DX9GF::TransformManager> transformManager, std::shared_ptr<DraggableManager> draggableManager, DX9GF::GraphicsDevice* graphicsDevice, DX9GF::Camera* camera) {
 	std::shared_ptr<ICard> card;
 	if (id == "HeavyStrikeCard") card = std::make_shared<HeavyStrikeCard>(transformManager);
@@ -38,7 +39,7 @@ void Demo::Player::GenerateSaveData(nlohmann::json& outData) {
 
 	outData["x"] = x;
 	outData["y"] = y;
- outData["health"] = health;
+	outData["health"] = health;
 }
 
 void Demo::Player::RestoreSaveData(const nlohmann::json& inData) {
@@ -47,7 +48,7 @@ void Demo::Player::RestoreSaveData(const nlohmann::json& inData) {
 
 	if (inData.contains("x")) savedX = inData["x"];
 	if (inData.contains("y")) savedY = inData["y"];
-   if (inData.contains("health")) health = inData["health"];
+	if (inData.contains("health")) health = inData["health"];
 
 	SetLocalPosition(savedX, savedY);
 }
@@ -403,7 +404,7 @@ void Demo::Player::Draw(unsigned long long deltaTime) {
 				idleDownRight->End();
 			}
 		}
-			break;
+							 break;
 		case State::UpRight: {
 			if (isWalking) {
 				walkingUpRight->Begin();
@@ -420,7 +421,7 @@ void Demo::Player::Draw(unsigned long long deltaTime) {
 				idleUpRight->End();
 			}
 		}
-			break;
+						   break;
 		case State::DownLeft: {
 			if (isWalking) {
 				walkingDownLeft->Begin();
@@ -454,7 +455,7 @@ void Demo::Player::Draw(unsigned long long deltaTime) {
 				idleUpLeft->End();
 			}
 		}
-			break;
+						  break;
 		default:
 			break;
 		}
@@ -477,73 +478,57 @@ float Demo::Player::SetVelocity(float velocity)
 	return this->VELOCITY = velocity;
 }
 
-bool Demo::Player::TakeDamage(float damage)
-{
+bool Demo::Player::TakeDamage(float damage) {
 	if (isInvincible) return IsDead();
 
-	float finalDamage = damage;
-	if (HasStatus(StatusType::VULNERABLE)) {
-		finalDamage *= 1.5f;
-	}
-
-	const float blockedDamage = (std::min)(temporaryDefense, finalDamage);
-	temporaryDefense = (std::max)(0.f, temporaryDefense - blockedDamage);
-	const float actualDamage = (std::max)(0.f, finalDamage - blockedDamage);
-
+	float actualDamage = CalculateActualDamage(damage); // Gọi hàm lõi
 	health -= actualDamage;
+
 	isInvincible = true;
 	timeSinceTurnedInvincible = 0.f;
-	if (health <= 0)
-	{
-		if (health + actualDamage > 0) {
-			DX9GF::AudioManager::GetInstance()->Play("player_dead", false, 0.3f);
-		}
+
+	if (health <= 0) {
+		if (health + actualDamage > 0) DX9GF::AudioManager::GetInstance()->Play("player_dead", false, 0.3f);
 		health = 0;
 	}
-	if (actualDamage > 0) {
-		DX9GF::AudioManager::GetInstance()->PlayRandom("take_dmg", 0.8f);
-	}
+	if (actualDamage > 0) DX9GF::AudioManager::GetInstance()->PlayRandom("take_dmg", 0.8f);
+
 	auto [x, y] = GetWorldPosition();
-	Demo::DamageTextManager::GetInstance()->Spawn(actualDamage, x, y - 16.0f, Demo::TextType::TakeDamage); //-16.0f from y so the text pops up from the head
+	Demo::DamageTextManager::GetInstance()->Spawn(actualDamage, x, y - 16.0f, Demo::TextType::TakeDamage);
 	return IsDead();
 }
 
-void Demo::Player::DealDamage(IEnemy* target, float cardBaseDamage)
-{
-	if (!target) return;
-	float currentAtk = GetBuffStat(ItemBuffType::BuffDamage);
-	float finalDamage = cardBaseDamage + currentAtk;
-
-	if (HasStatus(StatusType::WEAK)) {
-		finalDamage *= 0.75f;
+bool Demo::Player::TakeIndirectDamage(float damage, DamageType type) {
+	health -= damage;
+	if (health < 0) {
+		if (health + damage > 0) DX9GF::AudioManager::GetInstance()->Play("player_dead", false, 0.3f);
+		health = 0;
 	}
 
+	if (damage > 0) {
+		//TODO: change audio resource here
+		if (type == DamageType::Poison) {
+			DX9GF::AudioManager::GetInstance()->PlayRandom("take_dmg", 0.4f);
+		}
+		else if (type == DamageType::Burn) {
+			DX9GF::AudioManager::GetInstance()->PlayRandom("take_dmg", 0.4f);
+		}
+		else {
+			DX9GF::AudioManager::GetInstance()->PlayRandom("take_dmg", 0.4f);
+		}
+	}
+
+
+	auto [x, y] = GetWorldPosition();
+	Demo::DamageTextManager::GetInstance()->Spawn(damage, x, y - 16.0f, Demo::TextType::TakeDamage);
+
+	return IsDead();
+}
+
+void Demo::Player::DealDamage(IEnemy* target, float cardBaseDamage) {
+	if (!target) return;
+	float finalDamage = CalculateOutgoingDamage(cardBaseDamage); // Gọi hàm lõi
 	target->TakeDamage(finalDamage);
-}
-
-bool Demo::Player::IsDead() const
-{
-	return health <= 0;
-}
-
-void Demo::Player::SetHealth(float hp)
-{
-	health = hp;
-}
-
-float Demo::Player::GetMaxHealth() const
-{
-	return MAX_HEALTH;
-}
-
-float Demo::Player::GetHealth() const
-{
-	return health;
-}
-
-float Demo::Player::GetTemporaryDefense() const
-{
-	return temporaryDefense;
 }
 
 std::weak_ptr<DX9GF::RectangleCollider> Demo::Player::GetCollider()
@@ -551,50 +536,6 @@ std::weak_ptr<DX9GF::RectangleCollider> Demo::Player::GetCollider()
 	return collider;
 }
 
-void Demo::Player::Heal(float value)
-{
-	if (IsDead()) return;
-	health += value;
-	if (health > MAX_HEALTH) health = MAX_HEALTH;
-}
-
-float Demo::Player::GetBuffStat(ItemBuffType targetType) const
-{
-	float val = 0;
-	for (const auto& buff : activeBuffs)
-	{
-		if (buff.type == targetType)
-		{
-			val += buff.value;
-		}
-	}
-	return val;
-}
-void Demo::Player::UpdateBuffs()
-{
-	for (int i = activeBuffs.size() - 1; i >= 0; i--)
-	{
-		if (activeBuffs[i].isNewlyAdded)
-		{
-			activeBuffs[i].isNewlyAdded = false;
-			continue;
-		}
-
-		activeBuffs[i].turnsLeft--;
-
-		if (activeBuffs[i].turnsLeft <= 0)
-		{
-			activeBuffs.erase(activeBuffs.begin() + i);
-		}
-	}
-   temporaryDefense = (std::max)(0.f, GetBuffStat(ItemBuffType::BuffDefense));
-}
-void Demo::Player::AddActiveBuff(const ActiveBuff& buff) {
-	activeBuffs.push_back(buff);
-   if (buff.type == ItemBuffType::BuffDefense) {
-		temporaryDefense = (std::max)(0.f, GetBuffStat(ItemBuffType::BuffDefense));
-	}
-}
 void Demo::Player::SetSurface(std::string surface)
 {
 	this->currentSurface = surface;
@@ -605,39 +546,4 @@ void Demo::Player::SetFootprintsEnabled(bool enabled)
 {
 	this->footprintsEnabled = enabled;
 	footprintEmitter->SetEnabled(enabled);
-}
-void Demo::Player::ApplyStatus(StatusType type, int duration, float value) {
-	for (auto& status : activeStatuses) {
-		if (status.type == type) {
-			status.duration = duration;
-			status.value = (std::max)(status.value, value);
-			return;
-		}
-	}
-	activeStatuses.push_back({ type, duration, value });
-}
-
-bool Demo::Player::HasStatus(StatusType type) const {
-	for (const auto& status : activeStatuses) {
-		if (status.type == type && status.duration > 0) return true;
-	}
-	return false;
-}
-
-void Demo::Player::TickStatuses() {
-	for (auto it = activeStatuses.begin(); it != activeStatuses.end(); ) {
-		if (it->type == StatusType::POISON && it->duration > 0) {
-			const float poisonDamage = (it->value > 0.f) ? it->value : static_cast<float>(it->duration);
-			this->TakeDamage(poisonDamage);
-		}
-
-		it->duration--;
-
-		if (it->duration <= 0) {
-			it = activeStatuses.erase(it);
-		}
-		else {
-			++it;
-		}
-	}
 }
