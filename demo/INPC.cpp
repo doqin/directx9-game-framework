@@ -1,5 +1,6 @@
 #include "pch.h"
 #include "INPC.h"
+#include "SettingsManager.h"
 
 namespace Demo {
     void INPC::Init(DX9GF::GraphicsDevice* gd, DX9GF::Camera* camera, std::shared_ptr<Player> p, std::shared_ptr<DX9GF::ColliderManager> cm, std::shared_ptr<DX9GF::Font> font, std::shared_ptr<DX9GF::CommandBuffer> drawBuffer) {
@@ -35,7 +36,7 @@ namespace Demo {
             float scale = 1.0f * zoom;
 
             fontSprite->Begin();
-            fontSprite->SetText(L"E");
+            fontSprite->SetText(SettingsManager::GetInstance()->GetKeybindDisplayName("INTERACT"));
             fontSprite->SetScale(scale);
             fontSprite->SetColor(0xFFFFFFFF);
 

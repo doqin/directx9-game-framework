@@ -63,6 +63,8 @@ namespace Demo
 		int GetCurrentResolutionIndex() const { return currentResIndex; }
 		void SetResolutionIndex(int index);
 
+		std::wstring GetKeybindDisplayName(std::string actionName);
+
 		// Helper function to apply immediately
 		void ApplyResolution();
 	};
