@@ -201,4 +201,29 @@ namespace Demo
 				SWP_NOZORDER | SWP_NOOWNERZORDER | SWP_FRAMECHANGED);
 		}
 	}
+
+	std::wstring SettingsManager::GetKeybindDisplayName(std::string actionName)
+	{
+		int code = GetKeybind(actionName);
+
+		static const std::map<int, std::wstring> displayNames = {
+			{ DIK_A, L"A" }, { DIK_B, L"B" }, { DIK_C, L"C" }, { DIK_D, L"D" },
+			{ DIK_E, L"E" }, { DIK_F, L"F" }, { DIK_G, L"G" }, { DIK_H, L"H" },
+			{ DIK_I, L"I" }, { DIK_J, L"J" }, { DIK_K, L"K" }, { DIK_L, L"L" },
+			{ DIK_M, L"M" }, { DIK_N, L"N" }, { DIK_O, L"O" }, { DIK_P, L"P" },
+			{ DIK_Q, L"Q" }, { DIK_R, L"R" }, { DIK_S, L"S" }, { DIK_T, L"T" },
+			{ DIK_U, L"U" }, { DIK_V, L"V" }, { DIK_W, L"W" }, { DIK_X, L"X" },
+			{ DIK_Y, L"Y" }, { DIK_Z, L"Z" },
+			{ DIK_RETURN, L"Enter" }, { DIK_ESCAPE, L"Esc" },
+			{ DIK_LSHIFT, L"Shift" }, { DIK_RSHIFT, L"Shift" },
+			{ DIK_SPACE, L"Space" }, { DIK_TAB, L"Tab" },
+			{ DIK_LCONTROL, L"Ctrl" }, { DIK_RCONTROL, L"Ctrl" },
+		};
+
+		auto it = displayNames.find(code);
+		if (it != displayNames.end()) {
+			return it->second;
+		}
+		return L"?";
+	}
 }

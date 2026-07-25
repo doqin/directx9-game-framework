@@ -96,7 +96,7 @@ namespace Demo {
             float scale = 1.0f * zoom;
 
             fontSprite->Begin();
-            fontSprite->SetText(L"E");
+            fontSprite->SetText(SettingsManager::GetInstance()->GetKeybindDisplayName("INTERACT"));
             fontSprite->SetScale(scale);
             fontSprite->SetColor(0xFFFFFFFF);
 
