@@ -21,7 +21,8 @@ namespace Demo {
 
 			float dmgToDeduct = blockedDamage;
 			for (auto& mod : modifiers) {
-				if (mod.type == ModifierType::BuffDefense && mod.value > 0.f) {
+				//check delay
+				if (mod.type == ModifierType::BuffDefense && mod.value > 0.f && mod.delayTurns <= 0) {
 					float deduct = (std::min)(mod.value, dmgToDeduct);
 					mod.value -= deduct;
 					dmgToDeduct -= deduct;
@@ -41,7 +42,7 @@ namespace Demo {
 		return finalDamage;
 	}
 
-	void ICombatant::AddModifier(ModifierType type, int duration, float value, bool isBuff) {
+	void ICombatant::AddModifier(ModifierType type, int duration, float value, bool isBuff, int delayTurns) {
 		for (auto& mod : modifiers) {
 			if (mod.type == type) {
 				mod.duration += duration;
@@ -52,7 +53,7 @@ namespace Demo {
 				return;
 			}
 		}
-		modifiers.push_back({ type, duration, value, isBuff, true });
+		modifiers.push_back({ type, duration, value, isBuff, delayTurns });
 		if (type == ModifierType::BuffDefense) {
 			temporaryDefense = (std::max)(0.f, GetModifierValue(ModifierType::BuffDefense));
 		}
@@ -60,7 +61,7 @@ namespace Demo {
 
 	bool ICombatant::HasModifier(ModifierType type) const {
 		for (const auto& mod : modifiers) {
-			if (mod.type == type && mod.duration > 0) return true;
+			if (mod.type == type && mod.duration > 0 && mod.delayTurns <= 0) return true;
 		}
 		return false;
 	}
@@ -68,7 +69,7 @@ namespace Demo {
 	float ICombatant::GetModifierValue(ModifierType type) const {
 		float val = 0.f;
 		for (const auto& mod : modifiers) {
-			if (mod.type == type) {
+			if (mod.type == type && mod.delayTurns <= 0) {
 				val += mod.value;
 			}
 		}
@@ -83,7 +84,7 @@ namespace Demo {
 
 	void ICombatant::TriggerEffects(TickPhase phase) {
 		for (auto& it : modifiers) {
-			if (it.duration > 0) {
+			if (it.duration > 0 && it.delayTurns <= 0) {
 				if (it.type == ModifierType::Poison && phase == TickPhase::EndOfTurn) {
 					const float poisonDamage = (it.value > 0.f) ? it.value : static_cast<float>(it.duration);
 
@@ -92,7 +93,7 @@ namespace Demo {
 
 					int vulnDuration = 0;
 					for (auto& m : modifiers) {
-						if (m.type == ModifierType::Vulnerable) {
+						if (m.type == ModifierType::Vulnerable && m.delayTurns <= 0) {
 							vulnDuration = m.duration;
 							m.duration = 0;
 						}
@@ -115,6 +116,12 @@ namespace Demo {
 		if (phase != TickPhase::EndOfRound) return;
 
 		for (auto it = modifiers.begin(); it != modifiers.end(); ) {
+			if (it->delayTurns > 0) {
+				it->delayTurns--;
+				++it;
+				continue;
+			}
+
 			it->duration--;
 
 			if (it->duration <= 0 || (it->type == ModifierType::BuffDefense && it->value <= 0.f)) {

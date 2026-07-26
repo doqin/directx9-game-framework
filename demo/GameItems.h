@@ -19,7 +19,7 @@ namespace Demo
 		int duration;
 		float value;
 		bool isBuff;
-		bool isNewlyAdded = true;  //got trouble with turns, use item cost 1 turn so I use this flag to prevent "Turn Eater"
+		int delayTurns = 0;  //got trouble with turns, use item cost 1 turn so I use this flag to prevent "Turn Eater"
 	};
 
 	class ConsumableItem

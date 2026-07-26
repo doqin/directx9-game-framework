@@ -56,7 +56,7 @@ namespace Demo {
 		virtual void TriggerEffects(TickPhase phase);
 		virtual void TickDurations(TickPhase phase);
 
-		void AddModifier(ModifierType type, int duration, float value, bool isBuff);
+		void AddModifier(ModifierType type, int duration, float value, bool isBuff, int delayTurns = 0);
 		bool HasModifier(ModifierType type) const;
 		float GetModifierValue(ModifierType type) const;
 		const std::vector<CombatModifier>& GetModifiers() const { return modifiers; }

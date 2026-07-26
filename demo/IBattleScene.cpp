@@ -410,7 +410,7 @@ void Demo::IBattleScene::RefreshItemMenu()
 							battlePlayer->Heal(mod.value);
 						}
 						else {
-							battlePlayer->AddModifier(mod.type, mod.duration, mod.value, mod.isBuff);
+							battlePlayer->AddModifier(mod.type, mod.duration, mod.value, mod.isBuff, mod.delayTurns);
 						}
 					}
 					std::wstring msg = L"Used " + blueprint->GetName() + L"!";
