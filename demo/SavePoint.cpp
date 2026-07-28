@@ -45,14 +45,14 @@ namespace Demo {
         auto inpMan = DX9GF::InputManager::GetInstance();
         if (isPlayerNear && inpMan->KeyPress(SettingsManager::GetInstance()->GetKeybind("INTERACT"))) {
             std::vector<std::pair<std::wstring, std::function<void()>>> buttons = {
-                { L"Yes", [this]() {
+                { L"Yes(Y)", [this]() {
                     if (auto smLock = this->saveManager.lock()) {
                         smLock->Save("savegame.json");
                         OutputDebugStringA("Successfully saved!\n");
                         DX9GF::AudioManager::GetInstance()->Play("checkpoint", false, 0.7f);
                     }
                 }},
-                { L"No", nullptr }
+                { L"No(N)", nullptr }
             };
 
             PopupManager::GetInstance()->Show("basic_blackwhite", L"SAVE GAME", L"Do you want to save the game?", buttons);
@@ -77,7 +77,7 @@ namespace Demo {
 
             float scale = 1.0f * zoom;
             fontSprite->Begin();
-            fontSprite->SetText(L"E");
+            fontSprite->SetText(SettingsManager::GetInstance()->GetKeybindDisplayName("INTERACT"));
             float textW = fontSprite->GetWidth() * scale;
             float textH = fontSprite->GetHeight() * scale;
 

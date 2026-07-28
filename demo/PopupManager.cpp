@@ -176,6 +176,18 @@ namespace Demo {
             if (!isActive) break;
         }
         if (isActive) {
+            auto inpMan = DX9GF::InputManager::GetInstance();
+            for (auto& popupBtn : activeButtons) {
+                bool isYesKey = (popupBtn->label == L"Yes(Y)" && inpMan->KeyPress(DIK_Y));
+                bool isNoKey = (popupBtn->label == L"No(N)" && inpMan->KeyPress(DIK_N));
+                if (isYesKey || isNoKey) {
+                    if (popupBtn->onClick) popupBtn->onClick();
+                    Close();
+                    break;
+                }
+            }
+        }
+        if (isActive) {
             keyboardNavigator.Update(deltaTime, CollectKeyboardCandidates());
         }
     }
