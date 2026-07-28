@@ -1,11 +1,25 @@
 ﻿#include "pch.h"
 #include "ICombatant.h"
-
+#include "DamageTextManager.h"
 namespace Demo {
-	void ICombatant::Heal(float value) {
+	void Demo::ICombatant::Heal(float value) {
 		if (IsDead()) return;
+
+		float actualHeal = value;
+		if (health + value > maxHealth) {
+			actualHeal = maxHealth - health;
+		}
+
 		health += value;
 		if (health > maxHealth) health = maxHealth;
+
+		if (actualHeal > 0) {
+			SpawnHealText(actualHeal);
+		}
+	}
+
+	void Demo::ICombatant::SpawnHealText(float actualHeal) {
+		DamageTextManager::GetInstance()->Spawn(actualHeal, GetWorldX(), GetWorldY() - 40.f, TextType::Heal);
 	}
 
 	float ICombatant::CalculateActualDamage(float baseDamage) {

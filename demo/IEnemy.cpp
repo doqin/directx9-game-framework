@@ -5,6 +5,7 @@
 #include "DrawUtils.h"
 #include "RNG.h"
 #include "DX9GFInputManager.h"
+#include "PopUpMessage.h"
 void Demo::IEnemy::InitCardSpawnTrigger(DX9GF::Camera* camera, float width, float height)
 {
 	cardSpawnTrigger = std::make_shared<DX9GF::RectangleTrigger>(transformManager, shared_from_this(), width, height);
@@ -247,7 +248,6 @@ void Demo::IEnemy::Draw(DX9GF::GraphicsDevice* graphicsDevice, DX9GF::Camera* ca
 			float iconX = GetWorldX() + statusOffsetX;
 			float iconY = GetWorldY() + statusOffsetY;
 
-			// Chuẩn bị text hiển thị thêm Value nếu có (Ví dụ: Độc nổ 5 máu, Buff Atk +3)
 			std::wstring displayValueText = L"";
 			if (mod.type == ModifierType::BuffDefense || mod.type == ModifierType::BuffDamage || mod.type == ModifierType::Poison) {
 				int displayValue = (mod.type == ModifierType::Poison) ?
@@ -430,4 +430,29 @@ int Demo::IEnemy::GetSmartRandomPattern(int minPattern, int maxPattern, int maxS
 
 	lastPattern = patternId;
 	return patternId;
+}
+
+void Demo::IEnemy::SpawnHealText(float actualHeal) {
+	damageIndicators.push_back(DamageIndicator{
+		L"+" + std::to_wstring(static_cast<int>(std::round(actualHeal))),
+		0.f,
+		0.f,
+		RNG::Range(-32.f, 32.f),
+		RNG::Range(-150.f, -100.f),
+		0,
+		0xFF59c135 //green
+		});
+}
+
+void Demo::IEnemy::CastAbility(std::function<void()> effect, std::shared_ptr<PopUpMessage> popUpMessage, const std::wstring& message) {
+	commandBuffer.PushCommand(std::make_shared<DX9GF::CustomCommand>([effect](std::function<void(void)> markFinished) {
+		if (effect) effect();
+		markFinished();
+		}));
+
+	if (popUpMessage && !message.empty()) {
+		popUpMessage->QueueMessage(&commandBuffer, message, 1.5f);
+	}
+
+	commandBuffer.PushCommand(std::make_shared<DX9GF::DelayCommand>(0.5f));
 }

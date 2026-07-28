@@ -19,9 +19,6 @@ namespace Demo {
 		void PatternBloodWall(float projDamage, std::vector<std::shared_ptr<IEnemy>>* enemies);
 		void PatternBloodCross(float projDamage, std::vector<std::shared_ptr<IEnemy>>* enemies);
 
-		void AbilityBuffDamage();
-		void AbilityVulnerablePlayer();
-
 	public:
 		using IEnemy::IEnemy;
 		void Init(DX9GF::GraphicsDevice* graphicsDevice, DX9GF::Camera* camera);

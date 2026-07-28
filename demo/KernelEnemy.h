@@ -28,9 +28,6 @@ namespace Demo {
 		void PatternPing999(float projDamage);
 		void PatternBadSector(float projDamage);
 
-		void AbilityHealSelf();
-		void AbilityBuffDamage();
-
 	public:
 		using IEnemy::IEnemy;
 

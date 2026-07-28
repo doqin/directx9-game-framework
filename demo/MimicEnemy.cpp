@@ -41,7 +41,7 @@ void Demo::MimicEnemy::OnTurnBegin(std::shared_ptr<Player> player, std::shared_p
 	if (currentCycle != cycle) {
 		currentCycle = cycle;
 
-		if (RNG::Range(0, 100) <= 40) {
+		if (RNG::Range(1, 100) <= 70) {
 			skillTurnThisCycle = RNG::Range(1, 3);
 		}
 		else {
@@ -52,33 +52,15 @@ void Demo::MimicEnemy::OnTurnBegin(std::shared_ptr<Player> player, std::shared_p
 	int turnInCycle = (currentTurn - 1) % 3 + 1;
 
 	if (turnInCycle == skillTurnThisCycle) {
-		int skillType = RNG::Range(1, 2);
-
-		if (skillType == 1) AbilityBuffDefense();
-		else AbilityPoisonPlayer();
-
-		if (popUpMessage) {
-			popUpMessage->QueueMessage(&commandBuffer, L"Pop-ups have taken over your screen!", 1.5f);
+		if (RNG::Range(1, 2) == 1) {
+			CastAbility([this]() { this->AddModifier(ModifierType::BuffDefense, 2, 15.0f, true); }, popUpMessage, L"A giant pop-up blocks the way!");
+		}
+		else {
+			CastAbility([this]() {
+				if (auto lock = this->player.lock()) lock->AddModifier(ModifierType::Poison, 2, 2.0f, false);
+				}, popUpMessage, L"Mimic installs malicious adware!");
 		}
 	}
-}
-
-void Demo::MimicEnemy::AbilityBuffDefense() {
-	commandBuffer.PushCommand(std::make_shared<DX9GF::CustomCommand>([this](std::function<void(void)> markFinished) {
-		this->AddModifier(ModifierType::BuffDefense, 2, 15.0f, true);
-		markFinished();
-		}));
-	commandBuffer.PushCommand(std::make_shared<DX9GF::DelayCommand>(0.5f));
-}
-
-void Demo::MimicEnemy::AbilityPoisonPlayer() {
-	commandBuffer.PushCommand(std::make_shared<DX9GF::CustomCommand>([this](std::function<void(void)> markFinished) {
-		if (auto lock = this->player.lock()) {
-			lock->AddModifier(ModifierType::Poison, 2, 2.0f, false);
-		}
-		markFinished();
-		}));
-	commandBuffer.PushCommand(std::make_shared<DX9GF::DelayCommand>(0.5f));
 }
 
 void Demo::MimicEnemy::StartAttack(std::shared_ptr<Player> player, std::vector<std::shared_ptr<IEnemy>>* enemies, std::shared_ptr<PopUpMessage> popUpMessage, DX9GF::GraphicsDevice* graphicsDevice, DX9GF::Camera* camera, int currentTurn) {

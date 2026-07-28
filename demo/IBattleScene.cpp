@@ -695,15 +695,17 @@ std::vector<Demo::KeyboardNavigator::Candidate> Demo::IBattleScene::CollectKeybo
 		break;
 	}
 	case State::PlayerOpenItems: {
-		addButton(closeItemMenuButton);
-		if (currentItemPage > 0) {
-			addButton(btnPrevPage);
-		}
-		if (currentItemPage < maxItemPage) {
-			addButton(btnNextPage);
-		}
-		for (auto& btn : buffItems) {
-			addButton(btn);
+		if (!isTransitioning) {
+			addButton(closeItemMenuButton);
+			if (currentItemPage > 0) {
+				addButton(btnPrevPage);
+			}
+			if (currentItemPage < maxItemPage) {
+				addButton(btnNextPage);
+			}
+			for (auto& btn : buffItems) {
+				addButton(btn);
+			}
 		}
 		break;
 	}
@@ -1389,72 +1391,150 @@ void Demo::IBattleScene::DrawHealthAndDefenseBar(const float y, DX9GF::GraphicsD
 	auto modifiers = battlePlayer->GetModifiers();
 	auto modY = y - 48.f;
 
+	bool isTooltipActive = false;
+	std::wstring activeTooltipText = L"";
+
+	auto [screenX, screenY] = DX9GF::InputManager::GetInstance()->GetVirtualAbsoluteMousePos(&this->uiCamera);
+	auto [mouseX, mouseY] = DX9GF::Utils::WindowToWorldCoords(this->uiCamera, screenX, screenY);
+
 	for (const auto& mod : modifiers) {
 		if (mod.duration <= 0) continue;
 
-		std::wstring modName = L"";
-		D3DCOLOR modColor = 0xFFFFFFFF;
-		bool showIcon = false;
+		std::wstring valueText = L"";
+		std::wstring nameText = L"";
+		std::wstring statusName = L"Unknown";
+		std::wstring statusDescription = L"";
+		D3DCOLOR textColor = 0xFFFFFFFF;
+		RECT iconRect = { 0, 0, 0, 0 };
 
 		if (mod.type == ModifierType::BuffDamage) {
-			modName = std::to_wstring(static_cast<int>(mod.value));
-			modColor = 0xFFfa6a0a;
-			showIcon = true;
+			valueText = std::to_wstring(static_cast<int>(mod.value));
+			textColor = 0xFFfa6a0a;
+			iconRect = { 112, 240, 128, 256 };
+			statusName = L"Atk Up";
+			statusDescription = L"Increases attack damage.";
 		}
 		else if (mod.type == ModifierType::BuffDefense) {
-			modName = std::to_wstring(static_cast<int>(mod.value));
-			modColor = 0xFF588dbe;
-			showIcon = true;
+			valueText = std::to_wstring(static_cast<int>(mod.value));
+			textColor = 0xFF588dbe;
+			iconRect = { 96, 240, 112, 256 };
+			statusName = L"Def Up";
+			statusDescription = L"Blocks incoming damage.";
 		}
 		else if (mod.type == ModifierType::Poison) {
-			modName = L"Poison";
-			modColor = 0xFFba4aed;
+			int poisonDmg = static_cast<int>(std::round((mod.value > 0.f) ? mod.value : static_cast<float>(mod.duration)));
+			valueText = std::to_wstring(poisonDmg);
+			textColor = 0xFFba4aed;
+			iconRect = { 128, 240, 144, 256 };
+			statusName = L"Poison";
+			statusDescription = L"Takes " + std::to_wstring(poisonDmg) + L" damage at end of turn.";
 		}
 		else if (mod.type == ModifierType::Vulnerable) {
-			modName = L"Vuln";
-			modColor = 0xFFff4444;
+			iconRect = { 96, 256, 112, 272 };
+			statusName = L"Vulnerable";
+			statusDescription = L"Takes 50% more damage from attacks.";
 		}
 		else if (mod.type == ModifierType::Weak) {
-			modName = L"Weak";
-			modColor = 0xFFa0a0a0;
+			iconRect = { 112, 256, 128, 272 };
+			statusName = L"Weak";
+			statusDescription = L"Deals 25% less damage with attacks.";
 		}
 		else if (mod.type == ModifierType::Stun) {
-			modName = L"Stun";
-			modColor = 0xFFfffc40;
+			nameText = L"Stun";
+			textColor = 0xFFfffc40;
+			statusName = L"Stun";
+			statusDescription = L"Cannot take action this turn.";
 		}
 		else {
 			continue;
 		}
 
-		fontSprite->SetColor(modColor);
-		fontSprite->SetOutline(true, 0xFF000000, 3.f);
-		fontSprite->SetPosition(x, modY);
-		fontSprite->SetText(std::move(modName));
+		float currentDrawX = x;
+		float hitBoxX = x;
+		float hitBoxY = modY - 8.f;
+		float hitBoxW = 32.f;
+		float hitBoxH = 32.f;
 
-		fontSprite->Begin();
-		fontSprite->Draw(this->uiCamera, 0);
-		fontSprite->End();
+		//icons/texts
+		if (iconRect.right > 0) {
+			attackBuffIcon->SetSrcRect(iconRect);
+			attackBuffIcon->SetPosition(currentDrawX, hitBoxY);
+			attackBuffIcon->SetScale(2.f, 2.f);
+			attackBuffIcon->Begin();
+			attackBuffIcon->Draw(this->uiCamera, 0);
+			attackBuffIcon->End();
+			currentDrawX += 36.f;
+		}
+		else if (!nameText.empty()) {
+			fontSprite->SetColor(textColor);
+			fontSprite->SetOutline(true, 0xFF000000, 3.f);
+			fontSprite->SetPosition(currentDrawX, modY);
+			fontSprite->SetText(std::move(nameText));
+			fontSprite->Begin();
+			fontSprite->Draw(this->uiCamera, 0);
+			fontSprite->End();
 
-		auto textWidth = fontSprite->GetWidth();
-
-		if (showIcon) {
-			auto iconToDraw = (mod.type == ModifierType::BuffDamage) ? attackBuffIcon : defenseBuffIcon;
-			iconToDraw->SetPosition(x + textWidth, modY - 8.f);
-			iconToDraw->SetScale(2.f, 2.f);
-			iconToDraw->Begin();
-			iconToDraw->Draw(this->uiCamera, 0);
-			iconToDraw->End();
-			textWidth += 32.f;
+			hitBoxY = modY;
+			hitBoxW = fontSprite->GetWidth();
+			hitBoxH = fontSprite->GetHeight();
+			currentDrawX += hitBoxW + 8.f;
 		}
 
+		//values
+		if (!valueText.empty()) {
+			fontSprite->SetColor(textColor);
+			fontSprite->SetOutline(true, 0xFF000000, 3.f);
+			fontSprite->SetPosition(currentDrawX, modY);
+			fontSprite->SetText(std::move(valueText));
+			fontSprite->Begin();
+			fontSprite->Draw(this->uiCamera, 0);
+			fontSprite->End();
+			currentDrawX += fontSprite->GetWidth() + 8.f;
+		}
+
+		//turns left
 		fontSprite->SetColor(0xFFFFFFFF);
-		fontSprite->SetPosition(x + textWidth + 8.f, modY);
+		fontSprite->SetOutline(true, 0xFF000000, 3.f);
+		fontSprite->SetPosition(currentDrawX, modY);
 		fontSprite->SetText(std::to_wstring(mod.duration) + L" turns");
 		fontSprite->Begin();
 		fontSprite->Draw(this->uiCamera, 0);
 		fontSprite->End();
 
+		bool isHovered = mouseX >= hitBoxX && mouseX <= hitBoxX + hitBoxW && mouseY >= hitBoxY && mouseY <= hitBoxY + hitBoxH;
+		if (isHovered) {
+			isTooltipActive = true;
+			activeTooltipText = statusName + L" (" + std::to_wstring(mod.duration) + L" turns remaining)\n" + statusDescription;
+		}
+
 		modY -= 32.f;
+	}
+
+	//draw tooltip after
+	if (isTooltipActive) {
+		fontSprite->SetText(std::move(activeTooltipText));
+		float tooltipWidth = fontSprite->GetWidth() + 8.f;
+		float tooltipHeight = fontSprite->GetHeight() + 8.f;
+
+		auto [screenW, screenH] = this->uiCamera.GetScreenResolution();
+		float targetScreenX = screenX;
+		float targetScreenY = screenY - tooltipHeight;
+
+		if (targetScreenX + tooltipWidth > screenW) targetScreenX = screenW - tooltipWidth;
+		if (targetScreenY < 0) targetScreenY = screenY + 32.f;
+
+		auto [worldDrawX, worldDrawY] = DX9GF::Utils::WindowToWorldCoords(this->uiCamera, targetScreenX, targetScreenY);
+
+		gd->SetAlphaBlending(true);
+		gd->DrawRectangle(this->uiCamera, worldDrawX, worldDrawY, tooltipWidth, tooltipHeight, 0, 1, 1, 0, 0, D3DCOLOR_ARGB(220, 0, 0, 0), true);
+		gd->SetAlphaBlending(false);
+
+		fontSprite->SetColor(0xFFFFFFFF);
+		fontSprite->SetOutline(true, 0xFF000000, 1.f);
+		fontSprite->SetPosition(worldDrawX + 4.f, worldDrawY + 4.f);
+		fontSprite->Begin();
+		fontSprite->Draw(this->uiCamera, 0);
+		fontSprite->End();
 	}
 }
 

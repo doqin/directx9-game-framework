@@ -17,9 +17,6 @@ namespace Demo {
 		void PatternDarkVortex(float projDamage, std::vector<std::shared_ptr<IEnemy>>* enemies);
 		void PatternHomingCurse(float projDamage, std::vector<std::shared_ptr<IEnemy>>* enemies);
 
-		void AbilityWeakPlayer();
-		void AbilityBuffDamage();
-
 	public:
 		using IEnemy::IEnemy;
 		void Init(DX9GF::GraphicsDevice* graphicsDevice, DX9GF::Camera* camera);

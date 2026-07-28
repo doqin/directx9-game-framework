@@ -22,10 +22,6 @@ namespace Demo {
         void PatternCrossfireSweep(float projDamage);
         void PatternHomingConstellation(float projDamage);
 
-        //unique ability
-        void AbilityLockCard();
-        void AbilityEnrage();
-
     public:
         using IEnemy::IEnemy;
         void Init(DX9GF::GraphicsDevice* graphicsDevice, DX9GF::Camera* camera);

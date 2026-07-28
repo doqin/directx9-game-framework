@@ -21,9 +21,6 @@ namespace Demo {
 		void PatternHomingArrow(float projDamage);
 		void PatternHeartNova(float projDamage);
 
-		void AbilityHealSelf();
-		void AbilityVulnerablePlayer();
-
 	public:
 		using IEnemy::IEnemy;
 		void Init(DX9GF::GraphicsDevice* graphicsDevice, DX9GF::Camera* camera);

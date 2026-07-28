@@ -46,8 +46,8 @@ void Demo::DemonEyeEnemy::OnTurnBegin(std::shared_ptr<Player> player, std::share
 	if (currentCycle != cycle) {
 		currentCycle = cycle;
 
-		if (RNG::Range(0, 100) <= 35) {
-			skillTurnThisCycle = RNG::Range(1, 3); 
+		if (RNG::Range(1, 100) <= 65) {
+			skillTurnThisCycle = RNG::Range(1, 3);
 		}
 		else {
 			skillTurnThisCycle = -1;
@@ -57,33 +57,15 @@ void Demo::DemonEyeEnemy::OnTurnBegin(std::shared_ptr<Player> player, std::share
 	int turnInCycle = (currentTurn - 1) % 3 + 1;
 
 	if (turnInCycle == skillTurnThisCycle) {
-		int skillType = RNG::Range(1, 2);
-
-		if (skillType == 1) AbilityBuffDamage();
-		else AbilityVulnerablePlayer();
-
-		if (popUpMessage) {
-			popUpMessage->QueueMessage(&commandBuffer, L"Bug executes a malicious script!", 1.5f);
+		if (RNG::Range(1, 2) == 1) {
+			CastAbility([this]() { this->AddModifier(ModifierType::BuffDamage, 2, 3.0f, true); }, popUpMessage, L"Bug powers up its attack!");
+		}
+		else {
+			CastAbility([this]() {
+				if (auto lock = this->player.lock()) lock->AddModifier(ModifierType::Vulnerable, 1, 0.f, false);
+				}, popUpMessage, L"Bug injects a vulnerability!");
 		}
 	}
-}
-
-void Demo::DemonEyeEnemy::AbilityBuffDamage() {
-	commandBuffer.PushCommand(std::make_shared<DX9GF::CustomCommand>([this](std::function<void(void)> markFinished) {
-		this->AddModifier(ModifierType::BuffDamage, 2, 3.0f, true);
-		markFinished();
-		}));
-	commandBuffer.PushCommand(std::make_shared<DX9GF::DelayCommand>(0.5f));
-}
-
-void Demo::DemonEyeEnemy::AbilityVulnerablePlayer() {
-	commandBuffer.PushCommand(std::make_shared<DX9GF::CustomCommand>([this](std::function<void(void)> markFinished) {
-		if (auto lock = this->player.lock()) {
-			lock->AddModifier(ModifierType::Vulnerable, 1, 0.f, false);
-		}
-		markFinished();
-		}));
-	commandBuffer.PushCommand(std::make_shared<DX9GF::DelayCommand>(0.5f));
 }
 
 void Demo::DemonEyeEnemy::StartAttack(std::shared_ptr<Player> player, std::vector<std::shared_ptr<IEnemy>>* enemies, std::shared_ptr<PopUpMessage> popUpMessage, DX9GF::GraphicsDevice* graphicsDevice, DX9GF::Camera* camera, int currentTurn)

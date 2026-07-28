@@ -62,6 +62,7 @@ namespace Demo {
 		virtual void OnTurnBegin(std::shared_ptr<Player> player, std::shared_ptr<PopUpMessage> popUpMessage, int currentTurn) {}
 
 		bool TakeIndirectDamage(float damage, DamageType type) override;
-		
+		void SpawnHealText(float actualHeal) override;
+		void CastAbility(std::function<void()> effect, std::shared_ptr<PopUpMessage> popUpMessage, const std::wstring& message);
 	};
 }

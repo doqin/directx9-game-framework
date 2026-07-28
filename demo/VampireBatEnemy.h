@@ -16,10 +16,6 @@ namespace Demo {
 		int GetRandomPattern();
 		void PatternEcholocation(float projDamage, std::vector<std::shared_ptr<IEnemy>>* enemies);
 		void PatternSwoopBite(float projDamage);
-
-		void AbilityVampiricHeal();
-		void AbilityVulnerablePlayer();
-
 	public:
 		using IEnemy::IEnemy;
 		void Init(DX9GF::GraphicsDevice* graphicsDevice, DX9GF::Camera* camera);

@@ -481,7 +481,7 @@ float Demo::Player::SetVelocity(float velocity)
 bool Demo::Player::TakeDamage(float damage) {
 	if (isInvincible) return IsDead();
 
-	float actualDamage = CalculateActualDamage(damage); // Gọi hàm lõi
+	float actualDamage = CalculateActualDamage(damage);
 	health -= actualDamage;
 
 	isInvincible = true;

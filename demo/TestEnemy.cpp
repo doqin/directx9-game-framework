@@ -43,56 +43,24 @@ void Demo::TestEnemy::OnTurnBegin(std::shared_ptr<Player> player, std::shared_pt
 
 	int turnInCycle = (currentTurn - 1) % 3 + 1;
 
+
 	if (turnInCycle == skillTurnThisCycle) {
+		CastAbility([this]() { 
+			//this->Heal(20.f);
 
-		 //AbilityTestHeal();
-		 //AbilityTestBuff();
-		AbilityTestDebuff();
-		//AbilityTestLockCard();
+			//this->AddModifier(ModifierType::BuffDamage, 2, 5.0f, true);
+			//this->AddModifier(ModifierType::BuffDefense, 2, 10.0f, true);
 
-		if (popUpMessage) {
-			popUpMessage->QueueMessage(&commandBuffer, L"TestEnemy used an ability!", 1.5f);
-		}
+			//this->player.lock()->AddModifier(ModifierType::Poison, 2, 5.0f, false);
+			//this->player.lock()->AddModifier(ModifierType::Vulnerable, 2, 0.f, false);
+			//this->player.lock()->AddModifier(ModifierType::Weak, 2, 0.f, false);
+
+			if (this->onRequestLockCard) {
+				this->onRequestLockCard(2);
+			}
+
+			}, popUpMessage, L"TestEnemy used an ability!");
 	}
-}
-
-void Demo::TestEnemy::AbilityTestHeal() {
-	commandBuffer.PushCommand(std::make_shared<DX9GF::CustomCommand>([this](std::function<void(void)> markFinished) {
-		this->Heal(20.f);
-		markFinished();
-		}));
-	commandBuffer.PushCommand(std::make_shared<DX9GF::DelayCommand>(0.5f));
-}
-
-void Demo::TestEnemy::AbilityTestBuff() {
-	commandBuffer.PushCommand(std::make_shared<DX9GF::CustomCommand>([this](std::function<void(void)> markFinished) {
-		this->AddModifier(ModifierType::BuffDamage, 2, 5.0f, true);
-		this->AddModifier(ModifierType::BuffDefense, 2, 10.0f, true);
-		markFinished();
-		}));
-	commandBuffer.PushCommand(std::make_shared<DX9GF::DelayCommand>(0.5f));
-}
-
-void Demo::TestEnemy::AbilityTestDebuff() {
-	commandBuffer.PushCommand(std::make_shared<DX9GF::CustomCommand>([this](std::function<void(void)> markFinished) {
-		if (auto lock = this->player.lock()) {
-			lock->AddModifier(ModifierType::Poison, 2, 5.0f, false);
-			lock->AddModifier(ModifierType::Vulnerable, 2, 0.f, false);
-			lock->AddModifier(ModifierType::Weak, 2, 0.f, false);
-		}
-		markFinished();
-		}));
-	commandBuffer.PushCommand(std::make_shared<DX9GF::DelayCommand>(0.5f));
-}
-
-void Demo::TestEnemy::AbilityTestLockCard() {
-	commandBuffer.PushCommand(std::make_shared<DX9GF::CustomCommand>([this](std::function<void(void)> markFinished) {
-		if (this->onRequestLockCard) {
-			this->onRequestLockCard(2);
-		}
-		markFinished();
-		}));
-	commandBuffer.PushCommand(std::make_shared<DX9GF::DelayCommand>(0.5f));
 }
 
 void Demo::TestEnemy::StartAttack(std::shared_ptr<Player> player, std::vector<std::shared_ptr<IEnemy>>* enemies, std::shared_ptr<PopUpMessage> popUpMessage, DX9GF::GraphicsDevice* graphicsDevice, DX9GF::Camera* camera, int currentTurn) {

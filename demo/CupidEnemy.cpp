@@ -43,48 +43,30 @@ int Demo::CupidEnemy::GetRandomPattern()
 void Demo::CupidEnemy::OnTurnBegin(std::shared_ptr<Player> player, std::shared_ptr<PopUpMessage> popUpMessage, int currentTurn) {
 	this->player = player;
 
-	int cycle = (currentTurn - 1) / 4;
+	int cycle = (currentTurn - 1) / 3;
 
 	if (currentCycle != cycle) {
 		currentCycle = cycle;
-		if (RNG::Range(1, 100) <= 40) {
-			skillTurnThisCycle = RNG::Range(1, 4); 
+		if (RNG::Range(1, 100) <= 60) {
+			skillTurnThisCycle = RNG::Range(1, 3);
 		}
 		else {
 			skillTurnThisCycle = -1;
 		}
 	}
 
-	int turnInCycle = (currentTurn - 1) % 4 + 1;
+	int turnInCycle = (currentTurn - 1) % 3 + 1;
 
 	if (turnInCycle == skillTurnThisCycle) {
-		int skillType = RNG::Range(1,2);
-
-		if (skillType == 1) AbilityHealSelf();
-		else AbilityVulnerablePlayer();
-
-		if (popUpMessage) {
-			popUpMessage->QueueMessage(&commandBuffer, L"Pacman is hungry for data!", 1.5f);
+		if (RNG::Range(1, 2) == 1) {
+			CastAbility([this]() { this->Heal(15.f); }, popUpMessage, L"Pacman heals 15 HP!");
+		}
+		else {
+			CastAbility([this]() {
+				if (auto lock = this->player.lock()) lock->AddModifier(ModifierType::Vulnerable, 2, 0.f, false);
+				}, popUpMessage, L"Pacman breaks your guard!");
 		}
 	}
-}
-
-void Demo::CupidEnemy::AbilityHealSelf() {
-	commandBuffer.PushCommand(std::make_shared<DX9GF::CustomCommand>([this](std::function<void(void)> markFinished) {
-		this->Heal(15.f);
-		markFinished();
-		}));
-	commandBuffer.PushCommand(std::make_shared<DX9GF::DelayCommand>(0.5f));
-}
-
-void Demo::CupidEnemy::AbilityVulnerablePlayer() {
-	commandBuffer.PushCommand(std::make_shared<DX9GF::CustomCommand>([this](std::function<void(void)> markFinished) {
-		if (auto lock = this->player.lock()) {
-			lock->AddModifier(ModifierType::Vulnerable, 2, 0.f, false);
-		}
-		markFinished();
-		}));
-	commandBuffer.PushCommand(std::make_shared<DX9GF::DelayCommand>(0.5f));
 }
 
 void Demo::CupidEnemy::StartAttack(std::shared_ptr<Player> player, std::vector<std::shared_ptr<IEnemy>>* enemies, std::shared_ptr<PopUpMessage> popUpMessage, DX9GF::GraphicsDevice* graphicsDevice, DX9GF::Camera* camera, int currentTurn)

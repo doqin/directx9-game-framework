@@ -36,50 +36,31 @@ int Demo::WarlockEnemy::GetRandomPattern() {
 void Demo::WarlockEnemy::OnTurnBegin(std::shared_ptr<Player> player, std::shared_ptr<PopUpMessage> popUpMessage, int currentTurn) {
 	this->player = player;
 
-	int cycle = (currentTurn - 1) / 4;
+	int cycle = (currentTurn - 1) / 3;
 
 	if (currentCycle != cycle) {
 		currentCycle = cycle;
 
-		if (RNG::Range(0, 100) <= 40) { 
-			skillTurnThisCycle = RNG::Range(1, 4);
+		if (RNG::Range(1, 100) <= 65) {
+			skillTurnThisCycle = RNG::Range(1, 3);
 		}
 		else {
 			skillTurnThisCycle = -1;
 		}
 	}
 
-	int turnInCycle = (currentTurn - 1) % 4 + 1;
+	int turnInCycle = (currentTurn - 1) % 3 + 1;
 
 	if (turnInCycle == skillTurnThisCycle) {
-		int skillType = RNG::Range(1, 2);
-
-		if (skillType == 1) AbilityWeakPlayer();
-		else AbilityBuffDamage();
-
-		if (popUpMessage) {
-			popUpMessage->QueueMessage(&commandBuffer, L"Crawler is creeping up!", 1.5f);
+		if (RNG::Range(1, 2) == 1) {
+			CastAbility([this]() {
+				if (auto lock = this->player.lock()) lock->AddModifier(ModifierType::Weak, 2, 0.f, false);
+				}, popUpMessage, L"Crawler slows your connection!");
+		}
+		else {
+			CastAbility([this]() { this->AddModifier(ModifierType::BuffDamage, 2, 4.0f, true); }, popUpMessage, L"Crawler gathers corrupted data!");
 		}
 	}
-}
-
-void Demo::WarlockEnemy::AbilityWeakPlayer() {
-	commandBuffer.PushCommand(std::make_shared<DX9GF::CustomCommand>([this](std::function<void(void)> markFinished) {
-		if (auto lock = this->player.lock()) {
-			// Yểm bùa làm Player bị Weak 2 turn
-			lock->AddModifier(ModifierType::Weak, 2, 0.f, false);
-		}
-		markFinished();
-		}));
-	commandBuffer.PushCommand(std::make_shared<DX9GF::DelayCommand>(0.5f));
-}
-
-void Demo::WarlockEnemy::AbilityBuffDamage() {
-	commandBuffer.PushCommand(std::make_shared<DX9GF::CustomCommand>([this](std::function<void(void)> markFinished) {
-		this->AddModifier(ModifierType::BuffDamage, 2, 4.0f, true);
-		markFinished();
-		}));
-	commandBuffer.PushCommand(std::make_shared<DX9GF::DelayCommand>(0.5f));
 }
 
 void Demo::WarlockEnemy::StartAttack(std::shared_ptr<Player> player, std::vector<std::shared_ptr<IEnemy>>* enemies, std::shared_ptr<PopUpMessage> popUpMessage, DX9GF::GraphicsDevice* graphicsDevice, DX9GF::Camera* camera, int currentTurn) {

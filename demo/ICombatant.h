@@ -48,6 +48,7 @@ namespace Demo {
 		bool IsDead() const { return health <= 0.f; }
 
 		virtual void Heal(float value);
+		virtual void SpawnHealText(float actualHeal);
 
 		//split take damage into 2 type: physical, indirect
 		virtual bool TakeDamage(float damage) = 0;

@@ -40,8 +40,8 @@ void Demo::VampireBatEnemy::OnTurnBegin(std::shared_ptr<Player> player, std::sha
 
 	if (currentCycle != cycle) {
 		currentCycle = cycle;
-		if (RNG::Range(0, 100) <= 40) {
-			RNG::Range(1, 3);
+		if (RNG::Range(1, 100) <= 60) {
+			skillTurnThisCycle = RNG::Range(1, 3);
 		}
 		else {
 			skillTurnThisCycle = -1;
@@ -51,33 +51,15 @@ void Demo::VampireBatEnemy::OnTurnBegin(std::shared_ptr<Player> player, std::sha
 	int turnInCycle = (currentTurn - 1) % 3 + 1;
 
 	if (turnInCycle == skillTurnThisCycle) {
-		int skillType = RNG::Range(1, 2);
-
-		if (skillType == 1) AbilityVampiricHeal();
-		else AbilityVulnerablePlayer();
-
-		if (popUpMessage) {
-			popUpMessage->QueueMessage(&commandBuffer, L"Shrimp screeches aggressively!", 1.5f);
+		if (RNG::Range(1, 2) == 1) {
+			CastAbility([this]() { this->Heal(15.f); }, popUpMessage, L"Shrimp siphons your data! (+15 HP)");
+		}
+		else {
+			CastAbility([this]() {
+				if (auto lock = this->player.lock()) lock->AddModifier(ModifierType::Vulnerable, 2, 0.f, false);
+				}, popUpMessage, L"Shrimp emits a piercing screech!");
 		}
 	}
-}
-
-void Demo::VampireBatEnemy::AbilityVampiricHeal() {
-	commandBuffer.PushCommand(std::make_shared<DX9GF::CustomCommand>([this](std::function<void(void)> markFinished) {
-		this->Heal(15.f);
-		markFinished();
-		}));
-	commandBuffer.PushCommand(std::make_shared<DX9GF::DelayCommand>(0.5f));
-}
-
-void Demo::VampireBatEnemy::AbilityVulnerablePlayer() {
-	commandBuffer.PushCommand(std::make_shared<DX9GF::CustomCommand>([this](std::function<void(void)> markFinished) {
-		if (auto lock = this->player.lock()) {
-			lock->AddModifier(ModifierType::Vulnerable, 2, 0.f, false);
-		}
-		markFinished();
-		}));
-	commandBuffer.PushCommand(std::make_shared<DX9GF::DelayCommand>(0.5f));
 }
 
 void Demo::VampireBatEnemy::StartAttack(std::shared_ptr<Player> player, std::vector<std::shared_ptr<IEnemy>>* enemies, std::shared_ptr<PopUpMessage> popUpMessage, DX9GF::GraphicsDevice* graphicsDevice, DX9GF::Camera* camera, int currentTurn) {

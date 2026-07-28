@@ -39,43 +39,25 @@ int Demo::KeyeproEnemy::GetRandomPattern() {
 void Demo::KeyeproEnemy::OnTurnBegin(std::shared_ptr<Player> player, std::shared_ptr<PopUpMessage> popUpMessage, int currentTurn) {
 	this->player = player;
 
-	int cycle = (currentTurn - 1) / 4;
+	int cycle = (currentTurn - 1) / 3;
 
 	if (currentCycle != cycle) {
 		currentCycle = cycle;
-		skillTurnThisCycle = RNG::Range(1, 4);
+		skillTurnThisCycle = RNG::Range(1, 3);
 	}
 
-	int turnInCycle = (currentTurn - 1) % 4 + 1;
+	int turnInCycle = (currentTurn - 1) % 3 + 1;
 
 	if (turnInCycle == skillTurnThisCycle) {
 		if (RNG::Range(1, 2) == 1) {
-			AbilityLockCard();
-			if (popUpMessage) popUpMessage->QueueMessage(&commandBuffer, L"Boss locks your mind!", 1.5f);
+			CastAbility([this]() {
+				if (this->onRequestLockCard) this->onRequestLockCard(2);
+				}, popUpMessage, L"Boss locks your mind!");
 		}
 		else {
-			AbilityEnrage();
-			if (popUpMessage) popUpMessage->QueueMessage(&commandBuffer, L"Boss enters a frenzy!", 1.5f);
+			CastAbility([this]() { this->AddModifier(ModifierType::BuffDamage, 2, 5.0f, true); }, popUpMessage, L"Boss enters a frenzy!");
 		}
 	}
-}
-
-void Demo::KeyeproEnemy::AbilityLockCard() {
-	commandBuffer.PushCommand(std::make_shared<DX9GF::CustomCommand>([this](std::function<void(void)> markFinished) {
-		if (this->onRequestLockCard) {
-			this->onRequestLockCard(2); //lock a card in 2 turns
-		}
-		markFinished();
-		}));
-	commandBuffer.PushCommand(std::make_shared<DX9GF::DelayCommand>(0.5f));
-}
-
-void Demo::KeyeproEnemy::AbilityEnrage() {
-	commandBuffer.PushCommand(std::make_shared<DX9GF::CustomCommand>([this](std::function<void(void)> markFinished) {
-		this->AddModifier(ModifierType::BuffDamage, 2, 5.0f, true);
-		markFinished();
-		}));
-	commandBuffer.PushCommand(std::make_shared<DX9GF::DelayCommand>(0.5f));
 }
 
 void Demo::KeyeproEnemy::StartAttack(std::shared_ptr<Player> player, std::vector<std::shared_ptr<IEnemy>>* enemies, std::shared_ptr<PopUpMessage> popUpMessage, DX9GF::GraphicsDevice* graphicsDevice, DX9GF::Camera* camera, int currentTurn) {

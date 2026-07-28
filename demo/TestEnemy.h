@@ -10,10 +10,6 @@ namespace Demo {
 		std::weak_ptr<Player> player;
 		int currentCycle = -1;
 		int skillTurnThisCycle = -1;
-		void AbilityTestHeal();
-		void AbilityTestBuff();
-		void AbilityTestDebuff();
-		void AbilityTestLockCard();
 
 	public:
 		using IEnemy::IEnemy;

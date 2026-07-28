@@ -41,7 +41,7 @@ void Demo::KeyeEnemy::OnTurnBegin(std::shared_ptr<Player> player, std::shared_pt
 	if (currentCycle != cycle) {
 		currentCycle = cycle;
 
-		if (RNG::Range(1, 100) <= 40) {
+		if (RNG::Range(1, 100) <= 50) {
 			skillTurnThisCycle = RNG::Range(1, 3);
 		}
 		else {
@@ -52,13 +52,13 @@ void Demo::KeyeEnemy::OnTurnBegin(std::shared_ptr<Player> player, std::shared_pt
 	int turnInCycle = (currentTurn - 1) % 3 + 1;
 
 	if (turnInCycle == skillTurnThisCycle) {
-		int skillType = RNG::Range(1,2);
-
-		if (skillType == 1) PatternBuffSelf();
-		else PatternDebuffPlayer();
-
-		if (popUpMessage) {
-			popUpMessage->QueueMessage(&commandBuffer, L"Keye uses an ability!", 1.5f);
+		if (RNG::Range(1, 2) == 1) {
+			CastAbility([this]() { this->AddModifier(ModifierType::BuffDamage, 2, 5.0f, true); }, popUpMessage, L"Keye focuses its gaze!");
+		}
+		else {
+			CastAbility([this]() {
+				if (auto lock = this->player.lock()) lock->AddModifier(ModifierType::Weak, 2, 0.f, false);
+				}, popUpMessage, L"Keye finds your blind spot!");
 		}
 	}
 }
@@ -73,23 +73,6 @@ void Demo::KeyeEnemy::StartAttack(std::shared_ptr<Player> player, std::vector<st
 	else PatternRoundCircle(finalDamage);
 }
 
-void Demo::KeyeEnemy::PatternBuffSelf() {
-	commandBuffer.PushCommand(std::make_shared<DX9GF::CustomCommand>([this](std::function<void(void)> markFinished) {
-		this->AddModifier(ModifierType::BuffDamage, 2, 5.0f, true);
-		markFinished();
-		}));
-	commandBuffer.PushCommand(std::make_shared<DX9GF::DelayCommand>(0.5f));
-}
-
-void Demo::KeyeEnemy::PatternDebuffPlayer() {
-	commandBuffer.PushCommand(std::make_shared<DX9GF::CustomCommand>([this](std::function<void(void)> markFinished) {
-		if (auto lock = this->player.lock()) {
-			lock->AddModifier(ModifierType::Weak, 2, 0.f, false);
-		}
-		markFinished();
-		}));
-	commandBuffer.PushCommand(std::make_shared<DX9GF::DelayCommand>(0.5f));
-}
 
 void Demo::KeyeEnemy::PatternBoomerangCross(float projDamage) {
 	auto attack = std::make_shared<DX9GF::CustomCommand>([this, projDamage](std::function<void(void)> markFinished) {

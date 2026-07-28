@@ -116,50 +116,32 @@ namespace Demo {
 		IEnemy::Draw(graphicsDevice, camera, deltaTime);
 	}
 
-	void KernelEnemy::OnTurnBegin(std::shared_ptr<Player> player, std::shared_ptr<PopUpMessage> popUpMessage, int currentTurn) {
+	void Demo::KernelEnemy::OnTurnBegin(std::shared_ptr<Player> player, std::shared_ptr<PopUpMessage> popUpMessage, int currentTurn) {
 		this->player = player;
 
-		int cycle = (currentTurn - 1) / 4;
+		int cycle = (currentTurn - 1) / 3;
 
 		if (currentCycle != cycle) {
 			currentCycle = cycle;
 
-			if (RNG::Range(0, 100) <= 35) {
-				skillTurnThisCycle = RNG::Range(1, 4);
+			if (RNG::Range(1, 100) <= 55) {
+				skillTurnThisCycle = RNG::Range(1, 3);
 			}
 			else {
 				skillTurnThisCycle = -1;
 			}
 		}
 
-		int turnInCycle = (currentTurn - 1) % 4 + 1;
+		int turnInCycle = (currentTurn - 1) % 3 + 1;
 
 		if (turnInCycle == skillTurnThisCycle) {
-			int skillType = RNG::Range(1, 2);
-
-			if (skillType == 1) AbilityHealSelf();
-			else AbilityBuffDamage();
-
-			if (popUpMessage) {
-				popUpMessage->QueueMessage(&commandBuffer, L"Kernel runs a process!", 1.5f);
+			if (RNG::Range(1, 2) == 1) {
+				CastAbility([this]() { this->Heal(20.f); }, popUpMessage, L"Kernel runs recovery protocol! (+20 HP)");
+			}
+			else {
+				CastAbility([this]() { this->AddModifier(ModifierType::BuffDamage, 2, 2.0f, true); }, popUpMessage, L"Kernel elevates privileges!");
 			}
 		}
-	}
-
-	void KernelEnemy::AbilityHealSelf() {
-		commandBuffer.PushCommand(std::make_shared<DX9GF::CustomCommand>([this](std::function<void(void)> markFinished) {
-			this->Heal(20.f);
-			markFinished();
-			}));
-		commandBuffer.PushCommand(std::make_shared<DX9GF::DelayCommand>(0.5f));
-	}
-
-	void KernelEnemy::AbilityBuffDamage() {
-		commandBuffer.PushCommand(std::make_shared<DX9GF::CustomCommand>([this](std::function<void(void)> markFinished) {
-			this->AddModifier(ModifierType::BuffDamage, 2, 2.0f, true);
-			markFinished();
-			}));
-		commandBuffer.PushCommand(std::make_shared<DX9GF::DelayCommand>(0.5f));
 	}
 
 	void KernelEnemy::StartAttack(std::shared_ptr<Player> player, std::vector<std::shared_ptr<IEnemy>>* enemies, std::shared_ptr<PopUpMessage> popUpMessage, DX9GF::GraphicsDevice* graphicsDevice, DX9GF::Camera* camera, int currentTurn) {

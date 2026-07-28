@@ -69,7 +69,7 @@ namespace Demo
 			{ 96, 36, 119, 71 });
 
 		itemRegistry[10] = ConsumableItem(99, L"Rusty Key", L"...", {}, { 120, 0, 143, 35 });
-		itemRegistry[11] = ConsumableItem(99, L"G(r)ayStone", L"...", {}, { 120, 36, 143, 71 });
+		itemRegistry[11] = ConsumableItem(99, L"G(r)ayStone", L"Has no practical use. Just a trophy for our winner.", {}, { 120, 36, 143, 71 });
 	}
 
 	const ConsumableItem* ItemData::GetItemBlueprint(int id)

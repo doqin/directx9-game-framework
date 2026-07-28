@@ -17,9 +17,6 @@ namespace Demo {
 		void PatternCoinCyclone(float projDamage, std::vector<std::shared_ptr<IEnemy>>* enemies);
 		void PatternJunkVomit(float projDamage, std::vector<std::shared_ptr<IEnemy>>* enemies);
 
-		void AbilityBuffDefense();
-		void AbilityPoisonPlayer();
-
 	public:
 		using IEnemy::IEnemy;
 		void Init(DX9GF::GraphicsDevice* graphicsDevice, DX9GF::Camera* camera);
