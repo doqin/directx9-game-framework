@@ -1,4 +1,4 @@
-#include "pch.h"
+﻿#include "pch.h"
 #include "SettingsManager.h"
 #include "SecretPuzzleScene.h"
 #include "CustomBattleScene.h"
@@ -267,15 +267,15 @@ void Demo::SecretPuzzleScene::Init()
 	spawn(-910.f, 80.f, "sec_eye_01", { "DemonEyeEnemy" }, false, false);
 	spawn(-780.f, 470.f, "sec_rand_bat_eye_01", { "VampireBatEnemy", "DemonEyeEnemy" }, true, false);
 	spawn(-480.f, 450.f, "sec_rand_keye_bat_01", { "KeyeEnemy", "VampireBatEnemy" }, true, false);
-	spawn(-330.f, 160.f, "sec_duo_bat_01", { "VampireBatEnemy", "VampireBatEnemy" }, false, false);
+	spawn(-330.f, 160.f, "sec_duo_bat_01", { "VampireBatEnemy", "KernelEnemy" }, false, false);
 	spawn(-440.f, -80.f, "sec_mimic_trap_01", { "MimicEnemy" }, false, false);
-	spawn(-300.f, -450.f, "sec_rand_3types_01", { "DemonEyeEnemy", "KeyeEnemy", "MimicEnemy" }, true, false);
+	spawn(-300.f, -450.f, "sec_rand_3types_01", { "DemonEyeEnemy", "KernelEnemy", "MimicEnemy" }, true, false);
 	spawn(-60.f, -460.f, "sec_bat_02", { "VampireBatEnemy" }, false, false);
 	spawn(90.f, -340.f, "sec_rand_eye_bat_01", { "DemonEyeEnemy", "VampireBatEnemy" }, true, false);
-	spawn(765.f, 680.f, "sec_keye_01", { "KeyeEnemy" }, false, false);
+	spawn(765.f, 680.f, "sec_keye_01", { "KernelEnemy" }, false, false);
 	spawn(880.f, 730.f, "sec_rand_bat_mimic_01", { "VampireBatEnemy", "MimicEnemy" }, true, false);
 	spawn(840.f, 900.f, "sec_duo_eye_01", { "DemonEyeEnemy", "DemonEyeEnemy" }, false, false);
-	spawn(1070.f, 640.f, "sec_rand_3types_02", { "VampireBatEnemy", "DemonEyeEnemy", "KeyeEnemy" }, true, false);
+	spawn(1070.f, 640.f, "sec_rand_3types_02", { "VampireBatEnemy", "KernelEnemy", "KeyeEnemy" }, true, false); 
 	spawn(1135.f, 930.f, "sec_rand_keye_mimic_01", { "KeyeEnemy", "MimicEnemy" }, true, false);
 	spawn(1195.f, 780.f, "sec_bat_03", { "VampireBatEnemy" }, false, false);
 	spawn(1350.f, 785.f, "sec_rand_eye_bat_02", { "DemonEyeEnemy", "VampireBatEnemy" }, true, false);

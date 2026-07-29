@@ -1,5 +1,6 @@
 ﻿#include "pch.h"
 #include "DemonEyeEnemy.h"
+#include "PopUpMessage.h"
 #include "resource.h"
 #include "RNG.h"
 
@@ -36,27 +37,56 @@ int Demo::DemonEyeEnemy::GetRandomPattern()
 	return RNG::Range(1, 3);
 }
 
-void Demo::DemonEyeEnemy::StartAttack(std::shared_ptr<Player> player, std::vector<std::shared_ptr<IEnemy>>* enemies, std::shared_ptr<PopUpMessage> popUpMessage, DX9GF::GraphicsDevice* graphicsDevice, DX9GF::Camera* camera)
+void Demo::DemonEyeEnemy::OnTurnBegin(std::shared_ptr<Player> player, std::shared_ptr<PopUpMessage> popUpMessage, int currentTurn)
+{
+	this->player = player;
+
+	int cycle = (currentTurn - 1) / 3;
+
+	if (currentCycle != cycle) {
+		currentCycle = cycle;
+
+		if (RNG::Range(1, 100) <= 65) {
+			skillTurnThisCycle = RNG::Range(1, 3);
+		}
+		else {
+			skillTurnThisCycle = -1;
+		}
+	}
+
+	int turnInCycle = (currentTurn - 1) % 3 + 1;
+
+	if (turnInCycle == skillTurnThisCycle) {
+		if (RNG::Range(1, 2) == 1) {
+			CastAbility([this]() { this->AddModifier(ModifierType::BuffDamage, 2, 3.0f, true); }, popUpMessage, L"Bug powers up its attack!");
+		}
+		else {
+			CastAbility([this]() {
+				if (auto lock = this->player.lock()) lock->AddModifier(ModifierType::Vulnerable, 1, 0.f, false);
+				}, popUpMessage, L"Bug injects a vulnerability!");
+		}
+	}
+}
+
+void Demo::DemonEyeEnemy::StartAttack(std::shared_ptr<Player> player, std::vector<std::shared_ptr<IEnemy>>* enemies, std::shared_ptr<PopUpMessage> popUpMessage, DX9GF::GraphicsDevice* graphicsDevice, DX9GF::Camera* camera, int currentTurn)
 {
 	(void)enemies;
 	(void)popUpMessage;
 	(void)graphicsDevice;
 	(void)camera;
 	this->player = player;
+
 	float baseDamage = 4.f;
-	float projDamage = GetOutgoingDamage(baseDamage);
 
 	//surprise element
 	int patternId = GetSmartRandomPattern(1, 3);
 
-	//PatternBloodCross(projDamage, enemies);
-	if (patternId == 1) PatternBloodRain(projDamage, enemies);
-	else if (patternId == 2) PatternBloodWall(projDamage, enemies);
-	else PatternBloodCross(projDamage, enemies);
-	//commandBuffer.PushCommand(std::make_shared<DX9GF::DelayCommand>(1.f));
+	if (patternId == 1) PatternBloodRain(baseDamage, enemies);
+	else if (patternId == 2) PatternBloodWall(baseDamage, enemies);
+	else PatternBloodCross(baseDamage, enemies);
 }
 
-void Demo::DemonEyeEnemy::PatternBloodRain(float projDamage, std::vector<std::shared_ptr<IEnemy>>* enemies)
+void Demo::DemonEyeEnemy::PatternBloodRain(float baseDamage, std::vector<std::shared_ptr<IEnemy>>* enemies)
 {
 	bool isAlone = enemies->size() == 1;
 	const int BULLET_COUNT = isAlone ? 180 : 90;
@@ -68,8 +98,10 @@ void Demo::DemonEyeEnemy::PatternBloodRain(float projDamage, std::vector<std::sh
 	for (int i = 0; i < BULLET_COUNT; i++) {
 		float offsetX = RNG::Range(-OFFSET_RANGE, OFFSET_RANGE);
 
-		commandBuffer.PushCommand(std::make_shared<DX9GF::CustomCommand>([this, projDamage, offsetX, DROP_HEIGHT, BULLET_SPEED](std::function<void(void)> markFinished) {
+		commandBuffer.PushCommand(std::make_shared<DX9GF::CustomCommand>([this, baseDamage, offsetX, DROP_HEIGHT, BULLET_SPEED](std::function<void(void)> markFinished) {
 			if (auto lock = this->player.lock()) {
+				float finalDamage = this->CalculateOutgoingDamage(baseDamage);
+
 				auto [playerX, playerY] = lock->GetWorldPosition();
 
 				float finalX = playerX + offsetX;
@@ -82,7 +114,7 @@ void Demo::DemonEyeEnemy::PatternBloodRain(float projDamage, std::vector<std::sh
 					.SetDelay(0.f)
 					.SetDecayTime(4.f)
 					.SetVelocity(BULLET_SPEED)
-					.SetDamage(projDamage)
+					.SetDamage(finalDamage)
 				);
 			}
 			markFinished();
@@ -91,7 +123,7 @@ void Demo::DemonEyeEnemy::PatternBloodRain(float projDamage, std::vector<std::sh
 	}
 }
 
-void Demo::DemonEyeEnemy::PatternBloodWall(float projDamage, std::vector<std::shared_ptr<IEnemy>>* enemies)
+void Demo::DemonEyeEnemy::PatternBloodWall(float baseDamage, std::vector<std::shared_ptr<IEnemy>>* enemies)
 {
 	bool isAlone = enemies->size() == 1;
 	const int WAVE_COUNT = isAlone ? 9 : 5;
@@ -107,8 +139,10 @@ void Demo::DemonEyeEnemy::PatternBloodWall(float projDamage, std::vector<std::sh
 		//random hole
 		int emptyHole = RNG::Range(0, BULLET_PER_WAVE - 1);
 
-		commandBuffer.PushCommand(std::make_shared<DX9GF::CustomCommand>([this, projDamage, emptyHole, BULLET_PER_WAVE, BULLET_SPEED, DROP_HEIGHT, WALL_START_X, BULLET_SPACING, BULLET_DECAY_TIME](std::function<void(void)> markFinished) {
+		commandBuffer.PushCommand(std::make_shared<DX9GF::CustomCommand>([this, baseDamage, emptyHole, BULLET_PER_WAVE, BULLET_SPEED, DROP_HEIGHT, WALL_START_X, BULLET_SPACING, BULLET_DECAY_TIME](std::function<void(void)> markFinished) {
 			if (auto lock = this->player.lock()) {
+				float finalDamage = this->CalculateOutgoingDamage(baseDamage);
+
 				auto [playerX, playerY] = lock->GetWorldPosition();
 
 				for (int i = 0; i < BULLET_PER_WAVE; i++) {
@@ -125,7 +159,7 @@ void Demo::DemonEyeEnemy::PatternBloodWall(float projDamage, std::vector<std::sh
 						.SetDelay(0.f)
 						.SetDecayTime(BULLET_DECAY_TIME)
 						.SetVelocity(BULLET_SPEED)
-						.SetDamage(projDamage)
+						.SetDamage(finalDamage) 
 					);
 				}
 			}
@@ -135,7 +169,7 @@ void Demo::DemonEyeEnemy::PatternBloodWall(float projDamage, std::vector<std::sh
 	}
 }
 
-void Demo::DemonEyeEnemy::PatternBloodCross(float projDamage, std::vector<std::shared_ptr<IEnemy>>* enemies)
+void Demo::DemonEyeEnemy::PatternBloodCross(float baseDamage, std::vector<std::shared_ptr<IEnemy>>* enemies)
 {
 	bool isAlone = enemies->size() == 1;
 	const int BULLET_COUNT = isAlone ? 180 : 70;
@@ -146,26 +180,27 @@ void Demo::DemonEyeEnemy::PatternBloodCross(float projDamage, std::vector<std::s
 	const float OFFSET_MAX = 150.f;
 
 	//since the bullets veer to the RIGHT(0.5, 1.0), shift the spawn area further to the left to ensure they hit the Player.
-
 	for (int i = 0; i < BULLET_COUNT; i++) {
 		float offsetX = RNG::Range(OFFSET_MIN, OFFSET_MAX);
 
-		commandBuffer.PushCommand(std::make_shared<DX9GF::CustomCommand>([this, projDamage, offsetX, BULLET_SPEED, DROP_HEIGHT](std::function<void(void)> markFinished) {
+		commandBuffer.PushCommand(std::make_shared<DX9GF::CustomCommand>([this, baseDamage, offsetX, BULLET_SPEED, DROP_HEIGHT](std::function<void(void)> markFinished) {
 			if (auto lock = this->player.lock()) {
+				float finalDamage = this->CalculateOutgoingDamage(baseDamage);
+
 				auto [playerX, playerY] = lock->GetWorldPosition();
 
-			float finalX = playerX + offsetX;
-			float finalY = playerY - DROP_HEIGHT;
+				float finalX = playerX + offsetX;
+				float finalY = playerY - DROP_HEIGHT;
 
-			projectiles.Spawn(
-				lock,
-				ProjectileDesc(tearProjectileTexture.get(), tearProjectileFrames, 12, 8, 8, 16, 16, finalX, finalY)
-				.SetTrajectory(D3DXVECTOR2(0.5f, 1.0f))
-				.SetDelay(0.f)
-				.SetDecayTime(4.f)
-				.SetVelocity(BULLET_SPEED)
-				.SetDamage(projDamage)
-			);
+				projectiles.Spawn(
+					lock,
+					ProjectileDesc(tearProjectileTexture.get(), tearProjectileFrames, 12, 8, 8, 16, 16, finalX, finalY)
+					.SetTrajectory(D3DXVECTOR2(0.5f, 1.0f))
+					.SetDelay(0.f)
+					.SetDecayTime(4.f)
+					.SetVelocity(BULLET_SPEED)
+					.SetDamage(finalDamage)
+				);
 			}
 			markFinished();
 			}));

@@ -70,11 +70,43 @@ void Demo::IBattleScene::StartBattle()
 	std::shuffle(drawPile.begin(), drawPile.end(), gen);
 	currentTurn = 1;
 	DrawCards(5);
+	for (auto& enemy : enemies) {
+		enemy->SetOnRequestLockCard([this](int turns) { this->LockRandomCard(turns); });
+	}
+	for (auto& enemy : enemies) {
+		enemy->OnTurnBegin(this->battlePlayer, this->popUpMessage, this->currentTurn);
+	}
 	if (!customBGMName.empty()) {
 		DX9GF::AudioManager::GetInstance()->PlayBGM_Fade(customBGMName, 0.3f, 1.5f);
 	}
 	else {
 		DX9GF::AudioManager::GetInstance()->PlayRandomBGM_Fade("battle_bgm", 0.3f, 1.5f);
+	}
+}
+
+void Demo::IBattleScene::LockRandomCard(int turns)
+{
+	std::vector<std::shared_ptr<ICard>> visibleCards;
+
+	for (auto& card : this->cardHand) if (!card->IsLocked()) visibleCards.push_back(card);
+	for (auto& card : this->queuedToDraw) if (!card->IsLocked()) visibleCards.push_back(card);
+
+	// Lock a visible (hand/queued) card first
+	if (!visibleCards.empty()) {
+		int randIdx = RNG::Range(0, static_cast<int>(visibleCards.size() - 1));
+		visibleCards[randIdx]->SetLocked(turns);
+		this->pendingLockMessage = true;
+		return;
+	}
+
+	// Otherwise fall back to locking a card still in the draw pile
+	std::vector<std::shared_ptr<ICard>> hiddenCards;
+	for (auto& card : this->drawPile) if (!card->IsLocked()) hiddenCards.push_back(card);
+
+	if (!hiddenCards.empty()) {
+		int randIdx = RNG::Range(0, static_cast<int>(hiddenCards.size() - 1));
+		hiddenCards[randIdx]->SetLocked(turns);
+		this->pendingLockMessage = true;
 	}
 }
 
@@ -147,6 +179,7 @@ void Demo::IBattleScene::DrawCards(size_t count)
 		}
 		auto card = drawPile.back();
 		drawPile.pop_back();
+		this->queuedToDraw.push_back(card);
 		card->SetOwner(battlePlayer.get());
 		auto draggable = dynamic_pointer_cast<IDraggable>(card);
 		if (draggable) {
@@ -158,7 +191,6 @@ void Demo::IBattleScene::DrawCards(size_t count)
 			std::make_shared<DX9GF::SetPositionCommand>(card, -static_cast<float>(screenWidth), y),
 			std::make_shared<DX9GF::CustomCommand>([this, card](std::function<void(void)> markFinished) {
 				DX9GF::AudioManager::GetInstance()->PlayRandom("card_draw", 0.3f);
-				this->queuedToDraw.push_back(card);
 				markFinished();
 			}),
 			std::make_shared<DX9GF::DelayCommand>(i * .2f),
@@ -230,6 +262,9 @@ void Demo::IBattleScene::MoveExecutedHandCardsToPlayedPile()
 void Demo::IBattleScene::MoveHandCardsToDiscardPile()
 {
 	for (size_t i = 0; i < cardHand.size(); ++i) {
+		if (cardHand[i]->IsLocked()) {
+			continue;
+		}
 		HidePileCard(cardHand[i]);
 		discardPile.push_back(cardHand[i]);
 		cardHand.erase(cardHand.begin() + i);
@@ -239,12 +274,17 @@ void Demo::IBattleScene::MoveHandCardsToDiscardPile()
 
 void Demo::IBattleScene::BeginNextTurn()
 {
-	battlePlayer->UpdateBuffs();
 	++currentTurn;
 	MovePlayedPileToDiscardPileIfNeeded();
 	DrawCards(5);
 	energy = MAX_ENERGY;
 	usedEnergy = 0;
+
+	battlePlayer->TickDurations(TickPhase::EndOfRound);
+	for (auto& enemy : enemies) {
+		enemy->TickDurations(TickPhase::EndOfRound);
+		enemy->OnTurnBegin(this->battlePlayer, this->popUpMessage, this->currentTurn);
+	}
 }
 
 void Demo::IBattleScene::QueueEnemyLayoutTransition(State targetState)
@@ -252,9 +292,6 @@ void Demo::IBattleScene::QueueEnemyLayoutTransition(State targetState)
 	if (enemies.empty()) {
 		return;
 	}
-	//if (targetState == lastEnemyLayoutState) {
-	//	return;
-	//}
 
 	const auto app = DX9GF::Application::GetInstance();
 	const float centerLineY = -120.f;
@@ -352,16 +389,6 @@ void Demo::IBattleScene::RefreshItemMenu()
 		}
 	}
 
-	//test items list ui pages
-	//for (int i = 0; i < inventory.size(); i++) {
-	//	if (inventory[i].quantity > 0 && Demo::ItemData::GetInstance()->GetItemBlueprint(inventory[i].itemID)) {
-	//		for (int q = 0; q < inventory[i].quantity; ++q) {
-	//			validIndices.push_back(i);
-	//		}
-	//	}
-	//}
-
-
 	float targetWidth = itemMenuBackground->GetTargetWidth();
 	float targetHeight = itemMenuBackground->GetTargetHeight();
 
@@ -407,12 +434,12 @@ void Demo::IBattleScene::RefreshItemMenu()
 		btn->SetOnReleaseLeft([this, slot, blueprint](DX9GF::ITrigger* thisObj) {
 			commandBuffer.PushCommand(std::make_shared<DX9GF::CustomCommand>([this, slot, blueprint](std::function<void(void)> markFinished) {
 				if (player->GetInventoryItems().ConsumeItem(slot.itemID)) {
-					for (auto& buff : blueprint->GetBuffs()) {
-						if (buff.type == Demo::ItemBuffType::HealHP) {
-							battlePlayer->Heal(buff.value);
+					for (auto& mod : blueprint->GetModifiers()) {
+						if (mod.type == Demo::ModifierType::HealHP) {
+							battlePlayer->Heal(mod.value);
 						}
 						else {
-							battlePlayer->AddActiveBuff(buff);
+							battlePlayer->AddModifier(mod.type, mod.duration, mod.value, mod.isBuff, mod.delayTurns);
 						}
 					}
 					std::wstring msg = L"Used " + blueprint->GetName() + L"!";
@@ -490,7 +517,6 @@ void Demo::IBattleScene::PlayerAttackUpdate(unsigned long long deltaTime)
 		// When finished executing attack
 		if (isExecutingAttacks) {
 			isExecutingAttacks = false;
-
 			return QueueToEnemyAttack(deltaTime);
 		}
 		if (!isTransitioning) {
@@ -615,6 +641,10 @@ std::vector<Demo::KeyboardNavigator::Candidate> Demo::IBattleScene::CollectKeybo
 		// Hand cards, plus orphaned cards floating in space (e.g. a card whose drop onto the
 		// block was rejected for lack of energy) - block-parented cards are handled below.
 		for (auto& card : cardHand) {
+			if (card->IsLocked()) {
+				continue;
+			}
+
 			auto statementCard = std::dynamic_pointer_cast<IStatementCard>(card);
 			if (!statementCard) {
 				continue;
@@ -641,9 +671,11 @@ std::vector<Demo::KeyboardNavigator::Candidate> Demo::IBattleScene::CollectKeybo
 		// StatementCards already queued in the block can also be targeted, to reorder them.
 		for (auto& weakChild : mainBlockCard->GetChildren()) {
 			auto placedStatementCard = std::dynamic_pointer_cast<IStatementCard>(weakChild.lock());
-			if (!placedStatementCard) {
+
+			if (!placedStatementCard || placedStatementCard->IsLocked()) {
 				continue;
 			}
+
 			candidates.push_back({
 				placedStatementCard,
 				placedStatementCard->GetWorldX(),
@@ -692,15 +724,17 @@ std::vector<Demo::KeyboardNavigator::Candidate> Demo::IBattleScene::CollectKeybo
 		break;
 	}
 	case State::PlayerOpenItems: {
-		addButton(closeItemMenuButton);
-		if (currentItemPage > 0) {
-			addButton(btnPrevPage);
-		}
-		if (currentItemPage < maxItemPage) {
-			addButton(btnNextPage);
-		}
-		for (auto& btn : buffItems) {
-			addButton(btn);
+		if (!isTransitioning) {
+			addButton(closeItemMenuButton);
+			if (currentItemPage > 0) {
+				addButton(btnPrevPage);
+			}
+			if (currentItemPage < maxItemPage) {
+				addButton(btnNextPage);
+			}
+			for (auto& btn : buffItems) {
+				addButton(btn);
+			}
 		}
 		break;
 	}
@@ -963,7 +997,17 @@ void Demo::IBattleScene::QueueToEnemyAttack(unsigned long long deltaTime)
 	// Use shared_ptr to share state between multiple commands in the MultiCommand
 	auto attackingEnemies = std::make_shared<std::vector<std::shared_ptr<IEnemy>>>();
 	std::vector<std::shared_ptr<DX9GF::ICommand>> commands = {
-		std::make_shared<DX9GF::DelayCommand>(0.5f),
+
+		//trigger effects: poison
+		std::make_shared<DX9GF::CustomCommand>([this](std::function<void(void)> markFinished) {
+			for (auto& enemy : this->enemies) {
+				enemy->TriggerEffects(TickPhase::EndOfTurn);
+			}
+			markFinished();
+		}),
+
+		std::make_shared<DX9GF::DelayCommand>(0.6f),
+
 		std::make_shared<DX9GF::CustomCommand>([this, deltaTime, attackingEnemies](std::function<void(void)> markFinished) {
 			// Wait for dead enemies to finish animations before collecting them
 			for (auto& enemy : this->enemies) {
@@ -974,6 +1018,11 @@ void Demo::IBattleScene::QueueToEnemyAttack(unsigned long long deltaTime)
 
 			this->MoveExecutedHandCardsToPlayedPile();
 			this->MoveHandCardsToDiscardPile();
+
+			for (auto& card : this->cardHand) {
+				card->TickLock();
+			}
+
 			// Remove unused enemy cards or enemy cards of dead enemies
 			for (size_t i = 0; i < this->enemyCards.size(); ++i) {
 				auto& enemyCard = this->enemyCards[i];
@@ -986,8 +1035,8 @@ void Demo::IBattleScene::QueueToEnemyAttack(unsigned long long deltaTime)
 				}
 			}
 			for (auto enemy : this->enemies) {
-				bool isStunned = enemy->HasStatus(StatusType::STUN);
-				enemy->TickStatuses();
+				bool isStunned = enemy->HasModifier(ModifierType::Stun);
+
 				if (enemy->IsDead()) {
 					continue;
 				}
@@ -1028,28 +1077,47 @@ void Demo::IBattleScene::QueueToEnemyAttack(unsigned long long deltaTime)
 			}
 
 			if (attackingEnemies->empty()) {
-				this->BeginNextTurn();
-				this->state = State::PlayerStandBy;
-				this->QueueEnemyLayoutTransition(State::PlayerStandBy);
-				this->lastEnemyLayoutState = State::PlayerStandBy;
-				this->enemyLayoutInitialized = true;
-				this->isTransitioning = false;
-				markFinished();
-				return;
-			}
 
-			this->state = State::EnemyAttack;
-			this->QueueEnemyLayoutTransition(State::EnemyAttack);
-			for (auto& enemy : this->enemies) {
-				enemy->SetState(true);
-			}
+				//even if the enemy is stunned, poison effect on player still hits
+				this->battlePlayer->TriggerEffects(TickPhase::EndOfTurn);
 
-			this->battlePlayer->SetLocalPosition(0, 0);
-			this->StartAttackCountdown(attackingEnemies);
+				std::vector<std::shared_ptr<DX9GF::ICommand>> commands = {
+					std::make_shared<DX9GF::DelayCommand>(0.8f),
+					std::make_shared<DX9GF::CustomCommand>([this](std::function<void(void)> markFinished2) {
+						if (this->battlePlayer->IsDead()) {
+							this->isDefeatSequence = true;
+							this->defeatElapsedMs = 0.f;
+							this->defeatFadeAlpha = 0.f;
+							this->popUpMessage->QueueMessage(&this->commandBuffer, L"You were defeated", 1.5f);
+						}
+ else {
+  this->BeginNextTurn();
+  this->state = State::PlayerStandBy;
+  this->QueueEnemyLayoutTransition(State::PlayerStandBy);
+  this->lastEnemyLayoutState = State::PlayerStandBy;
+  this->enemyLayoutInitialized = true;
+}
+this->isTransitioning = false;
+markFinished2();
+})
+};
+this->commandBuffer.PushCommand(std::make_shared<DX9GF::MultiCommand>(std::move(commands)));
+markFinished();
+return;
+}
 
-			this->isTransitioning = false;
-			markFinished();
-			})
+this->state = State::EnemyAttack;
+this->QueueEnemyLayoutTransition(State::EnemyAttack);
+for (auto& enemy : this->enemies) {
+	enemy->SetState(true);
+}
+
+this->battlePlayer->SetLocalPosition(0, 0);
+this->StartAttackCountdown(attackingEnemies);
+
+this->isTransitioning = false;
+markFinished();
+})
 	};
 	commandBuffer.PushCommand(std::make_shared<DX9GF::MultiCommand>(std::move(commands)));
 	return;
@@ -1098,8 +1166,8 @@ bool Demo::IBattleScene::EnemyAttackUpdate(unsigned long long deltaTime)
 		}
 		return false;
 	}
-	if (!isAttackCountdownActive) {       
-		battlePlayer->Update(deltaTime); 
+	if (!isAttackCountdownActive) {
+		battlePlayer->Update(deltaTime);
 	}
 	if (battlePlayer->IsDead()) {
 		isDefeatSequence = true;
@@ -1116,15 +1184,15 @@ bool Demo::IBattleScene::EnemyAttackUpdate(unsigned long long deltaTime)
 			enemy->SetState(true);
 		}
 		for (auto& enemy : enemies) {
-			bool isStunned = enemy->HasStatus(StatusType::STUN);
-			enemy->TickStatuses();
+			bool isStunned = enemy->HasModifier(ModifierType::Stun);
+
 			if (enemy->IsDead()) {
 				continue;
 			}
 			if (isStunned) {
 				continue;
 			}
-			enemy->StartAttack(this->battlePlayer, &this->enemies, this->popUpMessage, game->GetGraphicsDevice(), &this->camera);
+			enemy->StartAttack(this->battlePlayer, &this->enemies, this->popUpMessage, game->GetGraphicsDevice(), &this->camera, this->currentTurn);
 		}
 		enemyAttackStartPending = false;
 	}
@@ -1136,18 +1204,33 @@ bool Demo::IBattleScene::EnemyAttackUpdate(unsigned long long deltaTime)
 	if (isAttackCountdownActive) {
 		isDoneAttacking = false;
 	}
-	if (isDoneAttacking) {
+	if (isDoneAttacking && !isTransitioning) {
 		CollectDeadEnemies();
 		if (enemies.empty()) {
 			OnAllEnemiesDefeated();
 			return false;
 		}
-		BeginNextTurn();
-		state = State::PlayerStandBy;
-		QueueEnemyLayoutTransition(State::PlayerStandBy);
-		lastEnemyLayoutState = State::PlayerStandBy;
-		enemyLayoutInitialized = true;
-		PlayerStandByUpdate(deltaTime);
+
+		isTransitioning = true;
+
+		// poison hits at the end of enemy's turn
+		battlePlayer->TriggerEffects(TickPhase::EndOfTurn);
+
+		std::vector<std::shared_ptr<DX9GF::ICommand>> commands = {
+			std::make_shared<DX9GF::DelayCommand>(0.8f),
+			std::make_shared<DX9GF::CustomCommand>([this](std::function<void(void)> markFinished) {
+				if (!battlePlayer->IsDead()) {
+					BeginNextTurn();
+					state = State::PlayerStandBy;
+					QueueEnemyLayoutTransition(State::PlayerStandBy);
+					lastEnemyLayoutState = State::PlayerStandBy;
+					enemyLayoutInitialized = true;
+				}
+				isTransitioning = false;
+				markFinished();
+			})
+		};
+		commandBuffer.PushCommand(std::make_shared<DX9GF::MultiCommand>(std::move(commands)));
 	}
 	return false;
 }
@@ -1227,15 +1310,6 @@ void Demo::IBattleScene::PlayerOpenItemsDraw(unsigned long long deltaTime)
 		}
 	}
 
-	//test items list ui pages
-	//for (int i = 0; i < inventory.size(); i++) {
-	//	if (inventory[i].quantity > 0 && Demo::ItemData::GetInstance()->GetItemBlueprint(inventory[i].itemID)) {
-	//		for (int q = 0; q < inventory[i].quantity; ++q) {
-	//			validIndices.push_back(i);
-	//		}
-	//	}
-	//}
-
 	float targetWidth = itemMenuBackground->GetTargetWidth();
 	float targetHeight = itemMenuBackground->GetTargetHeight();
 
@@ -1246,7 +1320,7 @@ void Demo::IBattleScene::PlayerOpenItemsDraw(unsigned long long deltaTime)
 
 	int itemsPerPage = columns * rows;
 	int startIndex = currentItemPage * itemsPerPage;
-	int endIndex = std::min(static_cast<int>(validIndices.size()), startIndex + itemsPerPage);
+	int endIndex = (std::min)(static_cast<int>(validIndices.size()), startIndex + itemsPerPage);
 
 	int displayIndex = 0;
 	for (int i = startIndex; i < endIndex; i++) {
@@ -1270,6 +1344,18 @@ void Demo::IBattleScene::PlayerOpenItemsDraw(unsigned long long deltaTime)
 		auto slot = inventory[originalIndex];
 		auto btn = buffItems[displayIndex];
 
+		fontSprite->SetColor(0xFFFFFFFF);
+		fontSprite->SetOutline(true, 0xFF000000, 3.f);
+
+		fontSprite->SetText(L"x" + std::to_wstring(slot.quantity));
+
+		float textW = fontSprite->GetWidth();
+		float textX = btn->GetWorldX() + (ITEM_W / 2.0f) - (textW / 2.0f);
+		float textY = btn->GetWorldY() + ITEM_H + 5.0f;
+
+		fontSprite->SetPosition(textX, textY);
+		fontSprite->Draw(this->uiCamera, deltaTime);
+
 		if (btn->GetTrigger()->IsHovering(deltaTime)) {
 			auto blueprint = Demo::ItemData::GetInstance()->GetItemBlueprint(slot.itemID);
 			if (blueprint) {
@@ -1280,6 +1366,8 @@ void Demo::IBattleScene::PlayerOpenItemsDraw(unsigned long long deltaTime)
 	}
 
 	if (maxItemPage > 0) {
+		fontSprite->SetColor(0xFFFFFFFF);
+		fontSprite->SetOutline(true, 0xFF000000, 3.f);
 		std::wstring pageText = L"Page " + std::to_wstring(currentItemPage + 1) + L"/" + std::to_wstring(maxItemPage + 1);
 		fontSprite->SetPosition(-35.0f, targetHeight / 2.0f - PADDING_Y - 9.0f);
 		fontSprite->SetText(std::move(pageText));
@@ -1290,13 +1378,15 @@ void Demo::IBattleScene::PlayerOpenItemsDraw(unsigned long long deltaTime)
 		float descX = -targetWidth / 2.0f + PADDING_X;
 		float descY = -targetHeight / 2.0f + 15.0f;
 
+		fontSprite->SetColor(0xFFFFFFFF);
+		fontSprite->SetOutline(true, 0xFF000000, 3.f);
 		fontSprite->SetPosition(descX, descY);
 		fontSprite->SetText(std::move(hoverDescription));
 		fontSprite->Draw(this->uiCamera, deltaTime);
 	}
 
 	fontSprite->End();
-	fontSprite->SetOutline(true);
+	fontSprite->SetOutline(false);
 }
 
 void Demo::IBattleScene::EnemyAttackDraw(unsigned long long deltaTime)
@@ -1327,45 +1417,153 @@ void Demo::IBattleScene::DrawHealthAndDefenseBar(const float y, DX9GF::GraphicsD
 	gd->DrawRectangle(this->uiCamera, x, y, w_, 10, 0xFF9cdb43, true);
 	gd->DrawRectangle(this->uiCamera, x, y, w, 20, 0xFF000000, false);
 
-	auto buffs = battlePlayer->GetActiveBuffs();
-	auto buffY = y - 48.f;
-	for (auto buff : buffs) {
-		int value = buff.value;
-		auto turnsLeft = buff.turnsLeft;
-		if (buff.type == ItemBuffType::BuffDamage || buff.type == ItemBuffType::BuffDefense) {
-			if (buff.type == ItemBuffType::BuffDamage) fontSprite->SetColor(0xFFfa6a0a);
-			else fontSprite->SetColor(0xFF588dbe);
+	auto modifiers = battlePlayer->GetModifiers();
+	auto modY = y - 48.f;
 
-			fontSprite->SetOutline(true, 0xFF000000, 3.f);
-			fontSprite->SetPosition(x, buffY);
-			fontSprite->SetText(std::to_wstring(value));
-			fontSprite->Begin();
-			fontSprite->Draw(this->uiCamera, 0);
-			fontSprite->End();
+	bool isTooltipActive = false;
+	std::wstring activeTooltipText = L"";
 
-			auto textWidth = fontSprite->GetWidth();
-			if (buff.type == ItemBuffType::BuffDamage) {
-				attackBuffIcon->SetPosition(x + textWidth, buffY - 8.f);
-				attackBuffIcon->SetScale(2.f, 2.f);
-				attackBuffIcon->Begin();
-				attackBuffIcon->Draw(this->uiCamera, 0);
-				attackBuffIcon->End();
-			}
-			else {
-				defenseBuffIcon->SetPosition(x + textWidth, buffY - 8.f);
-				defenseBuffIcon->SetScale(2.f, 2.f);
-				defenseBuffIcon->Begin();
-				defenseBuffIcon->Draw(this->uiCamera, 0);
-				defenseBuffIcon->End();
-			}
-			fontSprite->SetColor(0xFFFFFFFF);
-			fontSprite->SetPosition(x + textWidth + 32.f, buffY);
-			fontSprite->SetText(std::to_wstring(turnsLeft) + L" turns");
-			fontSprite->Begin();
-			fontSprite->Draw(this->uiCamera, 0);
-			fontSprite->End();
-			buffY -= 32.f;
+	auto [screenX, screenY] = DX9GF::InputManager::GetInstance()->GetVirtualAbsoluteMousePos(&this->uiCamera);
+	auto [mouseX, mouseY] = DX9GF::Utils::WindowToWorldCoords(this->uiCamera, screenX, screenY);
+
+	for (const auto& mod : modifiers) {
+		if (mod.duration <= 0) continue;
+
+		std::wstring valueText = L"";
+		std::wstring nameText = L"";
+		std::wstring statusName = L"Unknown";
+		std::wstring statusDescription = L"";
+		D3DCOLOR textColor = 0xFFFFFFFF;
+		RECT iconRect = { 0, 0, 0, 0 };
+
+		if (mod.type == ModifierType::BuffDamage) {
+			valueText = std::to_wstring(static_cast<int>(mod.value));
+			textColor = 0xFFfa6a0a;
+			iconRect = { 112, 240, 128, 256 };
+			statusName = L"Atk Up";
+			statusDescription = L"Increases attack damage.";
 		}
+		else if (mod.type == ModifierType::BuffDefense) {
+			valueText = std::to_wstring(static_cast<int>(mod.value));
+			textColor = 0xFF588dbe;
+			iconRect = { 96, 240, 112, 256 };
+			statusName = L"Def Up";
+			statusDescription = L"Blocks incoming damage.";
+		}
+		else if (mod.type == ModifierType::Poison) {
+			int poisonDmg = static_cast<int>(std::round((mod.value > 0.f) ? mod.value : static_cast<float>(mod.duration)));
+			valueText = std::to_wstring(poisonDmg);
+			textColor = 0xFFba4aed;
+			iconRect = { 128, 240, 144, 256 };
+			statusName = L"Poison";
+			statusDescription = L"Takes " + std::to_wstring(poisonDmg) + L" damage at end of turn.";
+		}
+		else if (mod.type == ModifierType::Vulnerable) {
+			iconRect = { 96, 256, 112, 272 };
+			statusName = L"Vulnerable";
+			statusDescription = L"Takes 50% more damage from attacks.";
+		}
+		else if (mod.type == ModifierType::Weak) {
+			iconRect = { 112, 256, 128, 272 };
+			statusName = L"Weak";
+			statusDescription = L"Deals 25% less damage with attacks.";
+		}
+		else if (mod.type == ModifierType::Stun) {
+			nameText = L"Stun";
+			textColor = 0xFFfffc40;
+			statusName = L"Stun";
+			statusDescription = L"Cannot take action this turn.";
+		}
+		else {
+			continue;
+		}
+
+		float currentDrawX = x;
+		float hitBoxX = x;
+		float hitBoxY = modY - 8.f;
+		float hitBoxW = 32.f;
+		float hitBoxH = 32.f;
+
+		//icons/texts
+		if (iconRect.right > 0) {
+			attackBuffIcon->SetSrcRect(iconRect);
+			attackBuffIcon->SetPosition(currentDrawX, hitBoxY);
+			attackBuffIcon->SetScale(2.f, 2.f);
+			attackBuffIcon->Begin();
+			attackBuffIcon->Draw(this->uiCamera, 0);
+			attackBuffIcon->End();
+			currentDrawX += 36.f;
+		}
+		else if (!nameText.empty()) {
+			fontSprite->SetColor(textColor);
+			fontSprite->SetOutline(true, 0xFF000000, 3.f);
+			fontSprite->SetPosition(currentDrawX, modY);
+			fontSprite->SetText(std::move(nameText));
+			fontSprite->Begin();
+			fontSprite->Draw(this->uiCamera, 0);
+			fontSprite->End();
+
+			hitBoxY = modY;
+			hitBoxW = fontSprite->GetWidth();
+			hitBoxH = fontSprite->GetHeight();
+			currentDrawX += hitBoxW + 8.f;
+		}
+
+		//values
+		if (!valueText.empty()) {
+			fontSprite->SetColor(textColor);
+			fontSprite->SetOutline(true, 0xFF000000, 3.f);
+			fontSprite->SetPosition(currentDrawX, modY);
+			fontSprite->SetText(std::move(valueText));
+			fontSprite->Begin();
+			fontSprite->Draw(this->uiCamera, 0);
+			fontSprite->End();
+			currentDrawX += fontSprite->GetWidth() + 8.f;
+		}
+
+		//turns left
+		fontSprite->SetColor(0xFFFFFFFF);
+		fontSprite->SetOutline(true, 0xFF000000, 3.f);
+		fontSprite->SetPosition(currentDrawX, modY);
+		fontSprite->SetText(std::to_wstring(mod.duration) + L" turns");
+		fontSprite->Begin();
+		fontSprite->Draw(this->uiCamera, 0);
+		fontSprite->End();
+
+		bool isHovered = mouseX >= hitBoxX && mouseX <= hitBoxX + hitBoxW && mouseY >= hitBoxY && mouseY <= hitBoxY + hitBoxH;
+		if (isHovered) {
+			isTooltipActive = true;
+			activeTooltipText = statusName + L" (" + std::to_wstring(mod.duration) + L" turns remaining)\n" + statusDescription;
+		}
+
+		modY -= 32.f;
+	}
+
+	//draw tooltip after
+	if (isTooltipActive) {
+		fontSprite->SetText(std::move(activeTooltipText));
+		float tooltipWidth = fontSprite->GetWidth() + 8.f;
+		float tooltipHeight = fontSprite->GetHeight() + 8.f;
+
+		auto [screenW, screenH] = this->uiCamera.GetScreenResolution();
+		float targetScreenX = screenX;
+		float targetScreenY = screenY - tooltipHeight;
+
+		if (targetScreenX + tooltipWidth > screenW) targetScreenX = screenW - tooltipWidth;
+		if (targetScreenY < 0) targetScreenY = screenY + 32.f;
+
+		auto [worldDrawX, worldDrawY] = DX9GF::Utils::WindowToWorldCoords(this->uiCamera, targetScreenX, targetScreenY);
+
+		gd->SetAlphaBlending(true);
+		gd->DrawRectangle(this->uiCamera, worldDrawX, worldDrawY, tooltipWidth, tooltipHeight, 0, 1, 1, 0, 0, D3DCOLOR_ARGB(220, 0, 0, 0), true);
+		gd->SetAlphaBlending(false);
+
+		fontSprite->SetColor(0xFFFFFFFF);
+		fontSprite->SetOutline(true, 0xFF000000, 1.f);
+		fontSprite->SetPosition(worldDrawX + 4.f, worldDrawY + 4.f);
+		fontSprite->Begin();
+		fontSprite->Draw(this->uiCamera, 0);
+		fontSprite->End();
 	}
 }
 
@@ -1408,6 +1606,11 @@ void Demo::IBattleScene::Init()
 			}
 			QueueEnemyLayoutTransition(State::PlayerAttack);
 			lastEnemyLayoutState = State::PlayerAttack;
+			//lock card message
+			if (this->pendingLockMessage) {
+				this->popUpMessage->QueueMessage(&this->commandBuffer, L"Enemy locked a card!", 2.0f);
+				this->pendingLockMessage = false;
+			}
 			//popUpMessage->QueueMessage(&commandBuffer, L"Click on the enemy sprite to create an Enemy Card and drag it to your attacking card to target it!", 2.5f);
 			markFinished();
 			}));
@@ -1606,7 +1809,6 @@ void Demo::IBattleScene::Init()
 		});
 	executeButton->SetSpriteScale(2.f, 2.f);
 
-	//temporary copy backbutton texture
 	closeItemMenuButton = std::make_shared<IconButton>(transformManager, 0, 0, buttonWidth, buttonHeight, uiSheetTex);
 	closeItemMenuButton->SetOnReleaseLeft([&](DX9GF::ITrigger* thisObj) {
 		commandBuffer.PushCommand(std::make_shared<DX9GF::CustomCommand>([&](std::function<void(void)> markFinished) {
@@ -1763,7 +1965,10 @@ void Demo::IBattleScene::Init()
 	transformManager->RebuildHierarchy();
 	DamageTextManager::GetInstance()->Init(this->game);
 	ItemData::GetInstance()->LoadData();
-	drawBuffer->PushCommand(std::make_shared<TransitionCommand>(game->GetGraphicsDevice(), &this->uiCamera, 1.f, false)); 
+
+	// Note: enemies are populated by subclasses after IBattleScene::Init() returns,
+	// so their onRequestLockCard is wired centrally in StartBattle() instead.
+	drawBuffer->PushCommand(std::make_shared<TransitionCommand>(game->GetGraphicsDevice(), &this->uiCamera, 1.f, false));
 }
 
 void Demo::IBattleScene::Update(unsigned long long deltaTime)
@@ -1791,7 +1996,7 @@ void Demo::IBattleScene::Update(unsigned long long deltaTime)
 					if (enemy->IsDead()) {
 						continue;
 					}
-					enemy->StartAttack(this->battlePlayer, &this->enemies, this->popUpMessage, game->GetGraphicsDevice(), &this->camera);
+					enemy->StartAttack(this->battlePlayer, &this->enemies, this->popUpMessage, game->GetGraphicsDevice(), &this->camera, this->currentTurn);
 				}
 				countdownAttackingEnemies.reset();
 			}

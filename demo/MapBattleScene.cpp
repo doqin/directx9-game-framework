@@ -35,6 +35,7 @@ namespace Demo {
                 enemy->SetOnRequestEnemyCard([this](std::shared_ptr<IEnemy> e) {
                     this->CreateEnemyCard(e);
                     });
+                // onRequestLockCard is wired centrally in IBattleScene::StartBattle()
                 this->enemies.push_back(enemy);
             }
         }

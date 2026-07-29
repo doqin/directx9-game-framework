@@ -14,7 +14,6 @@ bool Demo::HeavyStrikeCard::Execute() {
 }
 
 void Demo::HeavyStrikeCard::Draw(unsigned long long deltaTime) {
-	MultiTargetCard::Draw(deltaTime);
 	if (isCropped) {
 		graphicsDevice->SetScissorRect(scissorRect);
 		graphicsDevice->SetScissorTest(true);
@@ -35,6 +34,7 @@ void Demo::HeavyStrikeCard::Draw(unsigned long long deltaTime) {
 	if (isCropped) {
 		graphicsDevice->SetScissorTest(false);
 	}
+	MultiTargetCard::Draw(deltaTime);
 }
 
 bool Demo::TwinStrikeCard::Execute() {
@@ -54,7 +54,6 @@ bool Demo::TwinStrikeCard::Execute() {
 }
 
 void Demo::TwinStrikeCard::Draw(unsigned long long deltaTime) {
-	MultiTargetCard::Draw(deltaTime);
 	if (isCropped) {
 		graphicsDevice->SetScissorRect(scissorRect);
 		graphicsDevice->SetScissorTest(true);
@@ -75,6 +74,7 @@ void Demo::TwinStrikeCard::Draw(unsigned long long deltaTime) {
 	if (isCropped) {
 		graphicsDevice->SetScissorTest(false);
 	}
+	MultiTargetCard::Draw(deltaTime);
 }
 
 void Demo::TwinStrikeCard::ResetExecution() {
@@ -95,7 +95,6 @@ bool Demo::CleaveCard::Execute() {
 }
 
 void Demo::CleaveCard::Draw(unsigned long long deltaTime) {
-	MultiTargetCard::Draw(deltaTime);
 	if (isCropped) {
 		graphicsDevice->SetScissorRect(scissorRect);
 		graphicsDevice->SetScissorTest(true);
@@ -116,6 +115,7 @@ void Demo::CleaveCard::Draw(unsigned long long deltaTime) {
 	if (isCropped) {
 		graphicsDevice->SetScissorTest(false);
 	}
+	MultiTargetCard::Draw(deltaTime);
 }
 
 bool Demo::ChainLightningCard::Execute() {
@@ -132,7 +132,6 @@ bool Demo::ChainLightningCard::Execute() {
 }
 
 void Demo::ChainLightningCard::Draw(unsigned long long deltaTime) {
-	MultiTargetCard::Draw(deltaTime);
 	if (isCropped) {
 		graphicsDevice->SetScissorRect(scissorRect);
 		graphicsDevice->SetScissorTest(true);
@@ -153,6 +152,7 @@ void Demo::ChainLightningCard::Draw(unsigned long long deltaTime) {
 	if (isCropped) {
 		graphicsDevice->SetScissorTest(false);
 	}
+	MultiTargetCard::Draw(deltaTime);
 }
 
 bool Demo::PoisonCard::Execute() {
@@ -161,8 +161,8 @@ bool Demo::PoisonCard::Execute() {
 		if (auto enemy = targets[0].lock()) {
           if (auto e = enemy->GetValue()) {
 				const int poisonTurns = 3;
-				e->ApplyStatus(StatusType::POISON, poisonTurns);
-			}
+				e->AddModifier(ModifierType::Poison, poisonTurns, 0.f, false);
+		  }
 		}
 	}
 	isDone = true;
@@ -170,7 +170,6 @@ bool Demo::PoisonCard::Execute() {
 }
 
 void Demo::PoisonCard::Draw(unsigned long long deltaTime) {
-	MultiTargetCard::Draw(deltaTime);
 	if (isCropped) {
 		graphicsDevice->SetScissorRect(scissorRect);
 		graphicsDevice->SetScissorTest(true);
@@ -191,13 +190,14 @@ void Demo::PoisonCard::Draw(unsigned long long deltaTime) {
 	if (isCropped) {
 		graphicsDevice->SetScissorTest(false);
 	}
+	MultiTargetCard::Draw(deltaTime);
 }
 
 bool Demo::VulnerableCard::Execute() {
 	if (isDone) return true;
 	if (!targets.empty()) {
 		if (auto enemy = targets[0].lock()) {
-			if (auto e = enemy->GetValue()) e->ApplyStatus(StatusType::VULNERABLE, 1);
+			if (auto e = enemy->GetValue()) e->AddModifier(ModifierType::Vulnerable, 1, 0.f, false);
 		}
 	}
 	isDone = true;
@@ -226,13 +226,14 @@ void Demo::VulnerableCard::Draw(unsigned long long deltaTime) {
 	if (isCropped) {
 		graphicsDevice->SetScissorTest(false);
 	}
+	MultiTargetCard::Draw(deltaTime);
 }
 
 bool Demo::WeaknessCard::Execute() {
 	if (isDone) return true;
 	for (auto& wp : targets) {
 		if (auto enemy = wp.lock()) {
-			if (auto e = enemy->GetValue()) e->ApplyStatus(StatusType::WEAK, 2);
+			if (auto e = enemy->GetValue()) e->AddModifier(ModifierType::Weak, 2, 0.f, false);
 		}
 	}
 	isDone = true;
@@ -240,7 +241,6 @@ bool Demo::WeaknessCard::Execute() {
 }
 
 void Demo::WeaknessCard::Draw(unsigned long long deltaTime) {
-	MultiTargetCard::Draw(deltaTime);
 	if (isCropped) {
 		graphicsDevice->SetScissorRect(scissorRect);
 		graphicsDevice->SetScissorTest(true);
@@ -261,13 +261,14 @@ void Demo::WeaknessCard::Draw(unsigned long long deltaTime) {
 	if (isCropped) {
 		graphicsDevice->SetScissorTest(false);
 	}
+	MultiTargetCard::Draw(deltaTime);
 }
 
 bool Demo::StunCard::Execute() {
 	if (isDone) return true;
 	if (!targets.empty()) {
 		if (auto enemy = targets[0].lock()) {
-			if (auto e = enemy->GetValue()) e->ApplyStatus(StatusType::STUN, 1);
+			if (auto e = enemy->GetValue()) e->AddModifier(ModifierType::Stun, 1, 0.f, false);
 		}
 	}
 	isDone = true;
@@ -275,7 +276,6 @@ bool Demo::StunCard::Execute() {
 }
 
 void Demo::StunCard::Draw(unsigned long long deltaTime) {
-	MultiTargetCard::Draw(deltaTime);
 	if (isCropped) {
 		graphicsDevice->SetScissorRect(scissorRect);
 		graphicsDevice->SetScissorTest(true);
@@ -296,4 +296,5 @@ void Demo::StunCard::Draw(unsigned long long deltaTime) {
 	if (isCropped) {
 		graphicsDevice->SetScissorTest(false);
 	}
+	MultiTargetCard::Draw(deltaTime);
 }
