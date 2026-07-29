@@ -77,7 +77,6 @@ void Demo::StrikeCard::Update(unsigned long long deltaTime)
 
 void Demo::StrikeCard::Draw(unsigned long long deltaTime)
 {
-	IStatementCard::Draw(deltaTime);
 	if (isCropped) {
 		graphicsDevice->SetScissorRect(scissorRect);
 		graphicsDevice->SetScissorTest(true);
@@ -100,6 +99,7 @@ void Demo::StrikeCard::Draw(unsigned long long deltaTime)
 	if (isCropped) {
 		graphicsDevice->SetScissorTest(false);
 	}
+	IStatementCard::Draw(deltaTime);
 	for (auto& draggable : draggableManager->GetDraggingDraggables()) {
 		if (auto draggedEnemyCard = std::dynamic_pointer_cast<EnemyCard>(draggable); draggableManager->GetDraggingDraggables().size() == 1 && draggedEnemyCard) {
 			if (!enemyCard.lock()) {

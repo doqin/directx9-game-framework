@@ -1,4 +1,4 @@
-#include "pch.h"
+﻿#include "pch.h"
 #include "IDraggable.h"
 #include <DX9GF.h>
 #include <algorithm>
@@ -214,6 +214,13 @@ void Demo::IDraggable::Init(std::shared_ptr<DraggableManager> manager, DX9GF::Gr
 	//trigger->SetOriginCenter();
 
 	trigger->SetOnHeldLeft([&](DX9GF::ITrigger* thisObj) {
+		if (auto card = dynamic_cast<Demo::ICard*>(this)) {
+			if (card->IsLocked()) {
+				DX9GF::AudioManager::GetInstance()->PlayRandom("error", 0.4f);
+				return;
+			}
+		}
+
 		auto parent = dynamic_pointer_cast<IDraggable>(thisObj->GetParent().value().lock());
 		if (parent->GetParent().has_value()) {
 			parent->DetachParent();
@@ -324,6 +331,7 @@ void Demo::IDraggable::Draw(unsigned long long deltaTime)
 		}
 		debugFontSprite->End();
 	}
+
 	if (isCropped) {
 		graphicsDevice->SetScissorTest(false);
 	}

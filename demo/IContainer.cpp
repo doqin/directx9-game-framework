@@ -1,4 +1,4 @@
-#include "pch.h"
+﻿#include "pch.h"
 #include "IContainer.h"
 #include "DX9GFInputManager.h"
 #include "DX9GFUtils.h"
@@ -68,6 +68,10 @@ bool Demo::IContainer::OnDrop(std::shared_ptr<IDraggable> other)
 
 void Demo::IContainer::AttachChild(std::shared_ptr<IDraggable> child)
 {
+	children.erase(std::remove_if(children.begin(), children.end(), [&](const std::weak_ptr<IDraggable>& c) {
+		return c.lock() == child;
+		}), children.end());
+
 	size_t currentHeightOfChildren = GetHeightOfChildren();
 	child->SetParent(shared_from_this());
 	child->SetLocalPosition(0, (float)dragAreaHeight + currentHeightOfChildren);

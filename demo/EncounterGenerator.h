@@ -9,7 +9,7 @@ namespace Demo {
 		//roguelike enemy pool
 		static std::vector<std::string> GenerateNormalEncounter() {
 			std::vector<std::string> normalPool = {
-				"DemonEyeEnemy", "VampireBatEnemy",
+				"DemonEyeEnemy", "VampireBatEnemy", "KernelEnemy", 
 				"MimicEnemy", "WarlockEnemy", "KeyeEnemy"
 			};
 
