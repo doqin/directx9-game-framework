@@ -133,6 +133,8 @@ namespace Demo {
 
 		void CreateEnemyCard(std::shared_ptr<IEnemy> enemy);
 		void StartBattle();
+		// Locks a random available card (hand first, then queued/draw pile) for the given turns.
+		void LockRandomCard(int turns);
 		void OnAllEnemiesDefeated();
 
 	private:

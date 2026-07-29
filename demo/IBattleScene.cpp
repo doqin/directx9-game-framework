@@ -71,6 +71,9 @@ void Demo::IBattleScene::StartBattle()
 	currentTurn = 1;
 	DrawCards(5);
 	for (auto& enemy : enemies) {
+		enemy->SetOnRequestLockCard([this](int turns) { this->LockRandomCard(turns); });
+	}
+	for (auto& enemy : enemies) {
 		enemy->OnTurnBegin(this->battlePlayer, this->popUpMessage, this->currentTurn);
 	}
 	if (!customBGMName.empty()) {
@@ -78,6 +81,32 @@ void Demo::IBattleScene::StartBattle()
 	}
 	else {
 		DX9GF::AudioManager::GetInstance()->PlayRandomBGM_Fade("battle_bgm", 0.3f, 1.5f);
+	}
+}
+
+void Demo::IBattleScene::LockRandomCard(int turns)
+{
+	std::vector<std::shared_ptr<ICard>> visibleCards;
+
+	for (auto& card : this->cardHand) if (!card->IsLocked()) visibleCards.push_back(card);
+	for (auto& card : this->queuedToDraw) if (!card->IsLocked()) visibleCards.push_back(card);
+
+	// Lock a visible (hand/queued) card first
+	if (!visibleCards.empty()) {
+		int randIdx = RNG::Range(0, static_cast<int>(visibleCards.size() - 1));
+		visibleCards[randIdx]->SetLocked(turns);
+		this->pendingLockMessage = true;
+		return;
+	}
+
+	// Otherwise fall back to locking a card still in the draw pile
+	std::vector<std::shared_ptr<ICard>> hiddenCards;
+	for (auto& card : this->drawPile) if (!card->IsLocked()) hiddenCards.push_back(card);
+
+	if (!hiddenCards.empty()) {
+		int randIdx = RNG::Range(0, static_cast<int>(hiddenCards.size() - 1));
+		hiddenCards[randIdx]->SetLocked(turns);
+		this->pendingLockMessage = true;
 	}
 }
 
@@ -1937,28 +1966,8 @@ void Demo::IBattleScene::Init()
 	DamageTextManager::GetInstance()->Init(this->game);
 	ItemData::GetInstance()->LoadData();
 
-	for (auto& enemy : enemies) {
-		enemy->SetOnRequestLockCard([this](int turns) {
-			std::vector<std::shared_ptr<ICard>> availableCardsToLock;
-
-			for (auto& card : this->cardHand) {
-				if (!card->IsLocked()) availableCardsToLock.push_back(card);
-			}
-
-			for (auto& card : this->queuedToDraw) {
-				if (!card->IsLocked()) availableCardsToLock.push_back(card);
-			}
-
-			for (auto& card : this->drawPile) {
-				if (!card->IsLocked()) availableCardsToLock.push_back(card);
-			}
-
-			if (!availableCardsToLock.empty()) {
-				int randIndex = RNG::Range(0, static_cast<int>(availableCardsToLock.size() - 1));
-				availableCardsToLock[randIndex]->SetLocked(turns);
-			}
-			});
-	}
+	// Note: enemies are populated by subclasses after IBattleScene::Init() returns,
+	// so their onRequestLockCard is wired centrally in StartBattle() instead.
 	drawBuffer->PushCommand(std::make_shared<TransitionCommand>(game->GetGraphicsDevice(), &this->uiCamera, 1.f, false));
 }
 
