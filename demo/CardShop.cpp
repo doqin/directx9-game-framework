@@ -1,6 +1,7 @@
 ﻿#include "pch.h"
 #include "CardShop.h"
 #include "StrikeCard.h"
+#include "EnergyCard.h"
 #include "AdvancedCards.h"
 
 void Demo::CardShop::AddShopCard(const std::string& name, int price, const std::wstring& description, const std::function<void()>& onBuyAction)
@@ -32,6 +33,7 @@ void Demo::CardShop::LoadItems()
 	const int WeaknessCardCost = 85;
 	const int ChainLightningCardCost = 100;
 	const int StunCardCost = 300;
+	const int EnergyCardCost = 45;
     switch (currentTier) {
 	case ShopTier::BASIC:
        AddShopCard("Strike Card", StrikeCardCost, StrikeCard(this->transformManager).GetDescription(), [this]() {
@@ -44,6 +46,10 @@ void Demo::CardShop::LoadItems()
 			});
        AddShopCard("Poison Card", PoisonCardCost, PoisonCard(this->transformManager).GetDescription(), [this]() {
 			auto newCard = std::make_shared<PoisonCard>(this->transformManager);
+			this->player->AddCardToDeck(newCard->GetSaveID());
+			});
+       AddShopCard("Energy Card", EnergyCardCost, EnergyCard(this->transformManager).GetDescription(), [this]() {
+			auto newCard = std::make_shared<EnergyCard>(this->transformManager);
 			this->player->AddCardToDeck(newCard->GetSaveID());
 			});
 		break;

@@ -84,7 +84,7 @@ namespace Demo {
 		for (auto& wp : targets) {
 			if (auto lock = wp.lock()) totalWidth += lock->GetWidth();
 		}
-		return totalWidth;
+		return totalWidth + GetUsesCoverWidth();
 	}
 
 	void MultiTargetCard::Draw(unsigned long long deltaTime) {

@@ -88,6 +88,9 @@ void Demo::IBlockCard::ExecuteIteratively(unsigned long long deltaTime)
 	}
 	currentExecutingCard = current;
 	if (current->Execute()) {
+		// A card queued in the block runs again on every following turn until the program
+		// clears, so a use is spent per completed execution, not per time it was played.
+		current->ConsumeUse();
 		++executeIndex;
 	}
 }

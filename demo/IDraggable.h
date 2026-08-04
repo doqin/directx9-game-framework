@@ -94,6 +94,11 @@ namespace Demo {
 		void Update(unsigned long long deltaTime);
 		void Draw(unsigned long long deltaTime);
 		void QueueDraw(std::shared_ptr<DX9GF::ICommand> cmd);
+		// Draw() flushes the queue itself. Callers that draw draggables directly, without going
+		// through Draw(), must flush too - otherwise queued commands outlive the objects that
+		// queued them and run against freed memory.
+		void FlushQueuedDraws(unsigned long long deltaTime);
+		void ClearQueuedDraws();
 		bool IsQueueBusy();
 		std::vector<std::shared_ptr<IDraggable>> GetDraggingDraggables() const;
 	};

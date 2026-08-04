@@ -58,7 +58,12 @@ void Demo::IBattleScene::StartBattle()
 {
 	for (auto& card : drawPile) {
 		HidePileCard(card);
+		card->ResetUses();
 	}
+	nullifiedPile.clear();
+	energy = MAX_ENERGY;
+	usedEnergy = 0;
+	pendingBonusEnergy = 0;
 	initialEnemyCount = enemies.size();
 	battleGoldReward = 0;
 	isBattleEnding = false;
@@ -181,6 +186,7 @@ void Demo::IBattleScene::DrawCards(size_t count)
 		drawPile.pop_back();
 		this->queuedToDraw.push_back(card);
 		card->SetOwner(battlePlayer.get());
+		card->SetBattleScene(this);
 		auto draggable = dynamic_pointer_cast<IDraggable>(card);
 		if (draggable) {
 			draggable->DetachParent();
@@ -259,6 +265,25 @@ void Demo::IBattleScene::MoveExecutedHandCardsToPlayedPile()
 	}
 }
 
+void Demo::IBattleScene::MoveDepletedCardsToNullifiedPile()
+{
+	auto drain = [this](std::vector<std::shared_ptr<ICard>>& pile) {
+		for (size_t i = 0; i < pile.size(); ++i) {
+			if (!pile[i]->IsDepleted()) {
+				continue;
+			}
+			HidePileCard(pile[i]);
+			nullifiedPile.push_back(pile[i]);
+			pile.erase(pile.begin() + i);
+			--i;
+		}
+		};
+	// Played cards keep running from inside the block, so detaching them here is what
+	// actually stops a depleted card from executing again next turn.
+	drain(playedPile);
+	drain(cardHand);
+}
+
 void Demo::IBattleScene::MoveHandCardsToDiscardPile()
 {
 	for (size_t i = 0; i < cardHand.size(); ++i) {
@@ -272,12 +297,130 @@ void Demo::IBattleScene::MoveHandCardsToDiscardPile()
 	}
 }
 
+const std::vector<std::shared_ptr<Demo::ICard>>& Demo::IBattleScene::GetPile(PileKind kind) const
+{
+	switch (kind) {
+	case PileKind::Discard:   return discardPile;
+	case PileKind::Nullified: return nullifiedPile;
+	default:                  return drawPile;
+	}
+}
+
+std::wstring Demo::IBattleScene::GetPileName(PileKind kind)
+{
+	switch (kind) {
+	case PileKind::Discard:   return L"Discard Pile";
+	case PileKind::Nullified: return L"Nullified Pile";
+	default:                  return L"Draw Pile";
+	}
+}
+
+void Demo::IBattleScene::OpenPileView(PileKind kind)
+{
+	viewedPile = kind;
+	currentPilePage = 0;
+	state = State::PlayerViewPile;
+	RefreshPileView();
+	DX9GF::AudioManager::GetInstance()->PlayRandom("card_draw", 0.4f);
+}
+
+void Demo::IBattleScene::ClosePileView()
+{
+	// Drop anything the view queued this frame before its cards are destroyed.
+	draggableManager->ClearQueuedDraws();
+	for (auto& card : pileViewCards) {
+		if (auto draggable = std::dynamic_pointer_cast<IDraggable>(card)) {
+			draggableManager->Remove(draggable);
+		}
+	}
+	pileViewCards.clear();
+	state = State::PlayerAttack;
+}
+
+void Demo::IBattleScene::RefreshPileView()
+{
+	// Paging destroys the current page's cards, same hazard as closing the view.
+	draggableManager->ClearQueuedDraws();
+	for (auto& card : pileViewCards) {
+		if (auto draggable = std::dynamic_pointer_cast<IDraggable>(card)) {
+			draggableManager->Remove(draggable);
+		}
+	}
+	pileViewCards.clear();
+
+	const auto& pile = GetPile(viewedPile);
+
+	const float targetWidth = itemMenuBackground->GetTargetWidth();
+	const float targetHeight = itemMenuBackground->GetTargetHeight();
+	const float columnWidth = 240.f;
+	const float rowHeight = 40.f;
+
+	int columns = static_cast<int>(std::floor((targetWidth - PADDING_X * 2.f) / columnWidth));
+	int rows = static_cast<int>(std::floor((targetHeight - PADDING_Y * 2.f - 90.f) / rowHeight));
+	if (columns < 1) columns = 1;
+	if (rows < 1) rows = 1;
+
+	const int perPage = columns * rows;
+	maxPilePage = pile.empty() ? 0 : (static_cast<int>(pile.size()) - 1) / perPage;
+	if (currentPilePage > maxPilePage) currentPilePage = maxPilePage;
+	if (currentPilePage < 0) currentPilePage = 0;
+
+	const int startIndex = currentPilePage * perPage;
+	const int endIndex = (std::min)(static_cast<int>(pile.size()), startIndex + perPage);
+
+	const float gridWidth = columns * columnWidth;
+	const float startX = -gridWidth / 2.f;
+	const float startY = -targetHeight / 2.f + PADDING_Y + 40.f;
+
+	// The pile's own cards are mid-battle state (parented into the block, hidden off-screen,
+	// bound to the world camera), so the view shows fresh copies bound to the UI camera.
+	for (int i = startIndex; i < endIndex; ++i) {
+		const int slot = i - startIndex;
+		auto copy = ICard::CreateCard(pile[i]->GetSaveID(), transformManager, draggableManager, game->GetGraphicsDevice(), &uiCamera);
+		if (!copy) {
+			continue;
+		}
+		// Carry the use counter across so a half-spent card shows the right pips.
+		if (pile[i]->HasLimitedUses()) {
+			copy->SetMaxUses(pile[i]->GetMaxUses());
+			for (int spent = pile[i]->GetRemainingUses(); spent < pile[i]->GetMaxUses(); ++spent) {
+				copy->ConsumeUse();
+			}
+		}
+		copy->SetLocalPosition(startX + (slot % columns) * columnWidth, startY + (slot / columns) * rowHeight);
+		pileViewCards.push_back(copy);
+	}
+
+	const float pageY = targetHeight / 2.0f - PADDING_Y - 15.0f;
+	btnPilePrevPage->SetLocalPosition(-targetWidth / 2.0f + PADDING_X, pageY);
+	btnPileNextPage->SetLocalPosition(targetWidth / 2.0f - PADDING_X - btnPileNextPage->GetWidth(), pageY);
+
+	if (transformManager) {
+		transformManager->RebuildHierarchy();
+		transformManager->UpdateAll();
+	}
+}
+
+float Demo::IBattleScene::LayOutPileButtons(float screenWidth, float buttonY)
+{
+	const float sidePadding = 20.f;
+	const float total = PILE_BUTTON_SIZE * 3.f + PILE_BUTTON_GAP * 2.f;
+	const float x = screenWidth / 2.f - sidePadding - total;
+	// Taller than the back/execute buttons, so sit them on the bar's baseline rather than its top.
+	const float y = buttonY + backButton->GetHeight() - PILE_BUTTON_SIZE;
+	drawPileButton->SetLocalPosition(x, y);
+	discardPileButton->SetLocalPosition(x + PILE_BUTTON_SIZE + PILE_BUTTON_GAP, y);
+	nullifiedPileButton->SetLocalPosition(x + (PILE_BUTTON_SIZE + PILE_BUTTON_GAP) * 2.f, y);
+	return x;
+}
+
 void Demo::IBattleScene::BeginNextTurn()
 {
 	++currentTurn;
 	MovePlayedPileToDiscardPileIfNeeded();
 	DrawCards(5);
-	energy = MAX_ENERGY;
+	energy = MAX_ENERGY + pendingBonusEnergy;
+	pendingBonusEnergy = 0;
 	usedEnergy = 0;
 
 	battlePlayer->TickDurations(TickPhase::EndOfRound);
@@ -509,9 +652,11 @@ void Demo::IBattleScene::PlayerAttackUpdate(unsigned long long deltaTime)
 
 	backButton->SetLocalPosition(leftX, buttonY);
 	executeButton->SetLocalPosition(executeX, buttonY);
+	const float pileButtonsX = LayOutPileButtons(screenWidth, buttonY);
 	enemyCardRemoveAreaX = executeX + executeButton->GetWidth() + sidePadding;
 	enemyCardRemoveAreaY = buttonY;
-	enemyCardRemoveAreaWidth = screenWidth / 2.f - sidePadding - enemyCardRemoveAreaX;
+	// Stops short of the pile buttons parked at the right end of the same bar.
+	enemyCardRemoveAreaWidth = pileButtonsX - sidePadding - enemyCardRemoveAreaX;
 	enemyCardRemoveAreaHeight = backButton->GetHeight();
 	if (!mainBlockCard->IsExecuting()) {
 		// When finished executing attack
@@ -520,8 +665,11 @@ void Demo::IBattleScene::PlayerAttackUpdate(unsigned long long deltaTime)
 			return QueueToEnemyAttack(deltaTime);
 		}
 		if (!isTransitioning) {
-			if (energy - usedEnergy == MAX_ENERGY) backButton->Update(deltaTime);
+			if (usedEnergy == 0) backButton->Update(deltaTime);
 			executeButton->Update(deltaTime);
+			drawPileButton->Update(deltaTime);
+			discardPileButton->Update(deltaTime);
+			nullifiedPileButton->Update(deltaTime);
 		}
 	}
 	for (auto& enemy : enemies) {
@@ -632,10 +780,13 @@ std::vector<Demo::KeyboardNavigator::Candidate> Demo::IBattleScene::CollectKeybo
 	}
 	case State::PlayerAttack: {
 		if (!mainBlockCard->IsExecuting() && !isTransitioning) {
-			if (energy - usedEnergy == MAX_ENERGY) {
+			if (usedEnergy == 0) {
 				addButton(backButton);
 			}
 			addButton(executeButton);
+			addButton(drawPileButton);
+			addButton(discardPileButton);
+			addButton(nullifiedPileButton);
 		}
 
 		// Hand cards, plus orphaned cards floating in space (e.g. a card whose drop onto the
@@ -734,6 +885,18 @@ std::vector<Demo::KeyboardNavigator::Candidate> Demo::IBattleScene::CollectKeybo
 			}
 			for (auto& btn : buffItems) {
 				addButton(btn);
+			}
+		}
+		break;
+	}
+	case State::PlayerViewPile: {
+		if (!isTransitioning) {
+			addButton(closePileViewButton);
+			if (currentPilePage > 0) {
+				addButton(btnPilePrevPage);
+			}
+			if (currentPilePage < maxPilePage) {
+				addButton(btnPileNextPage);
 			}
 		}
 		break;
@@ -1017,6 +1180,7 @@ void Demo::IBattleScene::QueueToEnemyAttack(unsigned long long deltaTime)
 			}
 
 			this->MoveExecutedHandCardsToPlayedPile();
+			this->MoveDepletedCardsToNullifiedPile();
 			this->MoveHandCardsToDiscardPile();
 
 			for (auto& card : this->cardHand) {
@@ -1141,6 +1305,22 @@ void Demo::IBattleScene::PlayerOpenItemsUpdate(unsigned long long deltaTime)
 		for (auto& btn : buffItems) {
 			btn->Update(deltaTime);
 		}
+	}
+	for (auto& enemy : enemies) {
+		enemy->Update(deltaTime);
+	}
+}
+
+void Demo::IBattleScene::PlayerViewPileUpdate(unsigned long long deltaTime)
+{
+	const float targetHeight = itemMenuBackground->GetTargetHeight();
+
+	closePileViewButton->SetLocalPosition(-closePileViewButton->GetWidth() / 2.0f, targetHeight / 2.0f + 15.0f);
+
+	if (!isTransitioning) {
+		closePileViewButton->Update(deltaTime);
+		if (currentPilePage > 0) btnPilePrevPage->Update(deltaTime);
+		if (currentPilePage < maxPilePage) btnPileNextPage->Update(deltaTime);
 	}
 	for (auto& enemy : enemies) {
 		enemy->Update(deltaTime);
@@ -1284,8 +1464,9 @@ void Demo::IBattleScene::PlayerAttackDraw(unsigned long long deltaTime)
 	hourglassIcon->End();
 
 	if (!mainBlockCard->IsExecuting() && !isTransitioning) {
-		if (energy - usedEnergy == MAX_ENERGY) backButton->Draw(game->GetGraphicsDevice(), deltaTime);
+		if (usedEnergy == 0) backButton->Draw(game->GetGraphicsDevice(), deltaTime);
 		executeButton->Draw(game->GetGraphicsDevice(), deltaTime);
+		DrawPileButtons(deltaTime);
 	}
 
 	DrawKeyboardPlacementUI(deltaTime);
@@ -1382,6 +1563,89 @@ void Demo::IBattleScene::PlayerOpenItemsDraw(unsigned long long deltaTime)
 		fontSprite->SetOutline(true, 0xFF000000, 3.f);
 		fontSprite->SetPosition(descX, descY);
 		fontSprite->SetText(std::move(hoverDescription));
+		fontSprite->Draw(this->uiCamera, deltaTime);
+	}
+
+	fontSprite->End();
+	fontSprite->SetOutline(false);
+}
+
+void Demo::IBattleScene::DrawPileButtons(unsigned long long deltaTime)
+{
+	auto gd = game->GetGraphicsDevice();
+	const std::pair<std::shared_ptr<IconButton>, PileKind> buttons[] = {
+		{ drawPileButton,      PileKind::Draw },
+		{ discardPileButton,   PileKind::Discard },
+		{ nullifiedPileButton, PileKind::Nullified },
+	};
+
+	for (auto& [button, kind] : buttons) {
+		button->Draw(gd, deltaTime);
+	}
+
+	fontSprite->Begin();
+	fontSprite->SetColor(0xFFFFFFFF);
+	fontSprite->SetOutline(true, 0xFF000000, 3.f);
+	for (auto& [button, kind] : buttons) {
+		fontSprite->SetText(std::to_wstring(GetPile(kind).size()));
+		// Bottom-right corner of the icon, nudged outward so the digits clear the card art.
+		const float textX = button->GetWorldX() + PILE_BUTTON_SIZE - fontSprite->GetWidth() + 2.f;
+		const float textY = button->GetWorldY() + PILE_BUTTON_SIZE - fontSprite->GetHeight() + 2.f;
+		fontSprite->SetPosition(textX, textY);
+		fontSprite->Draw(this->uiCamera, deltaTime);
+	}
+	fontSprite->End();
+	fontSprite->SetOutline(false);
+}
+
+void Demo::IBattleScene::PlayerViewPileDraw(unsigned long long deltaTime)
+{
+	itemMenuBackground->Begin();
+	itemMenuBackground->Draw(this->uiCamera, deltaTime);
+	itemMenuBackground->End();
+
+	closePileViewButton->Draw(game->GetGraphicsDevice(), deltaTime);
+
+	for (auto& card : pileViewCards) {
+		if (auto draggable = std::dynamic_pointer_cast<IDraggable>(card)) {
+			draggable->Draw(deltaTime);
+		}
+	}
+	// These cards are drawn directly rather than through DraggableManager::Draw, so their
+	// queued overlays (hover highlight, description tooltip) have to be flushed here. Leaving
+	// them queued would defer them to the next battle frame, after these cards are gone.
+	draggableManager->FlushQueuedDraws(deltaTime);
+
+	if (currentPilePage > 0) {
+		btnPilePrevPage->Draw(game->GetGraphicsDevice(), deltaTime);
+	}
+	if (currentPilePage < maxPilePage) {
+		btnPileNextPage->Draw(game->GetGraphicsDevice(), deltaTime);
+	}
+
+	const float targetWidth = itemMenuBackground->GetTargetWidth();
+	const float targetHeight = itemMenuBackground->GetTargetHeight();
+	const size_t pileSize = GetPile(viewedPile).size();
+
+	fontSprite->Begin();
+	fontSprite->SetColor(0xFFFFFFFF);
+	fontSprite->SetOutline(true, 0xFF000000, 3.f);
+
+	std::wstring title = GetPileName(viewedPile) + L" (" + std::to_wstring(pileSize) + L")";
+	fontSprite->SetText(std::move(title));
+	fontSprite->SetPosition(-fontSprite->GetWidth() / 2.f, -targetHeight / 2.0f + 15.0f);
+	fontSprite->Draw(this->uiCamera, deltaTime);
+
+	if (pileSize == 0) {
+		fontSprite->SetText(L"Empty");
+		fontSprite->SetPosition(-fontSprite->GetWidth() / 2.f, -10.f);
+		fontSprite->Draw(this->uiCamera, deltaTime);
+	}
+
+	if (maxPilePage > 0) {
+		std::wstring pageText = L"Page " + std::to_wstring(currentPilePage + 1) + L"/" + std::to_wstring(maxPilePage + 1);
+		fontSprite->SetText(std::move(pageText));
+		fontSprite->SetPosition(-fontSprite->GetWidth() / 2.f, targetHeight / 2.0f - PADDING_Y - 9.0f);
 		fontSprite->Draw(this->uiCamera, deltaTime);
 	}
 
@@ -1809,6 +2073,61 @@ void Demo::IBattleScene::Init()
 		});
 	executeButton->SetSpriteScale(2.f, 2.f);
 
+	// Pile buttons. Each group of three frames on the sheet is idle / hover / pressed.
+	drawPileButton = std::make_shared<IconButton>(transformManager, 0, 0, PILE_BUTTON_SIZE, PILE_BUTTON_SIZE, uiSheetTex);
+	drawPileButton->SetSpriteRects(DX9GF::Utils::CreateRectsHorizontal(192, 160, 16, 16, 3));
+	drawPileButton->SetSpriteScale(3.f, 3.f);
+	drawPileButton->SetOnReleaseLeft([&](DX9GF::ITrigger* thisObj) {
+		this->OpenPileView(PileKind::Draw);
+		});
+
+	discardPileButton = std::make_shared<IconButton>(transformManager, 0, 0, PILE_BUTTON_SIZE, PILE_BUTTON_SIZE, uiSheetTex);
+	discardPileButton->SetSpriteRects(DX9GF::Utils::CreateRectsHorizontal(144, 160, 16, 16, 3));
+	discardPileButton->SetSpriteScale(3.f, 3.f);
+	discardPileButton->SetOnReleaseLeft([&](DX9GF::ITrigger* thisObj) {
+		this->OpenPileView(PileKind::Discard);
+		});
+
+	nullifiedPileButton = std::make_shared<IconButton>(transformManager, 0, 0, PILE_BUTTON_SIZE, PILE_BUTTON_SIZE, uiSheetTex);
+	nullifiedPileButton->SetSpriteRects(DX9GF::Utils::CreateRectsHorizontal(240, 160, 16, 16, 3));
+	nullifiedPileButton->SetSpriteScale(3.f, 3.f);
+	nullifiedPileButton->SetOnReleaseLeft([&](DX9GF::ITrigger* thisObj) {
+		this->OpenPileView(PileKind::Nullified);
+		});
+
+	closePileViewButton = std::make_shared<IconButton>(transformManager, 0, 0, buttonWidth, buttonHeight, uiSheetTex);
+	closePileViewButton->SetSpriteRects({
+		{ .left = 96, .top = 48, .right = 144, .bottom = 64 },
+		{ .left = 96, .top = 64, .right = 144, .bottom = 80 },
+		{ .left = 96, .top = 80, .right = 144, .bottom = 96 }
+		});
+	closePileViewButton->SetSpriteScale(2.f, 2.f);
+	closePileViewButton->SetOnReleaseLeft([&](DX9GF::ITrigger* thisObj) {
+		this->ClosePileView();
+		});
+
+	btnPilePrevPage = std::make_shared<Demo::TextIconButton>(transformManager, 0, 0, 30.0f, 30.0f, uiSheetTex, font.get(), L"<", 3);
+	btnPilePrevPage->SetSpriteRects({ {0, 0, 16, 16}, {0, 16, 16, 32}, {0, 32, 16, 48} });
+	btnPilePrevPage->SetSpriteScale(2.0f, 2.0f);
+	btnPilePrevPage->SetTextColor(0xFF111111);
+	btnPilePrevPage->SetOnReleaseLeft([&](DX9GF::ITrigger* thisObj) {
+		if (currentPilePage > 0) {
+			currentPilePage--;
+			RefreshPileView();
+		}
+		});
+
+	btnPileNextPage = std::make_shared<Demo::TextIconButton>(transformManager, 0, 0, 30.0f, 30.0f, uiSheetTex, font.get(), L">", 3);
+	btnPileNextPage->SetSpriteRects({ {0, 0, 16, 16}, {0, 16, 16, 32}, {0, 32, 16, 48} });
+	btnPileNextPage->SetSpriteScale(2.0f, 2.0f);
+	btnPileNextPage->SetTextColor(0xFF111111);
+	btnPileNextPage->SetOnReleaseLeft([&](DX9GF::ITrigger* thisObj) {
+		if (currentPilePage < maxPilePage) {
+			currentPilePage++;
+			RefreshPileView();
+		}
+		});
+
 	closeItemMenuButton = std::make_shared<IconButton>(transformManager, 0, 0, buttonWidth, buttonHeight, uiSheetTex);
 	closeItemMenuButton->SetOnReleaseLeft([&](DX9GF::ITrigger* thisObj) {
 		commandBuffer.PushCommand(std::make_shared<DX9GF::CustomCommand>([&](std::function<void(void)> markFinished) {
@@ -1869,6 +2188,12 @@ void Demo::IBattleScene::Init()
 	closeItemMenuButton->Init(&this->uiCamera);
 	btnPrevPage->Init(&this->uiCamera);
 	btnNextPage->Init(&this->uiCamera);
+	drawPileButton->Init(&this->uiCamera);
+	discardPileButton->Init(&this->uiCamera);
+	nullifiedPileButton->Init(&this->uiCamera);
+	closePileViewButton->Init(&this->uiCamera);
+	btnPilePrevPage->Init(&this->uiCamera);
+	btnPileNextPage->Init(&this->uiCamera);
 
 	// Init sprite
 	fontSprite = std::make_shared<DX9GF::FontSprite>(font.get());
@@ -2025,6 +2350,9 @@ void Demo::IBattleScene::Update(unsigned long long deltaTime)
 		break;
 	case State::PlayerOpenItems:
 		PlayerOpenItemsUpdate(deltaTime);
+		break;
+	case State::PlayerViewPile:
+		PlayerViewPileUpdate(deltaTime);
 		break;
 	case State::EnemyAttack:
 		EnemyAttackUpdate(deltaTime);
@@ -2190,6 +2518,7 @@ void Demo::IBattleScene::DrawWorld(unsigned long long deltaTime)
 		switch (state) {
 		case State::PlayerStandBy:
 		case State::PlayerOpenItems:
+		case State::PlayerViewPile:
 			for (auto& enemy : enemies) {
 				enemy->Draw(gd, &camera, deltaTime);
 			}
@@ -2246,6 +2575,9 @@ void Demo::IBattleScene::DrawUI(unsigned long long deltaTime)
 			break;
 		case State::PlayerOpenItems:
 			PlayerOpenItemsDraw(deltaTime);
+			break;
+		case State::PlayerViewPile:
+			PlayerViewPileDraw(deltaTime);
 			break;
 		case State::EnemyAttack:
 			float y = game->GetVirtualHeight() / 2.f - 40.f;

@@ -184,6 +184,16 @@ void Demo::DraggableManager::QueueDraw(std::shared_ptr<DX9GF::ICommand> cmd)
 	drawBuffer.StackCommand(std::move(cmd));
 }
 
+void Demo::DraggableManager::FlushQueuedDraws(unsigned long long deltaTime)
+{
+	drawBuffer.Update(deltaTime);
+}
+
+void Demo::DraggableManager::ClearQueuedDraws()
+{
+	drawBuffer.Clear();
+}
+
 bool Demo::DraggableManager::IsQueueBusy()
 {
 	return drawBuffer.IsBusy();
