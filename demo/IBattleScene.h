@@ -22,7 +22,13 @@ namespace Demo {
 			PlayerStandBy,
 			PlayerAttack,
 			PlayerOpenItems,
+			PlayerViewPile,
 			EnemyAttack
+		};
+		enum class PileKind {
+			Draw,
+			Discard,
+			Nullified
 		};
 		// Constants
 		const int MAX_ENERGY = 3;
@@ -37,6 +43,8 @@ namespace Demo {
 		size_t currentTurn = 0;
 		int energy = MAX_ENERGY;
 		int usedEnergy = 0;
+		// Extra energy granted at the start of the next turn (e.g. by EnergyCard).
+		int pendingBonusEnergy = 0;
 		bool isTransitioning = false;
 		bool enemyAttackStartPending = false;
 		bool isFleeing = false;
@@ -94,6 +102,9 @@ namespace Demo {
 		std::vector<std::shared_ptr<ICard>> drawPile;
 		std::vector<std::shared_ptr<ICard>> playedPile;
 		std::vector<std::shared_ptr<ICard>> discardPile;
+		// Cards whose limited uses ran out. They stay here for the rest of the battle and are
+		// never shuffled back into the draw pile.
+		std::vector<std::shared_ptr<ICard>> nullifiedPile;
 		std::vector<std::shared_ptr<ICard>> queuedToDraw;
 		std::vector<std::shared_ptr<IEnemy>> enemies;
 		float enemyCardRemoveAreaX = 220.f;
@@ -121,6 +132,22 @@ namespace Demo {
 		int currentItemPage = 0;
 		int maxItemPage = 0;
 
+		// Pile inspection. The buttons live on the PlayerAttack bar; opening one swaps to
+		// State::PlayerViewPile, which lists throwaway copies of that pile's cards.
+		std::shared_ptr<IconButton> drawPileButton;
+		std::shared_ptr<IconButton> discardPileButton;
+		std::shared_ptr<IconButton> nullifiedPileButton;
+		std::shared_ptr<IconButton> closePileViewButton;
+		std::shared_ptr<TextIconButton> btnPileNextPage;
+		std::shared_ptr<TextIconButton> btnPilePrevPage;
+		PileKind viewedPile = PileKind::Draw;
+		std::vector<std::shared_ptr<ICard>> pileViewCards;
+		int currentPilePage = 0;
+		int maxPilePage = 0;
+		// 16x16 sheet icons at 3x - big enough that the count in the corner doesn't swamp the art.
+		static constexpr float PILE_BUTTON_SIZE = 48.f;
+		static constexpr float PILE_BUTTON_GAP = 8.f;
+
 		std::shared_ptr<PopUpMessage> popUpMessage;
 		std::shared_ptr<DX9GF::StaticSprite> energyIcon;
 		std::shared_ptr<DX9GF::StaticSprite> hourglassIcon;
@@ -142,15 +169,28 @@ namespace Demo {
 		void ShuffleDiscardIntoDrawPile();
 		void MovePlayedPileToDiscardPileIfNeeded();
 		void MoveExecutedHandCardsToPlayedPile();
+		// Pulls cards that have run out of limited uses out of the hand/played piles so they
+		// stop executing and can't be drawn again this battle.
+		void MoveDepletedCardsToNullifiedPile();
 		void MoveHandCardsToDiscardPile();
 		void BeginNextTurn();
 		void RefreshItemMenu();
 		void CollectDeadEnemies();
+		// Pile inspection
+		const std::vector<std::shared_ptr<ICard>>& GetPile(PileKind kind) const;
+		static std::wstring GetPileName(PileKind kind);
+		void OpenPileView(PileKind kind);
+		void ClosePileView();
+		// Rebuilds the display-only copies shown for the current pile and page.
+		void RefreshPileView();
+		// Parks the three pile buttons at the right end of the action bar; returns their left edge.
+		float LayOutPileButtons(float screenWidth, float buttonY);
 		// Updates
 		void PlayerStandByUpdate(unsigned long long deltaTime);
 		void PlayerAttackUpdate(unsigned long long deltaTime);
 		void QueueToEnemyAttack(unsigned long long deltaTime);
 		void PlayerOpenItemsUpdate(unsigned long long deltaTime);
+		void PlayerViewPileUpdate(unsigned long long deltaTime);
 		bool EnemyAttackUpdate(unsigned long long deltaTime);
 		void QueueEnemyLayoutTransition(State targetState);
 		void RemoveEnemyCardsInRemoveArea();
@@ -172,6 +212,9 @@ namespace Demo {
 		void PlayerStandByDraw(unsigned long long deltaTime);
 		void PlayerAttackDraw(unsigned long long deltaTime);
 		void PlayerOpenItemsDraw(unsigned long long deltaTime);
+		void PlayerViewPileDraw(unsigned long long deltaTime);
+		// The three pile buttons plus their card counts, drawn on the PlayerAttack bar.
+		void DrawPileButtons(unsigned long long deltaTime);
 		void EnemyAttackDraw(unsigned long long deltaTime);
 		void DrawHealthAndDefenseBar(const float y, DX9GF::GraphicsDevice* gd);
 	public:
@@ -185,6 +228,7 @@ namespace Demo {
 		void SetOnVictoryCallback(std::function<void()> cb) { onVictoryCallback = cb; }
 		void SetCustomBGM(const std::string& name) { customBGMName = name; }
 		int GetAvailableEnergy() const { return energy - usedEnergy; }
+		void QueueBonusEnergy(int amount) { pendingBonusEnergy += amount; }
 		void QueuePopUpMessage(const std::wstring& msg) { if (popUpMessage) popUpMessage->QueueMessage(&commandBuffer, msg); }
 	};
 }

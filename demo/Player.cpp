@@ -4,6 +4,7 @@
 #include "DamageTextManager.h"
 #include "AdvancedCards.h"
 #include "StrikeCard.h"
+#include "EnergyCard.h"
 #include "MainBlockCard.h"
 #include "SettingsManager.h"
 #include "IDraggable.h"
@@ -20,6 +21,7 @@ std::shared_ptr<Demo::ICard> Demo::ICard::CreateCard(const std::string& id, std:
 	else if (id == "WeaknessCard") card = std::make_shared<WeaknessCard>(transformManager);
 	else if (id == "StunCard") card = std::make_shared<StunCard>(transformManager);
 	else if (id == "StrikeCard") card = std::make_shared<StrikeCard>(transformManager);
+	else if (id == "EnergyCard") card = std::make_shared<EnergyCard>(transformManager);
 	else if (id == "MainBlockCard") card = std::make_shared<MainBlockCard>(transformManager);
 
 	if (card && draggableManager && graphicsDevice && camera) {

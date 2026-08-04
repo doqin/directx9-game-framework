@@ -13,7 +13,6 @@ namespace Demo {
 		std::weak_ptr<IStatementCard> currentExecutingCard;
 		float timeSinceLastExecution = 0;
 		const float timePerExecution = .5f;
-		IBattleScene* battleScene = nullptr;
 		float timeSinceLastEnergyPopUp = 999.f;
 		const float energyPopUpCooldown = 3.f;
 	protected:
@@ -53,7 +52,6 @@ namespace Demo {
 		bool IsExecuting() const;
 		std::shared_ptr<IStatementCard> GetCurrentExecutingCard() const;
 		void ResetExecution();
-		void SetBattleScene(IBattleScene* scene) { battleScene = scene; }
 		bool HasAllRequiredTargets() const;
 		// Inserts (or moves, if already attached) a statement card at the given position in the
 		// execution queue, shifting the rest as needed (used by keyboard navigation).

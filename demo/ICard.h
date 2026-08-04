@@ -4,11 +4,18 @@
 namespace Demo {
 	class DraggableManager;
 	class Player;
+	class IBattleScene;
 	class ICard : virtual public DX9GF::IGameObject, public DX9GF::ISaveable {
 	protected:
 		Player* owner = nullptr;
+		IBattleScene* battleScene = nullptr;
 		bool isLocked = false;
 		int lockedTurns = 0;
+		// Optional cap on how many times the card may execute in a single battle. Cards that
+		// leave this empty are unlimited; once a limited card runs out it is moved to the
+		// battle's nullified pile and never returns to the deck for the rest of the battle.
+		std::optional<int> maxUses;
+		int usesLeft = 0;
 	public:
 		inline ICard(std::weak_ptr<DX9GF::TransformManager> transformManager) : IGameObject(transformManager) {}
 		inline ICard(
@@ -33,6 +40,34 @@ namespace Demo {
 
 		void SetOwner(Player* p) { owner = p; }
 		Player* GetOwner() const { return owner; }
+
+		void SetBattleScene(IBattleScene* scene) { battleScene = scene; }
+		IBattleScene* GetBattleScene() const { return battleScene; }
+
+		// Limited uses. A card without a limit is unlimited and never depletes.
+		bool HasLimitedUses() const { return maxUses.has_value(); }
+		int GetMaxUses() const { return maxUses.value_or(0); }
+		int GetRemainingUses() const { return maxUses.has_value() ? usesLeft : 0; }
+		void SetMaxUses(int uses) {
+			maxUses = uses;
+			usesLeft = uses;
+		}
+		void ClearMaxUses() {
+			maxUses.reset();
+			usesLeft = 0;
+		}
+		void ConsumeUse() {
+			if (maxUses.has_value() && usesLeft > 0) {
+				--usesLeft;
+			}
+		}
+		bool IsDepleted() const { return maxUses.has_value() && usesLeft <= 0; }
+		// Restores the use counter so the card is playable again in the next battle.
+		void ResetUses() {
+			if (maxUses.has_value()) {
+				usesLeft = maxUses.value();
+			}
+		}
 
 		virtual size_t GetCost() const { return 0; }
 		virtual std::wstring GetDescription() const { return L""; }

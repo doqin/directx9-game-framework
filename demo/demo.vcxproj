@@ -282,6 +282,7 @@
     <ClCompile Include="IEnemy.cpp" />
     <ClCompile Include="MainBlockCard.cpp" />
     <ClCompile Include="StrikeCard.cpp" />
+    <ClCompile Include="EnergyCard.cpp" />
     <ClCompile Include="TestEnemy.cpp" />
   </ItemGroup>
   <ItemGroup>
@@ -355,6 +356,7 @@
     <ClInclude Include="TextIconButton.h" />
     <ClInclude Include="TextInputManager.h" />
     <ClInclude Include="StrikeCard.h" />
+    <ClInclude Include="EnergyCard.h" />
     <ClInclude Include="TestBattleScene.h" />
     <ClInclude Include="TestEnemy.h" />
     <ClInclude Include="ThreadAlleyScene.h" />
