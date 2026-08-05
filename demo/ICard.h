@@ -16,6 +16,10 @@ namespace Demo {
 		// battle's nullified pile and never returns to the deck for the rest of the battle.
 		std::optional<int> maxUses;
 		int usesLeft = 0;
+		// Persistent cards stay attached to their block and re-execute every turn until the
+		// program clears. A non-persistent card is detached at end of turn and returned to the
+		// discard pile instead, so it fires once per placement but can be drawn and played again.
+		bool isPersistent = true;
 	public:
 		inline ICard(std::weak_ptr<DX9GF::TransformManager> transformManager) : IGameObject(transformManager) {}
 		inline ICard(
@@ -68,6 +72,9 @@ namespace Demo {
 				usesLeft = maxUses.value();
 			}
 		}
+
+		bool IsPersistent() const { return isPersistent; }
+		void SetPersistent(bool persistent) { isPersistent = persistent; }
 
 		virtual size_t GetCost() const { return 0; }
 		virtual std::wstring GetDescription() const { return L""; }

@@ -1,6 +1,7 @@
 #include "pch.h"
 #include "IBlockCard.h"
 #include "IBattleScene.h"
+#include "DrawUtils.h"
 
 bool Demo::IBlockCard::OnDrop(std::shared_ptr<IDraggable> other)
 {
@@ -9,15 +10,16 @@ bool Demo::IBlockCard::OnDrop(std::shared_ptr<IDraggable> other)
 		return false;
 	}
 
-	if (battleScene) {
-		int cost = static_cast<int>(statementCard->GetCost());
-		if (battleScene->GetAvailableEnergy() < 0) {
-			if (timeSinceLastEnergyPopUp >= energyPopUpCooldown) {
-				battleScene->QueuePopUpMessage(L"Not enough energy");
-				timeSinceLastEnergyPopUp = 0.f;
-			}
-			return false;
+	if (battleScene && !battleScene->CanPlaceCardInBlock(statementCard)) {
+		if (timeSinceLastEnergyPopUp >= energyPopUpCooldown) {
+			battleScene->QueuePopUpMessage(L"Not enough energy");
+			timeSinceLastEnergyPopUp = 0.f;
 		}
+		// Dragging detached it from the hand, and rejecting the drop leaves it parented to
+		// nothing - floating in space, not executing, yet still swept into the played pile at
+		// end of turn. Put it back where it came from.
+		battleScene->ReturnCardToHand(statementCard);
+		return false;
 	}
 
 	if (IContainer::OnDrop(other)) {
@@ -51,6 +53,75 @@ void Demo::IBlockCard::Update(unsigned long long deltaTime)
 	}
 	if (isExecuting) {
 		ExecuteIteratively(deltaTime);
+	}
+}
+
+void Demo::IBlockCard::Draw(unsigned long long deltaTime)
+{
+	IContainer::Draw(deltaTime);
+	if (!blockTexture) {
+		blockTexture = std::make_shared<DX9GF::Texture>(graphicsDevice);
+		blockTexture->LoadTexture(L"assets/ui.png");
+		blockSprite = std::make_shared<DX9GF::StaticSprite>(blockTexture.get());
+		blockSprite->SetSrcRect(GetBlockFaceRect());
+		pointerSprite = std::make_shared<DX9GF::StaticSprite>(blockTexture.get());
+		pointerSprite->SetSrcRect({ .left = 128, .top = 0, .right = 144, .bottom = 16 });
+		pointerSprite->SetScale(2.f, 2.f);
+		pointerSprite->SetOrigin(8.f, 8.f);
+	}
+	blockSprite->Begin();
+	blockSprite->SetPosition(GetWorldX(), GetWorldY());
+	blockSprite->SetScale(2.f, 2.f);
+	blockSprite->Draw(*camera, deltaTime);
+	blockSprite->End();
+	if (!nameFont) {
+		nameFont = std::make_shared<DX9GF::Font>(graphicsDevice, L"StatusPlz", 16);
+		nameFontSprite = std::make_shared<DX9GF::FontSprite>(nameFont.get());
+		nameFontSprite->SetColor(0xFF000000);
+	}
+	if (auto currentCard = GetCurrentExecutingCard()) {
+		pointerSprite->Begin();
+		pointerSprite->SetPosition(currentCard->GetWorldX() - 32.f, currentCard->GetWorldY() + 16.f);
+		pointerSprite->Draw(*camera, deltaTime);
+		pointerSprite->End();
+	}
+	for (auto& draggable : draggableManager->GetDraggingDraggables()) {
+		if (auto lock = draggable->GetParent(); lock.has_value()) {
+			if (auto parentLock = lock.value().lock()) {
+				if (parentLock.get() == this) {
+					continue;
+				}
+			}
+		}
+		if (auto draggedStatementCard = std::dynamic_pointer_cast<Demo::IStatementCard>(draggable)) {
+			auto thisX = GetWorldX();
+			auto thisY = GetWorldY() + GetHeight() + GetHeightOfChildren();
+			auto width = (std::max)(this->GetMaxWidthOfChildren(), GetWidth());
+			auto height = 32.f;
+			draggableManager->QueueDraw(std::make_shared<DX9GF::CustomCommand>([&, width, height, thisX, thisY](std::function<void(void)> markFinished) {
+				graphicsDevice->SetAlphaBlending(true);
+				Demo::DrawAnimatedDashedRectangle(
+					graphicsDevice,
+					*camera,
+					thisX,
+					thisY,
+					width,
+					height,
+					3.f,
+					0xFFFFFFFF,
+					false,
+					4.f,
+					0xFFFFFFFF,
+					20.f,
+					10.f,
+					40.f,
+					GetTickCount64()
+				);
+				graphicsDevice->SetAlphaBlending(false);
+				markFinished();
+				}));
+			return;
+		}
 	}
 }
 
@@ -126,14 +197,13 @@ bool Demo::IBlockCard::InsertStatementCardAt(std::shared_ptr<IStatementCard> car
 		}
 	}
 
-	if (!alreadyAttached && battleScene) {
-		if (battleScene->GetAvailableEnergy() < 0) {
-			if (timeSinceLastEnergyPopUp >= energyPopUpCooldown) {
-				battleScene->QueuePopUpMessage(L"Not enough energy");
-				timeSinceLastEnergyPopUp = 0.f;
-			}
-			return false;
+	if (!alreadyAttached && battleScene && !battleScene->CanPlaceCardInBlock(card)) {
+		if (timeSinceLastEnergyPopUp >= energyPopUpCooldown) {
+			battleScene->QueuePopUpMessage(L"Not enough energy");
+			timeSinceLastEnergyPopUp = 0.f;
 		}
+		battleScene->ReturnCardToHand(card);
+		return false;
 	}
 
 	// Remove any existing bookkeeping for this card first (reordering case).

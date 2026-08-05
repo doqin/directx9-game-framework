@@ -186,9 +186,9 @@ std::wstring Demo::StrikeCard::GetInputsDescription() const
 size_t Demo::StrikeCard::GetWidth() const
 {
 	if (auto lock = enemyCard.lock()) {
-		return IDraggable::GetWidth() + lock->GetWidth() + GetUsesCoverWidth();
+		return IDraggable::GetWidth() + lock->GetWidth() + GetStatusCoverWidth();
 	}
 	else {
-		return IDraggable::GetWidth() + GetUsesCoverWidth();
+		return IDraggable::GetWidth() + GetStatusCoverWidth();
 	}
 }

@@ -10,7 +10,15 @@ namespace Demo
 		Poison,
 		Vulnerable,
 		Weak,
-		Stun
+		Stun,
+		// Flat damage per turn that ignores block. Unlike Poison, its damage does not decay with
+		// its remaining duration, and re-applying it accumulates value instead of replacing it.
+		Burn,
+		// Flat bonus to every point of incoming damage, applied before Vulnerable's multiplier.
+		// The debuff mirror of BuffDamage.
+		Marked,
+		// Heals value at end of turn.
+		Regen
 		//...Add more if you have ideas
 	};
 

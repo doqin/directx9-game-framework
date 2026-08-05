@@ -204,29 +204,9 @@ bool Demo::VulnerableCard::Execute() {
 	return true;
 }
 
-void Demo::VulnerableCard::Draw(unsigned long long deltaTime) {
-	MultiTargetCard::Draw(deltaTime);
-	if (isCropped) {
-		graphicsDevice->SetScissorRect(scissorRect);
-		graphicsDevice->SetScissorTest(true);
-	}
-	if (!strikeTexture) {
-		strikeTexture = std::make_shared<DX9GF::Texture>(graphicsDevice);
-		strikeTexture->LoadTexture(L"assets/ui.png");
-		strikeSprite = std::make_shared<DX9GF::StaticSprite>(strikeTexture.get());
-		strikeSprite->SetSrcRect({ .left = 0, .top = 320, .right = 96, .bottom = 336 });
-	}
-	if (strikeSprite) {
-		strikeSprite->Begin();
-		strikeSprite->SetPosition(GetWorldX(), GetWorldY());
-		strikeSprite->SetScale(2.f, 2.f);
-		strikeSprite->Draw(*camera, deltaTime);
-		strikeSprite->End();
-	}
-	if (isCropped) {
-		graphicsDevice->SetScissorTest(false);
-	}
-	MultiTargetCard::Draw(deltaTime);
+void Demo::VulnerableCard::DrawCardFace(unsigned long long deltaTime)
+{
+	DrawSheetFace(deltaTime, { .left = 0, .top = 320, .right = 96, .bottom = 336 });
 }
 
 bool Demo::WeaknessCard::Execute() {
@@ -240,28 +220,8 @@ bool Demo::WeaknessCard::Execute() {
 	return true;
 }
 
-void Demo::WeaknessCard::Draw(unsigned long long deltaTime) {
-	if (isCropped) {
-		graphicsDevice->SetScissorRect(scissorRect);
-		graphicsDevice->SetScissorTest(true);
-	}
-	if (!strikeTexture) {
-		strikeTexture = std::make_shared<DX9GF::Texture>(graphicsDevice);
-		strikeTexture->LoadTexture(L"assets/ui.png");
-		strikeSprite = std::make_shared<DX9GF::StaticSprite>(strikeTexture.get());
-		strikeSprite->SetSrcRect({ .left = 96, .top = 320, .right = 192, .bottom = 336 });
-	}
-	if (strikeSprite) {
-		strikeSprite->Begin();
-		strikeSprite->SetPosition(GetWorldX(), GetWorldY());
-		strikeSprite->SetScale(2.f, 2.f);
-		strikeSprite->Draw(*camera, deltaTime);
-		strikeSprite->End();
-	}
-	if (isCropped) {
-		graphicsDevice->SetScissorTest(false);
-	}
-	MultiTargetCard::Draw(deltaTime);
+void Demo::WeaknessCard::DrawCardFace(unsigned long long deltaTime) {
+	DrawSheetFace(deltaTime, { .left = 96, .top = 320, .right = 192, .bottom = 336 });
 }
 
 bool Demo::StunCard::Execute() {

@@ -97,6 +97,7 @@ namespace Demo {
 	public:
 		VulnerableCard(std::weak_ptr<DX9GF::TransformManager> tm, float x = 0, float y = 0)
 			: IGameObject(tm, x, y), MultiTargetCard(tm, 1, L"Vulnerable", x, y, 192, 32) {
+			SetPersistent(false);
 		}
 
 		size_t GetCost() const override { return 1; }
@@ -104,7 +105,7 @@ namespace Demo {
 
 		bool Execute() override;
 
-		void Draw(unsigned long long deltaTime) override;
+		void DrawCardFace(unsigned long long deltaTime) override;
 	};
 
 	class WeaknessCard : public MultiTargetCard {
@@ -113,6 +114,7 @@ namespace Demo {
 	public:
 		WeaknessCard(std::weak_ptr<DX9GF::TransformManager> tm, float x = 0, float y = 0)
 			: IGameObject(tm, x, y), MultiTargetCard(tm, 2, L"Weakness", x, y, 192, 32) {
+			SetPersistent(false);
 		}
 
 		size_t GetCost() const override { return 1; }
@@ -120,7 +122,7 @@ namespace Demo {
 
 		bool Execute() override;
 
-		void Draw(unsigned long long deltaTime) override;
+		void DrawCardFace(unsigned long long deltaTime) override;
 	};
 
 	class StunCard : public MultiTargetCard {

@@ -17,6 +17,14 @@ namespace Demo {
 		const float energyPopUpCooldown = 3.f;
 	protected:
 		std::vector<std::weak_ptr<IStatementCard>> statementCards;
+		std::shared_ptr<DX9GF::Font> nameFont;
+		std::shared_ptr<DX9GF::FontSprite> nameFontSprite;
+		std::shared_ptr<DX9GF::Texture> blockTexture;
+		std::shared_ptr<DX9GF::StaticSprite> blockSprite;
+		std::shared_ptr<DX9GF::StaticSprite> pointerSprite;
+		// The block's own header art. The only thing that differs between block kinds - the
+		// header, execution pointer and drop highlight below are all shared.
+		virtual RECT GetBlockFaceRect() const = 0;
 	public:
 		inline IBlockCard(std::weak_ptr<DX9GF::TransformManager> transformManager)
 			: IGameObject(transformManager), ICard(transformManager), IContainer(transformManager) {}
@@ -47,6 +55,7 @@ namespace Demo {
 			IContainer(transformManager, parent, dragAreaWidth, dragAreaHeight, x, y, rotation, scaleX, scaleY) {}
 		bool OnDrop(std::shared_ptr<IDraggable> other) override;
 		void Update(unsigned long long deltaTime) override;
+		void Draw(unsigned long long deltaTime) override;
 		void StartExecution();
 		void ExecuteIteratively(unsigned long long deltaTime);
 		bool IsExecuting() const;
