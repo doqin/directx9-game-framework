@@ -10,6 +10,9 @@
     <BuildType Solution="Testing|x86" Project="Release" />
   </Project>
   <Project Path="demo/demo.vcxproj" Id="0c6ce094-ec74-4fa6-843d-e58e507e67e1" />
+  <Project Path="Demo1/Demo1.vcxproj" Id="653d6bf8-41ba-4999-8ec4-a915d85f4279">
+    <BuildType Solution="Testing|*" Project="Debug" />
+  </Project>
   <Project Path="example/example.vcxproj" Id="a9e53363-594d-405d-bc59-3e3a321f6801">
     <BuildType Solution="Testing|x64" Project="Debug" />
     <BuildType Solution="Testing|x86" Project="Release" />

@@ -224,6 +224,9 @@
     <Image Include="assets\department_logo.png" />
     <Image Include="assets\popup-borders.png" />
     <Image Include="assets\school_logo.png" />
+    <Image Include="assets\kernel.png" />
+    <Image Include="assets\kernelprojectile.png" />
+    <Image Include="assets\kernel_2.png" />
   </ItemGroup>
   <ItemGroup>
     <Font Include="assets\arcade-among-2-r46pv.ttf" />

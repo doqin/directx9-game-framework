@@ -489,6 +489,15 @@
     <Image Include="assets\items.png">
       <DeploymentContent>true</DeploymentContent>
     </Image>
+    <Image Include="assets\kernel.png">
+      <DeploymentContent>true</DeploymentContent>
+    </Image>
+    <Image Include="assets\kernelprojectile.png">
+      <DeploymentContent>true</DeploymentContent>
+    </Image>
+    <Image Include="assets\kernel_2.png">
+      <DeploymentContent>true</DeploymentContent>
+    </Image>
     <Image Include="assets\Keye-Bullet.png">
       <DeploymentContent>true</DeploymentContent>
     </Image>

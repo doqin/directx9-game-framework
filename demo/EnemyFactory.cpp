@@ -21,7 +21,7 @@ namespace Demo {
 		if (enemyType == "CupidEnemy")      return { L"assets/bubble-Sheet.png", 64.f, 64.f, 12, 38.f, 45.f };
 		if (enemyType == "VampireBatEnemy") return { L"assets/shrimp-Sheet.png", 64.f, 64.f, 12, 38.f, 45.f };
 		if (enemyType == "WarlockEnemy")    return { L"assets/crawler-Sheet.png", 64.f, 64.f, 12, 38.f, 45.f };
-		if (enemyType == "KernelEnemy")      return { L"assets/bubble-Sheet.png", 64.f, 64.f, 12, 38.f, 45.f }; //TODO: remember to change tex path here too
+		if (enemyType == "KernelEnemy")      return { L"assets/kernel_2.png", 64.f, 64.f, 12, 38.f, 45.f }; //TODO: remember to change tex path here too
 
 		return { L"assets/computerbug-Sheet.png", 64.f, 64.f, 12, 38.f, 45.f };
 	}
