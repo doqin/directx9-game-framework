@@ -5,6 +5,8 @@
 #include "AdvancedCards.h"
 #include "StrikeCard.h"
 #include "EnergyCard.h"
+#include "UtilityCards.h"
+#include "FinisherCards.h"
 #include "MainBlockCard.h"
 #include "SettingsManager.h"
 #include "IDraggable.h"
@@ -22,6 +24,17 @@ std::shared_ptr<Demo::ICard> Demo::ICard::CreateCard(const std::string& id, std:
 	else if (id == "StunCard") card = std::make_shared<StunCard>(transformManager);
 	else if (id == "StrikeCard") card = std::make_shared<StrikeCard>(transformManager);
 	else if (id == "EnergyCard") card = std::make_shared<EnergyCard>(transformManager);
+	else if (id == "JabCard") card = std::make_shared<JabCard>(transformManager);
+	else if (id == "MarkCard") card = std::make_shared<MarkCard>(transformManager);
+	else if (id == "BraceCard") card = std::make_shared<BraceCard>(transformManager);
+	else if (id == "PrefetchCard") card = std::make_shared<PrefetchCard>(transformManager);
+	else if (id == "OverclockCard") card = std::make_shared<OverclockCard>(transformManager);
+	else if (id == "JumpstartCard") card = std::make_shared<JumpstartCard>(transformManager);
+	else if (id == "ForesightCard") card = std::make_shared<ForesightCard>(transformManager);
+	else if (id == "TerminateCard") card = std::make_shared<TerminateCard>(transformManager);
+	else if (id == "InfernoCard") card = std::make_shared<InfernoCard>(transformManager);
+	else if (id == "SystemPurgeCard") card = std::make_shared<SystemPurgeCard>(transformManager);
+	else if (id == "OverdriveCard") card = std::make_shared<OverdriveCard>(transformManager);
 	else if (id == "MainBlockCard") card = std::make_shared<MainBlockCard>(transformManager);
 
 	if (card && draggableManager && graphicsDevice && camera) {

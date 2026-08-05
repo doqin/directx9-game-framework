@@ -12,7 +12,7 @@ namespace Demo {
 	public:
 		EnergyCard(std::weak_ptr<DX9GF::TransformManager> tm, float x = 0, float y = 0)
 			: IGameObject(tm, x, y), IStatementCard(tm, 160, 32, x, y) {
-			SetMaxUses(1);
+			//SetMaxUses(1);
 		}
 
 		size_t GetCost() const override { return 1; }

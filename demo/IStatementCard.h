@@ -53,7 +53,7 @@ namespace Demo {
 		std::shared_ptr<DX9GF::Font> descFont;
 		std::shared_ptr<DX9GF::FontSprite> descFontSprite;
 
-		// Cover panel drawn off the card's right edge for cards with limited uses, holding one
+		// Cover panel drawn off the card's right edge, holding the non-persistent badge and one
 		// pip per use. Geometry below is in ui.png pixels; cards render at USES_COVER_SCALE.
 		static constexpr int USES_COVER_SCALE = 2;
 		static constexpr int USES_COVER_CAP_WIDTH = 3;
@@ -67,16 +67,29 @@ namespace Demo {
 		static constexpr int USES_PIP_SIZE = 6;
 		static constexpr int USES_PIP_GAP = 2;
 		static constexpr int USES_PIP_TOP = 5;
+		// Marker for non-persistent cards, drawn at the panel's left before any use pips. Taller
+		// than the pips, so it gets its own top offset to sit centred in the panel.
+		static constexpr int NON_PERSISTENT_BADGE_WIDTH = 10;
+		static constexpr int NON_PERSISTENT_BADGE_HEIGHT = 12;
+		static constexpr int NON_PERSISTENT_BADGE_TOP = 2;
 
 		std::shared_ptr<DX9GF::Texture> usesTexture;
 		std::shared_ptr<DX9GF::StaticSprite> usesCoverBody;
 		std::shared_ptr<DX9GF::StaticSprite> usesCoverCap;
 		std::shared_ptr<DX9GF::StaticSprite> usesPipFull;
 		std::shared_ptr<DX9GF::StaticSprite> usesPipSpent;
+		std::shared_ptr<DX9GF::StaticSprite> nonPersistentBadge;
 
-		// Panel width in sheet pixels, sized to the pips so there is no dead grey space.
-		int GetUsesCoverPanelWidth() const;
-		void DrawUsesCover(unsigned long long deltaTime);
+		// Panel width in sheet pixels, sized to its contents so there is no dead grey space.
+		int GetStatusCoverPanelWidth() const;
+		void DrawStatusCover(unsigned long long deltaTime);
+
+		std::shared_ptr<DX9GF::Texture> faceTexture;
+		std::shared_ptr<DX9GF::StaticSprite> faceSprite;
+		// Draws a single strip of assets/ui.png at the card's position and scale, honouring the
+		// container's crop. Enough for any card whose face is one sheet rect, which is all of
+		// them - implement DrawCardFace() as a call to this.
+		void DrawSheetFace(unsigned long long deltaTime, const RECT& srcRect);
 
 		// The card's own artwork. Override this rather than Draw() so the face lands on top of
 		// the uses cover - the cover is pulled back over the card's right edge, and drawing the
@@ -84,10 +97,10 @@ namespace Demo {
 		virtual void DrawCardFace(unsigned long long deltaTime) {}
 
 	public:
-		// How far the uses cover extends past the card on screen, net of its overlap, or 0 when
-		// the card has no use limit. Included in GetWidth() so containers size and crop to it
-		// instead of clipping it off.
-		size_t GetUsesCoverWidth() const;
+		// How far the status cover extends past the card on screen, net of its overlap, or 0 when
+		// the card is persistent and unlimited. Included in GetWidth() so containers size and
+		// crop to it instead of clipping it off.
+		size_t GetStatusCoverWidth() const;
 		size_t GetWidth() const override;
 		virtual void Draw(unsigned long long deltaTime) override;
 	};

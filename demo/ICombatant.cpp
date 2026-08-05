@@ -23,7 +23,9 @@ namespace Demo {
 	}
 
 	float ICombatant::CalculateActualDamage(float baseDamage) {
-		float finalDamage = baseDamage;
+		// Marked is a flat bonus per hit, so it lands before Vulnerable scales the total and
+		// before block eats into it.
+		float finalDamage = baseDamage + GetModifierValue(ModifierType::Marked);
 		if (HasModifier(ModifierType::Vulnerable)) {
 			finalDamage *= 1.5f;
 		}
@@ -61,6 +63,23 @@ namespace Demo {
 			if (mod.type == type) {
 				mod.duration += duration;
 				mod.value = (std::max)(mod.value, value);
+				if (type == ModifierType::BuffDefense) {
+					temporaryDefense = (std::max)(0.f, GetModifierValue(ModifierType::BuffDefense));
+				}
+				return;
+			}
+		}
+		modifiers.push_back({ type, duration, value, isBuff, delayTurns });
+		if (type == ModifierType::BuffDefense) {
+			temporaryDefense = (std::max)(0.f, GetModifierValue(ModifierType::BuffDefense));
+		}
+	}
+
+	void ICombatant::AddStackingModifier(ModifierType type, int duration, float value, bool isBuff, int delayTurns) {
+		for (auto& mod : modifiers) {
+			if (mod.type == type) {
+				mod.value += value;
+				mod.duration = (std::max)(mod.duration, duration);
 				if (type == ModifierType::BuffDefense) {
 					temporaryDefense = (std::max)(0.f, GetModifierValue(ModifierType::BuffDefense));
 				}
@@ -121,6 +140,14 @@ namespace Demo {
 							m.duration = vulnDuration;
 						}
 					}
+				}
+				// Burn and Regen need none of the dance above: TakeIndirectDamage already
+				// bypasses block and modifiers, and Heal is unaffected by both.
+				else if (it.type == ModifierType::Burn && phase == TickPhase::EndOfTurn) {
+					this->TakeIndirectDamage(it.value, DamageType::Burn);
+				}
+				else if (it.type == ModifierType::Regen && phase == TickPhase::EndOfTurn) {
+					this->Heal(it.value);
 				}
 			}
 		}

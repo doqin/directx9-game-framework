@@ -6,6 +6,7 @@
 #include "IDraggable.h"
 #include "IconButton.h"
 #include "MainBlockCard.h"
+#include "InitBlockCard.h"
 #include "StrikeCard.h"
 #include "EnemyCard.h"
 #include "HandContainer.h"
@@ -32,6 +33,7 @@ namespace Demo {
 		};
 		// Constants
 		const int MAX_ENERGY = 3;
+		static constexpr size_t CARDS_DRAWN_PER_TURN = 5;
 		const float BACKGROUND_DIM_ALPHA = 0.55f;
 		const float BACKGROUND_DIM_SPEED = 2.f; // alpha units per second
 		// States
@@ -40,11 +42,20 @@ namespace Demo {
 		State lastEnemyLayoutState = State::EnemyAttack;
 		bool enemyLayoutInitialized = false;
 		bool isExecutingAttacks = false;
+		// Set while the init block is resolving. Unlike isExecutingAttacks this never routes into
+		// the enemy turn - that is the whole point of the init block.
+		bool isExecutingInit = false;
 		size_t currentTurn = 0;
 		int energy = MAX_ENERGY;
 		int usedEnergy = 0;
+		// Energy spent by cards that have already resolved out of the init block. usedEnergy is
+		// rebuilt from the hand every frame, so without this the cost of an init card would be
+		// refunded the moment it left the hand - and the init block could be run forever.
+		int committedEnergy = 0;
 		// Extra energy granted at the start of the next turn (e.g. by EnergyCard).
 		int pendingBonusEnergy = 0;
+		// Extra cards drawn at the start of the next turn (e.g. by ForesightCard).
+		int pendingBonusDraw = 0;
 		bool isTransitioning = false;
 		bool enemyAttackStartPending = false;
 		bool isFleeing = false;
@@ -96,6 +107,7 @@ namespace Demo {
 		DX9GF::ColliderManager colliderManager;
 		// Battle cards
 		std::shared_ptr<MainBlockCard> mainBlockCard;
+		std::shared_ptr<InitBlockCard> initBlockCard;
 		std::shared_ptr<HandContainer> handContainer;
 		std::vector<std::shared_ptr<ICard>> cardHand;
 		std::vector<std::shared_ptr<EnemyCard>> enemyCards;
@@ -124,6 +136,7 @@ namespace Demo {
 		std::shared_ptr<IconButton> fleeButton;
 		std::shared_ptr<IconButton> backButton;
 		std::shared_ptr<IconButton> executeButton;
+		std::shared_ptr<IconButton> runInitButton;
 		std::shared_ptr<IconButton> closeItemMenuButton;
 
 		std::vector<std::shared_ptr<IconButton>> buffItems;
@@ -165,17 +178,33 @@ namespace Demo {
 		void OnAllEnemiesDefeated();
 
 	private:
-		void DrawCards(size_t count);
+		// midTurn drops the hold and stagger from the deal animation - a mid-turn draw blocks the
+		// Execute/Run buttons until it lands, so it should not linger.
+		void DrawCards(size_t count, bool midTurn = false);
 		void ShuffleDiscardIntoDrawPile();
 		void MovePlayedPileToDiscardPileIfNeeded();
 		void MoveExecutedHandCardsToPlayedPile();
 		// Pulls cards that have run out of limited uses out of the hand/played piles so they
 		// stop executing and can't be drawn again this battle.
 		void MoveDepletedCardsToNullifiedPile();
+		// Pulls non-persistent cards out of the block so they fire once per placement instead of
+		// re-executing every turn until the program clears. They return to the discard pile, so
+		// unlike depleted cards they can be drawn and played again.
+		void MoveNonPersistentCardsToDiscardPile();
+		// Discards whatever is still sitting in the init block at end of turn. Runs before the
+		// played-pile sweep, which would otherwise treat those cards as played and leave them
+		// attached to the init block - runnable for free next turn once usedEnergy resets.
+		void MoveInitBlockCardsToDiscardPile();
 		void MoveHandCardsToDiscardPile();
+		// Commits the energy of the cards that just resolved out of the init block and sends them
+		// to the discard pile, so nothing run from init can be run again.
+		void FinishInitBlockExecution();
 		void BeginNextTurn();
 		void RefreshItemMenu();
 		void CollectDeadEnemies();
+		// The two program bodies, in the order keyboard navigation should walk them. Skips any
+		// that have not been created yet.
+		std::vector<std::shared_ptr<IBlockCard>> GetBlockCards() const;
 		// Pile inspection
 		const std::vector<std::shared_ptr<ICard>>& GetPile(PileKind kind) const;
 		static std::wstring GetPileName(PileKind kind);
@@ -201,7 +230,7 @@ namespace Demo {
 		void UpdateKeyboardNavigation(unsigned long long deltaTime);
 		std::vector<KeyboardNavigator::Candidate> CollectKeyboardCandidates();
 		std::vector<PlacementSlot> CollectPlacementSlots();
-		void PlaceStatementCardAt(std::shared_ptr<IStatementCard> card, size_t index);
+		void PlaceStatementCardAt(std::shared_ptr<IStatementCard> card, size_t index, std::shared_ptr<IBlockCard> block);
 		void PlaceStatementCardInHand(std::shared_ptr<IStatementCard> card);
 		void PlaceEnemyCardOn(std::shared_ptr<EnemyCard> card, std::shared_ptr<IStatementCard> destination);
 		void DiscardEnemyCard(std::shared_ptr<EnemyCard> card);
@@ -228,7 +257,28 @@ namespace Demo {
 		void SetOnVictoryCallback(std::function<void()> cb) { onVictoryCallback = cb; }
 		void SetCustomBGM(const std::string& name) { customBGMName = name; }
 		int GetAvailableEnergy() const { return energy - usedEnergy; }
+		// Whether this card can go into a block without overspending.
+		//
+		// Read this before touching it: usedEnergy is rebuilt every frame from every cardHand card
+		// whose parent is NOT the hand container, and dragging a card detaches it first. So by the
+		// time a drop is tested, the dragged card's cost is already inside usedEnergy, and testing
+		// GetAvailableEnergy() against its cost again double-bills it - which rejects plays the
+		// player can afford (3 energy could never place a 3-cost card). A card still sitting in the
+		// hand container has not been counted yet, and that one does pay its cost here.
+		bool CanPlaceCardInBlock(const std::shared_ptr<ICard>& card) const;
+		// Snaps a card back to the hand after a rejected drop. Deferred, because drops resolve
+		// while the draggable manager is iterating its object map.
+		void ReturnCardToHand(const std::shared_ptr<IStatementCard>& card);
+		// For cards that hit everything without the player attaching an EnemyCard per target.
+		// Callers must skip IsDead() enemies - they linger here until CollectDeadEnemies runs.
+		const std::vector<std::shared_ptr<IEnemy>>& GetEnemies() const { return enemies; }
+		// Pending resources: applied at the start of the next turn.
 		void QueueBonusEnergy(int amount) { pendingBonusEnergy += amount; }
+		void QueueBonusDraw(int amount) { pendingBonusDraw += amount; }
+		// Instant resources: applied immediately. Only meaningful from the Init block - the main
+		// block executes as the turn ends, so anything gained there is never spent.
+		void GainEnergyNow(int amount) { energy += amount; }
+		void DrawCardsNow(int amount);
 		void QueuePopUpMessage(const std::wstring& msg) { if (popUpMessage) popUpMessage->QueueMessage(&commandBuffer, msg); }
 	};
 }

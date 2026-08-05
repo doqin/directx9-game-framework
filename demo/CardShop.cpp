@@ -3,6 +3,8 @@
 #include "StrikeCard.h"
 #include "EnergyCard.h"
 #include "AdvancedCards.h"
+#include "UtilityCards.h"
+#include "FinisherCards.h"
 
 void Demo::CardShop::AddShopCard(const std::string& name, int price, const std::wstring& description, const std::function<void()>& onBuyAction)
 {
@@ -34,6 +36,17 @@ void Demo::CardShop::LoadItems()
 	const int ChainLightningCardCost = 100;
 	const int StunCardCost = 300;
 	const int EnergyCardCost = 45;
+	const int JabCardCost = 20;
+	const int MarkCardCost = 30;
+	const int BraceCardCost = 25;
+	const int PrefetchCardCost = 35;
+	const int OverclockCardCost = 35;
+	const int JumpstartCardCost = 55;
+	const int ForesightCardCost = 70;
+	const int TerminateCardCost = 150;
+	const int InfernoCardCost = 140;
+	const int SystemPurgeCardCost = 200;
+	const int OverdriveCardCost = 180;
     switch (currentTier) {
 	case ShopTier::BASIC:
        AddShopCard("Strike Card", StrikeCardCost, StrikeCard(this->transformManager).GetDescription(), [this]() {
@@ -50,6 +63,18 @@ void Demo::CardShop::LoadItems()
 			});
        AddShopCard("Energy Card", EnergyCardCost, EnergyCard(this->transformManager).GetDescription(), [this]() {
 			auto newCard = std::make_shared<EnergyCard>(this->transformManager);
+			this->player->AddCardToDeck(newCard->GetSaveID());
+			});
+	   AddShopCard("Jab Card", JabCardCost, JabCard(this->transformManager).GetDescription(), [this]() {
+			auto newCard = std::make_shared<JabCard>(this->transformManager);
+			this->player->AddCardToDeck(newCard->GetSaveID());
+			});
+	   AddShopCard("Brace Card", BraceCardCost, BraceCard(this->transformManager).GetDescription(), [this]() {
+			auto newCard = std::make_shared<BraceCard>(this->transformManager);
+			this->player->AddCardToDeck(newCard->GetSaveID());
+			});
+	   AddShopCard("Mark Card", MarkCardCost, MarkCard(this->transformManager).GetDescription(), [this]() {
+			auto newCard = std::make_shared<MarkCard>(this->transformManager);
 			this->player->AddCardToDeck(newCard->GetSaveID());
 			});
 		break;
@@ -71,6 +96,22 @@ void Demo::CardShop::LoadItems()
 			auto newCard = std::make_shared<WeaknessCard>(this->transformManager);
 			this->player->AddCardToDeck(newCard->GetSaveID());
 		});
+	   AddShopCard("Prefetch Card", PrefetchCardCost, PrefetchCard(this->transformManager).GetDescription(), [this]() {
+			auto newCard = std::make_shared<PrefetchCard>(this->transformManager);
+			this->player->AddCardToDeck(newCard->GetSaveID());
+			});
+	   AddShopCard("Overclock Card", OverclockCardCost, OverclockCard(this->transformManager).GetDescription(), [this]() {
+			auto newCard = std::make_shared<OverclockCard>(this->transformManager);
+			this->player->AddCardToDeck(newCard->GetSaveID());
+			});
+	   AddShopCard("Jumpstart Card", JumpstartCardCost, JumpstartCard(this->transformManager).GetDescription(), [this]() {
+			auto newCard = std::make_shared<JumpstartCard>(this->transformManager);
+			this->player->AddCardToDeck(newCard->GetSaveID());
+			});
+	   AddShopCard("Foresight Card", ForesightCardCost, ForesightCard(this->transformManager).GetDescription(), [this]() {
+			auto newCard = std::make_shared<ForesightCard>(this->transformManager);
+			this->player->AddCardToDeck(newCard->GetSaveID());
+			});
 		break;
 
 	case ShopTier::PREMIUM:
@@ -80,6 +121,22 @@ void Demo::CardShop::LoadItems()
 			});
       AddShopCard("Chain Lightning Card", ChainLightningCardCost, ChainLightningCard(this->transformManager).GetDescription(), [this]() {
 			auto newCard = std::make_shared<ChainLightningCard>(this->transformManager);
+			this->player->AddCardToDeck(newCard->GetSaveID());
+			});
+	   AddShopCard("Inferno Card", InfernoCardCost, InfernoCard(this->transformManager).GetDescription(), [this]() {
+			auto newCard = std::make_shared<InfernoCard>(this->transformManager);
+			this->player->AddCardToDeck(newCard->GetSaveID());
+			});
+	   AddShopCard("Terminate Card", TerminateCardCost, TerminateCard(this->transformManager).GetDescription(), [this]() {
+			auto newCard = std::make_shared<TerminateCard>(this->transformManager);
+			this->player->AddCardToDeck(newCard->GetSaveID());
+			});
+	   AddShopCard("Overdrive Card", OverdriveCardCost, OverdriveCard(this->transformManager).GetDescription(), [this]() {
+			auto newCard = std::make_shared<OverdriveCard>(this->transformManager);
+			this->player->AddCardToDeck(newCard->GetSaveID());
+			});
+	   AddShopCard("System Purge Card", SystemPurgeCardCost, SystemPurgeCard(this->transformManager).GetDescription(), [this]() {
+			auto newCard = std::make_shared<SystemPurgeCard>(this->transformManager);
 			this->player->AddCardToDeck(newCard->GetSaveID());
 			});
    //    AddShopCard("Stun Card", StunCardCost, StunCard(this->transformManager).GetDescription(), [this]() {
