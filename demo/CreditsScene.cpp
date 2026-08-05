@@ -236,6 +236,8 @@ namespace Demo
 			});
 		creditsPages.push_back({
 			L"-- AUDIO RESOURCES --",
+			L"Card Deck 2: Paul Sinnett",
+			L"- https://freesound.org/s/404015/",
 			L"Checkpoint: by Vicces1212",
 			L"- https://freesound.org/s/123751/",
 			L"Arcade Music Loop: by joshuaempyre",
@@ -245,8 +247,6 @@ namespace Demo
 			L"- https://freesound.org/s/724507/",
 			L"Battle: levelclearer",
 			L"- https://freesound.org/s/346200/",
-			L"Card Deck 2: Paul Sinnett",
-			L"https://freesound.org/s/404015/",
 			L"Licensed under CC BY 4.0 & Public Domain"
 			});
 
