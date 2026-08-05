@@ -49,6 +49,7 @@
     <ClCompile Include="ProjectileSystem.cpp" />
     <ClCompile Include="MainBlockCard.cpp" />
     <ClCompile Include="StrikeCard.cpp" />
+    <ClCompile Include="EnergyCard.cpp" />
     <ClCompile Include="TestEnemy.cpp" />
     <ClCompile Include="RandomEncounter.cpp" />
     <ClCompile Include="CustomBattleScene.cpp" />
@@ -126,6 +127,7 @@
     <ClInclude Include="ShopPoint.h" />
     <ClInclude Include="TextInputManager.h" />
     <ClInclude Include="StrikeCard.h" />
+    <ClInclude Include="EnergyCard.h" />
     <ClInclude Include="TestBattleScene.h" />
     <ClInclude Include="TestEnemy.h" />
     <ClInclude Include="TutorialWorldScene.h" />
