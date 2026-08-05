@@ -1,5 +1,7 @@
-﻿// Microsoft Visual C++ generated resource script.
+// Microsoft Visual C++ generated resource script.
 //
+#pragma code_page(65001)
+
 #include "resource.h"
 
 #define APSTUDIO_READONLY_SYMBOLS
@@ -24,21 +26,21 @@ LANGUAGE LANG_ENGLISH, SUBLANG_ENGLISH_US
 // TEXTINCLUDE
 //
 
-1 TEXTINCLUDE 
+1 TEXTINCLUDE
 BEGIN
-    "resource.h\0"
+"resource.h\0"
 END
 
-2 TEXTINCLUDE 
+2 TEXTINCLUDE
 BEGIN
-    "#include ""winres.h""\r\n"
-    "\0"
+"#include ""winres.h""\r\n"
+"\0"
 END
 
-3 TEXTINCLUDE 
+3 TEXTINCLUDE
 BEGIN
-    "\r\n"
-    "\0"
+"\r\n"
+"\0"
 END
 
 #endif    // APSTUDIO_INVOKED
@@ -141,6 +143,8 @@ IDR_CARD_DRAW3          WAVE                    "assets\\audio\\card_draw3.wav"
 
 IDR_CARD_DRAW4          WAVE                    "assets\\audio\\card_draw4.wav"
 
+IDR_CARD_DRAW5          WAVE                    "assets\\audio\\card_draw5.wav"
+
 IDR_HURT1               WAVE                    "assets\\audio\\hurt1.wav"
 
 IDR_HURT2               WAVE                    "assets\\audio\\hurt2.wav"
@@ -158,6 +162,10 @@ IDR_COIN_GATHER         WAVE                    "assets\\audio\\coins_gather.wav
 IDR_CARD_SNAP           WAVE                    "assets\\audio\\card_snap.wav"
 
 IDR_CARD_SNAP2          WAVE                    "assets\\audio\\card_snap2.wav"
+
+IDR_CARD_SNAP3          WAVE                    "assets\\audio\\card_snap3.wav"
+
+IDR_CARD_SNAP4          WAVE                    "assets\\audio\\card_snap4.wav"
 
 IDR_POWERUP1            WAVE                    "assets\\audio\\power_up1.wav"
 
@@ -183,19 +191,20 @@ IDR_BGM_SKY             WAVE                    "assets\\audio\\sky-loop.wav"
 
 IDR_BGM_TUTORIAL        WAVE                    "assets\\audio\\tutorial-loop.wav"
 
-IDR_BGM_BAT_BOSS               WAVE                    "assets\\audio\\battle_boss.wav"
+IDR_BGM_BAT_BOSS        WAVE                    "assets\\audio\\battle_boss.wav"
 
-IDR_BGM_B1               WAVE                    "assets\\audio\\battle-loop1.wav"
+IDR_BGM_B1              WAVE                    "assets\\audio\\battle-loop1.wav"
 
-IDR_BGM_B2               WAVE                    "assets\\audio\\battle-loop2.wav"
+IDR_BGM_B2              WAVE                    "assets\\audio\\battle-loop2.wav"
 
-IDR_BGM_B3               WAVE                    "assets\\audio\\battle-loop3.wav"
+IDR_BGM_B3              WAVE                    "assets\\audio\\battle-loop3.wav"
 
-IDR_BGM_B4               WAVE                    "assets\\audio\\battle-loop4.wav"
+IDR_BGM_B4              WAVE                    "assets\\audio\\battle-loop4.wav"
 
-IDR_BGM_BOSS               WAVE                    "assets\\audio\\boss-loop.wav"
+IDR_BGM_BOSS            WAVE                    "assets\\audio\\boss-loop.wav"
 
-IDR_BGM_SECRET               WAVE                    "assets\\audio\\secret-loop.wav"
+IDR_BGM_SECRET          WAVE                    "assets\\audio\\secret-loop.wav"
+
 
 #endif    // English (United States) resources
 /////////////////////////////////////////////////////////////////////////////

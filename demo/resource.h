@@ -66,19 +66,22 @@
 #define IDR_BGM_ARCADE                  167
 #define IDR_BGM_SKY                     169
 #define IDR_BGM_TUTORIAL                171
-#define IDR_BGM_BAT_BOSS                       172
-#define IDR_BGM_B1                       173
-#define IDR_BGM_B2                       174
-#define IDR_BGM_B3                       175
-#define IDR_BGM_B4                       176
-#define IDR_BGM_BOSS                       177
-#define IDR_BGM_SECRET                       178
+#define IDR_BGM_BAT_BOSS                172
+#define IDR_BGM_B1                      173
+#define IDR_BGM_B2                      174
+#define IDR_BGM_B3                      175
+#define IDR_BGM_B4                      176
+#define IDR_BGM_BOSS                    177
+#define IDR_BGM_SECRET                  178
+#define IDR_CARD_DRAW5                       179
+#define IDR_CARD_SNAP3                       180
+#define IDR_CARD_SNAP4                       181
 
 // Next default values for new objects
 // 
 #ifdef APSTUDIO_INVOKED
 #ifndef APSTUDIO_READONLY_SYMBOLS
-#define _APS_NEXT_RESOURCE_VALUE        179
+#define _APS_NEXT_RESOURCE_VALUE        182
 #define _APS_NEXT_COMMAND_VALUE         40002
 #define _APS_NEXT_CONTROL_VALUE         1001
 #define _APS_NEXT_SYMED_VALUE           101

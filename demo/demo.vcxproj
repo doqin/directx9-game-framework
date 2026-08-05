@@ -620,8 +620,23 @@
     <Media Include="assets\audio\card_draw2.wav" />
     <Media Include="assets\audio\card_draw3.wav" />
     <Media Include="assets\audio\card_draw4.wav" />
+    <Media Include="assets\audio\card_draw5.wav">
+      <DeploymentContent Condition="'$(Configuration)|$(Platform)'=='Debug|x64'">true</DeploymentContent>
+      <DeploymentContent Condition="'$(Configuration)|$(Platform)'=='Testing|x64'">true</DeploymentContent>
+      <DeploymentContent Condition="'$(Configuration)|$(Platform)'=='Release|x64'">true</DeploymentContent>
+    </Media>
     <Media Include="assets\audio\card_snap.wav" />
     <Media Include="assets\audio\card_snap2.wav" />
+    <Media Include="assets\audio\card_snap3.wav">
+      <DeploymentContent Condition="'$(Configuration)|$(Platform)'=='Debug|x64'">true</DeploymentContent>
+      <DeploymentContent Condition="'$(Configuration)|$(Platform)'=='Testing|x64'">true</DeploymentContent>
+      <DeploymentContent Condition="'$(Configuration)|$(Platform)'=='Release|x64'">true</DeploymentContent>
+    </Media>
+    <Media Include="assets\audio\card_snap4.wav">
+      <DeploymentContent Condition="'$(Configuration)|$(Platform)'=='Debug|x64'">true</DeploymentContent>
+      <DeploymentContent Condition="'$(Configuration)|$(Platform)'=='Testing|x64'">true</DeploymentContent>
+      <DeploymentContent Condition="'$(Configuration)|$(Platform)'=='Release|x64'">true</DeploymentContent>
+    </Media>
     <Media Include="assets\audio\checkpoint.wav" />
     <Media Include="assets\audio\coins_gather.wav" />
     <Media Include="assets\audio\dead.wav" />

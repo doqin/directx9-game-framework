@@ -231,7 +231,7 @@ namespace Demo
 			L"- https://nebula-audio.itch.io",
 			L"Sounds: JDSherbert",
 			L"– https://jdsherbert.itch.io",
-			L"Card Deck: Geoff-Bremner-Audio",
+			L"Card Deck 1: Geoff-Bremner-Audio",
 			L"- https://freesound.org/s/682449/"
 			});
 		creditsPages.push_back({
@@ -245,8 +245,8 @@ namespace Demo
 			L"- https://freesound.org/s/724507/",
 			L"Battle: levelclearer",
 			L"- https://freesound.org/s/346200/",
-			L"",
-			L"",
+			L"Card Deck 2: Paul Sinnett",
+			L"https://freesound.org/s/404015/",
 			L"Licensed under CC BY 4.0 & Public Domain"
 			});
 

@@ -477,6 +477,7 @@ void Demo::IBattleScene::QueueEnemyLayoutTransition(State targetState)
 
 void Demo::IBattleScene::CreateEnemyCard(std::shared_ptr<IEnemy> enemy)
 {
+
 	static std::random_device rd;
 	static std::mt19937 gen(rd());
 	std::uniform_int_distribution<int> xdist(-10, 10);
@@ -494,6 +495,7 @@ void Demo::IBattleScene::CreateEnemyCard(std::shared_ptr<IEnemy> enemy)
 	auto card = std::make_shared<EnemyCard>(transformManager, enemy, spawnX, spawnY);
 	card->Init(draggableManager, game->GetGraphicsDevice(), &camera);
 	enemyCards.push_back(card);
+	DX9GF::AudioManager::GetInstance()->PlayRandom("card_draw", 0.2f);
 }
 
 void Demo::IBattleScene::RemoveEnemyCardsInRemoveArea()
