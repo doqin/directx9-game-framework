@@ -145,6 +145,23 @@ namespace Demo {
 		int currentItemPage = 0;
 		int maxItemPage = 0;
 
+		// A consumable used this battle whose effect is still running. The effect itself lives in
+		// battlePlayer's modifier list - this only records which item put it there, so the HUD can
+		// show the source next to the anonymous buff icons.
+		struct ActiveItemEffect {
+			int itemID;
+			std::wstring name;
+			std::wstring description;
+			RECT iconRect;
+			// The lingering modifiers this item applied. Instant ones (HealHP) are not listed -
+			// they leave nothing to report once the popup is gone.
+			std::vector<ModifierType> modifierTypes;
+			// The entry's own countdown. Without it a card that happens to apply the same modifier
+			// type would keep a long-spent item on screen.
+			int turnsRemaining;
+		};
+		std::vector<ActiveItemEffect> activeItems;
+
 		// Pile inspection. The buttons live on the PlayerAttack bar; opening one swaps to
 		// State::PlayerViewPile, which lists throwaway copies of that pile's cards.
 		std::shared_ptr<IconButton> drawPileButton;
@@ -167,6 +184,7 @@ namespace Demo {
 		std::shared_ptr<DX9GF::NineSliceSprite> itemMenuBackground;
 		std::shared_ptr<DX9GF::StaticSprite> attackBuffIcon;
 		std::shared_ptr<DX9GF::StaticSprite> defenseBuffIcon;
+		std::shared_ptr<DX9GF::StaticSprite> activeItemIcon;
 		bool pendingLockMessage = false;
 		std::function<void()> onVictoryCallback = nullptr;
 		std::string customBGMName;
@@ -201,6 +219,14 @@ namespace Demo {
 		void FinishInitBlockExecution();
 		void BeginNextTurn();
 		void RefreshItemMenu();
+		// Records a consumable the player just used so the HUD can list it while its modifiers
+		// last. A no-op for items that only apply instant effects.
+		void RegisterActiveItem(const ConsumableItem& item);
+		// Turns the item's effect has left, read back from the player's live modifiers so the
+		// number always agrees with the status icons drawn beside it.
+		int GetActiveItemTurnsLeft(const ActiveItemEffect& entry) const;
+		// Ages the entries alongside the player's modifiers and drops the spent ones.
+		void TickActiveItems();
 		void CollectDeadEnemies();
 		// The two program bodies, in the order keyboard navigation should walk them. Skips any
 		// that have not been created yet.
@@ -233,7 +259,6 @@ namespace Demo {
 		void PlaceStatementCardAt(std::shared_ptr<IStatementCard> card, size_t index, std::shared_ptr<IBlockCard> block);
 		void PlaceStatementCardInHand(std::shared_ptr<IStatementCard> card);
 		void PlaceEnemyCardOn(std::shared_ptr<EnemyCard> card, std::shared_ptr<IStatementCard> destination);
-		void DiscardEnemyCard(std::shared_ptr<EnemyCard> card);
 		void DrawKeyboardReticleUI(unsigned long long deltaTime);
 		void DrawKeyboardReticleWorld(unsigned long long deltaTime);
 		void DrawKeyboardPlacementUI(unsigned long long deltaTime);
@@ -246,6 +271,9 @@ namespace Demo {
 		void DrawPileButtons(unsigned long long deltaTime);
 		void EnemyAttackDraw(unsigned long long deltaTime);
 		void DrawHealthAndDefenseBar(const float y, DX9GF::GraphicsDevice* gd);
+		// The row of used-item icons beside the health bar. Returns the tooltip text for whichever
+		// icon the mouse is over (empty if none), so it can share the bar's tooltip renderer.
+		std::wstring DrawActiveItems(const float barRightX, const float y);
 	public:
 		IBattleScene(Game* game, std::shared_ptr<Player> player, int screenWidth, int screenHeight) : IScene(screenWidth, screenHeight), game(game), player(player) {}
 		virtual void Init() override;
@@ -269,6 +297,9 @@ namespace Demo {
 		// Snaps a card back to the hand after a rejected drop. Deferred, because drops resolve
 		// while the draggable manager is iterating its object map.
 		void ReturnCardToHand(const std::shared_ptr<IStatementCard>& card);
+		// Detaches the card from whatever it was slotted into and takes it out of the battle for
+		// good. Public because statement cards call it when they give up their targets.
+		void DiscardEnemyCard(std::shared_ptr<EnemyCard> card);
 		// For cards that hit everything without the player attaching an EnemyCard per target.
 		// Callers must skip IsDead() enemies - they linger here until CollectDeadEnemies runs.
 		const std::vector<std::shared_ptr<IEnemy>>& GetEnemies() const { return enemies; }

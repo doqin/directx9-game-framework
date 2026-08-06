@@ -1,6 +1,7 @@
 #include "pch.h"
 #include "StrikeCard.h"
 #include "DrawUtils.h"
+#include "IBattleScene.h"
 
 bool Demo::StrikeCard::OnDrop(std::shared_ptr<IDraggable> other)
 {
@@ -29,6 +30,16 @@ bool Demo::StrikeCard::AttachEnemyCard(std::shared_ptr<EnemyCard> card)
 	card->SetLocalPosition((float)dragAreaWidth, 0);
 	enemyCard = card;
 	return true;
+}
+
+void Demo::StrikeCard::ReleaseEnemyCards()
+{
+	if (auto lock = enemyCard.lock()) {
+		if (battleScene) {
+			battleScene->DiscardEnemyCard(lock);
+		}
+	}
+	enemyCard.reset();
 }
 
 std::tuple<float, float> Demo::StrikeCard::GetEnemyCardSlotWorldPosition() const

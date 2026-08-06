@@ -27,6 +27,7 @@ namespace Demo {
 		size_t GetWidth() const override;
 		bool CanAcceptEnemyCard() const override { return !enemyCard.lock(); }
 		bool AttachEnemyCard(std::shared_ptr<EnemyCard> card) override;
+		void ReleaseEnemyCards() override;
 		std::tuple<float, float> GetEnemyCardSlotWorldPosition() const override;
 	};
 }

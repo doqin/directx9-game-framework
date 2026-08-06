@@ -25,6 +25,7 @@ namespace Demo {
 		bool HasRequiredTargets() const override { return !targets.empty(); }
 		bool CanAcceptEnemyCard() const override { return targets.size() < maxTargets; }
 		bool AttachEnemyCard(std::shared_ptr<EnemyCard> card) override;
+		void ReleaseEnemyCards() override;
 		std::tuple<float, float> GetEnemyCardSlotWorldPosition() const override;
 	};
 }
