@@ -45,6 +45,9 @@ namespace Demo {
 		// Set while the init block is resolving. Unlike isExecutingAttacks this never routes into
 		// the enemy turn - that is the whole point of the init block.
 		bool isExecutingInit = false;
+		// Set when that init run was kicked off by Execute rather than by Run Init, so the main
+		// block starts as soon as init finishes. One press should resolve the whole turn.
+		bool executeAfterInit = false;
 		size_t currentTurn = 0;
 		int energy = MAX_ENERGY;
 		int usedEnergy = 0;
@@ -270,6 +273,13 @@ namespace Demo {
 		// The three pile buttons plus their card counts, drawn on the PlayerAttack bar.
 		void DrawPileButtons(unsigned long long deltaTime);
 		void EnemyAttackDraw(unsigned long long deltaTime);
+		// Damage each enemy would take if the program were executed now. Replays the queue step by
+		// step - init block then main block, the order Execute resolves them in - so a Vulnerable,
+		// Mark or attack buff played earlier in the same program is already standing when the hits
+		// after it are counted, and block spent absorbing one hit is not available to the next.
+		void ComputeProjectedDamage(std::unordered_map<IEnemy*, float>& out);
+		// That total, drawn at each enemy's bottom-left through the attack phase.
+		void DrawProjectedDamage(unsigned long long deltaTime);
 		void DrawHealthAndDefenseBar(const float y, DX9GF::GraphicsDevice* gd);
 		// The row of used-item icons beside the health bar. Returns the tooltip text for whichever
 		// icon the mouse is over (empty if none), so it can share the bar's tooltip renderer.

@@ -1,6 +1,7 @@
 ﻿#include "pch.h"
 #include "IBattleScene.h"
 #include <algorithm>
+#include <array>
 #include <random>
 #include "DamageTextManager.h"
 #include "GameItems.h"
@@ -34,6 +35,18 @@ namespace {
 		card->SetLocalPosition(HiddenPileX, HiddenPileY);
 	}
 
+	// Turns left on a modifier the combatant already carries, skipping delayed and expired ones
+	// the way ICombatant::TriggerEffects does. 0 when it is not there at all.
+	int ActiveModifierDuration(const Demo::ICombatant& combatant, Demo::ModifierType type)
+	{
+		for (const auto& mod : combatant.GetModifiers()) {
+			if (mod.type == type && mod.duration > 0 && mod.delayTurns <= 0) {
+				return mod.duration;
+			}
+		}
+		return 0;
+	}
+
 	constexpr float RAW_ITEM_W = 23.0f;
 	constexpr float RAW_ITEM_H = 35.0f;
 	constexpr float RAW_BG_W = 192.0f;
@@ -62,6 +75,7 @@ void Demo::IBattleScene::StartBattle()
 	}
 	nullifiedPile.clear();
 	activeItems.clear();
+	executeAfterInit = false;
 	energy = MAX_ENERGY;
 	usedEnergy = 0;
 	committedEnergy = 0;
@@ -867,6 +881,14 @@ void Demo::IBattleScene::PlayerAttackUpdate(unsigned long long deltaTime)
 	if (!initExecuting && isExecutingInit) {
 		isExecutingInit = false;
 		FinishInitBlockExecution();
+		if (executeAfterInit) {
+			// Execute was pressed, not Run Init: carry straight on into the main program instead
+			// of handing control back to the player.
+			executeAfterInit = false;
+			isExecutingAttacks = true;
+			mainBlockCard->StartExecution();
+			return;
+		}
 	}
 	if (!mainBlockCard->IsExecuting() && !initExecuting) {
 		// When finished executing attack
@@ -1912,6 +1934,179 @@ void Demo::IBattleScene::EnemyAttackDraw(unsigned long long deltaTime)
 	DrawHealthAndDefenseBar(y, gd);
 }
 
+void Demo::IBattleScene::ComputeProjectedDamage(std::unordered_map<IEnemy*, float>& out)
+{
+	out.clear();
+	if (!battlePlayer) {
+		return;
+	}
+
+	// Init resolves before the main program, so the readout walks them in that order - a Vulnerable
+	// played from init has to be standing before the main block's hits are counted.
+	std::vector<IStatementCard::ProjectedStep> steps;
+	const std::array<std::shared_ptr<IBlockCard>, 2> blocks = { initBlockCard, mainBlockCard };
+	for (const auto& block : blocks) {
+		if (!block) {
+			continue;
+		}
+		for (const auto& weak : block->GetStatementCards()) {
+			if (auto card = weak.lock()) {
+				card->CollectProjectedSteps(steps);
+			}
+		}
+	}
+	// The program is replayed step by step rather than measured against the state on screen: a
+	// Vulnerable, Mark or attack buff queued ahead of a hit is already standing by the time that
+	// hit resolves, and the readout has to show it that way.
+	float buffDamage = battlePlayer->GetModifierValue(ModifierType::BuffDamage);
+	// No card applies Weak to the player, so this one cannot change partway through.
+	const bool isWeak = battlePlayer->HasModifier(ModifierType::Weak);
+
+	struct EnemySim {
+		// Spent as it absorbs, so it is carried across hits rather than applied to each one - the
+		// same bookkeeping temporaryDefense gets in CalculateActualDamage.
+		float block;
+		float marked;
+		bool vulnerable;
+		// Paid once at the end-of-turn tick rather than per hit.
+		float poisonValue;
+		int poisonDuration;
+		float burn;
+	};
+	// Seeded for every living enemy, not just the ones the program targets: the tick fires on all
+	// of them, so an enemy already burning takes damage from executing even if nothing aims at it.
+	std::unordered_map<IEnemy*, EnemySim> sim;
+	for (const auto& enemy : enemies) {
+		if (!enemy || enemy->IsDead()) {
+			continue;
+		}
+		sim.emplace(enemy.get(), EnemySim{
+			(std::max)(0.f, enemy->GetTemporaryDefense()),
+			enemy->GetModifierValue(ModifierType::Marked),
+			enemy->HasModifier(ModifierType::Vulnerable),
+			enemy->GetModifierValue(ModifierType::Poison),
+			ActiveModifierDuration(*enemy, ModifierType::Poison),
+			enemy->GetModifierValue(ModifierType::Burn)
+			});
+	}
+
+	for (const auto& step : steps) {
+		if (step.kind == IStatementCard::ProjectedStep::Kind::PlayerModifier) {
+			if (step.modifier == ModifierType::BuffDamage) {
+				buffDamage += step.value;
+			}
+			continue;
+		}
+		if (!step.target) {
+			continue;
+		}
+		const auto simIt = sim.find(step.target);
+		if (simIt == sim.end()) {
+			continue;
+		}
+		EnemySim& state = simIt->second;
+
+		if (step.kind == IStatementCard::ProjectedStep::Kind::EnemyModifier) {
+			switch (step.modifier) {
+				// AddStackingModifier accumulates the value; Vulnerable is a flag either way.
+			case ModifierType::Marked: state.marked += step.value; break;
+			case ModifierType::Vulnerable: state.vulnerable = true; break;
+			case ModifierType::Burn: state.burn += step.value; break;
+				// AddModifier adds to the duration already there, and takes the larger value.
+			case ModifierType::Poison:
+				state.poisonDuration += step.duration;
+				state.poisonValue = (std::max)(state.poisonValue, step.value);
+				break;
+			default: break;
+			}
+			continue;
+		}
+
+		// ICombatant::CalculateOutgoingDamage, then CalculateActualDamage: Marked is a flat bonus
+		// per hit and lands before Vulnerable scales the total, which lands before block.
+		float damage = step.value + buffDamage;
+		if (isWeak) {
+			damage *= 0.75f;
+		}
+		damage += state.marked;
+		if (state.vulnerable) {
+			damage *= 1.5f;
+		}
+		const float absorbed = (std::min)(state.block, damage);
+		state.block -= absorbed;
+		damage -= absorbed;
+
+		out[step.target] += damage;
+	}
+
+	// QueueToEnemyAttack ticks every enemy's effects the moment the program finishes, so the tick
+	// is part of what executing costs them. Both bypass block and Vulnerable - TriggerEffects
+	// zeroes them around the poison hit, and TakeIndirectDamage ignores them for burn - so these
+	// go on raw.
+	for (const auto& [enemy, state] : sim) {
+		float tick = state.burn;
+		if (state.poisonDuration > 0) {
+			// Poison with no value of its own is worth its remaining turns.
+			tick += (state.poisonValue > 0.f) ? state.poisonValue : static_cast<float>(state.poisonDuration);
+		}
+		if (tick > 0.f) {
+			out[enemy] += tick;
+		}
+	}
+}
+
+void Demo::IBattleScene::DrawProjectedDamage(unsigned long long deltaTime)
+{
+	// Mid-execution the total would sit at its pre-execution value while the damage actually
+	// lands, reading as though the hits were not counting. Hide it until the program settles.
+	if (isExecutingAttacks || isExecutingInit
+		|| (mainBlockCard && mainBlockCard->IsExecuting())
+		|| (initBlockCard && initBlockCard->IsExecuting())) {
+		return;
+	}
+	if (!fontSprite) {
+		return;
+	}
+
+	std::unordered_map<IEnemy*, float> projected;
+	ComputeProjectedDamage(projected);
+	if (projected.empty()) {
+		return;
+	}
+
+	fontSprite->Begin();
+	fontSprite->SetOutline(true, 0xFF000000, 2.f);
+	fontSprite->SetColor(0xFFff4444);
+	for (const auto& enemy : enemies) {
+		if (!enemy || enemy->IsDead()) {
+			continue;
+		}
+		const auto it = projected.find(enemy.get());
+		if (it == projected.end()) {
+			continue;
+		}
+		const int total = static_cast<int>(std::round(it->second));
+		if (total <= 0) {
+			continue;
+		}
+
+		// The card-spawn trigger is centred on the enemy and sized to its sprite, so it doubles as
+		// the body's bounds. Enemies without one fall back to a nominal box.
+		float left = enemy->GetWorldX() - 32.f;
+		float bottom = enemy->GetWorldY() + 32.f;
+		if (auto trigger = enemy->GetCardSpawnTrigger().lock()) {
+			left = trigger->GetWorldX() - trigger->GetOriginX();
+			bottom = trigger->GetWorldY() - trigger->GetOriginY() + trigger->GetHeight();
+		}
+
+		fontSprite->SetText(L"-" + std::to_wstring(total));
+		fontSprite->SetPosition(left, bottom);
+		fontSprite->Draw(this->camera, deltaTime);
+	}
+	fontSprite->SetOutline(false);
+	fontSprite->End();
+}
+
 void Demo::IBattleScene::DrawHealthAndDefenseBar(const float y, DX9GF::GraphicsDevice* gd)
 {
 	const float spacing = 5.f;
@@ -2412,7 +2607,11 @@ void Demo::IBattleScene::Init()
 			DX9GF::AudioManager::GetInstance()->Play("error", false, 0.8f);
 		}
 		else if (mainBlockCard && !mainBlockCard->IsExecuting()) {
-			if (!mainBlockCard->HasAllRequiredTargets()) {
+			// Anything still queued in init runs first, so its targets have to be complete too -
+			// otherwise the turn would stall halfway with the main block never reached.
+			const bool runInitFirst = initBlockCard && !initBlockCard->GetStatementCards().empty();
+			if (!mainBlockCard->HasAllRequiredTargets()
+				|| (runInitFirst && !initBlockCard->HasAllRequiredTargets())) {
 				if (timeSinceLastTargetPopUp >= targetPopUpCooldown) {
 					popUpMessage->QueueMessage(&commandBuffer, L"Some cards are missing a target!");
 					DX9GF::AudioManager::GetInstance()->Play("error", false, 0.8f);
@@ -2422,8 +2621,17 @@ void Demo::IBattleScene::Init()
 			}
 			commandBuffer.Clear();
 			popUpMessage->Reset(); // Really bad hack, please never do this in a production game lol
-			isExecutingAttacks = true;
-			mainBlockCard->StartExecution();
+			if (runInitFirst) {
+				// PlayerAttackUpdate picks this up when init finishes and chains into the main
+				// block, after FinishInitBlockExecution has committed and discarded the init cards.
+				isExecutingInit = true;
+				executeAfterInit = true;
+				initBlockCard->StartExecution();
+			}
+			else {
+				isExecutingAttacks = true;
+				mainBlockCard->StartExecution();
+			}
 		}
 		});
 	executeButton->SetSpriteScale(2.f, 2.f);
@@ -2929,6 +3137,7 @@ void Demo::IBattleScene::DrawWorld(unsigned long long deltaTime)
 			for (auto& enemy : enemies) {
 				enemy->Draw(gd, &camera, deltaTime);
 			}
+			DrawProjectedDamage(deltaTime);
 			draggableManager->Draw(deltaTime);
 			DrawKeyboardReticleWorld(deltaTime);
 			break;
