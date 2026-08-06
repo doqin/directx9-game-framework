@@ -61,6 +61,7 @@ void Demo::IBattleScene::StartBattle()
 		card->ResetUses();
 	}
 	nullifiedPile.clear();
+	activeItems.clear();
 	energy = MAX_ENERGY;
 	usedEnergy = 0;
 	committedEnergy = 0;
@@ -555,6 +556,7 @@ void Demo::IBattleScene::BeginNextTurn()
 	committedEnergy = 0;
 
 	battlePlayer->TickDurations(TickPhase::EndOfRound);
+	TickActiveItems();
 	for (auto& enemy : enemies) {
 		enemy->TickDurations(TickPhase::EndOfRound);
 		enemy->OnTurnBegin(this->battlePlayer, this->popUpMessage, this->currentTurn);
@@ -718,6 +720,8 @@ void Demo::IBattleScene::RefreshItemMenu()
 							battlePlayer->AddModifier(mod.type, mod.duration, mod.value, mod.isBuff, mod.delayTurns);
 						}
 					}
+					this->RegisterActiveItem(*blueprint);
+
 					std::wstring msg = L"Used " + blueprint->GetName() + L"!";
 					popUpMessage->QueueMessage(&commandBuffer, msg);
 
@@ -738,6 +742,69 @@ void Demo::IBattleScene::RefreshItemMenu()
 
 	transformManager->RebuildHierarchy();
 	transformManager->UpdateAll();
+}
+
+void Demo::IBattleScene::RegisterActiveItem(const ConsumableItem& item)
+{
+	std::vector<ModifierType> lingering;
+	int turns = 0;
+	for (const auto& mod : item.GetModifiers()) {
+		if (mod.type == ModifierType::HealHP || mod.duration <= 0) continue;
+		if (std::find(lingering.begin(), lingering.end(), mod.type) == lingering.end()) {
+			lingering.push_back(mod.type);
+		}
+		// delayTurns is burned off before duration starts counting down, so the effect is on the
+		// board for the sum of the two.
+		turns = (std::max)(turns, mod.duration + mod.delayTurns);
+	}
+	if (lingering.empty()) return;
+
+	// Using the same item twice stacks it: AddModifier sums the durations, so the entry has to
+	// as well or it would expire while its buff is still running.
+	for (auto& entry : activeItems) {
+		if (entry.itemID == item.GetID()) {
+			entry.turnsRemaining += turns;
+			return;
+		}
+	}
+
+	activeItems.push_back({
+		item.GetID(),
+		item.GetName(),
+		item.GetDescription(),
+		item.GetItemRect(),
+		std::move(lingering),
+		turns
+		});
+}
+
+int Demo::IBattleScene::GetActiveItemTurnsLeft(const ActiveItemEffect& entry) const
+{
+	int turns = 0;
+	for (const auto& mod : battlePlayer->GetModifiers()) {
+		if (mod.duration <= 0) continue;
+		if (std::find(entry.modifierTypes.begin(), entry.modifierTypes.end(), mod.type) == entry.modifierTypes.end()) continue;
+		// A delayed modifier has not started ticking yet, so it still owes its full duration.
+		turns = (std::max)(turns, mod.duration + mod.delayTurns);
+	}
+	// Capped by the entry's own countdown: the modifier may have been topped up by a card, and
+	// the item should not take credit for that.
+	return (std::min)(turns, entry.turnsRemaining);
+}
+
+void Demo::IBattleScene::TickActiveItems()
+{
+	for (auto it = activeItems.begin(); it != activeItems.end(); ) {
+		--it->turnsRemaining;
+		// The second test catches effects that ended early - block eaten by a hit, Vulnerable
+		// cleared by poison - rather than by running out of turns.
+		if (it->turnsRemaining <= 0 || GetActiveItemTurnsLeft(*it) <= 0) {
+			it = activeItems.erase(it);
+		}
+		else {
+			++it;
+		}
+	}
 }
 
 void Demo::IBattleScene::PlayerStandByUpdate(unsigned long long deltaTime)
@@ -1323,6 +1390,9 @@ void Demo::IBattleScene::DiscardEnemyCard(std::shared_ptr<EnemyCard> card)
 	if (!card) {
 		return;
 	}
+	// A card discarded straight off a statement card is still parented to it. Leaving that link
+	// in place would keep the transform hierarchy pointing at a card that is about to go away.
+	card->DetachParent();
 	if (auto manager = card->GetDraggableManager().lock()) {
 		manager->Remove(card);
 	}
@@ -2007,6 +2077,14 @@ void Demo::IBattleScene::DrawHealthAndDefenseBar(const float y, DX9GF::GraphicsD
 		modY -= 32.f;
 	}
 
+	// The items that put those buffs there, listed beside the bars. A modifier icon the mouse is
+	// already on wins the tooltip - the two never overlap, so at most one of them is hovered.
+	std::wstring itemTooltip = DrawActiveItems(x + w, y);
+	if (!isTooltipActive && !itemTooltip.empty()) {
+		isTooltipActive = true;
+		activeTooltipText = std::move(itemTooltip);
+	}
+
 	//draw tooltip after
 	if (isTooltipActive) {
 		fontSprite->SetText(std::move(activeTooltipText));
@@ -2033,6 +2111,70 @@ void Demo::IBattleScene::DrawHealthAndDefenseBar(const float y, DX9GF::GraphicsD
 		fontSprite->Draw(this->uiCamera, 0);
 		fontSprite->End();
 	}
+}
+
+std::wstring Demo::IBattleScene::DrawActiveItems(const float barRightX, const float y)
+{
+	if (activeItems.empty() || !activeItemIcon) return L"";
+
+	// Item art is 23x35, drawn 1:1 here - about as tall as the health and defense bars together,
+	// so a row of them sits level with the bars instead of towering over them.
+	const float iconY = y - 36.f;
+	const float rowGap = 10.f;
+	auto [camW, camH] = this->uiCamera.GetScreenResolution();
+	const float rowRight = camW / 2.f - 8.f;
+
+	auto [screenX, screenY] = DX9GF::InputManager::GetInstance()->GetVirtualAbsoluteMousePos(&this->uiCamera);
+	auto [mouseX, mouseY] = DX9GF::Utils::WindowToWorldCoords(this->uiCamera, screenX, screenY);
+
+	std::wstring tooltip;
+	float drawX = barRightX + 16.f;
+	size_t skipped = 0;
+
+	for (const auto& entry : activeItems) {
+		const int turnsLeft = GetActiveItemTurnsLeft(entry);
+		// Everything it applied is already gone; the entry itself is swept at end of turn.
+		if (turnsLeft <= 0) continue;
+
+		if (drawX + RAW_ITEM_W > rowRight) {
+			++skipped;
+			continue;
+		}
+
+		activeItemIcon->SetSrcRect(entry.iconRect);
+		activeItemIcon->SetPosition(drawX, iconY);
+		activeItemIcon->SetScale(1.f, 1.f);
+		activeItemIcon->Begin();
+		activeItemIcon->Draw(this->uiCamera, 0);
+		activeItemIcon->End();
+
+		fontSprite->SetColor(0xFFfffc40);
+		fontSprite->SetOutline(true, 0xFF000000, 3.f);
+		fontSprite->SetText(std::to_wstring(turnsLeft));
+		const float textW = static_cast<float>(fontSprite->GetWidth());
+		fontSprite->SetPosition(drawX + (RAW_ITEM_W - textW) / 2.f, iconY + RAW_ITEM_H + 2.f);
+		fontSprite->Begin();
+		fontSprite->Draw(this->uiCamera, 0);
+		fontSprite->End();
+
+		if (mouseX >= drawX && mouseX <= drawX + RAW_ITEM_W && mouseY >= iconY && mouseY <= iconY + RAW_ITEM_H) {
+			tooltip = entry.name + L" (" + std::to_wstring(turnsLeft) + L" turns remaining)\n" + entry.description;
+		}
+
+		drawX += (std::max)(RAW_ITEM_W, textW) + rowGap;
+	}
+
+	if (skipped > 0) {
+		fontSprite->SetColor(0xFFFFFFFF);
+		fontSprite->SetOutline(true, 0xFF000000, 3.f);
+		fontSprite->SetText(L"+" + std::to_wstring(skipped));
+		fontSprite->SetPosition(drawX, iconY + RAW_ITEM_H / 2.f);
+		fontSprite->Begin();
+		fontSprite->Draw(this->uiCamera, 0);
+		fontSprite->End();
+	}
+
+	return tooltip;
 }
 
 void Demo::IBattleScene::Init()
@@ -2062,6 +2204,8 @@ void Demo::IBattleScene::Init()
 	attackBuffIcon->SetSrcRect({ .left = 112, .top = 240, .right = 128, .bottom = 256 });
 	defenseBuffIcon = std::make_shared<DX9GF::StaticSprite>(uiSheetTex.get());
 	defenseBuffIcon->SetSrcRect({ .left = 96, .top = 240, .right = 112, .bottom = 256 });
+	// Src rect is set per entry in DrawActiveItems - one sprite serves every item in the row.
+	activeItemIcon = std::make_shared<DX9GF::StaticSprite>(itemsTex.get());
 	// Create buttons
 	const auto buttonWidth = 96;
 	const auto buttonHeight = 32;

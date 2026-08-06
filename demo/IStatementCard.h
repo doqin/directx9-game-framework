@@ -47,6 +47,10 @@ namespace Demo {
 		virtual bool CanAcceptEnemyCard() const { return false; }
 		// Attaches without the position hit-test used by OnDrop. Returns false if full.
 		virtual bool AttachEnemyCard(std::shared_ptr<EnemyCard> card) { return false; }
+		// Empties the card's target slots, discarding the enemy cards out of the battle. Called
+		// when the card goes back to the hand: the enemy cards are parented to it, so without this
+		// they are dragged into the hand along with it, out of reach and still counted as targets.
+		virtual void ReleaseEnemyCards() {}
 		// World-space position the next attached enemy card would occupy.
 		virtual std::tuple<float, float> GetEnemyCardSlotWorldPosition() const { return { GetWorldX(), GetWorldY() }; }
 	protected:
