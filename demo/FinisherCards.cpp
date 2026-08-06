@@ -20,7 +20,7 @@ bool Demo::TerminateCard::Execute() {
 }
 
 void Demo::TerminateCard::DrawCardFace(unsigned long long deltaTime) {
-	DrawSheetFace(deltaTime, { .left = 160, .top = 368, .right = 240, .bottom = 384 });
+	DrawSheetFace(deltaTime, GetFaceRect());
 }
 
 bool Demo::InfernoCard::Execute() {
@@ -45,7 +45,7 @@ void Demo::InfernoCard::ResetExecution() {
 }
 
 void Demo::InfernoCard::DrawCardFace(unsigned long long deltaTime) {
-	DrawSheetFace(deltaTime, { .left = 0, .top = 384, .right = 80, .bottom = 400 });
+	DrawSheetFace(deltaTime, GetFaceRect());
 }
 
 bool Demo::SystemPurgeCard::Execute() {
@@ -69,7 +69,7 @@ void Demo::SystemPurgeCard::ResetExecution() {
 }
 
 void Demo::SystemPurgeCard::DrawCardFace(unsigned long long deltaTime) {
-	DrawSheetFace(deltaTime, { .left = 80, .top = 384, .right = 176, .bottom = 400 });
+	DrawSheetFace(deltaTime, GetFaceRect());
 }
 
 bool Demo::OverdriveCard::Execute() {
@@ -88,5 +88,5 @@ void Demo::OverdriveCard::ResetExecution() {
 }
 
 void Demo::OverdriveCard::DrawCardFace(unsigned long long deltaTime) {
-	DrawSheetFace(deltaTime, { .left = 176, .top = 384, .right = 256, .bottom = 400 });
+	DrawSheetFace(deltaTime, GetFaceRect());
 }

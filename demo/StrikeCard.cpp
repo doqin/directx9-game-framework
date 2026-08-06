@@ -85,7 +85,7 @@ void Demo::StrikeCard::Draw(unsigned long long deltaTime)
 		strikeTexture = std::make_shared<DX9GF::Texture>(graphicsDevice);
 		strikeTexture->LoadTexture(L"assets/ui.png");
 		strikeSprite = std::make_shared<DX9GF::StaticSprite>(strikeTexture.get());
-		strikeSprite->SetSrcRect({ .left = 0, .top = 288, .right = 80, .bottom = 304 });
+		strikeSprite->SetSrcRect(GetFaceRect());
 	}
 	auto thisX = GetWorldX();
 	auto thisY = GetWorldY();

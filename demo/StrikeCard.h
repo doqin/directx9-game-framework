@@ -21,6 +21,7 @@ namespace Demo {
 		void Update(unsigned long long deltaTime) override;
 		void Draw(unsigned long long deltaTime) override;
 		std::wstring GetDescription() const override;
+		RECT GetFaceRect() const override { return RECT{ 0, 288, 80, 304 }; }
 		std::wstring GetInputsDescription() const override;
 		size_t GetCost() const override;
 		size_t GetWidth() const override;
