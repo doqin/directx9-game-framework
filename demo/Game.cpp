@@ -49,8 +49,9 @@ void Demo::Game::Init()
 	audio->Load("card_draw2", IDR_CARD_DRAW2);
 	audio->Load("card_draw3", IDR_CARD_DRAW3);
 	audio->Load("card_draw4", IDR_CARD_DRAW4);
+	audio->Load("card_draw5", IDR_CARD_DRAW5);
 
-	audio->RegisterBank("card_draw", { "card_draw1", "card_draw2", "card_draw3", "card_draw4" });
+	audio->RegisterBank("card_draw", { "card_draw1", "card_draw2", "card_draw3", "card_draw4", "card_draw5" });
 
 	audio->Load("hurt1", IDR_HURT1);
 	audio->Load("hurt2", IDR_HURT2);
@@ -65,7 +66,9 @@ void Demo::Game::Init()
 
 	audio->Load("card_snap1", IDR_CARD_SNAP);
 	audio->Load("card_snap2", IDR_CARD_SNAP2);
-	audio->RegisterBank("card_snap", { "card_snap1", "card_snap2" });
+	audio->Load("card_snap3", IDR_CARD_SNAP3);
+	audio->Load("card_snap4", IDR_CARD_SNAP4);
+	audio->RegisterBank("card_snap", { "card_snap1", "card_snap2", "card_snap3", "card_snap4" });
 
 	audio->Load("dialog_voice1", IDR_DIALOG_VOICE1);
 	audio->Load("dialog_voice2", IDR_DIALOG_VOICE2);
