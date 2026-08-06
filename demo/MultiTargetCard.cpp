@@ -39,6 +39,32 @@ namespace Demo {
 		return true;
 	}
 
+	void MultiTargetCard::CollectHitsOnTargets(std::vector<ProjectedStep>& out, float damage, size_t maxHits) {
+		size_t hits = 0;
+		for (auto& wp : targets) {
+			if (maxHits > 0 && hits >= maxHits) break;
+			if (auto lock = wp.lock()) {
+				if (auto enemy = lock->GetValue()) {
+					out.push_back(ProjectedStep::Hit(enemy.get(), damage));
+					++hits;
+				}
+			}
+		}
+	}
+
+	void MultiTargetCard::CollectEffectOnTargets(std::vector<ProjectedStep>& out, ModifierType modifier, float value, int duration, size_t maxTargetsHit) {
+		size_t applied = 0;
+		for (auto& wp : targets) {
+			if (maxTargetsHit > 0 && applied >= maxTargetsHit) break;
+			if (auto lock = wp.lock()) {
+				if (auto enemy = lock->GetValue()) {
+					out.push_back(ProjectedStep::EnemyEffect(enemy.get(), modifier, value, duration));
+					++applied;
+				}
+			}
+		}
+	}
+
 	void MultiTargetCard::ReleaseEnemyCards() {
 		for (auto& wp : targets) {
 			if (auto lock = wp.lock()) {

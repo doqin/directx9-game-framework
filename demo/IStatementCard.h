@@ -1,11 +1,48 @@
 #pragma once
 #include "ICard.h"
 #include "IDraggable.h"
+#include "GameItems.h"
 
 namespace Demo {
 	class EnemyCard;
+	class IEnemy;
 	class IStatementCard : public ICard, public IDraggable {
 	public:
+		// One step of the queued program, in the order it would resolve. Only what changes how
+		// much damage lands on an enemy is modelled - a hit, or a modifier the program applies
+		// partway through that makes the hits after it land differently.
+		struct ProjectedStep {
+			enum class Kind {
+				// target takes value damage, before any of the player's outgoing buffs or the
+				// target's defences - exactly what the card hands to Player::DealDamage.
+				Damage,
+				// target gains the modifier. Vulnerable and Marked change what later hits do;
+				// Poison and Burn are paid at the end-of-turn tick that follows the program. Weak
+				// and Stun change what the enemy does rather than what it takes, so they are left
+				// out entirely.
+				EnemyModifier,
+				// The player gains the modifier, e.g. Overdrive's attack buff, which lifts every
+				// hit queued after it.
+				PlayerModifier
+			};
+			Kind kind;
+			IEnemy* target;
+			ModifierType modifier;
+			float value;
+			// Turns the modifier is applied for. Only Poison reads it - with no value of its own
+			// its tick damage is however many turns are left on it.
+			int duration;
+
+			static ProjectedStep Hit(IEnemy* target, float damage) {
+				return { Kind::Damage, target, ModifierType::HealHP, damage, 0 };
+			}
+			static ProjectedStep EnemyEffect(IEnemy* target, ModifierType modifier, float value, int duration) {
+				return { Kind::EnemyModifier, target, modifier, value, duration };
+			}
+			static ProjectedStep PlayerEffect(ModifierType modifier, float value) {
+				return { Kind::PlayerModifier, nullptr, modifier, value, 0 };
+			}
+		};
 		inline IStatementCard(std::weak_ptr<DX9GF::TransformManager> transformManager)
 			: IGameObject(transformManager), ICard(transformManager), IDraggable(transformManager) {
 		}
@@ -41,6 +78,14 @@ namespace Demo {
 
 		virtual std::wstring GetInputsDescription() const { return L"None"; }
 		virtual bool HasRequiredTargets() const { return true; }
+
+		// Appends what this card would do, in the order Execute would do it, for the damage readout
+		// drawn on the enemies. Cards that neither deal damage nor change how much damage lands
+		// leave the list alone - damage-over-time is not counted, only what resolves as the program
+		// runs. This exists purely for the readout; the real numbers still come from Execute().
+		//
+		// Not const: reading a target means locking its EnemyCard and calling GetValue().
+		virtual void CollectProjectedSteps(std::vector<ProjectedStep>& out) {}
 
 		// EnemyCard targeting - overridden by cards that consume enemy targets (StrikeCard,
 		// MultiTargetCard) so keyboard navigation can treat them uniformly as destinations.

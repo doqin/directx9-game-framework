@@ -61,6 +61,15 @@ bool Demo::StrikeCard::Execute()
 	return true;
 }
 
+void Demo::StrikeCard::CollectProjectedSteps(std::vector<ProjectedStep>& out)
+{
+	if (auto lock = enemyCard.lock()) {
+		if (auto enemy = lock->GetValue()) {
+			out.push_back(ProjectedStep::Hit(enemy.get(), 5.f));
+		}
+	}
+}
+
 void Demo::StrikeCard::ResetExecution()
 {
 	isDone = false;

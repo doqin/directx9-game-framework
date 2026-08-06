@@ -18,6 +18,7 @@ namespace Demo {
 		RECT GetFaceRect() const override { return RECT{ 128, 272, 224, 288 }; }
 
 		bool Execute() override;
+		void CollectProjectedSteps(std::vector<ProjectedStep>& out) override { CollectHitsOnTargets(out, 16.f, 1); }
 
 		void Draw(unsigned long long deltaTime) override;
 	};
@@ -37,6 +38,11 @@ namespace Demo {
 		RECT GetFaceRect() const override { return RECT{ 128, 288, 224, 304 }; }
 
 		bool Execute() override;
+		// Two passes over the same target - Execute lands 3 damage twice.
+		void CollectProjectedSteps(std::vector<ProjectedStep>& out) override {
+			CollectHitsOnTargets(out, 3.f, 1);
+			CollectHitsOnTargets(out, 3.f, 1);
+		}
 
 		void Draw(unsigned long long deltaTime) override;
 
@@ -56,6 +62,7 @@ namespace Demo {
 		RECT GetFaceRect() const override { return RECT{ 0, 304, 80, 320 }; }
 
 		bool Execute() override;
+		void CollectProjectedSteps(std::vector<ProjectedStep>& out) override { CollectHitsOnTargets(out, 7.f); }
 
 		void Draw(unsigned long long deltaTime) override;
 	};
@@ -73,6 +80,7 @@ namespace Demo {
 		RECT GetFaceRect() const override { return RECT{ 80, 304, 192, 320 }; }
 
 		bool Execute() override;
+		void CollectProjectedSteps(std::vector<ProjectedStep>& out) override { CollectHitsOnTargets(out, 10.f, 3); }
 
 		void Draw(unsigned long long deltaTime) override;
 	};
@@ -92,6 +100,11 @@ namespace Demo {
 		RECT GetFaceRect() const override { return RECT{ 192, 304, 272, 320 }; }
 
 		bool Execute() override;
+		// No value of its own, so its tick is worth however many turns are on it - and AddModifier
+		// adds to whatever is already there, so poisoning an already-poisoned enemy ticks harder.
+		void CollectProjectedSteps(std::vector<ProjectedStep>& out) override {
+			CollectEffectOnTargets(out, ModifierType::Poison, 0.f, 3, 1);
+		}
 
 		void Draw(unsigned long long deltaTime) override;
 	};
@@ -110,6 +123,10 @@ namespace Demo {
 		RECT GetFaceRect() const override { return RECT{ 0, 320, 96, 336 }; }
 
 		bool Execute() override;
+		// Vulnerable has no value of its own - it is a flat 1.5x on everything queued after it.
+		void CollectProjectedSteps(std::vector<ProjectedStep>& out) override {
+			CollectEffectOnTargets(out, ModifierType::Vulnerable, 0.f, 1, 1);
+		}
 
 		void DrawCardFace(unsigned long long deltaTime) override;
 	};

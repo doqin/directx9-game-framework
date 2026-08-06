@@ -19,6 +19,20 @@ bool Demo::TerminateCard::Execute() {
 	return true;
 }
 
+void Demo::TerminateCard::CollectProjectedSteps(std::vector<ProjectedStep>& out) {
+	if (targets.empty()) return;
+	if (auto enemyCard = targets[0].lock()) {
+		if (auto enemy = enemyCard->GetValue()) {
+			// Read off the enemy's health as it stands now. If something earlier in the program
+			// drops it under the threshold this will read low, but resolving that would mean
+			// simulating health across the whole queue.
+			const float maxHealth = enemy->GetMaxHealth();
+			const bool finishable = maxHealth > 0.f && (enemy->GetHealth() / maxHealth) < 0.4f;
+			out.push_back(ProjectedStep::Hit(enemy.get(), finishable ? 60.f : 30.f));
+		}
+	}
+}
+
 void Demo::TerminateCard::DrawCardFace(unsigned long long deltaTime) {
 	DrawSheetFace(deltaTime, GetFaceRect());
 }
@@ -38,6 +52,17 @@ bool Demo::InfernoCard::Execute() {
 	}
 	isDone = true;
 	return true;
+}
+
+void Demo::InfernoCard::CollectProjectedSteps(std::vector<ProjectedStep>& out) {
+	if (!battleScene) return;
+	for (auto& enemy : battleScene->GetEnemies()) {
+		if (!enemy || enemy->IsDead()) continue;
+		out.push_back(ProjectedStep::Hit(enemy.get(), 8.f));
+		// Execute skips the burn when the hit already killed the enemy. The readout does not model
+		// deaths, so it counts the burn either way - it can read high on a lethal hit.
+		out.push_back(ProjectedStep::EnemyEffect(enemy.get(), ModifierType::Burn, 5.f, 3));
+	}
 }
 
 void Demo::InfernoCard::ResetExecution() {
@@ -62,6 +87,14 @@ bool Demo::SystemPurgeCard::Execute() {
 	}
 	isDone = true;
 	return true;
+}
+
+void Demo::SystemPurgeCard::CollectProjectedSteps(std::vector<ProjectedStep>& out) {
+	if (!battleScene) return;
+	for (auto& enemy : battleScene->GetEnemies()) {
+		if (!enemy || enemy->IsDead()) continue;
+		out.push_back(ProjectedStep::Hit(enemy.get(), 16.f));
+	}
 }
 
 void Demo::SystemPurgeCard::ResetExecution() {
