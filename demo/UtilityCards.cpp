@@ -18,7 +18,7 @@ bool Demo::JabCard::Execute() {
 }
 
 void Demo::JabCard::DrawCardFace(unsigned long long deltaTime) {
-	DrawSheetFace(deltaTime, { .left = 80, .top = 336, .right = 160, .bottom = 352 });
+	DrawSheetFace(deltaTime, GetFaceRect());
 }
 
 bool Demo::MarkCard::Execute() {
@@ -35,7 +35,7 @@ bool Demo::MarkCard::Execute() {
 }
 
 void Demo::MarkCard::DrawCardFace(unsigned long long deltaTime) {
-	DrawSheetFace(deltaTime, { .left = 160, .top = 336, .right = 240, .bottom = 352 });
+	DrawSheetFace(deltaTime, GetFaceRect());
 }
 
 bool Demo::BraceCard::Execute() {
@@ -55,7 +55,7 @@ void Demo::BraceCard::ResetExecution() {
 }
 
 void Demo::BraceCard::DrawCardFace(unsigned long long deltaTime) {
-	DrawSheetFace(deltaTime, { .left = 0, .top = 352, .right = 80, .bottom = 368 });
+	DrawSheetFace(deltaTime, GetFaceRect());
 }
 
 bool Demo::PrefetchCard::Execute() {
@@ -73,7 +73,7 @@ void Demo::PrefetchCard::ResetExecution() {
 }
 
 void Demo::PrefetchCard::DrawCardFace(unsigned long long deltaTime) {
-	DrawSheetFace(deltaTime, { .left = 80, .top = 352, .right = 160, .bottom = 368 });
+	DrawSheetFace(deltaTime, GetFaceRect());
 }
 
 bool Demo::OverclockCard::Execute() {
@@ -94,7 +94,7 @@ void Demo::OverclockCard::ResetExecution() {
 }
 
 void Demo::OverclockCard::DrawCardFace(unsigned long long deltaTime) {
-	DrawSheetFace(deltaTime, { .left = 160, .top = 352, .right = 256, .bottom = 368 });
+	DrawSheetFace(deltaTime, GetFaceRect());
 }
 
 bool Demo::JumpstartCard::Execute() {
@@ -112,7 +112,7 @@ void Demo::JumpstartCard::ResetExecution() {
 }
 
 void Demo::JumpstartCard::DrawCardFace(unsigned long long deltaTime) {
-	DrawSheetFace(deltaTime, { .left = 0, .top = 368, .right = 80, .bottom = 384 });
+	DrawSheetFace(deltaTime, GetFaceRect());
 }
 
 bool Demo::ForesightCard::Execute() {
@@ -130,5 +130,5 @@ void Demo::ForesightCard::ResetExecution() {
 }
 
 void Demo::ForesightCard::DrawCardFace(unsigned long long deltaTime) {
-	DrawSheetFace(deltaTime, { .left = 80, .top = 368, .right = 160, .bottom = 384 });
+	DrawSheetFace(deltaTime, GetFaceRect());
 }

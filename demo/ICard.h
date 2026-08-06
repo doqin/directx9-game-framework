@@ -78,6 +78,9 @@ namespace Demo {
 
 		virtual size_t GetCost() const { return 0; }
 		virtual std::wstring GetDescription() const { return L""; }
+		// The card's face artwork in assets/ui.png. Drawn at 2x in battle; also used by the
+		// card shop to show what is on sale. Empty for cards with no single-rect face.
+		virtual RECT GetFaceRect() const { return RECT{ 0, 0, 0, 0 }; }
 
 		static std::shared_ptr<ICard> CreateCard(
 			const std::string& id,

@@ -15,6 +15,7 @@ namespace Demo {
 
 		size_t GetCost() const override { return 2; }
 		std::wstring GetDescription() const override { return L"Deal 16 damage to an enemy."; }
+		RECT GetFaceRect() const override { return RECT{ 128, 272, 224, 288 }; }
 
 		bool Execute() override;
 
@@ -33,6 +34,7 @@ namespace Demo {
 
 		size_t GetCost() const override { return 1; }
 		std::wstring GetDescription() const override { return L"Deal 3 damage to an enemy twice."; }
+		RECT GetFaceRect() const override { return RECT{ 128, 288, 224, 304 }; }
 
 		bool Execute() override;
 
@@ -51,6 +53,7 @@ namespace Demo {
 
 		size_t GetCost() const override { return 2; }
 		std::wstring GetDescription() const override { return L"Deal 7 damage to up to 2 enemies."; }
+		RECT GetFaceRect() const override { return RECT{ 0, 304, 80, 320 }; }
 
 		bool Execute() override;
 
@@ -67,6 +70,7 @@ namespace Demo {
 
 		size_t GetCost() const override { return 3; }
 		std::wstring GetDescription() const override { return L"Deal 10 damage to up to 3 enemies."; }
+		RECT GetFaceRect() const override { return RECT{ 80, 304, 192, 320 }; }
 
 		bool Execute() override;
 
@@ -85,6 +89,7 @@ namespace Demo {
 
 		size_t GetCost() const override { return 1; }
         std::wstring GetDescription() const override { return L"Apply Poison 3 (damage equals remaining turns)."; }
+		RECT GetFaceRect() const override { return RECT{ 192, 304, 272, 320 }; }
 
 		bool Execute() override;
 
@@ -102,6 +107,7 @@ namespace Demo {
 
 		size_t GetCost() const override { return 1; }
 		std::wstring GetDescription() const override { return L"Apply Vulnerable 1 to an enemy."; }
+		RECT GetFaceRect() const override { return RECT{ 0, 320, 96, 336 }; }
 
 		bool Execute() override;
 
@@ -119,6 +125,7 @@ namespace Demo {
 
 		size_t GetCost() const override { return 1; }
 		std::wstring GetDescription() const override { return L"Apply Weak 2 to up to 2 enemies."; }
+		RECT GetFaceRect() const override { return RECT{ 96, 320, 192, 336 }; }
 
 		bool Execute() override;
 
@@ -135,6 +142,7 @@ namespace Demo {
 
 		size_t GetCost() const override { return 3; }
 		std::wstring GetDescription() const override { return L"Stun an enemy for 1 turn."; }
+		RECT GetFaceRect() const override { return RECT{ 192, 320, 272, 352 }; }
 
 		bool Execute() override;
 

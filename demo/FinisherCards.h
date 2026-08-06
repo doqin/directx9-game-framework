@@ -18,6 +18,7 @@ namespace Demo {
 
 		size_t GetCost() const override { return 4; }
 		std::wstring GetDescription() const override { return L"Deal 30 damage to an enemy, or 60 if it is below 40% health."; }
+		RECT GetFaceRect() const override { return RECT{ 160, 368, 240, 384 }; }
 
 		bool Execute() override;
 		void DrawCardFace(unsigned long long deltaTime) override;
@@ -35,6 +36,7 @@ namespace Demo {
 
 		size_t GetCost() const override { return 3; }
 		std::wstring GetDescription() const override { return L"Deal 8 damage to all enemies and apply Burn 5 for 3 turns."; }
+		RECT GetFaceRect() const override { return RECT{ 0, 384, 80, 400 }; }
 
 		bool Execute() override;
 		void ResetExecution() override;
@@ -52,6 +54,7 @@ namespace Demo {
 
 		size_t GetCost() const override { return 4; }
 		std::wstring GetDescription() const override { return L"Deal 16 damage to all enemies and stun them for 1 turn."; }
+		RECT GetFaceRect() const override { return RECT{ 80, 384, 176, 400 }; }
 
 		bool Execute() override;
 		void ResetExecution() override;
@@ -69,6 +72,7 @@ namespace Demo {
 
 		size_t GetCost() const override { return 3; }
 		std::wstring GetDescription() const override { return L"Gain 4 attack and Regen 3 for 3 turns."; }
+		RECT GetFaceRect() const override { return RECT{ 176, 384, 256, 400 }; }
 
 		bool Execute() override;
 		void ResetExecution() override;
