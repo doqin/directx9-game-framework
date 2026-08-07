@@ -524,6 +524,9 @@
     <Image Include="assets\popup-borders.png">
       <DeploymentContent>true</DeploymentContent>
     </Image>
+    <Image Include="assets\random-Sheet.png">
+      <DeploymentContent>true</DeploymentContent>
+    </Image>
     <Image Include="assets\savepoint-Sheet.png">
       <DeploymentContent>true</DeploymentContent>
     </Image>
