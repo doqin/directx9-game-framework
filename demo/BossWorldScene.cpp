@@ -219,7 +219,7 @@ void Demo::BossWorldScene::Init() {
 	spawn(2460.f, 390.f, "bw_f_06", { "WarlockEnemy", "KeyeEnemy", "DemonEyeEnemy" }, true, false);
 	spawn(2500.f, 20.f, "bw_f_07", { "VampireBatEnemy", "KernelEnemy" }, false, false);
 	spawn(2540.f, -490.f, "bw_f_08", {}, false, true);
-	spawn(-844.f, -309.f, "bw_trojan_03", { "TrojanEnemy", "KernelEnemy" }, false, false);
+	spawn(-844.f, -309.f, "bw_mixed_01", { "TrojanEnemy", "KernelEnemy" }, false, false);
 
 	// link with portal triggers on map
 	map->SetAreaUpdateHandler("trigger_p_1_2", [this](const DX9GF::Map::ObjectArea& area) {
