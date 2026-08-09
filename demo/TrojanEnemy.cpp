@@ -70,7 +70,7 @@ void Demo::TrojanEnemy::StartAttack(std::shared_ptr<Player> player, std::vector<
 }
 
 void Demo::TrojanEnemy::PatternTrojanBolt(float projDamage) {
-	for (int i = 0; i < 3; i++) {
+	for (int i = 0; i < 5; i++) {
 		commandBuffer.PushCommand(std::make_shared<DX9GF::CustomCommand>([this, projDamage](std::function<void(void)> markFinished) {
 			if (auto lock = this->player.lock()) {
 				auto [px, py] = lock->GetWorldPosition();
@@ -78,7 +78,7 @@ void Demo::TrojanEnemy::PatternTrojanBolt(float projDamage) {
 				auto desc = ProjectileDesc(projTexture.get(), projFrames, 12, 8, 8, 16, 16, RNG::Range(-100.f, 100.f), -200.f)
 					.SetTargetPosition(px, py)
 					.SetVelocity(180.f)
-					.SetHoming(1.5f)
+					.SetHoming(3.f)
 					.SetDecayTime(6.f)
 					.SetDamage(projDamage);
 				desc.SetRandomStatusEffect(
@@ -89,33 +89,52 @@ void Demo::TrojanEnemy::PatternTrojanBolt(float projDamage) {
 			}
 			markFinished();
 			}));
-		commandBuffer.PushCommand(std::make_shared<DX9GF::DelayCommand>(0.8f));
+		commandBuffer.PushCommand(std::make_shared<DX9GF::DelayCommand>(0.7f));
 	}
 }
 
 void Demo::TrojanEnemy::PatternVirusSpread(float projDamage) {
 	const int BULLET_COUNT = 4;
-	for (int i = 0; i < BULLET_COUNT; i++) {
-		float angle = (2.0f * 3.14159265f / BULLET_COUNT) * i;
-		D3DXVECTOR2 dir{ std::cos(angle), std::sin(angle) };
+	const int WAVE_COUNT = 2;
+	const float SPAWN_DISTANCE = 150.f;
+	const float JITTER_RADIUS = 70.f;
 
-		commandBuffer.PushCommand(std::make_shared<DX9GF::CustomCommand>([this, projDamage, dir](std::function<void(void)> markFinished) {
-			if (auto lock = this->player.lock()) {
-				auto [px, py] = lock->GetWorldPosition();
-				float burnValue = lock->GetMaxHealth() * 0.01f;
-				auto desc = ProjectileDesc(projTexture.get(), projFrames, 12, 8, 8, 16, 16, px - dir.x * 150.f, py - dir.y * 150.f)
-					.SetTrajectory(dir)
-					.SetVelocity(160.f)
-					.SetDecayTime(5.f)
-					.SetDamage(projDamage);
-				desc.SetRandomStatusEffect(
-					ModifierType::Freeze, FREEZE_VALUE, FREEZE_DURATION,
-					ModifierType::Burn, burnValue, BURN_DURATION
-				);
-				projectiles.Spawn(lock, desc);
-			}
-			markFinished();
-			}));
+	for (int wave = 0; wave < WAVE_COUNT; wave++) {
+		float baseAngleOffset = RNG::Range(0.f, 360.f) * (3.14159265f / 180.f);
+		for (int i = 0; i < BULLET_COUNT; i++) {
+			float angle = baseAngleOffset + (2.0f * 3.14159265f / BULLET_COUNT) * i;
+			D3DXVECTOR2 dir{ std::cos(angle), std::sin(angle) };
+			float waveAmp = RNG::Range(20.f, 40.f);
+			float waveFreq = RNG::Range(3.f, 5.f);
+
+			float jitterAngle = RNG::Range(0.f, 360.f) * (3.14159265f / 180.f);
+			float jitterDist = std::sqrt(RNG::Range(0.f, 1.f)) * JITTER_RADIUS;
+			float jitterX = std::cos(jitterAngle) * jitterDist;
+			float jitterY = std::sin(jitterAngle) * jitterDist;
+
+			commandBuffer.PushCommand(std::make_shared<DX9GF::CustomCommand>([this, projDamage, dir, waveAmp, waveFreq, jitterX, jitterY, SPAWN_DISTANCE](std::function<void(void)> markFinished) {
+				if (auto lock = this->player.lock()) {
+					auto [px, py] = lock->GetWorldPosition();
+					float burnValue = lock->GetMaxHealth() * 0.01f;
+
+					float spawnX = px - dir.x * SPAWN_DISTANCE + jitterX;
+					float spawnY = py - dir.y * SPAWN_DISTANCE + jitterY;
+
+					auto desc = ProjectileDesc(projTexture.get(), projFrames, 12, 8, 8, 16, 16, spawnX, spawnY)
+						.SetTrajectory(dir)
+						.SetVelocity(150.f)
+						.SetWave(waveAmp, waveFreq)
+						.SetDecayTime(5.5f)
+						.SetDamage(projDamage);
+					desc.SetRandomStatusEffect(
+						ModifierType::Freeze, FREEZE_VALUE, FREEZE_DURATION,
+						ModifierType::Burn, burnValue, BURN_DURATION
+					);
+					projectiles.Spawn(lock, desc);
+				}
+				markFinished();
+				}));
+		}
+		commandBuffer.PushCommand(std::make_shared<DX9GF::DelayCommand>(wave == 0 ? 0.35f : 1.f));
 	}
-	commandBuffer.PushCommand(std::make_shared<DX9GF::DelayCommand>(1.f));
 }

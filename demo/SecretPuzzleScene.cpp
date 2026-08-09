@@ -280,6 +280,8 @@ void Demo::SecretPuzzleScene::Init()
 	spawn(1195.f, 780.f, "sec_bat_03", { "VampireBatEnemy" }, false, false);
 	spawn(1350.f, 785.f, "sec_rand_eye_bat_02", { "DemonEyeEnemy", "VampireBatEnemy" }, true, false);
 	spawn(1700.f, 860.f, "sec_rand_all_01", {}, false, true);
+	spawn(500.f, 982.f, "sec_trojan_01", { "TrojanEnemy", "KernelEnemy" }, false, false);
+	spawn(-1191.f, -198.f, "sec_trojan_02", { "TrojanEnemy", "VampireBatEnemy" }, false, false);
 
 	draggableManager = std::make_shared<Demo::DraggableManager>();
 	inventoryMenu = std::make_shared<InventoryMenu>(game, player, transformManager, draggableManager, &uiCamera, font.get());
