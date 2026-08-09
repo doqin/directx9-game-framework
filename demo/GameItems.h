@@ -18,7 +18,8 @@ namespace Demo
 		// The debuff mirror of BuffDamage.
 		Marked,
 		// Heals value at end of turn.
-		Regen
+		Regen,
+		Freeze
 		//...Add more if you have ideas
 	};
 
