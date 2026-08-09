@@ -220,6 +220,21 @@ void Demo::IEnemy::Draw(DX9GF::GraphicsDevice* graphicsDevice, DX9GF::Camera* ca
 				statusDescription = L"Takes damage equal to remaining turns at end of turn.";
 				sourceRect = { 128, 240, 144, 256 };
 			}
+			else if (mod.type == ModifierType::Burn) {
+				statusName = L"Burn";
+				statusDescription = L"Takes damage equal to its value at end of turn, ignoring block.";
+				sourceRect = { 240, 288, 256, 304 };
+			}
+			else if (mod.type == ModifierType::Regen) {
+				statusName = L"Regen";
+				statusDescription = L"Heals its value at end of turn.";
+				sourceRect = { 272, 288, 288, 304 };
+			}
+			else if (mod.type == ModifierType::Marked) {
+				statusName = L"Marked";
+				statusDescription = L"Takes extra damage from every hit.";
+				sourceRect = { 128, 256, 144, 272 };
+			}
 			else if (mod.type == ModifierType::Vulnerable) {
 				statusName = L"Vulnerable";
 				statusDescription = L"Takes 50% more damage from attacks.";
@@ -233,6 +248,7 @@ void Demo::IEnemy::Draw(DX9GF::GraphicsDevice* graphicsDevice, DX9GF::Camera* ca
 			else if (mod.type == ModifierType::Stun) {
 				statusName = L"Stun";
 				statusDescription = L"Cannot take action this turn.";
+				sourceRect = { 224, 288, 240, 304 };
 			}
 			else if (mod.type == ModifierType::BuffDamage) {
 				statusName = L"Atk Up";
@@ -249,7 +265,8 @@ void Demo::IEnemy::Draw(DX9GF::GraphicsDevice* graphicsDevice, DX9GF::Camera* ca
 			float iconY = GetWorldY() + statusOffsetY;
 
 			std::wstring displayValueText = L"";
-			if (mod.type == ModifierType::BuffDefense || mod.type == ModifierType::BuffDamage || mod.type == ModifierType::Poison) {
+			if (mod.type == ModifierType::BuffDefense || mod.type == ModifierType::BuffDamage || mod.type == ModifierType::Poison
+				|| mod.type == ModifierType::Burn || mod.type == ModifierType::Marked || mod.type == ModifierType::Regen) {
 				int displayValue = (mod.type == ModifierType::Poison) ?
 					static_cast<int>(std::round((mod.value > 0.f) ? mod.value : static_cast<float>(mod.duration))) :
 					static_cast<int>(std::round(mod.value));

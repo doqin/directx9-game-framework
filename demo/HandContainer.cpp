@@ -33,7 +33,15 @@ bool Demo::HandContainer::OnDrop(std::shared_ptr<IDraggable> other)
 	}) != playedPile->end()) {
 		return false;
 	}
-	return IContainer::OnDrop(other);
+	if (!IContainer::OnDrop(other)) {
+		return false;
+	}
+	// Only once the drop is committed - a card the hand rejected is still in play and keeps its
+	// targets.
+	if (auto statement = std::dynamic_pointer_cast<IStatementCard>(other)) {
+		statement->ReleaseEnemyCards();
+	}
+	return true;
 }
 
 void Demo::HandContainer::StoreCard(std::shared_ptr<ICard> card)
@@ -41,9 +49,13 @@ void Demo::HandContainer::StoreCard(std::shared_ptr<ICard> card)
 	if (!card) {
 		return;
 	}
-  if (!std::dynamic_pointer_cast<IStatementCard>(card)) {
+	auto statement = std::dynamic_pointer_cast<IStatementCard>(card);
+	if (!statement) {
 		return;
 	}
+	// Before the reparent, so the card's width no longer counts its enemy cards when the
+	// container measures its children.
+	statement->ReleaseEnemyCards();
 	if (auto parent = card->GetParent(); parent.has_value()) {
 		dynamic_pointer_cast<IDraggable>(card)->DetachParent();
 	}

@@ -1,6 +1,7 @@
 #include "pch.h"
 #include "MultiTargetCard.h"
 #include "DrawUtils.h"
+#include "IBattleScene.h"
 
 namespace Demo {
 	MultiTargetCard::MultiTargetCard(std::weak_ptr<DX9GF::TransformManager> tm, size_t maxTargets, std::wstring name, float x, float y, size_t dragAreaWidth, size_t dragAreaHeight)
@@ -36,6 +37,43 @@ namespace Demo {
 		card->SetLocalPosition(localX, 0);
 		targets.push_back(card);
 		return true;
+	}
+
+	void MultiTargetCard::CollectHitsOnTargets(std::vector<ProjectedStep>& out, float damage, size_t maxHits) {
+		size_t hits = 0;
+		for (auto& wp : targets) {
+			if (maxHits > 0 && hits >= maxHits) break;
+			if (auto lock = wp.lock()) {
+				if (auto enemy = lock->GetValue()) {
+					out.push_back(ProjectedStep::Hit(enemy.get(), damage));
+					++hits;
+				}
+			}
+		}
+	}
+
+	void MultiTargetCard::CollectEffectOnTargets(std::vector<ProjectedStep>& out, ModifierType modifier, float value, int duration, size_t maxTargetsHit) {
+		size_t applied = 0;
+		for (auto& wp : targets) {
+			if (maxTargetsHit > 0 && applied >= maxTargetsHit) break;
+			if (auto lock = wp.lock()) {
+				if (auto enemy = lock->GetValue()) {
+					out.push_back(ProjectedStep::EnemyEffect(enemy.get(), modifier, value, duration));
+					++applied;
+				}
+			}
+		}
+	}
+
+	void MultiTargetCard::ReleaseEnemyCards() {
+		for (auto& wp : targets) {
+			if (auto lock = wp.lock()) {
+				if (battleScene) {
+					battleScene->DiscardEnemyCard(lock);
+				}
+			}
+		}
+		targets.clear();
 	}
 
 	std::tuple<float, float> MultiTargetCard::GetEnemyCardSlotWorldPosition() const {
@@ -84,7 +122,7 @@ namespace Demo {
 		for (auto& wp : targets) {
 			if (auto lock = wp.lock()) totalWidth += lock->GetWidth();
 		}
-		return totalWidth + GetUsesCoverWidth();
+		return totalWidth + GetStatusCoverWidth();
 	}
 
 	void MultiTargetCard::Draw(unsigned long long deltaTime) {

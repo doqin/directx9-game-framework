@@ -13,6 +13,12 @@ namespace Demo {
 		bool isDone = false;
 		std::shared_ptr<DX9GF::Font> nameFont;
 		std::shared_ptr<DX9GF::FontSprite> nameFontSprite;
+		// Appends one hit of `damage` per attached target, stopping after `maxHits` of them (0
+		// means every target). Covers every damaging card built on this base - only Terminate,
+		// whose damage depends on the target's health, needs to roll its own.
+		void CollectHitsOnTargets(std::vector<ProjectedStep>& out, float damage, size_t maxHits = 0);
+		// The same walk for cards that apply a modifier to their targets rather than hitting them.
+		void CollectEffectOnTargets(std::vector<ProjectedStep>& out, ModifierType modifier, float value, int duration, size_t maxTargetsHit = 0);
 	public:
 		MultiTargetCard(std::weak_ptr<DX9GF::TransformManager> tm, size_t maxTargets, std::wstring name, float x = 0, float y = 0, size_t dragAreaWidth = 0, size_t dragAreaHeight = 0);
 
@@ -25,6 +31,7 @@ namespace Demo {
 		bool HasRequiredTargets() const override { return !targets.empty(); }
 		bool CanAcceptEnemyCard() const override { return targets.size() < maxTargets; }
 		bool AttachEnemyCard(std::shared_ptr<EnemyCard> card) override;
+		void ReleaseEnemyCards() override;
 		std::tuple<float, float> GetEnemyCardSlotWorldPosition() const override;
 	};
 }

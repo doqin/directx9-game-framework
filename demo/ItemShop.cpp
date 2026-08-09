@@ -7,16 +7,15 @@ void Demo::ItemShop::AddShopItem(int itemID, int price)
 	const auto* blueprint = ItemData::GetInstance()->GetItemBlueprint(itemID);
 
 	if (blueprint) {
-		std::wstring wName = blueprint->GetName();
-		std::string name(wName.begin(), wName.end());
-
 		itemsForSale.push_back({
-			name,
+			blueprint->GetName(),
 			price,
 			blueprint->GetDescription(),
 			[this, itemID]() {
 				this->player->GetInventoryItems().AddItem(itemID, 1);
-			}
+			},
+			blueprint->GetItemRect(),
+			ShopIconSheet::Items
 			});
 	}
 }

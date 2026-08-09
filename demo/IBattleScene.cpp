@@ -1,6 +1,7 @@
 ﻿#include "pch.h"
 #include "IBattleScene.h"
 #include <algorithm>
+#include <array>
 #include <random>
 #include "DamageTextManager.h"
 #include "GameItems.h"
@@ -34,6 +35,18 @@ namespace {
 		card->SetLocalPosition(HiddenPileX, HiddenPileY);
 	}
 
+	// Turns left on a modifier the combatant already carries, skipping delayed and expired ones
+	// the way ICombatant::TriggerEffects does. 0 when it is not there at all.
+	int ActiveModifierDuration(const Demo::ICombatant& combatant, Demo::ModifierType type)
+	{
+		for (const auto& mod : combatant.GetModifiers()) {
+			if (mod.type == type && mod.duration > 0 && mod.delayTurns <= 0) {
+				return mod.duration;
+			}
+		}
+		return 0;
+	}
+
 	constexpr float RAW_ITEM_W = 23.0f;
 	constexpr float RAW_ITEM_H = 35.0f;
 	constexpr float RAW_BG_W = 192.0f;
@@ -61,9 +74,13 @@ void Demo::IBattleScene::StartBattle()
 		card->ResetUses();
 	}
 	nullifiedPile.clear();
+	activeItems.clear();
+	executeAfterInit = false;
 	energy = MAX_ENERGY;
 	usedEnergy = 0;
+	committedEnergy = 0;
 	pendingBonusEnergy = 0;
+	pendingBonusDraw = 0;
 	initialEnemyCount = enemies.size();
 	battleGoldReward = 0;
 	isBattleEnding = false;
@@ -74,7 +91,7 @@ void Demo::IBattleScene::StartBattle()
 	static std::mt19937 gen(rd());
 	std::shuffle(drawPile.begin(), drawPile.end(), gen);
 	currentTurn = 1;
-	DrawCards(5);
+	DrawCards(CARDS_DRAWN_PER_TURN);
 	for (auto& enemy : enemies) {
 		enemy->SetOnRequestLockCard([this](int turns) { this->LockRandomCard(turns); });
 	}
@@ -168,7 +185,15 @@ void Demo::IBattleScene::OnAllEnemiesDefeated()
 		}));
 }
 
-void Demo::IBattleScene::DrawCards(size_t count)
+void Demo::IBattleScene::DrawCardsNow(int amount)
+{
+	if (amount <= 0) {
+		return;
+	}
+	DrawCards(static_cast<size_t>(amount), true);
+}
+
+void Demo::IBattleScene::DrawCards(size_t count, bool midTurn)
 {
 	auto app = DX9GF::Application::GetInstance();
 	float screenWidth = static_cast<float>(app->GetScreenWidth());
@@ -199,9 +224,9 @@ void Demo::IBattleScene::DrawCards(size_t count)
 				DX9GF::AudioManager::GetInstance()->PlayRandom("card_draw", 0.3f);
 				markFinished();
 			}),
-			std::make_shared<DX9GF::DelayCommand>(i * .2f),
+			std::make_shared<DX9GF::DelayCommand>(midTurn ? 0.f : i * .2f),
 			std::make_shared<DX9GF::GoToCommand>(card, x, y, 0.5f, DX9GF::TimeTag{}, DX9GF::EaseInOutTag{}),
-			std::make_shared<DX9GF::DelayCommand>(0.75f),
+			std::make_shared<DX9GF::DelayCommand>(midTurn ? 0.f : 0.75f),
 			std::make_shared<DX9GF::GoToCommand>(card, x, screenHeight, 0.75f, DX9GF::TimeTag{}, DX9GF::EaseInOutTag{}),
 			std::make_shared<DX9GF::CustomCommand>([this, card](std::function<void(void)> markFinished) {
 				this->queuedToDraw.erase(std::find(queuedToDraw.begin(), queuedToDraw.end(), card));
@@ -282,6 +307,125 @@ void Demo::IBattleScene::MoveDepletedCardsToNullifiedPile()
 	// actually stops a depleted card from executing again next turn.
 	drain(playedPile);
 	drain(cardHand);
+}
+
+bool Demo::IBattleScene::CanPlaceCardInBlock(const std::shared_ptr<ICard>& card) const
+{
+	if (!card) {
+		return false;
+	}
+	// Not in hand at all - queued from an earlier turn, so it was paid for when it landed and
+	// moving it between blocks costs nothing.
+	if (std::find(cardHand.begin(), cardHand.end(), card) == cardHand.end()) {
+		return true;
+	}
+	bool countedAlready = true;
+	if (auto parent = card->GetParent(); parent.has_value()) {
+		if (auto lock = parent.value().lock(); lock && lock == handContainer) {
+			countedAlready = false;
+		}
+	}
+	const int cost = countedAlready ? 0 : static_cast<int>(card->GetCost());
+	return GetAvailableEnergy() >= cost;
+}
+
+void Demo::IBattleScene::ReturnCardToHand(const std::shared_ptr<IStatementCard>& card)
+{
+	if (!card) {
+		return;
+	}
+	commandBuffer.StackCommand(std::make_shared<DX9GF::CustomCommand>([this, card](std::function<void(void)> markFinished) {
+		// A drop is offered to every droppable in turn, so a block that rejected this card may be
+		// followed by one that accepts it - and the player may have grabbed it again. Only rescue
+		// the card if it is still loose, or this would yank it out of wherever it ended up.
+		if (handContainer && !card->GetParent().has_value() && !card->IsDragging()) {
+			handContainer->StoreCard(card);
+		}
+		markFinished();
+		}));
+}
+
+void Demo::IBattleScene::MoveNonPersistentCardsToDiscardPile()
+{
+	// Runs after the depleted sweep, so a card that is both depleted and non-persistent is
+	// already gone to the nullified pile - depletion is permanent, non-persistence is not.
+	// As with depleted cards, detaching from the block is what stops them executing again.
+	for (size_t i = 0; i < playedPile.size(); ++i) {
+		if (playedPile[i]->IsPersistent()) {
+			continue;
+		}
+		HidePileCard(playedPile[i]);
+		discardPile.push_back(playedPile[i]);
+		playedPile.erase(playedPile.begin() + i);
+		--i;
+	}
+}
+
+void Demo::IBattleScene::FinishInitBlockExecution()
+{
+	if (!initBlockCard) {
+		return;
+	}
+	std::vector<std::shared_ptr<ICard>> resolved;
+	for (auto& weak : initBlockCard->GetStatementCards()) {
+		if (auto card = weak.lock()) {
+			resolved.push_back(card);
+		}
+	}
+	for (auto& card : resolved) {
+		// Only charge for cards the per-frame recompute was charging for. A card dragged in from
+		// the main block is already in the played pile and was paid for on the turn it landed
+		// there, so committing it again would bill the player twice.
+		auto handIt = std::find(cardHand.begin(), cardHand.end(), card);
+		if (handIt != cardHand.end()) {
+			committedEnergy += static_cast<int>(card->GetCost());
+			cardHand.erase(handIt);
+		}
+		else {
+			auto playedIt = std::find(playedPile.begin(), playedPile.end(), card);
+			if (playedIt != playedPile.end()) {
+				playedPile.erase(playedIt);
+			}
+		}
+		HidePileCard(card);
+		// Executing here spends a use just as it does in the main block, so a card that ran out
+		// has to be nullified rather than discarded - otherwise it would be drawn again with no
+		// uses left and keep resolving for free.
+		if (card->IsDepleted()) {
+			nullifiedPile.push_back(card);
+		}
+		else {
+			discardPile.push_back(card);
+		}
+	}
+}
+
+void Demo::IBattleScene::MoveInitBlockCardsToDiscardPile()
+{
+	if (!initBlockCard) {
+		return;
+	}
+	// Paid for but never run. That is the player's call, so the cards are discarded rather than
+	// refunded - but they must not stay attached to the block across the turn boundary.
+	std::vector<std::shared_ptr<ICard>> leftovers;
+	for (auto& weak : initBlockCard->GetStatementCards()) {
+		if (auto card = weak.lock()) {
+			leftovers.push_back(card);
+		}
+	}
+	for (auto& card : leftovers) {
+		auto handIt = std::find(cardHand.begin(), cardHand.end(), card);
+		if (handIt != cardHand.end()) {
+			cardHand.erase(handIt);
+		}
+		HidePileCard(card);
+		if (card->IsDepleted()) {
+			nullifiedPile.push_back(card);
+		}
+		else {
+			discardPile.push_back(card);
+		}
+	}
 }
 
 void Demo::IBattleScene::MoveHandCardsToDiscardPile()
@@ -418,12 +562,15 @@ void Demo::IBattleScene::BeginNextTurn()
 {
 	++currentTurn;
 	MovePlayedPileToDiscardPileIfNeeded();
-	DrawCards(5);
+	DrawCards(CARDS_DRAWN_PER_TURN + pendingBonusDraw);
+	pendingBonusDraw = 0;
 	energy = MAX_ENERGY + pendingBonusEnergy;
 	pendingBonusEnergy = 0;
 	usedEnergy = 0;
+	committedEnergy = 0;
 
 	battlePlayer->TickDurations(TickPhase::EndOfRound);
+	TickActiveItems();
 	for (auto& enemy : enemies) {
 		enemy->TickDurations(TickPhase::EndOfRound);
 		enemy->OnTurnBegin(this->battlePlayer, this->popUpMessage, this->currentTurn);
@@ -477,6 +624,7 @@ void Demo::IBattleScene::QueueEnemyLayoutTransition(State targetState)
 
 void Demo::IBattleScene::CreateEnemyCard(std::shared_ptr<IEnemy> enemy)
 {
+
 	static std::random_device rd;
 	static std::mt19937 gen(rd());
 	std::uniform_int_distribution<int> xdist(-10, 10);
@@ -494,6 +642,7 @@ void Demo::IBattleScene::CreateEnemyCard(std::shared_ptr<IEnemy> enemy)
 	auto card = std::make_shared<EnemyCard>(transformManager, enemy, spawnX, spawnY);
 	card->Init(draggableManager, game->GetGraphicsDevice(), &camera);
 	enemyCards.push_back(card);
+	DX9GF::AudioManager::GetInstance()->PlayRandom("card_draw", 0.2f);
 }
 
 void Demo::IBattleScene::RemoveEnemyCardsInRemoveArea()
@@ -585,6 +734,8 @@ void Demo::IBattleScene::RefreshItemMenu()
 							battlePlayer->AddModifier(mod.type, mod.duration, mod.value, mod.isBuff, mod.delayTurns);
 						}
 					}
+					this->RegisterActiveItem(*blueprint);
+
 					std::wstring msg = L"Used " + blueprint->GetName() + L"!";
 					popUpMessage->QueueMessage(&commandBuffer, msg);
 
@@ -605,6 +756,69 @@ void Demo::IBattleScene::RefreshItemMenu()
 
 	transformManager->RebuildHierarchy();
 	transformManager->UpdateAll();
+}
+
+void Demo::IBattleScene::RegisterActiveItem(const ConsumableItem& item)
+{
+	std::vector<ModifierType> lingering;
+	int turns = 0;
+	for (const auto& mod : item.GetModifiers()) {
+		if (mod.type == ModifierType::HealHP || mod.duration <= 0) continue;
+		if (std::find(lingering.begin(), lingering.end(), mod.type) == lingering.end()) {
+			lingering.push_back(mod.type);
+		}
+		// delayTurns is burned off before duration starts counting down, so the effect is on the
+		// board for the sum of the two.
+		turns = (std::max)(turns, mod.duration + mod.delayTurns);
+	}
+	if (lingering.empty()) return;
+
+	// Using the same item twice stacks it: AddModifier sums the durations, so the entry has to
+	// as well or it would expire while its buff is still running.
+	for (auto& entry : activeItems) {
+		if (entry.itemID == item.GetID()) {
+			entry.turnsRemaining += turns;
+			return;
+		}
+	}
+
+	activeItems.push_back({
+		item.GetID(),
+		item.GetName(),
+		item.GetDescription(),
+		item.GetItemRect(),
+		std::move(lingering),
+		turns
+		});
+}
+
+int Demo::IBattleScene::GetActiveItemTurnsLeft(const ActiveItemEffect& entry) const
+{
+	int turns = 0;
+	for (const auto& mod : battlePlayer->GetModifiers()) {
+		if (mod.duration <= 0) continue;
+		if (std::find(entry.modifierTypes.begin(), entry.modifierTypes.end(), mod.type) == entry.modifierTypes.end()) continue;
+		// A delayed modifier has not started ticking yet, so it still owes its full duration.
+		turns = (std::max)(turns, mod.duration + mod.delayTurns);
+	}
+	// Capped by the entry's own countdown: the modifier may have been topped up by a card, and
+	// the item should not take credit for that.
+	return (std::min)(turns, entry.turnsRemaining);
+}
+
+void Demo::IBattleScene::TickActiveItems()
+{
+	for (auto it = activeItems.begin(); it != activeItems.end(); ) {
+		--it->turnsRemaining;
+		// The second test catches effects that ended early - block eaten by a hit, Vulnerable
+		// cleared by poison - rather than by running out of turns.
+		if (it->turnsRemaining <= 0 || GetActiveItemTurnsLeft(*it) <= 0) {
+			it = activeItems.erase(it);
+		}
+		else {
+			++it;
+		}
+	}
 }
 
 void Demo::IBattleScene::PlayerStandByUpdate(unsigned long long deltaTime)
@@ -636,7 +850,7 @@ void Demo::IBattleScene::PlayerAttackUpdate(unsigned long long deltaTime)
 	float screenWidth = static_cast<float>(app->GetScreenWidth());
 	float screenHeight = static_cast<float>(app->GetScreenHeight());
 	handContainer->SetLocalPosition(-screenWidth / 2.f + 20.f, -screenHeight / 2.f + 20.f);
-	usedEnergy = 0;
+	usedEnergy = committedEnergy;
 	for (auto& card : cardHand) {
 		if (auto parent = card->GetParent(); parent.has_value()) {
 			if (auto lock = parent.value().lock(); lock && lock == handContainer) {
@@ -650,23 +864,44 @@ void Demo::IBattleScene::PlayerAttackUpdate(unsigned long long deltaTime)
 	const float leftX = -screenWidth / 2.f + sidePadding;
 	const float executeX = leftX + backButton->GetWidth() + sidePadding;
 
+	const float runInitX = executeX + executeButton->GetWidth() + sidePadding;
+
 	backButton->SetLocalPosition(leftX, buttonY);
 	executeButton->SetLocalPosition(executeX, buttonY);
+	runInitButton->SetLocalPosition(runInitX, buttonY);
 	const float pileButtonsX = LayOutPileButtons(screenWidth, buttonY);
-	enemyCardRemoveAreaX = executeX + executeButton->GetWidth() + sidePadding;
+	enemyCardRemoveAreaX = runInitX + runInitButton->GetWidth() + sidePadding;
 	enemyCardRemoveAreaY = buttonY;
 	// Stops short of the pile buttons parked at the right end of the same bar.
 	enemyCardRemoveAreaWidth = pileButtonsX - sidePadding - enemyCardRemoveAreaX;
 	enemyCardRemoveAreaHeight = backButton->GetHeight();
-	if (!mainBlockCard->IsExecuting()) {
+	const bool initExecuting = initBlockCard && initBlockCard->IsExecuting();
+	// Unlike the main block finishing, this does not end the turn - the cards are committed and
+	// discarded and the player carries on programming.
+	if (!initExecuting && isExecutingInit) {
+		isExecutingInit = false;
+		FinishInitBlockExecution();
+		if (executeAfterInit) {
+			// Execute was pressed, not Run Init: carry straight on into the main program instead
+			// of handing control back to the player.
+			executeAfterInit = false;
+			isExecutingAttacks = true;
+			mainBlockCard->StartExecution();
+			return;
+		}
+	}
+	if (!mainBlockCard->IsExecuting() && !initExecuting) {
 		// When finished executing attack
 		if (isExecutingAttacks) {
 			isExecutingAttacks = false;
 			return QueueToEnemyAttack(deltaTime);
 		}
 		if (!isTransitioning) {
-			if (usedEnergy == 0) backButton->Update(deltaTime);
+			// queuedToDraw guard: retreating would end the turn and discard the hand while cards
+			// from a mid-turn draw are still in flight, stranding them outside every pile.
+			if (usedEnergy == 0 && queuedToDraw.empty()) backButton->Update(deltaTime);
 			executeButton->Update(deltaTime);
+			runInitButton->Update(deltaTime);
 			drawPileButton->Update(deltaTime);
 			discardPileButton->Update(deltaTime);
 			nullifiedPileButton->Update(deltaTime);
@@ -751,6 +986,18 @@ void Demo::IBattleScene::DrawAttackCountdown(unsigned long long deltaTime)
 	fontSprite->End();
 }
 
+std::vector<std::shared_ptr<Demo::IBlockCard>> Demo::IBattleScene::GetBlockCards() const
+{
+	std::vector<std::shared_ptr<IBlockCard>> blocks;
+	if (mainBlockCard) {
+		blocks.push_back(mainBlockCard);
+	}
+	if (initBlockCard) {
+		blocks.push_back(initBlockCard);
+	}
+	return blocks;
+}
+
 std::vector<Demo::KeyboardNavigator::Candidate> Demo::IBattleScene::CollectKeyboardCandidates()
 {
 	std::vector<KeyboardNavigator::Candidate> candidates;
@@ -779,11 +1026,12 @@ std::vector<Demo::KeyboardNavigator::Candidate> Demo::IBattleScene::CollectKeybo
 		break;
 	}
 	case State::PlayerAttack: {
-		if (!mainBlockCard->IsExecuting() && !isTransitioning) {
-			if (usedEnergy == 0) {
+		if (!mainBlockCard->IsExecuting() && !(initBlockCard && initBlockCard->IsExecuting()) && !isTransitioning) {
+			if (usedEnergy == 0 && queuedToDraw.empty()) {
 				addButton(backButton);
 			}
 			addButton(executeButton);
+			addButton(runInitButton);
 			addButton(drawPileButton);
 			addButton(discardPileButton);
 			addButton(nullifiedPileButton);
@@ -819,32 +1067,35 @@ std::vector<Demo::KeyboardNavigator::Candidate> Demo::IBattleScene::CollectKeybo
 				});
 		}
 
-		// StatementCards already queued in the block can also be targeted, to reorder them.
-		for (auto& weakChild : mainBlockCard->GetChildren()) {
-			auto placedStatementCard = std::dynamic_pointer_cast<IStatementCard>(weakChild.lock());
+		// StatementCards already queued in either block can also be targeted, to reorder them,
+		// and each block itself is a candidate so it can be repositioned.
+		for (auto& block : GetBlockCards()) {
+			for (auto& weakChild : block->GetChildren()) {
+				auto placedStatementCard = std::dynamic_pointer_cast<IStatementCard>(weakChild.lock());
 
-			if (!placedStatementCard || placedStatementCard->IsLocked()) {
-				continue;
+				if (!placedStatementCard || placedStatementCard->IsLocked()) {
+					continue;
+				}
+
+				candidates.push_back({
+					placedStatementCard,
+					placedStatementCard->GetWorldX(),
+					placedStatementCard->GetWorldY(),
+					(float)placedStatementCard->GetWidth(),
+					(float)placedStatementCard->GetHeight(),
+					[this, placedStatementCard]() { pickedUpCard = placedStatementCard; placementSlotIndex = 0; }
+					});
 			}
 
 			candidates.push_back({
-				placedStatementCard,
-				placedStatementCard->GetWorldX(),
-				placedStatementCard->GetWorldY(),
-				(float)placedStatementCard->GetWidth(),
-				(float)placedStatementCard->GetHeight(),
-				[this, placedStatementCard]() { pickedUpCard = placedStatementCard; placementSlotIndex = 0; }
+				block,
+				block->GetWorldX(),
+				block->GetWorldY(),
+				(float)block->GetWidth(),
+				(float)block->GetHeight(),
+				[this]() { isDraggingBlockCardViaKeyboard = true; }
 				});
 		}
-
-		candidates.push_back({
-			mainBlockCard,
-			mainBlockCard->GetWorldX(),
-			mainBlockCard->GetWorldY(),
-			(float)mainBlockCard->GetWidth(),
-			(float)mainBlockCard->GetHeight(),
-			[this]() { isDraggingBlockCardViaKeyboard = true; }
-			});
 
 		for (auto& enemy : enemies) {
 			if (enemy->IsDead() || enemy->IsOnStandby()) {
@@ -967,7 +1218,16 @@ void Demo::IBattleScene::UpdateKeyboardNavigation(unsigned long long deltaTime)
 		return;
 	}
 
-	if (keyboardNavigator.GetTarget() == mainBlockCard && isDraggingBlockCardViaKeyboard) {
+	std::shared_ptr<IBlockCard> draggedBlock;
+	if (isDraggingBlockCardViaKeyboard) {
+		for (auto& block : GetBlockCards()) {
+			if (keyboardNavigator.GetTarget() == block) {
+				draggedBlock = block;
+				break;
+			}
+		}
+	}
+	if (draggedBlock) {
 		auto app = DX9GF::Application::GetInstance();
 		const float halfScreenWidth = app->GetScreenWidth() / 2.f;
 		const float halfScreenHeight = app->GetScreenHeight() / 2.f;
@@ -981,11 +1241,11 @@ void Demo::IBattleScene::UpdateKeyboardNavigation(unsigned long long deltaTime)
 		if (dx != 0.f || dy != 0.f) {
 			const float len = std::sqrt(dx * dx + dy * dy);
 			const float step = KEYBOARD_BLOCK_CARD_SPEED * (deltaTime / 1000.f);
-			float newX = mainBlockCard->GetWorldX() + (dx / len) * step;
-			float newY = mainBlockCard->GetWorldY() + (dy / len) * step;
-			newX = (std::max)(-halfScreenWidth, (std::min)(newX, halfScreenWidth - (float)mainBlockCard->GetWidth()));
-			newY = (std::max)(-halfScreenHeight, (std::min)(newY, halfScreenHeight - (float)mainBlockCard->GetHeight()));
-			mainBlockCard->SetLocalPosition(newX, newY);
+			float newX = draggedBlock->GetWorldX() + (dx / len) * step;
+			float newY = draggedBlock->GetWorldY() + (dy / len) * step;
+			newX = (std::max)(-halfScreenWidth, (std::min)(newX, halfScreenWidth - (float)draggedBlock->GetWidth()));
+			newY = (std::max)(-halfScreenHeight, (std::min)(newY, halfScreenHeight - (float)draggedBlock->GetHeight()));
+			draggedBlock->SetLocalPosition(newX, newY);
 		}
 
 		if (inpMan->KeyDown(keyAccept)) {
@@ -1007,21 +1267,23 @@ std::vector<Demo::IBattleScene::PlacementSlot> Demo::IBattleScene::CollectPlacem
 	}
 
 	if (auto statementCard = std::dynamic_pointer_cast<IStatementCard>(pickedUpCard)) {
-		size_t otherCount = 0;
-		for (auto& weak : mainBlockCard->GetStatementCards()) {
-			auto sibling = weak.lock();
-			if (sibling && sibling != statementCard) {
-				++otherCount;
+		for (auto& block : GetBlockCards()) {
+			size_t otherCount = 0;
+			for (auto& weak : block->GetStatementCards()) {
+				auto sibling = weak.lock();
+				if (sibling && sibling != statementCard) {
+					++otherCount;
+				}
 			}
-		}
-		const float slotWidth = (float)mainBlockCard->GetWidth();
-		const float slotHeight = (float)statementCard->GetHeight();
-		for (size_t index = 0; index <= otherCount; ++index) {
-			auto [slotX, slotY] = mainBlockCard->GetStatementSlotWorldPosition(index, statementCard);
-			slots.push_back({
-				slotX, slotY, slotWidth, slotHeight,
-				[this, statementCard, index]() { PlaceStatementCardAt(statementCard, index); }
-				});
+			const float slotWidth = (float)block->GetWidth();
+			const float slotHeight = (float)statementCard->GetHeight();
+			for (size_t index = 0; index <= otherCount; ++index) {
+				auto [slotX, slotY] = block->GetStatementSlotWorldPosition(index, statementCard);
+				slots.push_back({
+					slotX, slotY, slotWidth, slotHeight,
+					[this, statementCard, index, block]() { PlaceStatementCardAt(statementCard, index, block); }
+					});
+			}
 		}
 
 		// A card not already in the hand (queued in the block, or orphaned in space after a
@@ -1041,15 +1303,17 @@ std::vector<Demo::IBattleScene::PlacementSlot> Demo::IBattleScene::CollectPlacem
 	}
 
 	if (auto enemyCard = std::dynamic_pointer_cast<EnemyCard>(pickedUpCard)) {
-		for (auto& weakChild : mainBlockCard->GetChildren()) {
-			auto statement = std::dynamic_pointer_cast<IStatementCard>(weakChild.lock());
-			if (!statement || !statement->CanAcceptEnemyCard()) {
-				continue;
+		for (auto& block : GetBlockCards()) {
+			for (auto& weakChild : block->GetChildren()) {
+				auto statement = std::dynamic_pointer_cast<IStatementCard>(weakChild.lock());
+				if (!statement || !statement->CanAcceptEnemyCard()) {
+					continue;
+				}
+				slots.push_back({
+					statement->GetWorldX(), statement->GetWorldY(), (float)statement->GetWidth(), (float)statement->GetHeight(),
+					[this, enemyCard, statement]() { PlaceEnemyCardOn(enemyCard, statement); }
+					});
 			}
-			slots.push_back({
-				statement->GetWorldX(), statement->GetWorldY(), (float)statement->GetWidth(), (float)statement->GetHeight(),
-				[this, enemyCard, statement]() { PlaceEnemyCardOn(enemyCard, statement); }
-				});
 		}
 		slots.push_back({
 			enemyCardRemoveAreaX, enemyCardRemoveAreaY, enemyCardRemoveAreaWidth, enemyCardRemoveAreaHeight,
@@ -1062,16 +1326,16 @@ std::vector<Demo::IBattleScene::PlacementSlot> Demo::IBattleScene::CollectPlacem
 	return slots;
 }
 
-void Demo::IBattleScene::PlaceStatementCardAt(std::shared_ptr<IStatementCard> card, size_t index)
+void Demo::IBattleScene::PlaceStatementCardAt(std::shared_ptr<IStatementCard> card, size_t index, std::shared_ptr<IBlockCard> block)
 {
-	if (!card || mainBlockCard->IsExecuting()) {
+	if (!card || !block || block->IsExecuting()) {
 		return;
 	}
 
 	auto parent = card->GetParent();
-	const bool alreadyInBlock = parent.has_value() && parent.value().lock().get() == mainBlockCard.get();
+	const bool alreadyInBlock = parent.has_value() && parent.value().lock().get() == block.get();
 
-	if (!alreadyInBlock && GetAvailableEnergy() < 0) {
+	if (!alreadyInBlock && !CanPlaceCardInBlock(card)) {
 		QueuePopUpMessage(L"Not enough energy");
 		return;
 	}
@@ -1081,12 +1345,12 @@ void Demo::IBattleScene::PlaceStatementCardAt(std::shared_ptr<IStatementCard> ca
 	card->DetachParent();
 	card->SetLocalPosition(curX, curY);
 
-	auto [slotX, slotY] = mainBlockCard->GetStatementSlotWorldPosition(index, card);
+	auto [slotX, slotY] = block->GetStatementSlotWorldPosition(index, card);
 
 	std::vector<std::shared_ptr<DX9GF::ICommand>> commands = {
 		std::make_shared<DX9GF::GoToCommand>(card, slotX, slotY, 0.3f, DX9GF::TimeTag{}, DX9GF::EaseInOutTag{}),
-		std::make_shared<DX9GF::CustomCommand>([this, card, index](std::function<void(void)> markFinished) {
-			mainBlockCard->InsertStatementCardAt(card, index);
+		std::make_shared<DX9GF::CustomCommand>([card, index, block](std::function<void(void)> markFinished) {
+			block->InsertStatementCardAt(card, index);
 			DX9GF::AudioManager::GetInstance()->PlayRandom("card_snap", 0.2f);
 			markFinished();
 			})
@@ -1148,6 +1412,9 @@ void Demo::IBattleScene::DiscardEnemyCard(std::shared_ptr<EnemyCard> card)
 	if (!card) {
 		return;
 	}
+	// A card discarded straight off a statement card is still parented to it. Leaving that link
+	// in place would keep the transform hierarchy pointing at a card that is about to go away.
+	card->DetachParent();
 	if (auto manager = card->GetDraggableManager().lock()) {
 		manager->Remove(card);
 	}
@@ -1179,8 +1446,10 @@ void Demo::IBattleScene::QueueToEnemyAttack(unsigned long long deltaTime)
 				}
 			}
 
+			this->MoveInitBlockCardsToDiscardPile();
 			this->MoveExecutedHandCardsToPlayedPile();
 			this->MoveDepletedCardsToNullifiedPile();
+			this->MoveNonPersistentCardsToDiscardPile();
 			this->MoveHandCardsToDiscardPile();
 
 			for (auto& card : this->cardHand) {
@@ -1445,7 +1714,9 @@ void Demo::IBattleScene::PlayerAttackDraw(unsigned long long deltaTime)
 
 	fontSprite->SetOutline(true, 0xFF000000, 2.f);
 	fontSprite->SetPosition(backButton->GetWorldX() + 32.f, backButton->GetWorldY() - 30.f);
-	fontSprite->SetText(std::to_wstring(energy - usedEnergy) + L"/" + std::to_wstring(MAX_ENERGY));
+	// Denominator is this turn's actual maximum, not MAX_ENERGY - bonus and instant energy both
+	// push it above the constant, which would otherwise read as "4/3".
+	fontSprite->SetText(std::to_wstring(energy - usedEnergy) + L"/" + std::to_wstring(energy));
 	fontSprite->Draw(this->uiCamera, deltaTime);
 
 	fontSprite->SetPosition(executeButton->GetWorldX() + 32.f, executeButton->GetWorldY() - 30.f);
@@ -1463,9 +1734,10 @@ void Demo::IBattleScene::PlayerAttackDraw(unsigned long long deltaTime)
 	hourglassIcon->Draw(this->uiCamera, deltaTime);
 	hourglassIcon->End();
 
-	if (!mainBlockCard->IsExecuting() && !isTransitioning) {
-		if (usedEnergy == 0) backButton->Draw(game->GetGraphicsDevice(), deltaTime);
+	if (!mainBlockCard->IsExecuting() && !(initBlockCard && initBlockCard->IsExecuting()) && !isTransitioning) {
+		if (usedEnergy == 0 && queuedToDraw.empty()) backButton->Draw(game->GetGraphicsDevice(), deltaTime);
 		executeButton->Draw(game->GetGraphicsDevice(), deltaTime);
+		runInitButton->Draw(game->GetGraphicsDevice(), deltaTime);
 		DrawPileButtons(deltaTime);
 	}
 
@@ -1662,6 +1934,179 @@ void Demo::IBattleScene::EnemyAttackDraw(unsigned long long deltaTime)
 	DrawHealthAndDefenseBar(y, gd);
 }
 
+void Demo::IBattleScene::ComputeProjectedDamage(std::unordered_map<IEnemy*, float>& out)
+{
+	out.clear();
+	if (!battlePlayer) {
+		return;
+	}
+
+	// Init resolves before the main program, so the readout walks them in that order - a Vulnerable
+	// played from init has to be standing before the main block's hits are counted.
+	std::vector<IStatementCard::ProjectedStep> steps;
+	const std::array<std::shared_ptr<IBlockCard>, 2> blocks = { initBlockCard, mainBlockCard };
+	for (const auto& block : blocks) {
+		if (!block) {
+			continue;
+		}
+		for (const auto& weak : block->GetStatementCards()) {
+			if (auto card = weak.lock()) {
+				card->CollectProjectedSteps(steps);
+			}
+		}
+	}
+	// The program is replayed step by step rather than measured against the state on screen: a
+	// Vulnerable, Mark or attack buff queued ahead of a hit is already standing by the time that
+	// hit resolves, and the readout has to show it that way.
+	float buffDamage = battlePlayer->GetModifierValue(ModifierType::BuffDamage);
+	// No card applies Weak to the player, so this one cannot change partway through.
+	const bool isWeak = battlePlayer->HasModifier(ModifierType::Weak);
+
+	struct EnemySim {
+		// Spent as it absorbs, so it is carried across hits rather than applied to each one - the
+		// same bookkeeping temporaryDefense gets in CalculateActualDamage.
+		float block;
+		float marked;
+		bool vulnerable;
+		// Paid once at the end-of-turn tick rather than per hit.
+		float poisonValue;
+		int poisonDuration;
+		float burn;
+	};
+	// Seeded for every living enemy, not just the ones the program targets: the tick fires on all
+	// of them, so an enemy already burning takes damage from executing even if nothing aims at it.
+	std::unordered_map<IEnemy*, EnemySim> sim;
+	for (const auto& enemy : enemies) {
+		if (!enemy || enemy->IsDead()) {
+			continue;
+		}
+		sim.emplace(enemy.get(), EnemySim{
+			(std::max)(0.f, enemy->GetTemporaryDefense()),
+			enemy->GetModifierValue(ModifierType::Marked),
+			enemy->HasModifier(ModifierType::Vulnerable),
+			enemy->GetModifierValue(ModifierType::Poison),
+			ActiveModifierDuration(*enemy, ModifierType::Poison),
+			enemy->GetModifierValue(ModifierType::Burn)
+			});
+	}
+
+	for (const auto& step : steps) {
+		if (step.kind == IStatementCard::ProjectedStep::Kind::PlayerModifier) {
+			if (step.modifier == ModifierType::BuffDamage) {
+				buffDamage += step.value;
+			}
+			continue;
+		}
+		if (!step.target) {
+			continue;
+		}
+		const auto simIt = sim.find(step.target);
+		if (simIt == sim.end()) {
+			continue;
+		}
+		EnemySim& state = simIt->second;
+
+		if (step.kind == IStatementCard::ProjectedStep::Kind::EnemyModifier) {
+			switch (step.modifier) {
+				// AddStackingModifier accumulates the value; Vulnerable is a flag either way.
+			case ModifierType::Marked: state.marked += step.value; break;
+			case ModifierType::Vulnerable: state.vulnerable = true; break;
+			case ModifierType::Burn: state.burn += step.value; break;
+				// AddModifier adds to the duration already there, and takes the larger value.
+			case ModifierType::Poison:
+				state.poisonDuration += step.duration;
+				state.poisonValue = (std::max)(state.poisonValue, step.value);
+				break;
+			default: break;
+			}
+			continue;
+		}
+
+		// ICombatant::CalculateOutgoingDamage, then CalculateActualDamage: Marked is a flat bonus
+		// per hit and lands before Vulnerable scales the total, which lands before block.
+		float damage = step.value + buffDamage;
+		if (isWeak) {
+			damage *= 0.75f;
+		}
+		damage += state.marked;
+		if (state.vulnerable) {
+			damage *= 1.5f;
+		}
+		const float absorbed = (std::min)(state.block, damage);
+		state.block -= absorbed;
+		damage -= absorbed;
+
+		out[step.target] += damage;
+	}
+
+	// QueueToEnemyAttack ticks every enemy's effects the moment the program finishes, so the tick
+	// is part of what executing costs them. Both bypass block and Vulnerable - TriggerEffects
+	// zeroes them around the poison hit, and TakeIndirectDamage ignores them for burn - so these
+	// go on raw.
+	for (const auto& [enemy, state] : sim) {
+		float tick = state.burn;
+		if (state.poisonDuration > 0) {
+			// Poison with no value of its own is worth its remaining turns.
+			tick += (state.poisonValue > 0.f) ? state.poisonValue : static_cast<float>(state.poisonDuration);
+		}
+		if (tick > 0.f) {
+			out[enemy] += tick;
+		}
+	}
+}
+
+void Demo::IBattleScene::DrawProjectedDamage(unsigned long long deltaTime)
+{
+	// Mid-execution the total would sit at its pre-execution value while the damage actually
+	// lands, reading as though the hits were not counting. Hide it until the program settles.
+	if (isExecutingAttacks || isExecutingInit
+		|| (mainBlockCard && mainBlockCard->IsExecuting())
+		|| (initBlockCard && initBlockCard->IsExecuting())) {
+		return;
+	}
+	if (!fontSprite) {
+		return;
+	}
+
+	std::unordered_map<IEnemy*, float> projected;
+	ComputeProjectedDamage(projected);
+	if (projected.empty()) {
+		return;
+	}
+
+	fontSprite->Begin();
+	fontSprite->SetOutline(true, 0xFF000000, 2.f);
+	fontSprite->SetColor(0xFFff4444);
+	for (const auto& enemy : enemies) {
+		if (!enemy || enemy->IsDead()) {
+			continue;
+		}
+		const auto it = projected.find(enemy.get());
+		if (it == projected.end()) {
+			continue;
+		}
+		const int total = static_cast<int>(std::round(it->second));
+		if (total <= 0) {
+			continue;
+		}
+
+		// The card-spawn trigger is centred on the enemy and sized to its sprite, so it doubles as
+		// the body's bounds. Enemies without one fall back to a nominal box.
+		float left = enemy->GetWorldX() - 32.f;
+		float bottom = enemy->GetWorldY() + 32.f;
+		if (auto trigger = enemy->GetCardSpawnTrigger().lock()) {
+			left = trigger->GetWorldX() - trigger->GetOriginX();
+			bottom = trigger->GetWorldY() - trigger->GetOriginY() + trigger->GetHeight();
+		}
+
+		fontSprite->SetText(L"-" + std::to_wstring(total));
+		fontSprite->SetPosition(left, bottom);
+		fontSprite->Draw(this->camera, deltaTime);
+	}
+	fontSprite->SetOutline(false);
+	fontSprite->End();
+}
+
 void Demo::IBattleScene::DrawHealthAndDefenseBar(const float y, DX9GF::GraphicsDevice* gd)
 {
 	const float spacing = 5.f;
@@ -1722,6 +2167,30 @@ void Demo::IBattleScene::DrawHealthAndDefenseBar(const float y, DX9GF::GraphicsD
 			statusName = L"Poison";
 			statusDescription = L"Takes " + std::to_wstring(poisonDmg) + L" damage at end of turn.";
 		}
+		else if (mod.type == ModifierType::Burn) {
+			int burnDmg = static_cast<int>(std::round(mod.value));
+			valueText = std::to_wstring(burnDmg);
+			textColor = 0xFFff8800;
+			iconRect = { 240, 288, 256, 304 };
+			statusName = L"Burn";
+			statusDescription = L"Takes " + std::to_wstring(burnDmg) + L" damage at end of turn, ignoring block.";
+		}
+		else if (mod.type == ModifierType::Regen) {
+			int regenAmount = static_cast<int>(std::round(mod.value));
+			valueText = std::to_wstring(regenAmount);
+			textColor = 0xFF9cdb43;
+			iconRect = { 272, 288, 288, 304 };
+			statusName = L"Regen";
+			statusDescription = L"Heals " + std::to_wstring(regenAmount) + L" at end of turn.";
+		}
+		else if (mod.type == ModifierType::Marked) {
+			int markAmount = static_cast<int>(std::round(mod.value));
+			valueText = std::to_wstring(markAmount);
+			textColor = 0xFFfffc40;
+			iconRect = { 128, 256, 144, 272 };
+			statusName = L"Marked";
+			statusDescription = L"Takes " + std::to_wstring(markAmount) + L" extra damage from every hit.";
+		}
 		else if (mod.type == ModifierType::Vulnerable) {
 			iconRect = { 96, 256, 112, 272 };
 			statusName = L"Vulnerable";
@@ -1733,8 +2202,8 @@ void Demo::IBattleScene::DrawHealthAndDefenseBar(const float y, DX9GF::GraphicsD
 			statusDescription = L"Deals 25% less damage with attacks.";
 		}
 		else if (mod.type == ModifierType::Stun) {
-			nameText = L"Stun";
 			textColor = 0xFFfffc40;
+			iconRect = { 224, 288, 240, 304 };
 			statusName = L"Stun";
 			statusDescription = L"Cannot take action this turn.";
 		}
@@ -1803,6 +2272,14 @@ void Demo::IBattleScene::DrawHealthAndDefenseBar(const float y, DX9GF::GraphicsD
 		modY -= 32.f;
 	}
 
+	// The items that put those buffs there, listed beside the bars. A modifier icon the mouse is
+	// already on wins the tooltip - the two never overlap, so at most one of them is hovered.
+	std::wstring itemTooltip = DrawActiveItems(x + w, y);
+	if (!isTooltipActive && !itemTooltip.empty()) {
+		isTooltipActive = true;
+		activeTooltipText = std::move(itemTooltip);
+	}
+
 	//draw tooltip after
 	if (isTooltipActive) {
 		fontSprite->SetText(std::move(activeTooltipText));
@@ -1829,6 +2306,70 @@ void Demo::IBattleScene::DrawHealthAndDefenseBar(const float y, DX9GF::GraphicsD
 		fontSprite->Draw(this->uiCamera, 0);
 		fontSprite->End();
 	}
+}
+
+std::wstring Demo::IBattleScene::DrawActiveItems(const float barRightX, const float y)
+{
+	if (activeItems.empty() || !activeItemIcon) return L"";
+
+	// Item art is 23x35, drawn 1:1 here - about as tall as the health and defense bars together,
+	// so a row of them sits level with the bars instead of towering over them.
+	const float iconY = y - 36.f;
+	const float rowGap = 10.f;
+	auto [camW, camH] = this->uiCamera.GetScreenResolution();
+	const float rowRight = camW / 2.f - 8.f;
+
+	auto [screenX, screenY] = DX9GF::InputManager::GetInstance()->GetVirtualAbsoluteMousePos(&this->uiCamera);
+	auto [mouseX, mouseY] = DX9GF::Utils::WindowToWorldCoords(this->uiCamera, screenX, screenY);
+
+	std::wstring tooltip;
+	float drawX = barRightX + 16.f;
+	size_t skipped = 0;
+
+	for (const auto& entry : activeItems) {
+		const int turnsLeft = GetActiveItemTurnsLeft(entry);
+		// Everything it applied is already gone; the entry itself is swept at end of turn.
+		if (turnsLeft <= 0) continue;
+
+		if (drawX + RAW_ITEM_W > rowRight) {
+			++skipped;
+			continue;
+		}
+
+		activeItemIcon->SetSrcRect(entry.iconRect);
+		activeItemIcon->SetPosition(drawX, iconY);
+		activeItemIcon->SetScale(1.f, 1.f);
+		activeItemIcon->Begin();
+		activeItemIcon->Draw(this->uiCamera, 0);
+		activeItemIcon->End();
+
+		fontSprite->SetColor(0xFFfffc40);
+		fontSprite->SetOutline(true, 0xFF000000, 3.f);
+		fontSprite->SetText(std::to_wstring(turnsLeft));
+		const float textW = static_cast<float>(fontSprite->GetWidth());
+		fontSprite->SetPosition(drawX + (RAW_ITEM_W - textW) / 2.f, iconY + RAW_ITEM_H + 2.f);
+		fontSprite->Begin();
+		fontSprite->Draw(this->uiCamera, 0);
+		fontSprite->End();
+
+		if (mouseX >= drawX && mouseX <= drawX + RAW_ITEM_W && mouseY >= iconY && mouseY <= iconY + RAW_ITEM_H) {
+			tooltip = entry.name + L" (" + std::to_wstring(turnsLeft) + L" turns remaining)\n" + entry.description;
+		}
+
+		drawX += (std::max)(RAW_ITEM_W, textW) + rowGap;
+	}
+
+	if (skipped > 0) {
+		fontSprite->SetColor(0xFFFFFFFF);
+		fontSprite->SetOutline(true, 0xFF000000, 3.f);
+		fontSprite->SetText(L"+" + std::to_wstring(skipped));
+		fontSprite->SetPosition(drawX, iconY + RAW_ITEM_H / 2.f);
+		fontSprite->Begin();
+		fontSprite->Draw(this->uiCamera, 0);
+		fontSprite->End();
+	}
+
+	return tooltip;
 }
 
 void Demo::IBattleScene::Init()
@@ -1858,6 +2399,8 @@ void Demo::IBattleScene::Init()
 	attackBuffIcon->SetSrcRect({ .left = 112, .top = 240, .right = 128, .bottom = 256 });
 	defenseBuffIcon = std::make_shared<DX9GF::StaticSprite>(uiSheetTex.get());
 	defenseBuffIcon->SetSrcRect({ .left = 96, .top = 240, .right = 112, .bottom = 256 });
+	// Src rect is set per entry in DrawActiveItems - one sprite serves every item in the row.
+	activeItemIcon = std::make_shared<DX9GF::StaticSprite>(itemsTex.get());
 	// Create buttons
 	const auto buttonWidth = 96;
 	const auto buttonHeight = 32;
@@ -2052,12 +2595,23 @@ void Demo::IBattleScene::Init()
 		}
 		});
 	executeButton->SetOnReleaseLeft([&](DX9GF::ITrigger* thisObj) {
-		if (usedEnergy > energy) {
+		// Executing clears the command buffer, which is also what carries the deal animation of
+		// a mid-turn draw. Clearing it mid-flight would strand those cards in queuedToDraw -
+		// never reaching the hand, never discarded - so refuse until they have landed.
+		if (!queuedToDraw.empty()) {
+			popUpMessage->QueueMessage(&commandBuffer, L"Still drawing");
+			DX9GF::AudioManager::GetInstance()->Play("error", false, 0.8f);
+		}
+		else if (usedEnergy > energy) {
 			popUpMessage->QueueMessage(&commandBuffer, L"Not enough energy");
 			DX9GF::AudioManager::GetInstance()->Play("error", false, 0.8f);
 		}
 		else if (mainBlockCard && !mainBlockCard->IsExecuting()) {
-			if (!mainBlockCard->HasAllRequiredTargets()) {
+			// Anything still queued in init runs first, so its targets have to be complete too -
+			// otherwise the turn would stall halfway with the main block never reached.
+			const bool runInitFirst = initBlockCard && !initBlockCard->GetStatementCards().empty();
+			if (!mainBlockCard->HasAllRequiredTargets()
+				|| (runInitFirst && !initBlockCard->HasAllRequiredTargets())) {
 				if (timeSinceLastTargetPopUp >= targetPopUpCooldown) {
 					popUpMessage->QueueMessage(&commandBuffer, L"Some cards are missing a target!");
 					DX9GF::AudioManager::GetInstance()->Play("error", false, 0.8f);
@@ -2067,11 +2621,59 @@ void Demo::IBattleScene::Init()
 			}
 			commandBuffer.Clear();
 			popUpMessage->Reset(); // Really bad hack, please never do this in a production game lol
-			isExecutingAttacks = true;
-			mainBlockCard->StartExecution();
+			if (runInitFirst) {
+				// PlayerAttackUpdate picks this up when init finishes and chains into the main
+				// block, after FinishInitBlockExecution has committed and discarded the init cards.
+				isExecutingInit = true;
+				executeAfterInit = true;
+				initBlockCard->StartExecution();
+			}
+			else {
+				isExecutingAttacks = true;
+				mainBlockCard->StartExecution();
+			}
 		}
 		});
 	executeButton->SetSpriteScale(2.f, 2.f);
+
+	runInitButton = std::make_shared<IconButton>(transformManager, 0, 0, buttonWidth, buttonHeight, uiSheetTex);
+	runInitButton->SetSpriteRects({
+		{ .left = 48, .top = 48, .right = 96, .bottom = 64 },
+		{ .left = 48, .top = 64, .right = 96, .bottom = 80 },
+		{ .left = 48, .top = 80, .right = 96, .bottom = 96 }
+		});
+	runInitButton->SetOnReleaseLeft([&](DX9GF::ITrigger* thisObj) {
+		if (!initBlockCard || initBlockCard->GetStatementCards().empty()) {
+			return;
+		}
+		// Running init does not clear the command buffer the way executing does, so a draw it
+		// kicks off survives - but a draw already in flight still has to land first, because the
+		// next Execute would clear the buffer out from under it.
+		if (!queuedToDraw.empty()) {
+			popUpMessage->QueueMessage(&commandBuffer, L"Still drawing");
+			DX9GF::AudioManager::GetInstance()->Play("error", false, 0.8f);
+			return;
+		}
+		if (usedEnergy > energy) {
+			popUpMessage->QueueMessage(&commandBuffer, L"Not enough energy");
+			DX9GF::AudioManager::GetInstance()->Play("error", false, 0.8f);
+			return;
+		}
+		if (initBlockCard->IsExecuting() || (mainBlockCard && mainBlockCard->IsExecuting())) {
+			return;
+		}
+		if (!initBlockCard->HasAllRequiredTargets()) {
+			if (timeSinceLastTargetPopUp >= targetPopUpCooldown) {
+				popUpMessage->QueueMessage(&commandBuffer, L"Some cards are missing a target!");
+				DX9GF::AudioManager::GetInstance()->Play("error", false, 0.8f);
+				timeSinceLastTargetPopUp = 0.f;
+			}
+			return;
+		}
+		isExecutingInit = true;
+		initBlockCard->StartExecution();
+		});
+	runInitButton->SetSpriteScale(2.f, 2.f);
 
 	// Pile buttons. Each group of three frames on the sheet is idle / hover / pressed.
 	drawPileButton = std::make_shared<IconButton>(transformManager, 0, 0, PILE_BUTTON_SIZE, PILE_BUTTON_SIZE, uiSheetTex);
@@ -2185,6 +2787,7 @@ void Demo::IBattleScene::Init()
 	fleeButton->Init(&this->uiCamera);
 	backButton->Init(&this->uiCamera);
 	executeButton->Init(&this->uiCamera);
+	runInitButton->Init(&this->uiCamera);
 	closeItemMenuButton->Init(&this->uiCamera);
 	btnPrevPage->Init(&this->uiCamera);
 	btnNextPage->Init(&this->uiCamera);
@@ -2247,6 +2850,13 @@ void Demo::IBattleScene::Init()
 	mainBlockCard->Init(draggableManager, game->GetGraphicsDevice(), &camera);
 	mainBlockCard->SetMaxHeight(sh * 0.5f);
 	mainBlockCard->SetBattleScene(this);
+	// Stacked directly above the main block, which reads as "init runs first". Not to its left:
+	// the hand container occupies the top-left corner and would sit underneath. Both blocks are
+	// draggable, so the player can rearrange them if a long init program reaches the main block.
+	initBlockCard = std::make_shared<InitBlockCard>(transformManager, -100.f, -300.f);
+	initBlockCard->Init(draggableManager, game->GetGraphicsDevice(), &camera);
+	initBlockCard->SetMaxHeight(sh * 0.5f);
+	initBlockCard->SetBattleScene(this);
 	handContainer = std::make_shared<HandContainer>(transformManager, 180, 40, -250.f, -200.f);
 	handContainer->Init(draggableManager, game->GetGraphicsDevice(), &camera, &playedPile);
 	handContainer->SetMaxHeight(sh * 0.5f);
@@ -2527,6 +3137,7 @@ void Demo::IBattleScene::DrawWorld(unsigned long long deltaTime)
 			for (auto& enemy : enemies) {
 				enemy->Draw(gd, &camera, deltaTime);
 			}
+			DrawProjectedDamage(deltaTime);
 			draggableManager->Draw(deltaTime);
 			DrawKeyboardReticleWorld(deltaTime);
 			break;

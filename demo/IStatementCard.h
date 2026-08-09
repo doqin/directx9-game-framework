@@ -1,11 +1,48 @@
 #pragma once
 #include "ICard.h"
 #include "IDraggable.h"
+#include "GameItems.h"
 
 namespace Demo {
 	class EnemyCard;
+	class IEnemy;
 	class IStatementCard : public ICard, public IDraggable {
 	public:
+		// One step of the queued program, in the order it would resolve. Only what changes how
+		// much damage lands on an enemy is modelled - a hit, or a modifier the program applies
+		// partway through that makes the hits after it land differently.
+		struct ProjectedStep {
+			enum class Kind {
+				// target takes value damage, before any of the player's outgoing buffs or the
+				// target's defences - exactly what the card hands to Player::DealDamage.
+				Damage,
+				// target gains the modifier. Vulnerable and Marked change what later hits do;
+				// Poison and Burn are paid at the end-of-turn tick that follows the program. Weak
+				// and Stun change what the enemy does rather than what it takes, so they are left
+				// out entirely.
+				EnemyModifier,
+				// The player gains the modifier, e.g. Overdrive's attack buff, which lifts every
+				// hit queued after it.
+				PlayerModifier
+			};
+			Kind kind;
+			IEnemy* target;
+			ModifierType modifier;
+			float value;
+			// Turns the modifier is applied for. Only Poison reads it - with no value of its own
+			// its tick damage is however many turns are left on it.
+			int duration;
+
+			static ProjectedStep Hit(IEnemy* target, float damage) {
+				return { Kind::Damage, target, ModifierType::HealHP, damage, 0 };
+			}
+			static ProjectedStep EnemyEffect(IEnemy* target, ModifierType modifier, float value, int duration) {
+				return { Kind::EnemyModifier, target, modifier, value, duration };
+			}
+			static ProjectedStep PlayerEffect(ModifierType modifier, float value) {
+				return { Kind::PlayerModifier, nullptr, modifier, value, 0 };
+			}
+		};
 		inline IStatementCard(std::weak_ptr<DX9GF::TransformManager> transformManager)
 			: IGameObject(transformManager), ICard(transformManager), IDraggable(transformManager) {
 		}
@@ -42,18 +79,30 @@ namespace Demo {
 		virtual std::wstring GetInputsDescription() const { return L"None"; }
 		virtual bool HasRequiredTargets() const { return true; }
 
+		// Appends what this card would do, in the order Execute would do it, for the damage readout
+		// drawn on the enemies. Cards that neither deal damage nor change how much damage lands
+		// leave the list alone - damage-over-time is not counted, only what resolves as the program
+		// runs. This exists purely for the readout; the real numbers still come from Execute().
+		//
+		// Not const: reading a target means locking its EnemyCard and calling GetValue().
+		virtual void CollectProjectedSteps(std::vector<ProjectedStep>& out) {}
+
 		// EnemyCard targeting - overridden by cards that consume enemy targets (StrikeCard,
 		// MultiTargetCard) so keyboard navigation can treat them uniformly as destinations.
 		virtual bool CanAcceptEnemyCard() const { return false; }
 		// Attaches without the position hit-test used by OnDrop. Returns false if full.
 		virtual bool AttachEnemyCard(std::shared_ptr<EnemyCard> card) { return false; }
+		// Empties the card's target slots, discarding the enemy cards out of the battle. Called
+		// when the card goes back to the hand: the enemy cards are parented to it, so without this
+		// they are dragged into the hand along with it, out of reach and still counted as targets.
+		virtual void ReleaseEnemyCards() {}
 		// World-space position the next attached enemy card would occupy.
 		virtual std::tuple<float, float> GetEnemyCardSlotWorldPosition() const { return { GetWorldX(), GetWorldY() }; }
 	protected:
 		std::shared_ptr<DX9GF::Font> descFont;
 		std::shared_ptr<DX9GF::FontSprite> descFontSprite;
 
-		// Cover panel drawn off the card's right edge for cards with limited uses, holding one
+		// Cover panel drawn off the card's right edge, holding the non-persistent badge and one
 		// pip per use. Geometry below is in ui.png pixels; cards render at USES_COVER_SCALE.
 		static constexpr int USES_COVER_SCALE = 2;
 		static constexpr int USES_COVER_CAP_WIDTH = 3;
@@ -67,16 +116,29 @@ namespace Demo {
 		static constexpr int USES_PIP_SIZE = 6;
 		static constexpr int USES_PIP_GAP = 2;
 		static constexpr int USES_PIP_TOP = 5;
+		// Marker for non-persistent cards, drawn at the panel's left before any use pips. Taller
+		// than the pips, so it gets its own top offset to sit centred in the panel.
+		static constexpr int NON_PERSISTENT_BADGE_WIDTH = 10;
+		static constexpr int NON_PERSISTENT_BADGE_HEIGHT = 12;
+		static constexpr int NON_PERSISTENT_BADGE_TOP = 2;
 
 		std::shared_ptr<DX9GF::Texture> usesTexture;
 		std::shared_ptr<DX9GF::StaticSprite> usesCoverBody;
 		std::shared_ptr<DX9GF::StaticSprite> usesCoverCap;
 		std::shared_ptr<DX9GF::StaticSprite> usesPipFull;
 		std::shared_ptr<DX9GF::StaticSprite> usesPipSpent;
+		std::shared_ptr<DX9GF::StaticSprite> nonPersistentBadge;
 
-		// Panel width in sheet pixels, sized to the pips so there is no dead grey space.
-		int GetUsesCoverPanelWidth() const;
-		void DrawUsesCover(unsigned long long deltaTime);
+		// Panel width in sheet pixels, sized to its contents so there is no dead grey space.
+		int GetStatusCoverPanelWidth() const;
+		void DrawStatusCover(unsigned long long deltaTime);
+
+		std::shared_ptr<DX9GF::Texture> faceTexture;
+		std::shared_ptr<DX9GF::StaticSprite> faceSprite;
+		// Draws a single strip of assets/ui.png at the card's position and scale, honouring the
+		// container's crop. Enough for any card whose face is one sheet rect, which is all of
+		// them - implement DrawCardFace() as a call to this.
+		void DrawSheetFace(unsigned long long deltaTime, const RECT& srcRect);
 
 		// The card's own artwork. Override this rather than Draw() so the face lands on top of
 		// the uses cover - the cover is pulled back over the card's right edge, and drawing the
@@ -84,10 +146,10 @@ namespace Demo {
 		virtual void DrawCardFace(unsigned long long deltaTime) {}
 
 	public:
-		// How far the uses cover extends past the card on screen, net of its overlap, or 0 when
-		// the card has no use limit. Included in GetWidth() so containers size and crop to it
-		// instead of clipping it off.
-		size_t GetUsesCoverWidth() const;
+		// How far the status cover extends past the card on screen, net of its overlap, or 0 when
+		// the card is persistent and unlimited. Included in GetWidth() so containers size and
+		// crop to it instead of clipping it off.
+		size_t GetStatusCoverWidth() const;
 		size_t GetWidth() const override;
 		virtual void Draw(unsigned long long deltaTime) override;
 	};

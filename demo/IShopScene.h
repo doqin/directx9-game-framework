@@ -9,16 +9,24 @@
 #include <vector>
 #include <functional>
 #include "IconButton.h"
+#include "TextIconButton.h"
 #include "KeyboardNavigator.h"
 
 namespace Demo {
 	enum class ShopTier { BASIC, HYBRID, PREMIUM, RK_HYBRID };
 
+	// Which sheet a row's artwork comes from. Items are small upright icons drawn beside
+	// their name; card faces are wide strips that already read as the card's name and
+	// energy cost, so they stand in for the name text entirely.
+	enum class ShopIconSheet { None, Items, CardFaces };
+
 	struct ShopItem {
-		std::string name;
+		std::wstring name;
 		int cost;
 		std::wstring description;
 		std::function<void()> onBuyAction;
+		RECT iconRect{ 0, 0, 0, 0 };
+		ShopIconSheet iconSheet = ShopIconSheet::None;
 	};
 
 	class IShopScene : public DX9GF::IScene {
@@ -32,19 +40,47 @@ namespace Demo {
 		std::shared_ptr<DX9GF::FontSprite> myFontSprite;
 
 		std::vector<ShopItem> itemsForSale;
-		std::vector<std::shared_ptr<Demo::IButton>> uiButtons;
+		// One buy button per item, across every page. Only the slice belonging to the
+		// current page is updated and drawn, so off-page triggers can never fire.
 		std::vector<std::shared_ptr<Demo::IconButton>> buyButtons;
+		// The buttons that are live this frame: LEAVE, the visible rows, and the page
+		// arrows when there is more than one page.
+		std::vector<std::shared_ptr<Demo::IButton>> activeButtons;
 
-		std::string statusMessage = "";
+		std::shared_ptr<Demo::IconButton> leaveButton;
+		std::shared_ptr<Demo::TextIconButton> btnPrevPage;
+		std::shared_ptr<Demo::TextIconButton> btnNextPage;
+
+		int currentPage = 0;
+		int maxPage = 0;
+		int rowsPerPage = 1;
+
+		std::wstring statusMessage;
 		float messageTimer = 0.0f;
 		std::string shopTitle;
 		bool shouldLeave = false;
+
 		std::shared_ptr<DX9GF::Texture> uiSheetTex;
+		std::shared_ptr<DX9GF::Texture> borderTex;
+		std::shared_ptr<DX9GF::Texture> itemsTex;
+
+		std::shared_ptr<DX9GF::NineSliceSprite> panelFrameSprite;
+		std::shared_ptr<DX9GF::NineSliceSprite> panelSprite;
+		std::shared_ptr<DX9GF::NineSliceSprite> rowSprite;
+		std::shared_ptr<DX9GF::NineSliceSprite> rowHoverSprite;
+		std::shared_ptr<DX9GF::NineSliceSprite> descSprite;
+		std::shared_ptr<DX9GF::StaticSprite> itemIconSprite;
+		std::shared_ptr<DX9GF::StaticSprite> cardFaceSprite;
+		std::shared_ptr<DX9GF::StaticSprite> goldIconSprite;
 
 		KeyboardNavigator keyboardNavigator;
 		std::vector<KeyboardNavigator::Candidate> CollectKeyboardCandidates();
 
 		void BuildUI();
+		// Recomputes the page window, repositions the visible rows and rebuilds activeButtons.
+		void RefreshPage();
+		// Greys out and disables the buy buttons the player cannot currently afford.
+		void RefreshAffordability();
 
 	public:
 		IShopScene(Game* game, Player* player, int screenWidth, int screenHeight, std::string title);
@@ -57,6 +93,6 @@ namespace Demo {
 		void Update(unsigned long long deltaTime) override;
 		void DrawWorld(unsigned long long deltaTime) override;
 		void DrawUI(unsigned long long deltaTime) override;
-		void ShowMessage(std::string msg);
+		void ShowMessage(std::wstring msg);
 	};
 }

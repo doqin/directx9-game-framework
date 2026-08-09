@@ -1,19 +1,28 @@
 ﻿#include "pch.h"
 #include "IStatementCard.h"
 
-int Demo::IStatementCard::GetUsesCoverPanelWidth() const
+int Demo::IStatementCard::GetStatusCoverPanelWidth() const
 {
-	if (!HasLimitedUses() || GetMaxUses() <= 0) {
+	int contentWidth = 0;
+	if (!IsPersistent()) {
+		contentWidth += NON_PERSISTENT_BADGE_WIDTH;
+	}
+	if (HasLimitedUses() && GetMaxUses() > 0) {
+		if (contentWidth > 0) {
+			contentWidth += USES_PIP_GAP;
+		}
+		const int uses = GetMaxUses();
+		contentWidth += uses * USES_PIP_SIZE + (uses - 1) * USES_PIP_GAP;
+	}
+	if (contentWidth <= 0) {
 		return 0;
 	}
-	const int uses = GetMaxUses();
-	const int pipsWidth = uses * USES_PIP_SIZE + (uses - 1) * USES_PIP_GAP;
-	return pipsWidth + USES_COVER_PAD_LEFT + USES_COVER_PAD_RIGHT + USES_COVER_CAP_WIDTH;
+	return contentWidth + USES_COVER_PAD_LEFT + USES_COVER_PAD_RIGHT + USES_COVER_CAP_WIDTH;
 }
 
-size_t Demo::IStatementCard::GetUsesCoverWidth() const
+size_t Demo::IStatementCard::GetStatusCoverWidth() const
 {
-	const int panelWidth = GetUsesCoverPanelWidth();
+	const int panelWidth = GetStatusCoverPanelWidth();
 	if (panelWidth <= 0) {
 		return 0;
 	}
@@ -23,12 +32,12 @@ size_t Demo::IStatementCard::GetUsesCoverWidth() const
 
 size_t Demo::IStatementCard::GetWidth() const
 {
-	return IDraggable::GetWidth() + GetUsesCoverWidth();
+	return IDraggable::GetWidth() + GetStatusCoverWidth();
 }
 
-void Demo::IStatementCard::DrawUsesCover(unsigned long long deltaTime)
+void Demo::IStatementCard::DrawStatusCover(unsigned long long deltaTime)
 {
-	const size_t coverWidth = GetUsesCoverWidth();
+	const size_t coverWidth = GetStatusCoverWidth();
 	if (coverWidth == 0 || !trigger) {
 		return;
 	}
@@ -47,10 +56,12 @@ void Demo::IStatementCard::DrawUsesCover(unsigned long long deltaTime)
 		usesPipFull->SetSrcRect({ .left = 277, .top = 277, .right = 283, .bottom = 283 });
 		usesPipSpent = std::make_shared<DX9GF::StaticSprite>(usesTexture.get());
 		usesPipSpent->SetSrcRect({ .left = 261, .top = 277, .right = 267, .bottom = 283 });
+		nonPersistentBadge = std::make_shared<DX9GF::StaticSprite>(usesTexture.get());
+		nonPersistentBadge->SetSrcRect({ .left = 259, .top = 290, .right = 269, .bottom = 302 });
 	}
 
 	const float scale = static_cast<float>(USES_COVER_SCALE);
-	const float bodyWidth = static_cast<float>(GetUsesCoverPanelWidth() - USES_COVER_CAP_WIDTH);
+	const float bodyWidth = static_cast<float>(GetStatusCoverPanelWidth() - USES_COVER_CAP_WIDTH);
 
 	const int uses = GetMaxUses();
 	const int remaining = GetRemainingUses();
@@ -79,11 +90,22 @@ void Demo::IStatementCard::DrawUsesCover(unsigned long long deltaTime)
 	usesCoverCap->Draw(*camera, deltaTime);
 	usesCoverCap->End();
 
+	// Contents run left to right: the non-persistent badge first, then one pip per use.
+	int contentOffset = USES_COVER_PAD_LEFT;
+	if (!IsPersistent()) {
+		nonPersistentBadge->Begin();
+		nonPersistentBadge->SetPosition(panelX + contentOffset * scale, panelY + NON_PERSISTENT_BADGE_TOP * scale);
+		nonPersistentBadge->SetScale(scale, scale);
+		nonPersistentBadge->Draw(*camera, deltaTime);
+		nonPersistentBadge->End();
+		contentOffset += NON_PERSISTENT_BADGE_WIDTH + USES_PIP_GAP;
+	}
+
 	const float pipY = panelY + USES_PIP_TOP * scale;
 	for (int i = 0; i < uses; ++i) {
 		auto& pip = (i < remaining) ? usesPipFull : usesPipSpent;
 		pip->Begin();
-		pip->SetPosition(panelX + (USES_COVER_PAD_LEFT + i * (USES_PIP_SIZE + USES_PIP_GAP)) * scale, pipY);
+		pip->SetPosition(panelX + (contentOffset + i * (USES_PIP_SIZE + USES_PIP_GAP)) * scale, pipY);
 		pip->SetScale(scale, scale);
 		pip->Draw(*camera, deltaTime);
 		pip->End();
@@ -95,8 +117,32 @@ void Demo::IStatementCard::DrawUsesCover(unsigned long long deltaTime)
 	}
 }
 
+void Demo::IStatementCard::DrawSheetFace(unsigned long long deltaTime, const RECT& srcRect)
+{
+	if (isCropped) {
+		graphicsDevice->SetScissorRect(scissorRect);
+		graphicsDevice->SetScissorTest(true);
+	}
+	if (!faceTexture) {
+		faceTexture = std::make_shared<DX9GF::Texture>(graphicsDevice);
+		faceTexture->LoadTexture(L"assets/ui.png");
+		faceSprite = std::make_shared<DX9GF::StaticSprite>(faceTexture.get());
+		faceSprite->SetSrcRect(srcRect);
+	}
+	if (faceSprite) {
+		faceSprite->Begin();
+		faceSprite->SetPosition(GetWorldX(), GetWorldY());
+		faceSprite->SetScale(2.f, 2.f);
+		faceSprite->Draw(*camera, deltaTime);
+		faceSprite->End();
+	}
+	if (isCropped) {
+		graphicsDevice->SetScissorTest(false);
+	}
+}
+
 void Demo::IStatementCard::Draw(unsigned long long deltaTime) {
-	DrawUsesCover(deltaTime);
+	DrawStatusCover(deltaTime);
 	DrawCardFace(deltaTime);
 
 	IDraggable::Draw(deltaTime);
@@ -139,6 +185,9 @@ void Demo::IStatementCard::Draw(unsigned long long deltaTime) {
 		std::wstring text = desc + L"\nCost: " + std::to_wstring(cost) + L"\nInputs: " + inputs;
 		if (HasLimitedUses()) {
 			text += L"\nUses: " + std::to_wstring(GetRemainingUses()) + L"/" + std::to_wstring(GetMaxUses());
+		}
+		if (!IsPersistent()) {
+			text += L"\nNon-persistent: leaves the program at end of turn.";
 		}
 
 		descFontSprite->SetText(std::move(text));

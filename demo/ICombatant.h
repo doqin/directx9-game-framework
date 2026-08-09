@@ -58,6 +58,10 @@ namespace Demo {
 		virtual void TickDurations(TickPhase phase);
 
 		void AddModifier(ModifierType type, int duration, float value, bool isBuff, int delayTurns = 0);
+		// Like AddModifier, but accumulates value and refreshes duration to the longer of the two
+		// rather than taking max(value) and summing durations. Used by effects that are meant to
+		// stack up (Burn, Marked, block from cards) instead of just being refreshed.
+		void AddStackingModifier(ModifierType type, int duration, float value, bool isBuff, int delayTurns = 0);
 		bool HasModifier(ModifierType type) const;
 		float GetModifierValue(ModifierType type) const;
 		const std::vector<CombatModifier>& GetModifiers() const { return modifiers; }

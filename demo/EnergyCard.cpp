@@ -30,7 +30,7 @@ void Demo::EnergyCard::DrawCardFace(unsigned long long deltaTime)
 		cardTexture = std::make_shared<DX9GF::Texture>(graphicsDevice);
 		cardTexture->LoadTexture(L"assets/ui.png");
 		cardSprite = std::make_shared<DX9GF::StaticSprite>(cardTexture.get());
-		cardSprite->SetSrcRect({ .left = 0, .top = 336, .right = 80, .bottom = 352 });
+		cardSprite->SetSrcRect(GetFaceRect());
 	}
 	if (cardSprite) {
 		cardSprite->Begin();

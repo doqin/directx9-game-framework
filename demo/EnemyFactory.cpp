@@ -23,7 +23,7 @@ namespace Demo {
 		if (enemyType == "WarlockEnemy")    return { L"assets/crawler-Sheet.png", 64.f, 64.f, 12, 38.f, 45.f };
 		if (enemyType == "KernelEnemy")      return { L"assets/bubble-Sheet.png", 64.f, 64.f, 12, 38.f, 45.f }; //TODO: remember to change tex path here too
 
-		return { L"assets/computerbug-Sheet.png", 64.f, 64.f, 12, 38.f, 45.f };
+		return { L"assets/random-Sheet.png", 64.f, 64.f,8, 38.f, 45.f };
 	}
 
 	std::shared_ptr<IEnemy> EnemyFactory::Create(const std::string& type, std::weak_ptr<DX9GF::TransformManager> tm, DX9GF::GraphicsDevice* gd, DX9GF::Camera* cam) {

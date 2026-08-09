@@ -50,6 +50,8 @@
     <ClCompile Include="MainBlockCard.cpp" />
     <ClCompile Include="StrikeCard.cpp" />
     <ClCompile Include="EnergyCard.cpp" />
+    <ClCompile Include="UtilityCards.cpp" />
+    <ClCompile Include="FinisherCards.cpp" />
     <ClCompile Include="TestEnemy.cpp" />
     <ClCompile Include="RandomEncounter.cpp" />
     <ClCompile Include="CustomBattleScene.cpp" />
@@ -128,6 +130,9 @@
     <ClInclude Include="TextInputManager.h" />
     <ClInclude Include="StrikeCard.h" />
     <ClInclude Include="EnergyCard.h" />
+    <ClInclude Include="UtilityCards.h" />
+    <ClInclude Include="InitBlockCard.h" />
+    <ClInclude Include="FinisherCards.h" />
     <ClInclude Include="TestBattleScene.h" />
     <ClInclude Include="TestEnemy.h" />
     <ClInclude Include="TutorialWorldScene.h" />
@@ -224,6 +229,7 @@
     <Image Include="assets\department_logo.png" />
     <Image Include="assets\popup-borders.png" />
     <Image Include="assets\school_logo.png" />
+    <Image Include="assets\random-Sheet.png" />
   </ItemGroup>
   <ItemGroup>
     <Font Include="assets\arcade-among-2-r46pv.ttf" />
@@ -317,5 +323,8 @@
     <Media Include="assets\audio\battle-loop4.wav" />
     <Media Include="assets\audio\boss-loop.wav" />
     <Media Include="assets\audio\secret-loop.wav" />
+    <Media Include="assets\audio\card_draw5.wav" />
+    <Media Include="assets\audio\card_snap3.wav" />
+    <Media Include="assets\audio\card_snap4.wav" />
   </ItemGroup>
 </Project>

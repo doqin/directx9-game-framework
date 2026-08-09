@@ -1,6 +1,7 @@
 #include "pch.h"
 #include "StrikeCard.h"
 #include "DrawUtils.h"
+#include "IBattleScene.h"
 
 bool Demo::StrikeCard::OnDrop(std::shared_ptr<IDraggable> other)
 {
@@ -31,6 +32,16 @@ bool Demo::StrikeCard::AttachEnemyCard(std::shared_ptr<EnemyCard> card)
 	return true;
 }
 
+void Demo::StrikeCard::ReleaseEnemyCards()
+{
+	if (auto lock = enemyCard.lock()) {
+		if (battleScene) {
+			battleScene->DiscardEnemyCard(lock);
+		}
+	}
+	enemyCard.reset();
+}
+
 std::tuple<float, float> Demo::StrikeCard::GetEnemyCardSlotWorldPosition() const
 {
 	return { GetWorldX() + (float)dragAreaWidth, GetWorldY() };
@@ -48,6 +59,15 @@ bool Demo::StrikeCard::Execute()
 	}
 	isDone = true;
 	return true;
+}
+
+void Demo::StrikeCard::CollectProjectedSteps(std::vector<ProjectedStep>& out)
+{
+	if (auto lock = enemyCard.lock()) {
+		if (auto enemy = lock->GetValue()) {
+			out.push_back(ProjectedStep::Hit(enemy.get(), 5.f));
+		}
+	}
 }
 
 void Demo::StrikeCard::ResetExecution()
@@ -85,7 +105,7 @@ void Demo::StrikeCard::Draw(unsigned long long deltaTime)
 		strikeTexture = std::make_shared<DX9GF::Texture>(graphicsDevice);
 		strikeTexture->LoadTexture(L"assets/ui.png");
 		strikeSprite = std::make_shared<DX9GF::StaticSprite>(strikeTexture.get());
-		strikeSprite->SetSrcRect({ .left = 0, .top = 288, .right = 80, .bottom = 304 });
+		strikeSprite->SetSrcRect(GetFaceRect());
 	}
 	auto thisX = GetWorldX();
 	auto thisY = GetWorldY();
@@ -186,9 +206,9 @@ std::wstring Demo::StrikeCard::GetInputsDescription() const
 size_t Demo::StrikeCard::GetWidth() const
 {
 	if (auto lock = enemyCard.lock()) {
-		return IDraggable::GetWidth() + lock->GetWidth() + GetUsesCoverWidth();
+		return IDraggable::GetWidth() + lock->GetWidth() + GetStatusCoverWidth();
 	}
 	else {
-		return IDraggable::GetWidth() + GetUsesCoverWidth();
+		return IDraggable::GetWidth() + GetStatusCoverWidth();
 	}
 }
