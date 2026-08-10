@@ -272,6 +272,7 @@
     <ClCompile Include="ThreadAlleyScene.cpp" />
     <ClCompile Include="TransitionCommand.cpp" />
     <ClCompile Include="TreasureChestNPC.cpp" />
+    <ClCompile Include="TrojanEnemy.cpp" />
     <ClCompile Include="TutorialWorldScene.cpp" />
     <ClCompile Include="VampireBatEnemy.cpp" />
     <ClCompile Include="WarlockEnemy.cpp" />
@@ -359,6 +360,7 @@
     <ClInclude Include="TextInputManager.h" />
     <ClInclude Include="StrikeCard.h" />
     <ClInclude Include="EnergyCard.h" />
+    <ClInclude Include="TrojanEnemy.h" />
     <ClInclude Include="UtilityCards.h" />
     <ClInclude Include="InitBlockCard.h" />
     <ClInclude Include="FinisherCards.h" />
