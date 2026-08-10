@@ -11,19 +11,18 @@ namespace Demo {
 	void KernelEnemy::Init(DX9GF::GraphicsDevice* graphicsDevice, DX9GF::Camera* camera) {
 		texture = std::make_shared<DX9GF::Texture>(graphicsDevice);
 		// TODO: Change enemy sprite
-		texture->LoadTexture(L"assets/bubble-Sheet.png");
+		texture->LoadTexture(L"assets/kernel.png");
 		sprite = std::make_shared<DX9GF::AnimatedSprite>(texture.get(), DX9GF::Utils::CreateRectsHorizontal(0, 0, 64, 64, 11), 12);
 		sprite->SetOrigin(32, 32);
 		sprite->SetScale(2.f);
 
 		mineTexture = std::make_shared<DX9GF::Texture>(graphicsDevice);
 		// TODO: Change mine texture in defrag pattern
-		mineTexture->LoadTexture(L"assets/bubbleprojectile.png");
+		mineTexture->LoadTexture(L"assets/kernelprojectile.png");
 
 		bulletTexture = std::make_shared<DX9GF::Texture>(graphicsDevice);
 		// TODO: Change bullet
-		bulletTexture->LoadTexture(L"assets/bubbleprojectile.png");
-
+		bulletTexture->LoadTexture(L"assets/kernelprojectile.png");
 		SetGoldReward(static_cast<int>(std::round(GetMaxHealth())));
 		InitCardSpawnTrigger(camera, 128.f, 128.f);
 	}
