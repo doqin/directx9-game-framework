@@ -269,8 +269,10 @@ void Demo::Player::Update(unsigned long long deltaTime) {
 		stepTimer = 0.0f;
 	}
 	// if (dirNorm.x == 0 && dirNorm.y == 0) return;
-	float dX = dirNorm.x * VELOCITY * deltaTime / 1000.f;
-	float dY = dirNorm.y * VELOCITY * deltaTime / 1000.f;
+	float speedMultiplier = 1.f - GetModifierValue(ModifierType::Freeze);
+	speedMultiplier = (std::max)(0.f, speedMultiplier);
+	float dX = dirNorm.x * VELOCITY * speedMultiplier * deltaTime / 1000.f;
+	float dY = dirNorm.y * VELOCITY * speedMultiplier * deltaTime / 1000.f;
 	auto [finalDX, finalDY] = colliderManager->GetSlidingDeltas(collider, dX, dY);
 	auto [currentX, currentY] = GetLocalPosition();
 	SetLocalPosition(currentX + finalDX, currentY + finalDY);
