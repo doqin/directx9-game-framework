@@ -18,7 +18,9 @@ namespace Demo
 		// The debuff mirror of BuffDamage.
 		Marked,
 		// Heals value at end of turn.
-		Regen
+		Regen,
+		//For ignite and destonate combo
+		Spark
 		//...Add more if you have ideas
 	};
 

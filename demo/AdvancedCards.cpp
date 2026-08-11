@@ -1,5 +1,7 @@
-#include "pch.h"
+﻿#include "pch.h"
 #include "AdvancedCards.h"
+#include "IBlockCard.h"
+#include "IBattleScene.h"
 
 bool Demo::HeavyStrikeCard::Execute() {
 	if (isDone) return true;
@@ -257,4 +259,286 @@ void Demo::StunCard::Draw(unsigned long long deltaTime) {
 		graphicsDevice->SetScissorTest(false);
 	}
 	MultiTargetCard::Draw(deltaTime);
+}
+
+bool Demo::IgniteCard::Execute() {
+	if (targets.empty()) return false;
+	auto target = targets[0].lock();
+	if (!target || !target->GetValue() || target->GetValue()->IsDead()) return false;
+
+	target->GetValue()->AddStackingModifier(ModifierType::Spark, 3, 2.f, false);
+	return true;
+}
+
+bool Demo::FireDetonationCard::Execute() {
+	if (targets.empty()) return false;
+	auto target = targets[0].lock();
+	if (!target || !target->GetValue() || target->GetValue()->IsDead()) return false;
+
+	auto enemy = target->GetValue();
+	float sparkStacks = enemy->ConsumeModifier(ModifierType::Spark);
+
+	float finalDamage = 3.f + (sparkStacks * 5.f);
+
+	if (owner) {
+		owner->DealDamage(enemy.get(), finalDamage);
+	}
+	return true;
+}
+
+bool Demo::RagingStrikeCard::Execute() {
+	if (targets.empty()) return false;
+	auto target = targets[0].lock();
+	if (!target || !target->GetValue() || target->GetValue()->IsDead()) return false;
+
+	if (owner) {
+		owner->DealDamage(target->GetValue().get(), static_cast<float>(currentDamage));
+	}
+
+	currentDamage += 3;
+	hasExecutedThisCycle = true;
+
+	return true;
+}
+
+bool Demo::OverloadCard::Execute() {
+	if (isDone) return true;
+	if (targets.empty()) { isDone = true; return true; }
+	auto target = targets[0].lock();
+	if (!target || !target->GetValue() || target->GetValue()->IsDead()) { isDone = true; return true; }
+
+	float bonusDamage = 0.f;
+	auto parentBlock = std::dynamic_pointer_cast<IBlockCard>(GetParent().has_value() ? GetParent().value().lock() : nullptr);
+
+	if (parentBlock) {
+		for (const auto& wpCard : parentBlock->GetStatementCards()) {
+			if (auto card = wpCard.lock()) {
+				if (card->IsPersistent()) {
+					bonusDamage += 4.f;
+				}
+			}
+		}
+	}
+
+	float finalDamage = 5.f + bonusDamage;
+	if (owner) {
+		owner->DealDamage(target->GetValue().get(), finalDamage);
+	}
+	isDone = true;
+	return true;
+}
+
+void Demo::OverloadCard::CollectProjectedSteps(std::vector<ProjectedStep>& out) {
+	float bonusDamage = 0.f;
+	auto parentBlock = std::dynamic_pointer_cast<IBlockCard>(GetParent().has_value() ? GetParent().value().lock() : nullptr);
+	if (parentBlock) {
+		for (const auto& wpCard : parentBlock->GetStatementCards()) {
+			if (auto card = wpCard.lock()) {
+				if (card->IsPersistent()) bonusDamage += 4.f;
+			}
+		}
+	}
+	CollectHitsOnTargets(out, 5.f + bonusDamage, 1);
+}
+
+void Demo::OverloadCard::DrawCardFace(unsigned long long deltaTime) {
+	DrawSheetFace(deltaTime, GetFaceRect());
+}
+
+bool Demo::ChainReactionCard::Execute() {
+	if (isDone) return true;
+	if (targets.empty()) { isDone = true; return true; }
+	auto originalTarget = targets[0].lock();
+	if (!originalTarget || !originalTarget->GetValue()) { isDone = true; return true; }
+
+	float finalDamage = 4.f;
+	IEnemy* finalTargetEnemy = originalTarget->GetValue().get();
+
+	auto parentBlock = std::dynamic_pointer_cast<IBlockCard>(GetParent().has_value() ? GetParent().value().lock() : nullptr);
+	if (parentBlock) {
+		const auto& cardsInBlock = parentBlock->GetStatementCards();
+		size_t myIndex = -1;
+
+		for (size_t i = 0; i < cardsInBlock.size(); ++i) {
+			if (cardsInBlock[i].lock().get() == this) {
+				myIndex = i;
+				break;
+			}
+		}
+
+		if (myIndex > 0 && myIndex < cardsInBlock.size()) {
+			auto prevCard = std::dynamic_pointer_cast<MultiTargetCard>(cardsInBlock[myIndex - 1].lock());
+			if (prevCard) {
+				bool previousKilledTarget = false;
+
+				for (auto& prevWpTarget : prevCard->GetTargets()) {
+					if (auto prevTarget = prevWpTarget.lock()) {
+						if (auto prevEnemy = prevTarget->GetValue()) {
+							if (prevEnemy->IsDead()) {
+								previousKilledTarget = true;
+								break;
+							}
+						}
+					}
+				}
+
+				if (previousKilledTarget) {
+					finalDamage = 8.f;
+					if (battleScene) {
+						float lowestHP = 999999.f;
+						IEnemy* lowestEnemy = nullptr;
+
+						for (auto& enemy : battleScene->GetEnemies()) {
+							if (!enemy->IsDead() && enemy->GetHealth() < lowestHP) {
+								lowestHP = enemy->GetHealth();
+								lowestEnemy = enemy.get();
+							}
+						}
+						if (lowestEnemy) {
+							finalTargetEnemy = lowestEnemy;
+						}
+					}
+				}
+			}
+		}
+	}
+
+	if (finalTargetEnemy && !finalTargetEnemy->IsDead() && owner) {
+		owner->DealDamage(finalTargetEnemy, finalDamage);
+	}
+	isDone = true;
+	return true;
+}
+
+void Demo::ChainReactionCard::CollectProjectedSteps(std::vector<ProjectedStep>& out) {
+	CollectHitsOnTargets(out, 4.f, 1);
+}
+
+void Demo::ChainReactionCard::DrawCardFace(unsigned long long deltaTime) {
+	DrawSheetFace(deltaTime, GetFaceRect());
+}
+
+bool Demo::LethalHarvestCard::Execute() {
+	if (isDone) return true;
+	if (targets.empty()) { isDone = true; return true; }
+	auto target = targets[0].lock();
+	if (!target || !target->GetValue() || target->GetValue()->IsDead()) { isDone = true; return true; }
+
+	auto enemy = target->GetValue().get();
+	if (owner) {
+		owner->DealDamage(enemy, 6.f);
+		if (enemy->IsDead()) {
+			owner->Heal(8.f);
+		}
+	}
+	isDone = true;
+	return true;
+}
+
+bool Demo::ExecuteCard::Execute() {
+	if (isDone) return true;
+	if (targets.empty()) { isDone = true; return true; }
+	auto target = targets[0].lock();
+	if (!target || !target->GetValue() || target->GetValue()->IsDead()) { isDone = true; return true; }
+
+	auto enemy = target->GetValue().get();
+	if (owner) {
+		owner->DealDamage(enemy, 15.f);
+		if (enemy->IsDead() && battleScene) {
+			battleScene->QueueBonusEnergy(1);
+		}
+	}
+	isDone = true;
+	return true;
+}
+
+bool Demo::ArmorPiercerCard::Execute() {
+	if (isDone) return true;
+	if (targets.empty()) { isDone = true; return true; }
+	auto target = targets[0].lock();
+	if (!target || !target->GetValue() || target->GetValue()->IsDead()) { isDone = true; return true; }
+
+	auto enemy = target->GetValue().get();
+	float finalDamage = 5.f;
+
+	if (enemy->GetModifierValue(ModifierType::BuffDefense) > 0.f) {
+		finalDamage *= 2.f;
+	}
+
+	if (owner) {
+		owner->DealDamage(enemy, finalDamage);
+	}
+	isDone = true;
+	return true;
+}
+
+void Demo::ArmorPiercerCard::CollectProjectedSteps(std::vector<ProjectedStep>& out) {
+	float dmg = 5.f;
+	if (!targets.empty()) {
+		if (auto target = targets[0].lock()) {
+			if (auto enemy = target->GetValue()) {
+				if (enemy->GetModifierValue(ModifierType::BuffDefense) > 0.f) dmg *= 2.f;
+			}
+		}
+	}
+	CollectHitsOnTargets(out, dmg, 1);
+}
+
+bool Demo::CruelStrikeCard::Execute() {
+	if (isDone) return true;
+	if (targets.empty()) { isDone = true; return true; }
+	auto target = targets[0].lock();
+	if (!target || !target->GetValue() || target->GetValue()->IsDead()) { isDone = true; return true; }
+
+	auto enemy = target->GetValue().get();
+	float finalDamage = 8.f;
+
+	if (enemy->HasModifier(ModifierType::Weak)) {
+		finalDamage *= 2.f;
+	}
+
+	if (owner) {
+		owner->DealDamage(enemy, finalDamage);
+	}
+	isDone = true;
+	return true;
+}
+
+void Demo::CruelStrikeCard::CollectProjectedSteps(std::vector<ProjectedStep>& out) {
+	float dmg = 8.f;
+	if (!targets.empty()) {
+		if (auto target = targets[0].lock()) {
+			if (auto enemy = target->GetValue()) {
+				if (enemy->HasModifier(ModifierType::Weak)) dmg *= 2.f;
+			}
+		}
+	}
+	CollectHitsOnTargets(out, dmg, 1);
+}
+
+bool Demo::ShieldBashCard::Execute() {
+	if (isDone) return true;
+	if (targets.empty()) { isDone = true; return true; }
+	auto target = targets[0].lock();
+	if (!target || !target->GetValue() || target->GetValue()->IsDead()) { isDone = true; return true; }
+
+	auto enemy = target->GetValue().get();
+
+	if (owner) {
+		float consumedArmor = owner->ConsumeModifier(ModifierType::BuffDefense);
+
+		float finalDamage = consumedArmor * 1.5f;
+
+		owner->DealDamage(enemy, finalDamage);
+	}
+	isDone = true;
+	return true;
+}
+
+void Demo::ShieldBashCard::CollectProjectedSteps(std::vector<ProjectedStep>& out) {
+	float expectedDmg = 0.f;
+	if (owner) {
+		expectedDmg = owner->GetModifierValue(ModifierType::BuffDefense) * 1.5f;
+	}
+	CollectHitsOnTargets(out, expectedDmg, 1);
 }

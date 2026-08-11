@@ -174,4 +174,25 @@ namespace Demo {
 		}
 		temporaryDefense = (std::max)(0.f, GetModifierValue(ModifierType::BuffDefense));
 	}
+
+	float ICombatant::ConsumeModifier(ModifierType type) {
+		float totalVal = 0.f;
+		for (auto it = modifiers.begin(); it != modifiers.end(); ) {
+			if (it->type == type && it->delayTurns <= 0) {
+				totalVal += it->value;
+				it = modifiers.erase(it);
+			}
+			else {
+				++it;
+			}
+		}
+		if (type == ModifierType::BuffDefense) {
+			temporaryDefense = (std::max)(0.f, GetModifierValue(ModifierType::BuffDefense));
+		}
+		return totalVal;
+	}
+
+	float ICombatant::ConsumeAllArmor() {
+		return ConsumeModifier(ModifierType::BuffDefense);
+	}
 }

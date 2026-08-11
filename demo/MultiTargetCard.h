@@ -1,4 +1,4 @@
-#pragma once
+﻿#pragma once
 #include "IStatementCard.h"
 #include "EnemyCard.h"
 #include <vector>
@@ -33,5 +33,6 @@ namespace Demo {
 		bool AttachEnemyCard(std::shared_ptr<EnemyCard> card) override;
 		void ReleaseEnemyCards() override;
 		std::tuple<float, float> GetEnemyCardSlotWorldPosition() const override;
+		const std::vector<std::weak_ptr<EnemyCard>>& GetTargets() const { return targets; }
 	};
 }

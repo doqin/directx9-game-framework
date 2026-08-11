@@ -272,6 +272,7 @@ void Demo::IBattleScene::MovePlayedPileToDiscardPileIfNeeded()
 	}
 	for (auto& card : playedPile) {
 		HidePileCard(card);
+		card->OnDiscard();
 		discardPile.push_back(card);
 	}
 	playedPile.clear();
@@ -435,6 +436,7 @@ void Demo::IBattleScene::MoveHandCardsToDiscardPile()
 			continue;
 		}
 		HidePileCard(cardHand[i]);
+		cardHand[i]->OnDiscard();
 		discardPile.push_back(cardHand[i]);
 		cardHand.erase(cardHand.begin() + i);
 		--i;
@@ -2206,6 +2208,14 @@ void Demo::IBattleScene::DrawHealthAndDefenseBar(const float y, DX9GF::GraphicsD
 			iconRect = { 224, 288, 240, 304 };
 			statusName = L"Stun";
 			statusDescription = L"Cannot take action this turn.";
+		}
+		else if (mod.type == ModifierType::Spark) {
+			int sparkStacks = static_cast<int>(std::round(mod.value));
+			valueText = std::to_wstring(sparkStacks);
+			textColor = 0xFFffaa00;
+			iconRect = { 240, 288, 256, 304 };
+			statusName = L"Spark";
+			statusDescription = L"Accumulates stacks. Deals no damage until detonated.";
 		}
 		else {
 			continue;
