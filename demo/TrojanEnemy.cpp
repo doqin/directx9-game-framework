@@ -74,7 +74,6 @@ void Demo::TrojanEnemy::PatternTrojanBolt(float projDamage) {
 		commandBuffer.PushCommand(std::make_shared<DX9GF::CustomCommand>([this, projDamage](std::function<void(void)> markFinished) {
 			if (auto lock = this->player.lock()) {
 				auto [px, py] = lock->GetWorldPosition();
-				float burnValue = lock->GetMaxHealth() * 0.01f;
 				auto desc = ProjectileDesc(projTexture.get(), projFrames, 12, 8, 8, 16, 16, RNG::Range(-100.f, 100.f), -200.f)
 					.SetTargetPosition(px, py)
 					.SetVelocity(180.f)
@@ -83,7 +82,7 @@ void Demo::TrojanEnemy::PatternTrojanBolt(float projDamage) {
 					.SetDamage(projDamage);
 				desc.SetRandomStatusEffect(
 					ModifierType::Freeze, FREEZE_VALUE, FREEZE_DURATION,
-					ModifierType::Burn, burnValue, BURN_DURATION
+					ModifierType::Burn, BURN_VALUE, BURN_DURATION
 				);
 				projectiles.Spawn(lock, desc);
 			}
@@ -115,7 +114,6 @@ void Demo::TrojanEnemy::PatternVirusSpread(float projDamage) {
 			commandBuffer.PushCommand(std::make_shared<DX9GF::CustomCommand>([this, projDamage, dir, waveAmp, waveFreq, jitterX, jitterY, SPAWN_DISTANCE](std::function<void(void)> markFinished) {
 				if (auto lock = this->player.lock()) {
 					auto [px, py] = lock->GetWorldPosition();
-					float burnValue = lock->GetMaxHealth() * 0.01f;
 
 					float spawnX = px - dir.x * SPAWN_DISTANCE + jitterX;
 					float spawnY = py - dir.y * SPAWN_DISTANCE + jitterY;
@@ -128,7 +126,7 @@ void Demo::TrojanEnemy::PatternVirusSpread(float projDamage) {
 						.SetDamage(projDamage);
 					desc.SetRandomStatusEffect(
 						ModifierType::Freeze, FREEZE_VALUE, FREEZE_DURATION,
-						ModifierType::Burn, burnValue, BURN_DURATION
+						ModifierType::Burn, BURN_VALUE, BURN_DURATION
 					);
 					projectiles.Spawn(lock, desc);
 				}

@@ -17,6 +17,7 @@ namespace Demo {
 
 		bool hasPendingStatus = false;
 		static constexpr float FREEZE_VALUE = 0.4f;
+		static constexpr float BURN_VALUE = 3.f;
 		static constexpr int FREEZE_DURATION = 1;
 		static constexpr int BURN_DURATION = 1;
 	public:
