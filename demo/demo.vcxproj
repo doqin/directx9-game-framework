@@ -217,7 +217,9 @@
     <ClCompile Include="DrawUtils.cpp" />
     <ClCompile Include="EnemyFactory.cpp" />
     <ClCompile Include="ICombatant.cpp" />
-    <ClCompile Include="KernelEnemy.cpp" />
+    <ClCompile Include="KernelEnemy.cpp">
+      <DeploymentContent>true</DeploymentContent>
+    </ClCompile>
     <ClCompile Include="KeyboardNavigator.cpp" />
     <ClCompile Include="Game.cpp" />
     <ClCompile Include="GameItems.cpp" />
@@ -297,7 +299,9 @@
     <ClInclude Include="CupidEnemy.h" />
     <ClInclude Include="CustomBattleScene.h" />
     <ClInclude Include="DamageTextManager.h" />
-    <ClInclude Include="DauDauNPC.h" />
+    <ClInclude Include="DauDauNPC.h">
+      <DeploymentContent>true</DeploymentContent>
+    </ClInclude>
     <ClInclude Include="DebugScene.h" />
     <ClInclude Include="DemonEyeEnemy.h" />
     <ClInclude Include="DialogueLine.h" />
@@ -494,6 +498,15 @@
       <DeploymentContent>true</DeploymentContent>
     </Image>
     <Image Include="assets\items.png">
+      <DeploymentContent>true</DeploymentContent>
+    </Image>
+    <Image Include="assets\kernel.png">
+      <DeploymentContent>true</DeploymentContent>
+    </Image>
+    <Image Include="assets\kernelprojectile.png">
+      <DeploymentContent>true</DeploymentContent>
+    </Image>
+    <Image Include="assets\kernel_2.png">
       <DeploymentContent>true</DeploymentContent>
     </Image>
     <Image Include="assets\Keye-Bullet.png">
