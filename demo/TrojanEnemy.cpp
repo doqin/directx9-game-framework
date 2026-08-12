@@ -6,9 +6,9 @@
 
 void Demo::TrojanEnemy::Init(DX9GF::GraphicsDevice* graphicsDevice, DX9GF::Camera* camera) {
 	texture = std::make_shared<DX9GF::Texture>(graphicsDevice);
-	texture->LoadTexture(L"assets/placeholder.png"); //TODO: Change the enemy asset to a proper one
-	sprite = std::make_shared<DX9GF::AnimatedSprite>(texture.get(), DX9GF::Utils::CreateRectsHorizontal(0, 0, 64, 64, 12), 12);
-	sprite->SetOrigin(32, 32);
+	texture->LoadTexture(L"assets/trojan-Sheet.png");
+	sprite = std::make_shared<DX9GF::AnimatedSprite>(texture.get(), DX9GF::Utils::CreateRectsHorizontal(0, 0, 96, 96, 13), 12);
+	sprite->SetOrigin(48, 48);
 	sprite->SetScale(2.f);
 
 	projTexture = std::make_shared<DX9GF::Texture>(graphicsDevice);

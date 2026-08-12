@@ -590,6 +590,9 @@
     <Image Include="assets\threadalley.png">
       <DeploymentContent>true</DeploymentContent>
     </Image>
+    <Image Include="assets\trojan-Sheet.png">
+      <DeploymentContent>true</DeploymentContent>
+    </Image>
     <Image Include="assets\tutorial.png">
       <DeploymentContent>true</DeploymentContent>
     </Image>
