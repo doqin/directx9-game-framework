@@ -18,7 +18,7 @@ namespace Demo {
 		RECT GetFaceRect() const override { return RECT{ 128, 272, 224, 288 }; }
 
 		bool Execute() override;
-		void CollectProjectedSteps(std::vector<ProjectedStep>& out) override { CollectHitsOnTargets(out, 16.f, 1); }
+		void CollectProjectedSteps(VirtualBattleState& state) override { CollectHitsOnTargets(state, 16.f, 1); }
 
 		void Draw(unsigned long long deltaTime) override;
 	};
@@ -39,9 +39,9 @@ namespace Demo {
 
 		bool Execute() override;
 		// Two passes over the same target - Execute lands 3 damage twice.
-		void CollectProjectedSteps(std::vector<ProjectedStep>& out) override {
-			CollectHitsOnTargets(out, 3.f, 1);
-			CollectHitsOnTargets(out, 3.f, 1);
+		void CollectProjectedSteps(VirtualBattleState& state) override {
+			CollectHitsOnTargets(state, 3.f, 1);
+			CollectHitsOnTargets(state, 3.f, 1);
 		}
 
 		void Draw(unsigned long long deltaTime) override;
@@ -62,7 +62,7 @@ namespace Demo {
 		RECT GetFaceRect() const override { return RECT{ 0, 304, 80, 320 }; }
 
 		bool Execute() override;
-		void CollectProjectedSteps(std::vector<ProjectedStep>& out) override { CollectHitsOnTargets(out, 7.f); }
+		void CollectProjectedSteps(VirtualBattleState& state) override { CollectHitsOnTargets(state, 7.f); }
 
 		void Draw(unsigned long long deltaTime) override;
 	};
@@ -80,7 +80,7 @@ namespace Demo {
 		RECT GetFaceRect() const override { return RECT{ 80, 304, 192, 320 }; }
 
 		bool Execute() override;
-		void CollectProjectedSteps(std::vector<ProjectedStep>& out) override { CollectHitsOnTargets(out, 10.f, 3); }
+		void CollectProjectedSteps(VirtualBattleState& state) override { CollectHitsOnTargets(state, 10.f, 3); }
 
 		void Draw(unsigned long long deltaTime) override;
 	};
@@ -96,14 +96,14 @@ namespace Demo {
 		}
 
 		size_t GetCost() const override { return 1; }
-        std::wstring GetDescription() const override { return L"Apply Poison 3 (damage equals remaining turns)."; }
+		std::wstring GetDescription() const override { return L"Apply Poison 3 (damage equals remaining turns)."; }
 		RECT GetFaceRect() const override { return RECT{ 192, 304, 272, 320 }; }
 
 		bool Execute() override;
 		// No value of its own, so its tick is worth however many turns are on it - and AddModifier
 		// adds to whatever is already there, so poisoning an already-poisoned enemy ticks harder.
-		void CollectProjectedSteps(std::vector<ProjectedStep>& out) override {
-			CollectEffectOnTargets(out, ModifierType::Poison, 0.f, 3, 1);
+		void CollectProjectedSteps(VirtualBattleState& state) override {
+			CollectEffectOnTargets(state, ModifierType::Poison, 0.f, 3, 1);
 		}
 
 		void Draw(unsigned long long deltaTime) override;
@@ -124,8 +124,8 @@ namespace Demo {
 
 		bool Execute() override;
 		// Vulnerable has no value of its own - it is a flat 1.5x on everything queued after it.
-		void CollectProjectedSteps(std::vector<ProjectedStep>& out) override {
-			CollectEffectOnTargets(out, ModifierType::Vulnerable, 0.f, 1, 1);
+		void CollectProjectedSteps(VirtualBattleState& state) override {
+			CollectEffectOnTargets(state, ModifierType::Vulnerable, 0.f, 1, 1);
 		}
 
 		void DrawCardFace(unsigned long long deltaTime) override;
@@ -147,6 +147,9 @@ namespace Demo {
 		bool Execute() override;
 
 		void DrawCardFace(unsigned long long deltaTime) override;
+		void CollectProjectedSteps(VirtualBattleState& state) override {
+			CollectEffectOnTargets(state, ModifierType::Weak, 0.f, 2, 2);
+		}
 	};
 
 	class StunCard : public MultiTargetCard {
@@ -164,6 +167,9 @@ namespace Demo {
 		bool Execute() override;
 
 		void Draw(unsigned long long deltaTime) override;
+		void CollectProjectedSteps(VirtualBattleState& state) override {
+			CollectEffectOnTargets(state, ModifierType::Stun, 0.f, 1, 1);
+		}
 	};
 
 	class IgniteCard : public MultiTargetCard {
@@ -174,14 +180,14 @@ namespace Demo {
 		}
 
 		size_t GetCost() const override { return 1; }
-		std::wstring GetDescription() const override { return L"Apply Burn 2 for 3 turns."; }
+		std::wstring GetDescription() const override { return L"Apply Spark 2 for 3 turns."; }
 
 		// TODO: adjust asset's rect
 		RECT GetFaceRect() const override { return RECT{ 192, 304, 272, 320 }; }
 
 		bool Execute() override;
-		void CollectProjectedSteps(std::vector<ProjectedStep>& out) override {
-			CollectEffectOnTargets(out, ModifierType::Spark, 2.f, 3, 1);
+		void CollectProjectedSteps(VirtualBattleState& state) override {
+			CollectEffectOnTargets(state, ModifierType::Spark, 2.f, 3, 1);
 		}
 		void DrawCardFace(unsigned long long deltaTime) override { DrawSheetFace(deltaTime, GetFaceRect()); }
 	};
@@ -200,9 +206,8 @@ namespace Demo {
 		RECT GetFaceRect() const override { return RECT{ 128, 272, 224, 288 }; }
 
 		bool Execute() override;
-		void CollectProjectedSteps(std::vector<ProjectedStep>& out) override {
-			CollectHitsOnTargets(out, 3.f, 1);
-		}
+		void CollectProjectedSteps(VirtualBattleState& state) override;
+
 		void DrawCardFace(unsigned long long deltaTime) override { DrawSheetFace(deltaTime, GetFaceRect()); }
 	};
 
@@ -224,8 +229,8 @@ namespace Demo {
 		RECT GetFaceRect() const override { return RECT{ 0, 288, 80, 304 }; }
 
 		bool Execute() override;
-		void CollectProjectedSteps(std::vector<ProjectedStep>& out) override {
-			CollectHitsOnTargets(out, static_cast<float>(currentDamage), 1);
+		void CollectProjectedSteps(VirtualBattleState& state) override {
+			CollectHitsOnTargets(state, static_cast<float>(currentDamage), 1);
 		}
 		void DrawCardFace(unsigned long long deltaTime) override { DrawSheetFace(deltaTime, GetFaceRect()); }
 		void OnDiscard() override {
@@ -241,7 +246,7 @@ namespace Demo {
 			SetMaxUses(1);
 		}
 		bool Execute() override;
-		void CollectProjectedSteps(std::vector<ProjectedStep>& out) override;
+		void CollectProjectedSteps(VirtualBattleState& state) override;
 		void DrawCardFace(unsigned long long deltaTime) override;
 		size_t GetCost() const override { return 2; }
 		std::wstring GetDescription() const override { return L"Deal 5 DMG. Deal +4 DMG for each Persistent card currently in the Block."; }
@@ -257,7 +262,7 @@ namespace Demo {
 			SetPersistent(true);
 		}
 		bool Execute() override;
-		void CollectProjectedSteps(std::vector<ProjectedStep>& out) override;
+		void CollectProjectedSteps(VirtualBattleState& state) override;
 		void DrawCardFace(unsigned long long deltaTime) override;
 		size_t GetCost() const override { return 1; }
 		std::wstring GetDescription() const override { return L"Deal 4 DMG. If the previous card killed its target, deal 8 DMG to the lowest HP enemy instead."; }
@@ -274,7 +279,7 @@ namespace Demo {
 			SetMaxUses(1);
 		}
 		bool Execute() override;
-		void CollectProjectedSteps(std::vector<ProjectedStep>& out) override { CollectHitsOnTargets(out, 6.f, 1); }
+		void CollectProjectedSteps(VirtualBattleState& state) override { CollectHitsOnTargets(state, 6.f, 1); }
 		void DrawCardFace(unsigned long long deltaTime) override { DrawSheetFace(deltaTime, GetFaceRect()); }
 		size_t GetCost() const override { return 1; }
 		std::wstring GetDescription() const override { return L"Deal 6 DMG. If fatal, heal 8 HP."; }
@@ -290,7 +295,7 @@ namespace Demo {
 			SetPersistent(false);
 		}
 		bool Execute() override;
-		void CollectProjectedSteps(std::vector<ProjectedStep>& out) override { CollectHitsOnTargets(out, 15.f, 1); }
+		void CollectProjectedSteps(VirtualBattleState& state) override { CollectHitsOnTargets(state, 15.f, 1); }
 		void DrawCardFace(unsigned long long deltaTime) override { DrawSheetFace(deltaTime, GetFaceRect()); }
 		size_t GetCost() const override { return 2; }
 		std::wstring GetDescription() const override { return L"Deal 15 DMG. If fatal, gain 1 Energy next turn."; }
@@ -306,7 +311,7 @@ namespace Demo {
 			SetPersistent(true);
 		}
 		bool Execute() override;
-		void CollectProjectedSteps(std::vector<ProjectedStep>& out) override;
+		void CollectProjectedSteps(VirtualBattleState& state) override;
 		void DrawCardFace(unsigned long long deltaTime) override { DrawSheetFace(deltaTime, GetFaceRect()); }
 		size_t GetCost() const override { return 1; }
 		std::wstring GetDescription() const override { return L"Deal 5 DMG. Deals 2x damage to enemies with Armor."; }
@@ -322,7 +327,7 @@ namespace Demo {
 			SetPersistent(false);
 		}
 		bool Execute() override;
-		void CollectProjectedSteps(std::vector<ProjectedStep>& out) override;
+		void CollectProjectedSteps(VirtualBattleState& state) override;
 		void DrawCardFace(unsigned long long deltaTime) override { DrawSheetFace(deltaTime, GetFaceRect()); }
 		size_t GetCost() const override { return 1; }
 		std::wstring GetDescription() const override { return L"Deal 8 DMG. Deals 2x damage if target is Weak."; }
@@ -338,7 +343,7 @@ namespace Demo {
 			SetPersistent(false);
 		}
 		bool Execute() override;
-		void CollectProjectedSteps(std::vector<ProjectedStep>& out) override;
+		void CollectProjectedSteps(VirtualBattleState& state) override;
 		void DrawCardFace(unsigned long long deltaTime) override { DrawSheetFace(deltaTime, GetFaceRect()); }
 		size_t GetCost() const override { return 1; }
 		std::wstring GetDescription() const override { return L"Consume all your Armor. Deal damage equal to 1.5x the consumed amount."; }

@@ -16,7 +16,7 @@ namespace Demo {
 			: IGameObject(tm, x, y), IStatementCard(tm, 160, 32, x, y) {}
 		bool OnDrop(std::shared_ptr<IDraggable> other) override;
 		bool Execute() override;
-		void CollectProjectedSteps(std::vector<ProjectedStep>& out) override;
+		void CollectProjectedSteps(VirtualBattleState& state) override;
 		bool HasRequiredTargets() const override;
 		void ResetExecution() override;
 		void Update(unsigned long long deltaTime) override;

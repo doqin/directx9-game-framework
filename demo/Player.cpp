@@ -45,6 +45,7 @@ std::shared_ptr<Demo::ICard> Demo::ICard::CreateCard(const std::string& id, std:
 	else if (id == "ShieldBashCard") card = std::make_shared<ShieldBashCard>(transformManager);
 	else if (id == "CruelStrikeCard") card = std::make_shared<CruelStrikeCard>(transformManager);
 	else if (id == "ArmorPiercerCard") card = std::make_shared<ArmorPiercerCard>(transformManager);
+	else if (id == "ExecuteCard") card = std::make_shared<ExecuteCard>(transformManager);
 	if (card && draggableManager && graphicsDevice && camera) {
 		if (auto dragCard = std::dynamic_pointer_cast<IDraggable>(card)) {
 			dragCard->Init(draggableManager, graphicsDevice, camera);
@@ -191,7 +192,7 @@ void Demo::Player::Init(DX9GF::GraphicsDevice* graphicsDevice, DX9GF::ColliderMa
 	DX9GF::ConfigureFootprintEmitter(*footprintEmitter);
 	footprintsEnabled = !isBattling;
 	footprintEmitter->SetEnabled(footprintsEnabled);
-	deck = { "StrikeCard", "StrikeCard", "StrikeCard", "TwinStrikeCard", "TwinStrikeCard" };
+	deck = { "StrikeCard", "TwinStrikeCard", "IgniteCard", "FireDetonationCard", "RagingStrikeCard", "OverloadCard", "ChainReactionCard", "LethalHarvestCard", "ShieldBashCard", "CruelStrikeCard", "ArmorPiercerCard","WeaknessCard"};
 	this->colliderManager->Add(collider);
 	inventoryItems.InitFixedInventory(12);
 }

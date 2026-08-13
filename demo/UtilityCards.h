@@ -21,7 +21,9 @@ namespace Demo {
 		RECT GetFaceRect() const override { return RECT{ 80, 336, 160, 352 }; }
 
 		bool Execute() override;
-		void CollectProjectedSteps(std::vector<ProjectedStep>& out) override { CollectHitsOnTargets(out, 3.f, 1); }
+		void CollectProjectedSteps(VirtualBattleState& state) override {
+			CollectHitsOnTargets(state, 3.f, 1);
+		}
 		void DrawCardFace(unsigned long long deltaTime) override;
 	};
 
@@ -38,8 +40,8 @@ namespace Demo {
 
 		bool Execute() override;
 		// Stacking, so the readout adds 2 per Mark queued ahead of a hit.
-		void CollectProjectedSteps(std::vector<ProjectedStep>& out) override {
-			CollectEffectOnTargets(out, ModifierType::Marked, 2.f, 2, 1);
+		void CollectProjectedSteps(VirtualBattleState& state) override {
+			CollectEffectOnTargets(state, ModifierType::Marked, 2.f, 2, 1);
 		}
 		void DrawCardFace(unsigned long long deltaTime) override;
 	};

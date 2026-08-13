@@ -81,6 +81,7 @@
     <ClCompile Include="EnemyFactory.cpp" />
     <ClCompile Include="KernelEnemy.cpp" />
     <ClCompile Include="ICombatant.cpp" />
+    <ClCompile Include="VirtualBattleState.cpp" />
   </ItemGroup>
   <ItemGroup>
     <ClInclude Include="AdvancedCards.h" />
@@ -167,6 +168,7 @@
     <ClInclude Include="QuestManager.h" />
     <ClInclude Include="KernelEnemy.h" />
     <ClInclude Include="ICombatant.h" />
+    <ClInclude Include="VirtualBattleState.h" />
   </ItemGroup>
   <ItemGroup>
     <ResourceCompile Include="demo.rc" />

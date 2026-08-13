@@ -53,7 +53,8 @@ namespace Demo {
 			return enemy;
 		}
 		else if (type == "KeyeEnemy") {
-			auto enemy = std::make_shared<KeyeEnemy>(tm, RNG::Range(20.0f, 40.0f));
+			//auto enemy = std::make_shared<KeyeEnemy>(tm, RNG::Range(20.0f, 40.0f));
+			auto enemy = std::make_shared<KeyeEnemy>(tm, 20);
 			enemy->Init(gd, cam);
 			return enemy;
 		}
