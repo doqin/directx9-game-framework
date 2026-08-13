@@ -539,7 +539,7 @@ void Demo::ArmorPiercerCard::CollectProjectedSteps(VirtualBattleState& state) {
 	if (!targets.empty()) {
 		if (auto target = targets[0].lock()) {
 			if (auto enemy = target->GetValue()) {
-\				if (state.enemies[enemy.get()].block > 0.f) dmg *= 2.f;
+				if (state.enemies[enemy.get()].block > 0.f) dmg *= 2.f;
 			}
 		}
 	}
@@ -570,7 +570,7 @@ void Demo::CruelStrikeCard::CollectProjectedSteps(VirtualBattleState& state) {
 	if (!targets.empty()) {
 		if (auto target = targets[0].lock()) {
 			if (auto enemy = target->GetValue()) {
-\				if (state.enemies[enemy.get()].weak) dmg *= 2.f;
+				if (state.enemies[enemy.get()].weak) dmg *= 2.f;
 			}
 		}
 	}

@@ -55,13 +55,12 @@ namespace Demo {
 			return enemy;
 		}
 		else if (type == "KeyeEnemy") {
-			//auto enemy = std::make_shared<KeyeEnemy>(tm, RNG::Range(20.0f, 40.0f));
-			auto enemy = std::make_shared<KeyeEnemy>(tm, 20);
+			auto enemy = std::make_shared<KeyeEnemy>(tm, RNG::Range(20.0f, 40.0f));
 			enemy->Init(gd, cam);
 			return enemy;
 		}
 		else if (type == "KernelEnemy") {
-			auto enemy = std::make_shared<KernelEnemy>(tm, RNG::Range(40.0f, 95.0f)); //TODO: Balance this pls
+			auto enemy = std::make_shared<KernelEnemy>(tm, RNG::Range(40.0f, 95.0f));
 			enemy->Init(gd, cam);
 			return enemy;
 		}
