@@ -10,6 +10,7 @@
 #include "KeyeEnemy.h"
 #include "KeyeproEnemy.h"
 #include "KernelEnemy.h"
+#include "TrojanEnemy.h"
 #include "RNG.h"
 
 namespace Demo {
@@ -21,7 +22,8 @@ namespace Demo {
 		if (enemyType == "CupidEnemy")      return { L"assets/bubble-Sheet.png", 64.f, 64.f, 12, 38.f, 45.f };
 		if (enemyType == "VampireBatEnemy") return { L"assets/shrimp-Sheet.png", 64.f, 64.f, 12, 38.f, 45.f };
 		if (enemyType == "WarlockEnemy")    return { L"assets/crawler-Sheet.png", 64.f, 64.f, 12, 38.f, 45.f };
-		if (enemyType == "KernelEnemy")      return { L"assets/bubble-Sheet.png", 64.f, 64.f, 12, 38.f, 45.f }; //TODO: remember to change tex path here too
+		if (enemyType == "KernelEnemy")      return { L"assets/kernel_2.png", 64.f, 64.f, 12, 38.f, 45.f };
+		if (enemyType == "TrojanEnemy")     return { L"assets/trojan-Sheet.png", 96.f, 96.f, 13, 48.f, 48.f };
 
 		return { L"assets/random-Sheet.png", 64.f, 64.f,8, 38.f, 45.f };
 	}
@@ -70,6 +72,11 @@ namespace Demo {
 		}
 		else if (type == "KeyeproEnemy") {
 			auto enemy = std::make_shared<KeyeproEnemy>(tm, 500.0f);
+			enemy->Init(gd, cam);
+			return enemy;
+		}
+		else if (type == "TrojanEnemy") {
+			auto enemy = std::make_shared<TrojanEnemy>(tm, RNG::Range(40.0f, 60.0f));
 			enemy->Init(gd, cam);
 			return enemy;
 		}

@@ -1,5 +1,6 @@
 #include "pch.h"
 #include "ProjectileSystem.h"
+#include "RNG.h"
 #include <cmath>
 
 namespace {
@@ -239,6 +240,31 @@ Demo::ProjectileDesc& Demo::ProjectileDesc::SetGhostSprite(DX9GF::Texture* textu
 	return *this;
 }
 
+Demo::ProjectileDesc& Demo::ProjectileDesc::SetStatusEffect(ModifierType type, float value, int duration)
+{
+	this->hasStatusEffect = true;
+	this->randomizeStatusEffect = false;
+	this->statusEffectType = type;
+	this->statusEffectValue = value;
+	this->statusEffectDuration = duration;
+	return *this;
+}
+
+Demo::ProjectileDesc& Demo::ProjectileDesc::SetRandomStatusEffect(
+	ModifierType typeA, float valueA, int durationA,
+	ModifierType typeB, float valueB, int durationB)
+{
+	this->hasStatusEffect = true;
+	this->randomizeStatusEffect = true;
+	this->statusEffectType = typeA;
+	this->statusEffectValue = valueA;
+	this->statusEffectDuration = durationA;
+	this->altStatusEffectType = typeB;
+	this->altStatusEffectValue = valueB;
+	this->altStatusEffectDuration = durationB;
+	return *this;
+}
+
 unsigned int Demo::ProjectileSystem::GetOrCreateBatch(const ProjectileDesc& desc)
 {
 	for (unsigned int i = 0; i < batches.size(); i++) {
@@ -302,7 +328,13 @@ void Demo::ProjectileSystem::Spawn(const std::shared_ptr<Player>& player, const 
 
 	const bool destroyOnHit = desc.behavior == ProjectileBehavior::Spiral
 		|| desc.behavior == ProjectileBehavior::Boomerang;
-	combats.push_back({ desc.damage, desc.colliderWidth, desc.colliderHeight, destroyOnHit });
+	combats.push_back({
+	desc.damage, desc.colliderWidth, desc.colliderHeight, destroyOnHit,
+	desc.hasStatusEffect, desc.randomizeStatusEffect,
+	desc.statusEffectType, desc.statusEffectValue, desc.statusEffectDuration,
+	desc.altStatusEffectType, desc.altStatusEffectValue, desc.altStatusEffectDuration,
+	false
+		});
 
 	RenderComponent render{};
 	render.batchIndex = GetOrCreateBatch(desc);
@@ -448,6 +480,30 @@ void Demo::ProjectileSystem::Update(unsigned long long deltaTime)
 			playerRect, tr.x, tr.y, tr.rotation,
 			combat.colliderWidth * 0.5f, combat.colliderHeight * 0.5f)) {
 			player->TakeDamage(combat.damage);
+
+			if (combat.hasStatusEffect && !combat.statusApplied) {
+				combat.statusApplied = true;
+				ModifierType type = combat.statusEffectType;
+				int duration = combat.statusEffectDuration;
+				float value = combat.statusEffectValue;
+				if (combat.randomizeStatusEffect) {
+					bool pickAlt = (RNG::Range(1, 2) == 2);
+					if (pickAlt) {
+						type = combat.altStatusEffectType;
+						duration = combat.altStatusEffectDuration;
+						value = combat.altStatusEffectValue;
+					}
+				}
+				switch (type) {
+				case ModifierType::Burn:
+				case ModifierType::Marked:
+					player->AddStackingModifier(type, duration, value, false);
+					break;
+				default:
+					player->AddModifier(type, duration, value, false);
+				}
+			}
+
 			if (combat.destroyOnHit) {
 				dead[i] = 1;
 			}

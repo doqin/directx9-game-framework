@@ -20,7 +20,8 @@ namespace Demo
 		// Heals value at end of turn.
 		Regen,
 		//For ignite and destonate combo
-		Spark
+		Spark,
+		Freeze
 		//...Add more if you have ideas
 	};
 

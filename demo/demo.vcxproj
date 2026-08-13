@@ -217,7 +217,9 @@
     <ClCompile Include="DrawUtils.cpp" />
     <ClCompile Include="EnemyFactory.cpp" />
     <ClCompile Include="ICombatant.cpp" />
-    <ClCompile Include="KernelEnemy.cpp" />
+    <ClCompile Include="KernelEnemy.cpp">
+      <DeploymentContent>true</DeploymentContent>
+    </ClCompile>
     <ClCompile Include="KeyboardNavigator.cpp" />
     <ClCompile Include="Game.cpp" />
     <ClCompile Include="GameItems.cpp" />
@@ -272,6 +274,7 @@
     <ClCompile Include="ThreadAlleyScene.cpp" />
     <ClCompile Include="TransitionCommand.cpp" />
     <ClCompile Include="TreasureChestNPC.cpp" />
+    <ClCompile Include="TrojanEnemy.cpp" />
     <ClCompile Include="TutorialWorldScene.cpp" />
     <ClCompile Include="VampireBatEnemy.cpp" />
     <ClCompile Include="VirtualBattleState.cpp" />
@@ -297,7 +300,9 @@
     <ClInclude Include="CupidEnemy.h" />
     <ClInclude Include="CustomBattleScene.h" />
     <ClInclude Include="DamageTextManager.h" />
-    <ClInclude Include="DauDauNPC.h" />
+    <ClInclude Include="DauDauNPC.h">
+      <DeploymentContent>true</DeploymentContent>
+    </ClInclude>
     <ClInclude Include="DebugScene.h" />
     <ClInclude Include="DemonEyeEnemy.h" />
     <ClInclude Include="DialogueLine.h" />
@@ -360,6 +365,7 @@
     <ClInclude Include="TextInputManager.h" />
     <ClInclude Include="StrikeCard.h" />
     <ClInclude Include="EnergyCard.h" />
+    <ClInclude Include="TrojanEnemy.h" />
     <ClInclude Include="UtilityCards.h" />
     <ClInclude Include="InitBlockCard.h" />
     <ClInclude Include="FinisherCards.h" />
@@ -496,6 +502,15 @@
     <Image Include="assets\items.png">
       <DeploymentContent>true</DeploymentContent>
     </Image>
+    <Image Include="assets\kernel.png">
+      <DeploymentContent>true</DeploymentContent>
+    </Image>
+    <Image Include="assets\kernelprojectile.png">
+      <DeploymentContent>true</DeploymentContent>
+    </Image>
+    <Image Include="assets\kernel_2.png">
+      <DeploymentContent>true</DeploymentContent>
+    </Image>
     <Image Include="assets\Keye-Bullet.png">
       <DeploymentContent>true</DeploymentContent>
     </Image>
@@ -575,6 +590,9 @@
       <DeploymentContent>true</DeploymentContent>
     </Image>
     <Image Include="assets\threadalley.png">
+      <DeploymentContent>true</DeploymentContent>
+    </Image>
+    <Image Include="assets\trojan-Sheet.png">
       <DeploymentContent>true</DeploymentContent>
     </Image>
     <Image Include="assets\tutorial.png">

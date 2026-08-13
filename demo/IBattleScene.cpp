@@ -2135,6 +2135,12 @@ void Demo::IBattleScene::DrawHealthAndDefenseBar(const float y, DX9GF::GraphicsD
 			statusName = L"Spark";
 			statusDescription = L"Accumulates stacks. Deals no damage until detonated.";
 		}
+		else if (mod.type == ModifierType::Freeze) {
+			textColor = 0xFF588dbe;
+			iconRect = { 272, 304, 288, 320 };
+			statusName = L"Freeze";
+			statusDescription = L"Player's movement speed is reduced.";
+		}
 		else {
 			continue;
 		}

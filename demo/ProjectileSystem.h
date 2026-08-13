@@ -2,6 +2,7 @@
 #include "DX9GF.h"
 #include "DX9GFExtras.h"
 #include "Player.h"
+#include "GameItems.h"
 #include <memory>
 #include <vector>
 
@@ -54,6 +55,15 @@ namespace Demo {
 		bool ghostHasSrcRect = false;
 		float ghostOriginX = 0.f;
 		float ghostOriginY = 0.f;
+		// Status effect on hit
+		bool hasStatusEffect = false;
+		bool randomizeStatusEffect = false;
+		ModifierType statusEffectType = ModifierType::Freeze;
+		float statusEffectValue = 0.f;
+		int statusEffectDuration = 0;
+		ModifierType altStatusEffectType = ModifierType::Burn;
+		float altStatusEffectValue = 0.f;
+		int altStatusEffectDuration = 0;
 
 		ProjectileDesc(
 			DX9GF::Texture* texture,
@@ -102,6 +112,11 @@ namespace Demo {
 		ProjectileDesc& SetInitialVelocity(float velocity);
 		ProjectileDesc& SetReturnAcceleration(float acceleration);
 		ProjectileDesc& SetGhostSprite(DX9GF::Texture* texture, RECT srcRect, float originX, float originY);
+		ProjectileDesc& SetStatusEffect(ModifierType type, float value, int duration);
+		ProjectileDesc& SetRandomStatusEffect(
+			ModifierType typeA, float valueA, int durationA,
+			ModifierType typeB, float valueB, int durationB
+		);
 	};
 
 	// Data-oriented replacement for the old IProjectile class hierarchy.
@@ -133,6 +148,15 @@ namespace Demo {
 			float damage;
 			float colliderWidth, colliderHeight;
 			bool destroyOnHit;
+			bool hasStatusEffect;
+			bool randomizeStatusEffect;
+			ModifierType statusEffectType;
+			float statusEffectValue;
+			int statusEffectDuration;
+			ModifierType altStatusEffectType;
+			float altStatusEffectValue;
+			int altStatusEffectDuration;
+			bool statusApplied = false;
 		};
 		struct RenderComponent {
 			unsigned int batchIndex;

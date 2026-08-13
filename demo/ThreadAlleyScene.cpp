@@ -311,6 +311,9 @@ void Demo::ThreadAlleyScene::Init()
 	spawn(950.f, -220.f, "th_extra_02", { "DemonEyeEnemy" }, false, false);
 	spawn(1160.f, -280.f, "th_extra_03", { "KernelEnemy" }, false, false);
 	spawn(1135.f, -525.f, "th_extra_04", {}, false, true);
+	spawn(440.f, -249.f, "th_trojan_01", { "TrojanEnemy", "WarlockEnemy" }, false, false);
+	spawn(440.f, -585.f, "th_trojan_02", { "TrojanEnemy", "KernelEnemy" }, false, false);
+	spawn(-984.f, -1064.f, "th_trojan_03", { "TrojanEnemy", "DemonEyeEnemy" }, false, false);
 
 	draggableManager = std::make_shared<Demo::DraggableManager>();
 	inventoryMenu = std::make_shared<InventoryMenu>(game, player, transformManager, draggableManager, &uiCamera, font.get());
