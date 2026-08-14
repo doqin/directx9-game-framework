@@ -2131,7 +2131,7 @@ void Demo::IBattleScene::DrawHealthAndDefenseBar(const float y, DX9GF::GraphicsD
 			int sparkStacks = static_cast<int>(std::round(mod.value));
 			valueText = std::to_wstring(sparkStacks);
 			textColor = 0xFFffaa00;
-			iconRect = { 240, 288, 256, 304 };
+			iconRect = { 272, 320, 288, 336 };
 			statusName = L"Spark";
 			statusDescription = L"Accumulates stacks. Deals no damage until detonated.";
 		}

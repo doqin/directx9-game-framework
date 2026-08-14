@@ -66,7 +66,7 @@ namespace Demo {
 		DX9GF::ColliderManager* colliderManager = nullptr;
 		DX9GF::Camera* camera = nullptr;
 
-		int gold = 1000;
+		int gold = 100;
 		std::vector<std::string> deck;
 
 		std::vector<std::string> inventoryCards;

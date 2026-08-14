@@ -263,7 +263,7 @@ void Demo::IEnemy::Draw(DX9GF::GraphicsDevice* graphicsDevice, DX9GF::Camera* ca
 			else if (mod.type == ModifierType::Spark) {
 				statusName = L"Spark";
 				statusDescription = L"Accumulates stacks. Deals no damage until detonated.";
-				sourceRect = { 240, 288, 256, 304 };
+				sourceRect = { 272, 320, 288, 336 };
 			}
 
 			float iconX = GetWorldX() + statusOffsetX;

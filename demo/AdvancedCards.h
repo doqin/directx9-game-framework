@@ -175,15 +175,13 @@ namespace Demo {
 	class IgniteCard : public MultiTargetCard {
 	public:
 		IgniteCard(std::weak_ptr<DX9GF::TransformManager> tm, float x = 0, float y = 0)
-			// TODO: adjust drag area
 			: IGameObject(tm, x, y), MultiTargetCard(tm, 1, L"Ignite", x, y, 160, 32) {
 		}
 
 		size_t GetCost() const override { return 1; }
 		std::wstring GetDescription() const override { return L"Apply Spark 2 for 3 turns."; }
 
-		// TODO: adjust asset's rect
-		RECT GetFaceRect() const override { return RECT{ 192, 304, 272, 320 }; }
+		RECT GetFaceRect() const override { return RECT{ 80, 400, 160, 416 }; }
 
 		bool Execute() override;
 		void CollectProjectedSteps(VirtualBattleState& state) override {
@@ -195,15 +193,13 @@ namespace Demo {
 	class FireDetonationCard : public MultiTargetCard {
 	public:
 		FireDetonationCard(std::weak_ptr<DX9GF::TransformManager> tm, float x = 0, float y = 0)
-			// TODO: adjust drag area
-			: IGameObject(tm, x, y), MultiTargetCard(tm, 1, L"Fire Deton.", x, y, 192, 32) {
+			: IGameObject(tm, x, y), MultiTargetCard(tm, 1, L"Fire Deton.", x, y, 224, 32) {
 			SetPersistent(false);
 		}
 
 		size_t GetCost() const override { return 2; }
 		std::wstring GetDescription() const override { return L"Deal 3 damage. Consumes all Burn on target to deal 5 extra damage per stack."; }
-		// TODO: adjust asset's rect
-		RECT GetFaceRect() const override { return RECT{ 128, 272, 224, 288 }; }
+		RECT GetFaceRect() const override { return RECT{ 160, 400, 272, 416 }; }
 
 		bool Execute() override;
 		void CollectProjectedSteps(VirtualBattleState& state) override;
@@ -217,7 +213,6 @@ namespace Demo {
 		bool hasExecutedThisCycle = false;
 	public:
 		RagingStrikeCard(std::weak_ptr<DX9GF::TransformManager> tm, float x = 0, float y = 0)
-			// TODO: adjust drag area
 			: IGameObject(tm, x, y), MultiTargetCard(tm, 1, L"Raging Strike", x, y, 192, 32) {
 		}
 
@@ -225,8 +220,7 @@ namespace Demo {
 		std::wstring GetDescription() const override {
 			return L"Deal " + std::to_wstring(currentDamage) + L" damage. Increases this card's damage by 3 when played.";
 		}
-		// TODO: adjust asset's rect
-		RECT GetFaceRect() const override { return RECT{ 0, 288, 80, 304 }; }
+		RECT GetFaceRect() const override { return RECT{ 80, 416, 176, 432 }; }
 
 		bool Execute() override;
 		void CollectProjectedSteps(VirtualBattleState& state) override {
@@ -240,7 +234,6 @@ namespace Demo {
 	class OverloadCard : public MultiTargetCard {
 	public:
 		OverloadCard(std::weak_ptr<DX9GF::TransformManager> tm)
-			// TODO: adjust drag area
 			: IGameObject(tm, 0, 0), MultiTargetCard(tm, 1, L"Overload", 0, 0, 160, 32) {
 			SetPersistent(false);
 			SetMaxUses(1);
@@ -250,15 +243,13 @@ namespace Demo {
 		void DrawCardFace(unsigned long long deltaTime) override;
 		size_t GetCost() const override { return 2; }
 		std::wstring GetDescription() const override { return L"Deal 5 DMG. Deal +4 DMG for each Persistent card currently in the Block."; }
-		// TODO: adjust asset's rect
-		RECT GetFaceRect() const override { return RECT{ 128, 272, 224, 288 }; }
+		RECT GetFaceRect() const override { return RECT{ 0, 416, 80, 432 }; }
 	};
 
 	class ChainReactionCard : public MultiTargetCard {
 	public:
 		ChainReactionCard(std::weak_ptr<DX9GF::TransformManager> tm)
-			// TODO: adjust drag area
-			: IGameObject(tm, 0, 0), MultiTargetCard(tm, 1, L"Chain Reaction", 0, 0, 160, 32) {
+			: IGameObject(tm, 0, 0), MultiTargetCard(tm, 1, L"Chain Reaction", 0, 0, 192, 32) {
 			SetPersistent(true);
 		}
 		bool Execute() override;
@@ -266,15 +257,13 @@ namespace Demo {
 		void DrawCardFace(unsigned long long deltaTime) override;
 		size_t GetCost() const override { return 1; }
 		std::wstring GetDescription() const override { return L"Deal 4 DMG. If the previous card killed its target, deal 8 DMG to the lowest HP enemy instead."; }
-		// TODO: adjust asset's rect
-		RECT GetFaceRect() const override { return RECT{ 0, 304, 80, 320 }; }
+		RECT GetFaceRect() const override { return RECT{ 176, 416, 272, 432 }; }
 	};
 
 	class LethalHarvestCard : public MultiTargetCard {
 	public:
 		LethalHarvestCard(std::weak_ptr<DX9GF::TransformManager> tm)
-			// TODO: adjust drag area
-			: IGameObject(tm, 0, 0), MultiTargetCard(tm, 1, L"Lethal Harvest", 0, 0, 160, 32) {
+			: IGameObject(tm, 0, 0), MultiTargetCard(tm, 1, L"Lethal Harvest", 0, 0, 192, 32) {
 			SetPersistent(false);
 			SetMaxUses(1);
 		}
@@ -283,14 +272,12 @@ namespace Demo {
 		void DrawCardFace(unsigned long long deltaTime) override { DrawSheetFace(deltaTime, GetFaceRect()); }
 		size_t GetCost() const override { return 1; }
 		std::wstring GetDescription() const override { return L"Deal 6 DMG. If fatal, heal 8 HP."; }
-		// TODO: adjust asset's rect
-		RECT GetFaceRect() const override { return RECT{ 128, 288, 224, 304 }; }
+		RECT GetFaceRect() const override { return RECT{ 80, 448, 176, 464 }; }
 	};
 
 	class ExecuteCard : public MultiTargetCard {
 	public:
 		ExecuteCard(std::weak_ptr<DX9GF::TransformManager> tm)
-			// TODO: adjust drag area
 			: IGameObject(tm, 0, 0), MultiTargetCard(tm, 1, L"Execute", 0, 0, 160, 32) {
 			SetPersistent(false);
 		}
@@ -299,15 +286,13 @@ namespace Demo {
 		void DrawCardFace(unsigned long long deltaTime) override { DrawSheetFace(deltaTime, GetFaceRect()); }
 		size_t GetCost() const override { return 2; }
 		std::wstring GetDescription() const override { return L"Deal 15 DMG. If fatal, gain 1 Energy next turn."; }
-		// TODO: adjust asset's rect
-		RECT GetFaceRect() const override { return RECT{ 128, 272, 224, 288 }; }
+		RECT GetFaceRect() const override { return RECT{ 0, 448, 80, 464 }; }
 	};
 
 	class ArmorPiercerCard : public MultiTargetCard {
 	public:
 		ArmorPiercerCard(std::weak_ptr<DX9GF::TransformManager> tm)
-			// TODO: adjust drag area
-			: IGameObject(tm, 0, 0), MultiTargetCard(tm, 1, L"Armor Piercer", 0, 0, 160, 32) {
+			: IGameObject(tm, 0, 0), MultiTargetCard(tm, 1, L"Armor Piercer", 0, 0, 192, 32) {
 			SetPersistent(true);
 		}
 		bool Execute() override;
@@ -315,15 +300,13 @@ namespace Demo {
 		void DrawCardFace(unsigned long long deltaTime) override { DrawSheetFace(deltaTime, GetFaceRect()); }
 		size_t GetCost() const override { return 1; }
 		std::wstring GetDescription() const override { return L"Deal 5 DMG. Deals 2x damage to enemies with Armor."; }
-		// TODO: adjust asset's rect
-		RECT GetFaceRect() const override { return RECT{ 0, 304, 80, 320 }; }
+		RECT GetFaceRect() const override { return RECT{ 0, 432, 96, 448 }; }
 	};
 
 	class CruelStrikeCard : public MultiTargetCard {
 	public:
 		CruelStrikeCard(std::weak_ptr<DX9GF::TransformManager> tm)
-			// TODO: adjust drag area
-			: IGameObject(tm, 0, 0), MultiTargetCard(tm, 1, L"Cruel Strike", 0, 0, 160, 32) {
+			: IGameObject(tm, 0, 0), MultiTargetCard(tm, 1, L"Cruel Strike", 0, 0, 192, 32) {
 			SetPersistent(false);
 		}
 		bool Execute() override;
@@ -331,14 +314,12 @@ namespace Demo {
 		void DrawCardFace(unsigned long long deltaTime) override { DrawSheetFace(deltaTime, GetFaceRect()); }
 		size_t GetCost() const override { return 1; }
 		std::wstring GetDescription() const override { return L"Deal 8 DMG. Deals 2x damage if target is Weak."; }
-		// TODO: adjust asset's rect
-		RECT GetFaceRect() const override { return RECT{ 96, 320, 192, 336 }; }
+		RECT GetFaceRect() const override { return RECT{ 96, 432, 192, 448 }; }
 	};
 
 	class ShieldBashCard : public MultiTargetCard {
 	public:
 		ShieldBashCard(std::weak_ptr<DX9GF::TransformManager> tm)
-			// TODO: adjust drag area
 			: IGameObject(tm, 0, 0), MultiTargetCard(tm, 1, L"Shield Bash", 0, 0, 160, 32) {
 			SetPersistent(false);
 		}
@@ -347,7 +328,6 @@ namespace Demo {
 		void DrawCardFace(unsigned long long deltaTime) override { DrawSheetFace(deltaTime, GetFaceRect()); }
 		size_t GetCost() const override { return 1; }
 		std::wstring GetDescription() const override { return L"Consume all your Armor. Deal damage equal to 1.5x the consumed amount."; }
-		// TODO: adjust asset's rect
-		RECT GetFaceRect() const override { return RECT{ 96, 240, 112, 256 }; }
+		RECT GetFaceRect() const override { return RECT{ 192, 432, 272, 448 }; }
 	};
 }

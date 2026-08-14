@@ -192,7 +192,7 @@ void Demo::Player::Init(DX9GF::GraphicsDevice* graphicsDevice, DX9GF::ColliderMa
 	DX9GF::ConfigureFootprintEmitter(*footprintEmitter);
 	footprintsEnabled = !isBattling;
 	footprintEmitter->SetEnabled(footprintsEnabled);
-	deck = { "StrikeCard", "TwinStrikeCard", "IgniteCard", "FireDetonationCard", "RagingStrikeCard", "OverloadCard", "ChainReactionCard", "LethalHarvestCard", "ShieldBashCard", "CruelStrikeCard", "ArmorPiercerCard","WeaknessCard"};
+	deck = { "StrikeCard", "StrikeCard", "StrikeCard", "TwinStrikeCard", "TwinStrikeCard" };
 	this->colliderManager->Add(collider);
 	inventoryItems.InitFixedInventory(12);
 }
