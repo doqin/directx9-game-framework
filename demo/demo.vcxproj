@@ -218,7 +218,7 @@
     <ClCompile Include="EnemyFactory.cpp" />
     <ClCompile Include="ICombatant.cpp" />
     <ClCompile Include="KernelEnemy.cpp">
-      <DeploymentContent>true</DeploymentContent>
+      <DeploymentContent>false</DeploymentContent>
     </ClCompile>
     <ClCompile Include="KeyboardNavigator.cpp" />
     <ClCompile Include="Game.cpp" />
@@ -301,7 +301,7 @@
     <ClInclude Include="CustomBattleScene.h" />
     <ClInclude Include="DamageTextManager.h" />
     <ClInclude Include="DauDauNPC.h">
-      <DeploymentContent>true</DeploymentContent>
+      <DeploymentContent>false</DeploymentContent>
     </ClInclude>
     <ClInclude Include="DebugScene.h" />
     <ClInclude Include="DemonEyeEnemy.h" />
