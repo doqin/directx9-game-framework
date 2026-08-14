@@ -6,13 +6,13 @@
 
 void Demo::TrojanEnemy::Init(DX9GF::GraphicsDevice* graphicsDevice, DX9GF::Camera* camera) {
 	texture = std::make_shared<DX9GF::Texture>(graphicsDevice);
-	texture->LoadTexture(L"assets/placeholder.png"); //TODO: Change the enemy asset to a proper one
-	sprite = std::make_shared<DX9GF::AnimatedSprite>(texture.get(), DX9GF::Utils::CreateRectsHorizontal(0, 0, 64, 64, 12), 12);
-	sprite->SetOrigin(32, 32);
+	texture->LoadTexture(L"assets/trojan.png"); //TODO: Change the enemy asset to a proper one
+	sprite = std::make_shared<DX9GF::AnimatedSprite>(texture.get(), DX9GF::Utils::CreateRectsHorizontal(0, 0, 96, 96, 12), 12);
+	sprite->SetOrigin(52, 52);
 	sprite->SetScale(2.f);
 
 	projTexture = std::make_shared<DX9GF::Texture>(graphicsDevice);
-	projTexture->LoadTexture(L"assets/placeholder-round-projectile.png"); //TODO: Change the projectile asset to a proper one
+	projTexture->LoadTexture(L"assets/arrow_1.png"); //TODO: Change the projectile asset to a proper one
 	projFrames = DX9GF::Utils::CreateRectsHorizontal(0, 0, 16, 16, 4);
 
 	SetGoldReward(static_cast<int>(std::round(GetMaxHealth())));
