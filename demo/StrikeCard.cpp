@@ -2,7 +2,7 @@
 #include "StrikeCard.h"
 #include "DrawUtils.h"
 #include "IBattleScene.h"
-
+#include "VirtualBattleState.h"
 bool Demo::StrikeCard::OnDrop(std::shared_ptr<IDraggable> other)
 {
 	auto incomingEnemyCard = std::dynamic_pointer_cast<EnemyCard>(other);
@@ -61,11 +61,11 @@ bool Demo::StrikeCard::Execute()
 	return true;
 }
 
-void Demo::StrikeCard::CollectProjectedSteps(std::vector<ProjectedStep>& out)
+void Demo::StrikeCard::CollectProjectedSteps(VirtualBattleState& state)
 {
 	if (auto lock = enemyCard.lock()) {
 		if (auto enemy = lock->GetValue()) {
-			out.push_back(ProjectedStep::Hit(enemy.get(), 5.f));
+			state.SimulateDamage(enemy.get(), 5.f);
 		}
 	}
 }

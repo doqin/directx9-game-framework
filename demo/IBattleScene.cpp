@@ -13,7 +13,7 @@
 #include "BossWorldScene.h"
 #include "SettingsManager.h"
 #include "DrawUtils.h"
-
+#include "VirtualBattleState.h"
 #include "RNG.h"
 namespace {
 	constexpr float HiddenPileX = -10000.f;
@@ -272,6 +272,7 @@ void Demo::IBattleScene::MovePlayedPileToDiscardPileIfNeeded()
 	}
 	for (auto& card : playedPile) {
 		HidePileCard(card);
+		card->OnDiscard();
 		discardPile.push_back(card);
 	}
 	playedPile.clear();
@@ -435,6 +436,7 @@ void Demo::IBattleScene::MoveHandCardsToDiscardPile()
 			continue;
 		}
 		HidePileCard(cardHand[i]);
+		cardHand[i]->OnDiscard();
 		discardPile.push_back(cardHand[i]);
 		cardHand.erase(cardHand.begin() + i);
 		--i;
@@ -1937,120 +1939,38 @@ void Demo::IBattleScene::EnemyAttackDraw(unsigned long long deltaTime)
 void Demo::IBattleScene::ComputeProjectedDamage(std::unordered_map<IEnemy*, float>& out)
 {
 	out.clear();
-	if (!battlePlayer) {
-		return;
-	}
+	if (!battlePlayer) return;
 
-	// Init resolves before the main program, so the readout walks them in that order - a Vulnerable
-	// played from init has to be standing before the main block's hits are counted.
-	std::vector<IStatementCard::ProjectedStep> steps;
+	VirtualBattleState state;
+	state.Initialize(battlePlayer, enemies);
+
+	//run the simulation
 	const std::array<std::shared_ptr<IBlockCard>, 2> blocks = { initBlockCard, mainBlockCard };
 	for (const auto& block : blocks) {
-		if (!block) {
-			continue;
-		}
+		if (!block) continue;
 		for (const auto& weak : block->GetStatementCards()) {
 			if (auto card = weak.lock()) {
-				card->CollectProjectedSteps(steps);
+				card->CollectProjectedSteps(state);
 			}
 		}
 	}
-	// The program is replayed step by step rather than measured against the state on screen: a
-	// Vulnerable, Mark or attack buff queued ahead of a hit is already standing by the time that
-	// hit resolves, and the readout has to show it that way.
-	float buffDamage = battlePlayer->GetModifierValue(ModifierType::BuffDamage);
-	// No card applies Weak to the player, so this one cannot change partway through.
-	const bool isWeak = battlePlayer->HasModifier(ModifierType::Weak);
 
-	struct EnemySim {
-		// Spent as it absorbs, so it is carried across hits rather than applied to each one - the
-		// same bookkeeping temporaryDefense gets in CalculateActualDamage.
-		float block;
-		float marked;
-		bool vulnerable;
-		// Paid once at the end-of-turn tick rather than per hit.
-		float poisonValue;
-		int poisonDuration;
-		float burn;
-	};
-	// Seeded for every living enemy, not just the ones the program targets: the tick fires on all
-	// of them, so an enemy already burning takes damage from executing even if nothing aims at it.
-	std::unordered_map<IEnemy*, EnemySim> sim;
+	//cal the dmg
 	for (const auto& enemy : enemies) {
-		if (!enemy || enemy->IsDead()) {
-			continue;
-		}
-		sim.emplace(enemy.get(), EnemySim{
-			(std::max)(0.f, enemy->GetTemporaryDefense()),
-			enemy->GetModifierValue(ModifierType::Marked),
-			enemy->HasModifier(ModifierType::Vulnerable),
-			enemy->GetModifierValue(ModifierType::Poison),
-			ActiveModifierDuration(*enemy, ModifierType::Poison),
-			enemy->GetModifierValue(ModifierType::Burn)
-			});
-	}
+		if (!enemy || enemy->IsDead()) continue;
 
-	for (const auto& step : steps) {
-		if (step.kind == IStatementCard::ProjectedStep::Kind::PlayerModifier) {
-			if (step.modifier == ModifierType::BuffDamage) {
-				buffDamage += step.value;
-			}
-			continue;
-		}
-		if (!step.target) {
-			continue;
-		}
-		const auto simIt = sim.find(step.target);
-		if (simIt == sim.end()) {
-			continue;
-		}
-		EnemySim& state = simIt->second;
+		float healthLost = enemy->GetHealth() - state.enemies[enemy.get()].health;
+		float armorLost = enemy->GetTemporaryDefense() - state.enemies[enemy.get()].block;
 
-		if (step.kind == IStatementCard::ProjectedStep::Kind::EnemyModifier) {
-			switch (step.modifier) {
-				// AddStackingModifier accumulates the value; Vulnerable is a flag either way.
-			case ModifierType::Marked: state.marked += step.value; break;
-			case ModifierType::Vulnerable: state.vulnerable = true; break;
-			case ModifierType::Burn: state.burn += step.value; break;
-				// AddModifier adds to the duration already there, and takes the larger value.
-			case ModifierType::Poison:
-				state.poisonDuration += step.duration;
-				state.poisonValue = (std::max)(state.poisonValue, step.value);
-				break;
-			default: break;
-			}
-			continue;
+		float tick = state.enemies[enemy.get()].burn;
+		if (state.enemies[enemy.get()].poisonDuration > 0) {
+			tick += (state.enemies[enemy.get()].poisonValue > 0.f) ? state.enemies[enemy.get()].poisonValue : static_cast<float>(state.enemies[enemy.get()].poisonDuration);
 		}
 
-		// ICombatant::CalculateOutgoingDamage, then CalculateActualDamage: Marked is a flat bonus
-		// per hit and lands before Vulnerable scales the total, which lands before block.
-		float damage = step.value + buffDamage;
-		if (isWeak) {
-			damage *= 0.75f;
-		}
-		damage += state.marked;
-		if (state.vulnerable) {
-			damage *= 1.5f;
-		}
-		const float absorbed = (std::min)(state.block, damage);
-		state.block -= absorbed;
-		damage -= absorbed;
-
-		out[step.target] += damage;
-	}
-
-	// QueueToEnemyAttack ticks every enemy's effects the moment the program finishes, so the tick
-	// is part of what executing costs them. Both bypass block and Vulnerable - TriggerEffects
-	// zeroes them around the poison hit, and TakeIndirectDamage ignores them for burn - so these
-	// go on raw.
-	for (const auto& [enemy, state] : sim) {
-		float tick = state.burn;
-		if (state.poisonDuration > 0) {
-			// Poison with no value of its own is worth its remaining turns.
-			tick += (state.poisonValue > 0.f) ? state.poisonValue : static_cast<float>(state.poisonDuration);
-		}
-		if (tick > 0.f) {
-			out[enemy] += tick;
+		float totalProjected = healthLost + armorLost + tick;
+		
+		if (totalProjected > 0.f) {
+			out[enemy.get()] = totalProjected;
 		}
 	}
 }
@@ -2206,6 +2126,14 @@ void Demo::IBattleScene::DrawHealthAndDefenseBar(const float y, DX9GF::GraphicsD
 			iconRect = { 224, 288, 240, 304 };
 			statusName = L"Stun";
 			statusDescription = L"Cannot take action this turn.";
+		}
+		else if (mod.type == ModifierType::Spark) {
+			int sparkStacks = static_cast<int>(std::round(mod.value));
+			valueText = std::to_wstring(sparkStacks);
+			textColor = 0xFFffaa00;
+			iconRect = { 272, 320, 288, 336 };
+			statusName = L"Spark";
+			statusDescription = L"Accumulates stacks. Deals no damage until detonated.";
 		}
 		else if (mod.type == ModifierType::Freeze) {
 			textColor = 0xFF588dbe;

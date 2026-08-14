@@ -36,7 +36,16 @@ std::shared_ptr<Demo::ICard> Demo::ICard::CreateCard(const std::string& id, std:
 	else if (id == "SystemPurgeCard") card = std::make_shared<SystemPurgeCard>(transformManager);
 	else if (id == "OverdriveCard") card = std::make_shared<OverdriveCard>(transformManager);
 	else if (id == "MainBlockCard") card = std::make_shared<MainBlockCard>(transformManager);
-
+	else if (id == "IgniteCard") card = std::make_shared<IgniteCard>(transformManager);
+	else if (id == "FireDetonationCard") card = std::make_shared<FireDetonationCard>(transformManager);
+	else if (id == "RagingStrikeCard") card = std::make_shared<RagingStrikeCard>(transformManager);
+	else if (id == "OverloadCard") card = std::make_shared<OverloadCard>(transformManager);
+	else if (id == "ChainReactionCard") card = std::make_shared<ChainReactionCard>(transformManager);
+	else if (id == "LethalHarvestCard") card = std::make_shared<LethalHarvestCard>(transformManager);
+	else if (id == "ShieldBashCard") card = std::make_shared<ShieldBashCard>(transformManager);
+	else if (id == "CruelStrikeCard") card = std::make_shared<CruelStrikeCard>(transformManager);
+	else if (id == "ArmorPiercerCard") card = std::make_shared<ArmorPiercerCard>(transformManager);
+	else if (id == "ExecuteCard") card = std::make_shared<ExecuteCard>(transformManager);
 	if (card && draggableManager && graphicsDevice && camera) {
 		if (auto dragCard = std::dynamic_pointer_cast<IDraggable>(card)) {
 			dragCard->Init(draggableManager, graphicsDevice, camera);

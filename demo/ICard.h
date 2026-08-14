@@ -1,4 +1,4 @@
-#pragma once
+﻿#pragma once
 #include "DX9GFExtras.h"
 
 namespace Demo {
@@ -115,5 +115,6 @@ namespace Demo {
 				}
 			}
 		}
+		virtual void OnDiscard() {}
 	};
 }

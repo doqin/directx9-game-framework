@@ -1,7 +1,7 @@
 #include "pch.h"
 #include "UtilityCards.h"
 #include "IBattleScene.h"
-
+#include "VirtualBattleState.h"
 // Faces live in the rows added below y = 336 in assets/ui.png. Each is a 16px strip drawn at 2x,
 // so a card's dragArea in the header must be exactly twice its rect here.
 

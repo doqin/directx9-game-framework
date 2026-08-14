@@ -277,6 +277,7 @@
     <ClCompile Include="TrojanEnemy.cpp" />
     <ClCompile Include="TutorialWorldScene.cpp" />
     <ClCompile Include="VampireBatEnemy.cpp" />
+    <ClCompile Include="VirtualBattleState.cpp" />
     <ClCompile Include="WarlockEnemy.cpp" />
     <ClCompile Include="World1Scene.cpp" />
     <ClCompile Include="TextButton.cpp" />
@@ -375,6 +376,7 @@
     <ClInclude Include="TreasureChestNPC.h" />
     <ClInclude Include="TutorialWorldScene.h" />
     <ClInclude Include="VampireBatEnemy.h" />
+    <ClInclude Include="VirtualBattleState.h" />
     <ClInclude Include="WarlockEnemy.h" />
     <ClInclude Include="World1Scene.h" />
   </ItemGroup>
