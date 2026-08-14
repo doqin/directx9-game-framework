@@ -34,6 +34,7 @@ namespace DX9GF {
 		) : width(width), height(height), originX(0), originY(0), ITrigger(transformManager, parent, x, y, rotation, scaleX, scaleY) {}
 		void SetOrigin(float x, float y);
 		void SetOriginCenter();
+		void SetSize(float width, float height);
 		float GetOriginX() const;
 		float GetOriginY() const;
 		bool IsHovering(unsigned long long deltaTime) override;

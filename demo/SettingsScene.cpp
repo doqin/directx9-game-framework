@@ -315,6 +315,10 @@ namespace Demo
 			btn->SetSpriteRects(DX9GF::Utils::CreateRectsVertical(0, 0, 16, 16, 3));
 			btn->SetSpriteScale(2.f, 2.f);
 
+			//long key names ("Shift", "Backspace") widen the button instead of spilling out of it
+			btn->SetSliceMargins(4, 4);
+			btn->SetAutoResize(true, 10.f);
+
 			btn->SetTextScale(1.0f, 1.0f);
 			btn->SetTextColor(D3DCOLOR_XRGB(0, 0, 0));
 

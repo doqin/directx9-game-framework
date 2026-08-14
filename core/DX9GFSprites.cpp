@@ -323,6 +323,19 @@ void DX9GF::NineSliceSprite::SetTargetSize(float width, float height)
 	targetHeight = height;
 }
 
+void DX9GF::NineSliceSprite::SetSrcRect(RECT srcRect)
+{
+	this->srcRect = srcRect;
+}
+
+void DX9GF::NineSliceSprite::SetMargins(int left, int top, int right, int bottom)
+{
+	leftMargin = left;
+	topMargin = top;
+	rightMargin = right;
+	bottomMargin = bottom;
+}
+
 void DX9GF::NineSliceSprite::Begin()
 {
 	p_sprite->OnLostDevice();

@@ -87,6 +87,12 @@ void DX9GF::RectangleTrigger::SetOriginCenter()
 	originY = height * 0.5f;
 }
 
+void DX9GF::RectangleTrigger::SetSize(float width, float height)
+{
+	this->width = width;
+	this->height = height;
+}
+
 float DX9GF::RectangleTrigger::GetOriginX() const
 {
 	return originX;

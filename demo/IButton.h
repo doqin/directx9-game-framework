@@ -52,6 +52,14 @@ namespace Demo
 		//plays this button's hover sound (used by keyboard navigation when the cursor lands on it).
 		void PlayHoverSfx();
 
+		//resizes the button and keeps its trigger box in sync.
+		virtual void SetSize(float w, float h)
+		{
+			this->width = w;
+			this->height = h;
+			if (this->trigger) this->trigger->SetSize(w, h);
+		}
+
 		void SetState(ButtonState state) { this->currentState = state; }
 		ButtonState GetState() const { return this->currentState; }
 		std::shared_ptr<DX9GF::RectangleTrigger> GetTrigger() { return this->trigger; }

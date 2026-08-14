@@ -1,5 +1,7 @@
 ﻿#include "pch.h"
 #include "TextIconButton.h"
+#include <algorithm>
+#include <cmath>
 
 namespace Demo {
     TextIconButton::TextIconButton(std::shared_ptr<DX9GF::TransformManager> tm, float displayX, float displayY, int imgW, int imgH,
@@ -14,6 +16,52 @@ namespace Demo {
         this->stateOffsetsY[ButtonState::HOVER] = 1.0f;
         this->stateOffsetsY[ButtonState::CLICKED] = 3.0f;
         this->stateOffsetsY[ButtonState::LISTENING] = 3.0f;
+
+        //never shrink below the size the button was designed at
+        this->minWidth = static_cast<float>(imgW);
+    }
+
+    void TextIconButton::SetAutoResize(bool enabled, float paddingX)
+    {
+        this->autoResize = enabled;
+        this->autoResizePaddingX = paddingX;
+    }
+
+    std::wstring TextIconButton::GetCurrentText() const
+    {
+        return this->dynamicLabelGetter ? this->dynamicLabelGetter() : this->label;
+    }
+
+    float TextIconButton::MeasureTextWidth(const std::wstring& text) const
+    {
+        if (!this->fontSprite || text.empty()) return 0.0f;
+
+        this->fontSprite->SetText(std::wstring(text));
+        return this->fontSprite->GetWidth() * this->textScaleX;
+    }
+
+    void TextIconButton::ApplyAutoResize()
+    {
+        if (!this->autoResize || !this->fontSprite) return;
+
+        float wanted = MeasureTextWidth(GetCurrentText()) + this->autoResizePaddingX * 2.0f;
+        wanted = std::max(wanted, this->minWidth);
+        //the caps may not overlap, otherwise the sliced sprite folds into itself
+        wanted = std::max(wanted, GetSliceCapsWidth());
+
+        //snap to whole pixels so the stretched centre stays crisp
+        wanted = std::floor(wanted + 0.5f);
+
+        if (std::fabs(wanted - this->width) > 0.5f) {
+            SetSize(wanted, this->height);
+        }
+    }
+
+    void TextIconButton::Update(unsigned long long deltaTime)
+    {
+        //resize before the trigger runs so hovering matches what is drawn
+        ApplyAutoResize();
+        IButton::Update(deltaTime);
     }
 
     void TextIconButton::SetSpriteScale(float scaleX, float scaleY)
@@ -29,15 +77,14 @@ namespace Demo {
 
     void Demo::TextIconButton::Draw(DX9GF::GraphicsDevice* gd, unsigned long long deltaTime)
     {
+        //keep the width in sync even on frames where Update did not run
+        ApplyAutoResize();
+
         IconButton::Draw(gd, deltaTime);
 
         if (!fontSprite || !this->uiCamera) return;
 
-        std::wstring currentText = this->label;
-
-        if (dynamicLabelGetter) {
-            currentText = dynamicLabelGetter();
-        }
+        std::wstring currentText = GetCurrentText();
 
         if (currentText.empty()) return;
 
@@ -47,8 +94,9 @@ namespace Demo {
         fontSprite->SetColor(textColor);
         fontSprite->SetOutline(hasOutline, outlineColor, 2.0f);
 
-        float tw = fontSprite->GetWidth();
-        float th = fontSprite->GetHeight();
+        //the metrics come back unscaled, so apply the text scale before centring
+        float tw = fontSprite->GetWidth() * textScaleX;
+        float th = fontSprite->GetHeight() * textScaleY;
 
         float renderX = GetWorldX();
         float renderY = GetWorldY();

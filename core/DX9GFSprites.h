@@ -83,6 +83,9 @@ namespace DX9GF {
 		float GetTargetWidth() const { return targetWidth; }
 		float GetTargetHeight() const { return targetHeight; }
 		void SetScale(float s) { scale = s; }
+		// Swaps the source frame without rebuilding the sprite (margins stay the same)
+		void SetSrcRect(RECT srcRect);
+		void SetMargins(int left, int top, int right, int bottom);
 
 		void Begin() override;
 		void Draw(const Camera& camera, unsigned long long deltaTime) override;
