@@ -22,7 +22,7 @@ namespace Demo {
 		if (enemyType == "CupidEnemy")      return { L"assets/bubble-Sheet.png", 64.f, 64.f, 12, 38.f, 45.f };
 		if (enemyType == "VampireBatEnemy") return { L"assets/shrimp-Sheet.png", 64.f, 64.f, 12, 38.f, 45.f };
 		if (enemyType == "WarlockEnemy")    return { L"assets/crawler-Sheet.png", 64.f, 64.f, 12, 38.f, 45.f };
-		if (enemyType == "KernelEnemy")      return { L"assets/kernel_2.png", 64.f, 64.f, 12, 38.f, 45.f }; //TODO: remember to change tex path here too
+		if (enemyType == "KernelEnemy")      return { L"assets/kernel_2.png", 64.f, 64.f, 12, 38.f, 45.f };
 		if (enemyType == "TrojanEnemy")     return { L"assets/Trojan_outside.png", 64.f, 64.f, 12, 38.f, 45.f };
 
 		return { L"assets/random-Sheet.png", 64.f, 64.f,8, 38.f, 45.f };
@@ -60,7 +60,7 @@ namespace Demo {
 			return enemy;
 		}
 		else if (type == "KernelEnemy") {
-			auto enemy = std::make_shared<KernelEnemy>(tm, RNG::Range(40.0f, 95.0f)); //TODO: Balance this pls
+			auto enemy = std::make_shared<KernelEnemy>(tm, RNG::Range(40.0f, 95.0f));
 			enemy->Init(gd, cam);
 			return enemy;
 		}

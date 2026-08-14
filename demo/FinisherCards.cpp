@@ -1,7 +1,7 @@
-#include "pch.h"
+﻿#include "pch.h"
 #include "FinisherCards.h"
 #include "IBattleScene.h"
-
+#include "VirtualBattleState.h"
 // Faces live in the rows added below y = 336 in assets/ui.png, as in UtilityCards.cpp.
 
 bool Demo::TerminateCard::Execute() {
@@ -19,16 +19,15 @@ bool Demo::TerminateCard::Execute() {
 	return true;
 }
 
-void Demo::TerminateCard::CollectProjectedSteps(std::vector<ProjectedStep>& out) {
+void Demo::TerminateCard::CollectProjectedSteps(VirtualBattleState& state) {
 	if (targets.empty()) return;
 	if (auto enemyCard = targets[0].lock()) {
 		if (auto enemy = enemyCard->GetValue()) {
-			// Read off the enemy's health as it stands now. If something earlier in the program
-			// drops it under the threshold this will read low, but resolving that would mean
-			// simulating health across the whole queue.
+			float currentVirtualHP = state.enemies[enemy.get()].health;
 			const float maxHealth = enemy->GetMaxHealth();
-			const bool finishable = maxHealth > 0.f && (enemy->GetHealth() / maxHealth) < 0.4f;
-			out.push_back(ProjectedStep::Hit(enemy.get(), finishable ? 60.f : 30.f));
+			const bool finishable = maxHealth > 0.f && (currentVirtualHP / maxHealth) < 0.4f;
+			
+			state.SimulateDamage(enemy.get(), finishable ? 60.f : 30.f);
 		}
 	}
 }
@@ -54,14 +53,16 @@ bool Demo::InfernoCard::Execute() {
 	return true;
 }
 
-void Demo::InfernoCard::CollectProjectedSteps(std::vector<ProjectedStep>& out) {
+void Demo::InfernoCard::CollectProjectedSteps(VirtualBattleState& state) {
 	if (!battleScene) return;
 	for (auto& enemy : battleScene->GetEnemies()) {
 		if (!enemy || enemy->IsDead()) continue;
-		out.push_back(ProjectedStep::Hit(enemy.get(), 8.f));
-		// Execute skips the burn when the hit already killed the enemy. The readout does not model
-		// deaths, so it counts the burn either way - it can read high on a lethal hit.
-		out.push_back(ProjectedStep::EnemyEffect(enemy.get(), ModifierType::Burn, 5.f, 3));
+
+		state.SimulateDamage(enemy.get(), 8.f);
+
+		if (!state.enemies[enemy.get()].IsDead()) {
+			state.SimulateEnemyModifier(enemy.get(), ModifierType::Burn, 5.f, 3);
+		}
 	}
 }
 
@@ -89,11 +90,11 @@ bool Demo::SystemPurgeCard::Execute() {
 	return true;
 }
 
-void Demo::SystemPurgeCard::CollectProjectedSteps(std::vector<ProjectedStep>& out) {
+void Demo::SystemPurgeCard::CollectProjectedSteps(VirtualBattleState& state) {
 	if (!battleScene) return;
 	for (auto& enemy : battleScene->GetEnemies()) {
 		if (!enemy || enemy->IsDead()) continue;
-		out.push_back(ProjectedStep::Hit(enemy.get(), 16.f));
+		state.SimulateDamage(enemy.get(), 16.f);
 	}
 }
 
@@ -122,4 +123,8 @@ void Demo::OverdriveCard::ResetExecution() {
 
 void Demo::OverdriveCard::DrawCardFace(unsigned long long deltaTime) {
 	DrawSheetFace(deltaTime, GetFaceRect());
+}
+
+void Demo::OverdriveCard::CollectProjectedSteps(VirtualBattleState& state) {
+	state.player.buffDamage += 4.f;
 }

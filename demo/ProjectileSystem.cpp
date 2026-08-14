@@ -483,13 +483,24 @@ void Demo::ProjectileSystem::Update(unsigned long long deltaTime)
 
 			if (combat.hasStatusEffect && !combat.statusApplied) {
 				combat.statusApplied = true;
+				ModifierType type = combat.statusEffectType;
+				int duration = combat.statusEffectDuration;
+				float value = combat.statusEffectValue;
 				if (combat.randomizeStatusEffect) {
 					bool pickAlt = (RNG::Range(1, 2) == 2);
-					if (pickAlt) player->AddModifier(combat.altStatusEffectType, combat.altStatusEffectDuration, combat.altStatusEffectValue, false);
-					else player->AddModifier(combat.statusEffectType, combat.statusEffectDuration, combat.statusEffectValue, false);
+					if (pickAlt) {
+						type = combat.altStatusEffectType;
+						duration = combat.altStatusEffectDuration;
+						value = combat.altStatusEffectValue;
+					}
 				}
-				else {
-					player->AddModifier(combat.statusEffectType, combat.statusEffectDuration, combat.statusEffectValue, false);
+				switch (type) {
+				case ModifierType::Burn:
+				case ModifierType::Marked:
+					player->AddStackingModifier(type, duration, value, false);
+					break;
+				default:
+					player->AddModifier(type, duration, value, false);
 				}
 			}
 

@@ -52,16 +52,16 @@ void Demo::IEnemy::Draw(DX9GF::GraphicsDevice* graphicsDevice, DX9GF::Camera* ca
 	}
 	this->graphicsDevice = graphicsDevice;
 
-    if (!font) {
-        font = std::make_shared<DX9GF::Font>(graphicsDevice, L"StatusPlz", 16);
-        fontSprite = std::make_shared<DX9GF::FontSprite>(font.get());
-    }
-    if (!uiTexture) {
-        uiTexture = std::make_shared<DX9GF::Texture>(graphicsDevice);
-        uiTexture->LoadTexture(L"assets/ui.png");
-        uiSprite = std::make_shared<DX9GF::StaticSprite>(uiTexture.get());
-        uiSprite->SetScale(2.0f);
-    }
+	if (!font) {
+		font = std::make_shared<DX9GF::Font>(graphicsDevice, L"StatusPlz", 16);
+		fontSprite = std::make_shared<DX9GF::FontSprite>(font.get());
+	}
+	if (!uiTexture) {
+		uiTexture = std::make_shared<DX9GF::Texture>(graphicsDevice);
+		uiTexture->LoadTexture(L"assets/ui.png");
+		uiSprite = std::make_shared<DX9GF::StaticSprite>(uiTexture.get());
+		uiSprite->SetScale(2.0f);
+	}
 
 	if (!isOnStandby && cardSpawnTrigger) {
 		bool isHovered = cardSpawnTrigger->IsHovering(deltaTime);
@@ -260,18 +260,26 @@ void Demo::IEnemy::Draw(DX9GF::GraphicsDevice* graphicsDevice, DX9GF::Camera* ca
 				statusDescription = L"Blocks incoming damage.";
 				sourceRect = { 96, 240, 112, 256 };
 			}
+			else if (mod.type == ModifierType::Spark) {
+				statusName = L"Spark";
+				statusDescription = L"Accumulates stacks. Deals no damage until detonated.";
+				sourceRect = { 272, 320, 288, 336 };
+			}
 
 			float iconX = GetWorldX() + statusOffsetX;
 			float iconY = GetWorldY() + statusOffsetY;
 
 			std::wstring displayValueText = L"";
 			if (mod.type == ModifierType::BuffDefense || mod.type == ModifierType::BuffDamage || mod.type == ModifierType::Poison
-				|| mod.type == ModifierType::Burn || mod.type == ModifierType::Marked || mod.type == ModifierType::Regen) {
+				|| mod.type == ModifierType::Burn || mod.type == ModifierType::Marked || mod.type == ModifierType::Regen || mod.type == ModifierType::Spark) {
 				int displayValue = (mod.type == ModifierType::Poison) ?
 					static_cast<int>(std::round((mod.value > 0.f) ? mod.value : static_cast<float>(mod.duration))) :
 					static_cast<int>(std::round(mod.value));
 
-				if (mod.type == ModifierType::BuffDamage) displayValueText = L" +" + std::to_wstring(displayValue);
+				if (mod.type == ModifierType::BuffDamage)
+					displayValueText = L" +" + std::to_wstring(displayValue);
+				else if (mod.type == ModifierType::Spark)
+					displayValueText = L" (x" + std::to_wstring(displayValue) + L")";
 				else displayValueText = L" " + std::to_wstring(displayValue);
 			}
 
@@ -330,8 +338,8 @@ void Demo::IEnemy::Draw(DX9GF::GraphicsDevice* graphicsDevice, DX9GF::Camera* ca
 			}
 
 			statusOffsetY += 36.f;
-        }
-    }
+		}
+	}
 
 	fontSprite->End();
 	projectiles.Draw(graphicsDevice, *camera, deltaTime);
@@ -437,7 +445,7 @@ int Demo::IEnemy::GetSmartRandomPattern(int minPattern, int maxPattern, int maxS
 				do {
 					patternId = RNG::Range(minPattern, maxPattern);
 				} while (patternId == lastPattern);
-                streakCount = 0; //reset if switched skill
+				streakCount = 0; //reset if switched skill
 			}
 		}
 	}

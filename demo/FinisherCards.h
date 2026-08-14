@@ -21,7 +21,7 @@ namespace Demo {
 		RECT GetFaceRect() const override { return RECT{ 160, 368, 240, 384 }; }
 
 		bool Execute() override;
-		void CollectProjectedSteps(std::vector<ProjectedStep>& out) override;
+		void CollectProjectedSteps(VirtualBattleState& state) override;
 		void DrawCardFace(unsigned long long deltaTime) override;
 	};
 
@@ -40,7 +40,7 @@ namespace Demo {
 		RECT GetFaceRect() const override { return RECT{ 0, 384, 80, 400 }; }
 
 		bool Execute() override;
-		void CollectProjectedSteps(std::vector<ProjectedStep>& out) override;
+		void CollectProjectedSteps(VirtualBattleState& state) override;
 		void ResetExecution() override;
 		void DrawCardFace(unsigned long long deltaTime) override;
 	};
@@ -59,7 +59,7 @@ namespace Demo {
 		RECT GetFaceRect() const override { return RECT{ 80, 384, 176, 400 }; }
 
 		bool Execute() override;
-		void CollectProjectedSteps(std::vector<ProjectedStep>& out) override;
+		void CollectProjectedSteps(VirtualBattleState& state) override;
 		void ResetExecution() override;
 		void DrawCardFace(unsigned long long deltaTime) override;
 	};
@@ -80,9 +80,7 @@ namespace Demo {
 		bool Execute() override;
 		// The attack buff lands mid-program, so every hit queued after this one gains 4. Regen
 		// only heals the player, so it does not show up in the enemies' readout.
-		void CollectProjectedSteps(std::vector<ProjectedStep>& out) override {
-			out.push_back(ProjectedStep::PlayerEffect(ModifierType::BuffDamage, 4.f));
-		}
+		void CollectProjectedSteps(VirtualBattleState& state) override;
 		void ResetExecution() override;
 		void DrawCardFace(unsigned long long deltaTime) override;
 	};
