@@ -436,6 +436,9 @@
     <Image Include="assets\arrow.png">
       <DeploymentContent>true</DeploymentContent>
     </Image>
+    <Image Include="assets\arrow_1.png">
+      <DeploymentContent>true</DeploymentContent>
+    </Image>
     <Image Include="assets\boss-Sheet.png">
       <DeploymentContent>true</DeploymentContent>
     </Image>
@@ -592,7 +595,10 @@
     <Image Include="assets\threadalley.png">
       <DeploymentContent>true</DeploymentContent>
     </Image>
-    <Image Include="assets\trojan-Sheet.png">
+    <Image Include="assets\trojan.png">
+      <DeploymentContent>true</DeploymentContent>
+    </Image>
+    <Image Include="assets\Trojan_outside.png">
       <DeploymentContent>true</DeploymentContent>
     </Image>
     <Image Include="assets\tutorial.png">

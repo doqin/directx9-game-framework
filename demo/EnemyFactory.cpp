@@ -23,7 +23,7 @@ namespace Demo {
 		if (enemyType == "VampireBatEnemy") return { L"assets/shrimp-Sheet.png", 64.f, 64.f, 12, 38.f, 45.f };
 		if (enemyType == "WarlockEnemy")    return { L"assets/crawler-Sheet.png", 64.f, 64.f, 12, 38.f, 45.f };
 		if (enemyType == "KernelEnemy")      return { L"assets/kernel_2.png", 64.f, 64.f, 12, 38.f, 45.f };
-		if (enemyType == "TrojanEnemy")     return { L"assets/trojan-Sheet.png", 96.f, 96.f, 13, 48.f, 48.f };
+		if (enemyType == "TrojanEnemy")     return { L"assets/Trojan_outside.png", 64.f, 64.f, 12, 38.f, 45.f };
 
 		return { L"assets/random-Sheet.png", 64.f, 64.f,8, 38.f, 45.f };
 	}
