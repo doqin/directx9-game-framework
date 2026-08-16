@@ -1,4 +1,4 @@
-﻿#include "pch.h"
+#include "pch.h"
 #include "IBattleScene.h"
 #include <algorithm>
 #include <array>
@@ -2791,7 +2791,7 @@ void Demo::IBattleScene::Init()
 	initBlockCard->Init(draggableManager, game->GetGraphicsDevice(), &camera);
 	initBlockCard->SetMaxHeight(sh * 0.5f);
 	initBlockCard->SetBattleScene(this);
-	handContainer = std::make_shared<HandContainer>(transformManager, 180, 40, -250.f, -200.f);
+	handContainer = std::make_shared<CardContainer>(transformManager, 180, 40, -250.f, -200.f);
 	handContainer->Init(draggableManager, game->GetGraphicsDevice(), &camera, &playedPile);
 	handContainer->SetMaxHeight(sh * 0.5f);
 

@@ -1,18 +1,12 @@
-﻿#include "pch.h"
-#include "HandContainer.h"
+#include "pch.h"
+#include "CardContainer.h"
 #include "IBlockCard.h"
 #include "MainBlockCard.h"
 #include <algorithm>
 
-void Demo::HandContainer::Init(std::shared_ptr<DraggableManager> manager, DX9GF::GraphicsDevice* graphicsDevice, DX9GF::Camera* camera)
+void Demo::CardContainer::Init(std::shared_ptr<DraggableManager> manager, DX9GF::GraphicsDevice* graphicsDevice, DX9GF::Camera* camera)
 {
 	IContainer::Init(manager, graphicsDevice, camera);
-}
-
-void Demo::HandContainer::Init(std::shared_ptr<DraggableManager> manager, DX9GF::GraphicsDevice* graphicsDevice, DX9GF::Camera* camera, std::vector<std::shared_ptr<ICard>>* playedPile)
-{
-	this->Init(manager, graphicsDevice, camera);
-	this->playedPile = playedPile;
 	if (trigger) {
 		trigger->SetOnHeldLeft([](DX9GF::ITrigger* thisObj) {
 			});
@@ -21,13 +15,19 @@ void Demo::HandContainer::Init(std::shared_ptr<DraggableManager> manager, DX9GF:
 	}
 }
 
-bool Demo::HandContainer::OnDrop(std::shared_ptr<IDraggable> other)
+void Demo::CardContainer::Init(std::shared_ptr<DraggableManager> manager, DX9GF::GraphicsDevice* graphicsDevice, DX9GF::Camera* camera, std::vector<std::shared_ptr<ICard>>* playedPile)
+{
+	this->playedPile = playedPile;
+	this->Init(manager, graphicsDevice, camera);
+}
+
+bool Demo::CardContainer::OnDrop(std::shared_ptr<IDraggable> other)
 {
 	if (!std::dynamic_pointer_cast<ICard>(other) || std::dynamic_pointer_cast<MainBlockCard>(other)) {
 		return false;
 	}
 
-	if (std::find_if(playedPile->begin(), playedPile->end(), [&](const std::weak_ptr<ICard>& playedCard) {
+	if (playedPile && std::find_if(playedPile->begin(), playedPile->end(), [&](const std::weak_ptr<ICard>& playedCard) {
 		auto lock = playedCard.lock();
 		return lock && lock.get() == dynamic_pointer_cast<ICard>(other).get();
 	}) != playedPile->end()) {
@@ -44,7 +44,7 @@ bool Demo::HandContainer::OnDrop(std::shared_ptr<IDraggable> other)
 	return true;
 }
 
-void Demo::HandContainer::StoreCard(std::shared_ptr<ICard> card)
+void Demo::CardContainer::StoreCard(std::shared_ptr<ICard> card)
 {
 	if (!card) {
 		return;

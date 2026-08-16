@@ -1,4 +1,4 @@
-﻿#pragma once
+#pragma once
 #include "DX9GF.h"
 #include "DX9GFExtras.h"
 #include "Player.h"
@@ -9,7 +9,7 @@
 #include "InitBlockCard.h"
 #include "StrikeCard.h"
 #include "EnemyCard.h"
-#include "HandContainer.h"
+#include "CardContainer.h"
 #include "TestEnemy.h"
 #include "PopUpMessage.h"
 #include "AdvancedCards.h"
@@ -111,7 +111,7 @@ namespace Demo {
 		// Battle cards
 		std::shared_ptr<MainBlockCard> mainBlockCard;
 		std::shared_ptr<InitBlockCard> initBlockCard;
-		std::shared_ptr<HandContainer> handContainer;
+		std::shared_ptr<CardContainer> handContainer;
 		std::vector<std::shared_ptr<ICard>> cardHand;
 		std::vector<std::shared_ptr<EnemyCard>> enemyCards;
 		std::vector<std::shared_ptr<ICard>> drawPile;
