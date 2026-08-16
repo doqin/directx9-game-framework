@@ -4,9 +4,10 @@
 #include "Player.h"
 #include "BattleEncounter.h"
 #include <deque>
+#include "Debug.h"
 
 namespace Demo {
-    class MapEnemy : public DX9GF::IGameObject {
+    class MapEnemy : public DX9GF::IGameObject, virtual public Pointable {
     private:
         enum class State { Idle, Patrol, Chase, Return };
 
@@ -44,9 +45,13 @@ namespace Demo {
         bool CheckLineOfSight(float startX, float startY, float targetX, float targetY);
         std::function<void(std::shared_ptr<MapEnemy>)> onEncounterTriggered;
     public:
+        static bool isDisabled;
         MapEnemy(std::weak_ptr<DX9GF::TransformManager> tm, float x, float y, const BattleEncounter& data);
         ~MapEnemy();
 
+		std::pair<float, float> GetPoint() const override {
+			return { GetWorldX(), GetWorldY() };
+		}
         void Init(Game* game, DX9GF::GraphicsDevice* gd, DX9GF::ColliderManager* colMan, std::shared_ptr<Player> player);
         void Update(unsigned long long deltaTime);
         void Draw(DX9GF::Camera* camera, unsigned long long deltaTime);

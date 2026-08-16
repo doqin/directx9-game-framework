@@ -17,6 +17,10 @@
 #include "EnemyFactory.h"
 #include "QuestManager.h"
 #include "MapBattleScene.h"
+#include "Debug.h"
+#include "imgui.h"
+#include "backends/imgui_impl_dx9.h"
+
 void Demo::BossWorldScene::Init() {
 	camera.SetZoom(2.0f);
 	transformManager = std::make_shared<DX9GF::TransformManager>();
@@ -674,6 +678,7 @@ void Demo::BossWorldScene::DrawWorld(unsigned long long deltaTime) {
 
 void Demo::BossWorldScene::DrawUI(unsigned long long deltaTime)
 {
+	CreateImGuiDebugFrame(player);
 	auto gd = game->GetGraphicsDevice();
 	if (SUCCEEDED(gd->BeginDraw())) {
 
@@ -710,6 +715,9 @@ void Demo::BossWorldScene::DrawUI(unsigned long long deltaTime)
 		if (!(inventoryMenu && inventoryMenu->IsInKeyboardMode())) {
 			DX9GF::InputManager::GetInstance()->DrawCursor(&this->uiCamera, deltaTime);
 		}
+
+		ImGui::Render();
+		ImGui_ImplDX9_RenderDrawData(ImGui::GetDrawData());
 
 		gd->EndDraw();
 	}

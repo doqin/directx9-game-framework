@@ -22,8 +22,8 @@ void Demo::ItemShop::AddShopItem(int itemID, int price)
 
 Demo::ItemShop::ItemShop(Game* game, Player* player, int sw, int sh, ShopTier tier)
 	: IShopScene(game, player, sw, sh,
-		tier == ShopTier::BASIC ? "--- BASIC SHOP ---" :
-		tier == ShopTier::HYBRID || tier == ShopTier::RK_HYBRID ? "--- HYBRID SHOP ---" : "--- PREMIUM SHOP ---"),
+		tier == ShopTier::BASIC ? "BASIC SHOP" :
+		tier == ShopTier::HYBRID || tier == ShopTier::RK_HYBRID ? "HYBRID SHOP" : "PREMIUM SHOP"),
 	currentTier(tier)
 {
 }

@@ -8,8 +8,8 @@
 
 Demo::CardShop::CardShop(Game* game, Player* player, int sw, int sh, ShopTier tier)
 	: IShopScene(game, player, sw, sh,
-		tier == ShopTier::BASIC ? "--- BASIC CARD SHOP ---" :
-		tier == ShopTier::HYBRID ? "--- HYBRID CARD SHOP ---" : "--- PREMIUM CARD SHOP ---"),
+		tier == ShopTier::BASIC ? "BASIC CARD SHOP" :
+		tier == ShopTier::HYBRID ? "HYBRID CARD SHOP" : "PREMIUM CARD SHOP"),
 	currentTier(tier)
 {
 }

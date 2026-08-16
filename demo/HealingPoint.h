@@ -3,9 +3,10 @@
 #include "DX9GFExtras.h"
 #include "DX9GFInputManager.h"
 #include "Player.h"
+#include "Debug.h"
 
 namespace Demo {
-    class HealingPoint : public DX9GF::IGameObject {
+    class HealingPoint : public DX9GF::IGameObject, virtual public Pointable {
     private:
         DX9GF::GraphicsDevice* gd;
         DX9GF::Camera* worldCamera;
@@ -29,6 +30,9 @@ namespace Demo {
 
         void Init(DX9GF::GraphicsDevice* gd, DX9GF::Camera* camera, std::shared_ptr<Player> p, std::shared_ptr<DX9GF::ColliderManager> cm, std::shared_ptr<DX9GF::Font> font, std::shared_ptr<DX9GF::CommandBuffer> drawBuffer);
 
+        std::pair<float, float> GetPoint() const override {
+            return { GetWorldX(), GetWorldY() };
+        }
         void Update(unsigned long long deltaTime);
         void Draw(const DX9GF::Camera& camera, unsigned long long deltaTime);
         void DrawUI(DX9GF::Camera* uiCamera, unsigned long long deltaTime);

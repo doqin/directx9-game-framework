@@ -205,6 +205,16 @@
   </ItemGroup>
   <ItemGroup>
     <ClCompile Include="AdvancedCards.cpp" />
+    <ClCompile Include="backends\imgui_impl_dx9.cpp">
+      <PrecompiledHeader Condition="'$(Configuration)|$(Platform)'=='Debug|x64'">NotUsing</PrecompiledHeader>
+      <PrecompiledHeader Condition="'$(Configuration)|$(Platform)'=='Testing|x64'">NotUsing</PrecompiledHeader>
+      <PrecompiledHeader Condition="'$(Configuration)|$(Platform)'=='Release|x64'">NotUsing</PrecompiledHeader>
+    </ClCompile>
+    <ClCompile Include="backends\imgui_impl_win32.cpp">
+      <PrecompiledHeader Condition="'$(Configuration)|$(Platform)'=='Debug|x64'">NotUsing</PrecompiledHeader>
+      <PrecompiledHeader Condition="'$(Configuration)|$(Platform)'=='Testing|x64'">NotUsing</PrecompiledHeader>
+      <PrecompiledHeader Condition="'$(Configuration)|$(Platform)'=='Release|x64'">NotUsing</PrecompiledHeader>
+    </ClCompile>
     <ClCompile Include="BossWorldScene.cpp" />
     <ClCompile Include="CardShop.cpp" />
     <ClCompile Include="CreditsScene.cpp" />
@@ -212,11 +222,38 @@
     <ClCompile Include="CustomBattleScene.cpp" />
     <ClCompile Include="DamageTextManager.cpp" />
     <ClCompile Include="DauDauNPC.cpp" />
+    <ClCompile Include="Debug.cpp" />
     <ClCompile Include="DebugScene.cpp" />
     <ClCompile Include="DemonEyeEnemy.cpp" />
     <ClCompile Include="DrawUtils.cpp" />
     <ClCompile Include="EnemyFactory.cpp" />
+    <ClCompile Include="ICard.cpp" />
     <ClCompile Include="ICombatant.cpp" />
+    <ClCompile Include="imgui.cpp">
+      <PrecompiledHeader Condition="'$(Configuration)|$(Platform)'=='Debug|x64'">NotUsing</PrecompiledHeader>
+      <PrecompiledHeader Condition="'$(Configuration)|$(Platform)'=='Testing|x64'">NotUsing</PrecompiledHeader>
+      <PrecompiledHeader Condition="'$(Configuration)|$(Platform)'=='Release|x64'">NotUsing</PrecompiledHeader>
+    </ClCompile>
+    <ClCompile Include="imgui_demo.cpp">
+      <PrecompiledHeader Condition="'$(Configuration)|$(Platform)'=='Debug|x64'">NotUsing</PrecompiledHeader>
+      <PrecompiledHeader Condition="'$(Configuration)|$(Platform)'=='Testing|x64'">NotUsing</PrecompiledHeader>
+      <PrecompiledHeader Condition="'$(Configuration)|$(Platform)'=='Release|x64'">NotUsing</PrecompiledHeader>
+    </ClCompile>
+    <ClCompile Include="imgui_draw.cpp">
+      <PrecompiledHeader Condition="'$(Configuration)|$(Platform)'=='Debug|x64'">NotUsing</PrecompiledHeader>
+      <PrecompiledHeader Condition="'$(Configuration)|$(Platform)'=='Testing|x64'">NotUsing</PrecompiledHeader>
+      <PrecompiledHeader Condition="'$(Configuration)|$(Platform)'=='Release|x64'">NotUsing</PrecompiledHeader>
+    </ClCompile>
+    <ClCompile Include="imgui_tables.cpp">
+      <PrecompiledHeader Condition="'$(Configuration)|$(Platform)'=='Debug|x64'">NotUsing</PrecompiledHeader>
+      <PrecompiledHeader Condition="'$(Configuration)|$(Platform)'=='Testing|x64'">NotUsing</PrecompiledHeader>
+      <PrecompiledHeader Condition="'$(Configuration)|$(Platform)'=='Release|x64'">NotUsing</PrecompiledHeader>
+    </ClCompile>
+    <ClCompile Include="imgui_widgets.cpp">
+      <PrecompiledHeader Condition="'$(Configuration)|$(Platform)'=='Debug|x64'">NotUsing</PrecompiledHeader>
+      <PrecompiledHeader Condition="'$(Configuration)|$(Platform)'=='Testing|x64'">NotUsing</PrecompiledHeader>
+      <PrecompiledHeader Condition="'$(Configuration)|$(Platform)'=='Release|x64'">NotUsing</PrecompiledHeader>
+    </ClCompile>
     <ClCompile Include="KernelEnemy.cpp">
       <DeploymentContent>false</DeploymentContent>
     </ClCompile>
@@ -238,6 +275,11 @@
     <ClCompile Include="IStatementCard.cpp" />
     <ClCompile Include="MapBattleScene.cpp" />
     <ClCompile Include="MapEnemy.cpp" />
+    <ClCompile Include="misc\cpp\imgui_stdlib.cpp">
+      <PrecompiledHeader Condition="'$(Configuration)|$(Platform)'=='Debug|x64'">NotUsing</PrecompiledHeader>
+      <PrecompiledHeader Condition="'$(Configuration)|$(Platform)'=='Testing|x64'">NotUsing</PrecompiledHeader>
+      <PrecompiledHeader Condition="'$(Configuration)|$(Platform)'=='Release|x64'">NotUsing</PrecompiledHeader>
+    </ClCompile>
     <ClCompile Include="PlayerHUD.cpp" />
     <ClCompile Include="ItemShop.cpp" />
     <ClCompile Include="KeyeEnemy.cpp" />
@@ -293,6 +335,8 @@
   </ItemGroup>
   <ItemGroup>
     <ClInclude Include="AdvancedCards.h" />
+    <ClInclude Include="backends\imgui_impl_dx9.h" />
+    <ClInclude Include="backends\imgui_impl_win32.h" />
     <ClInclude Include="BattleEncounter.h" />
     <ClInclude Include="BossWorldScene.h" />
     <ClInclude Include="CardShop.h" />
@@ -303,12 +347,19 @@
     <ClInclude Include="DauDauNPC.h">
       <DeploymentContent>false</DeploymentContent>
     </ClInclude>
+    <ClInclude Include="Debug.h" />
     <ClInclude Include="DebugScene.h" />
     <ClInclude Include="DemonEyeEnemy.h" />
     <ClInclude Include="DialogueLine.h" />
     <ClInclude Include="DrawUtils.h" />
     <ClInclude Include="EncounterGenerator.h" />
     <ClInclude Include="ICombatant.h" />
+    <ClInclude Include="imconfig.h" />
+    <ClInclude Include="imgui.h" />
+    <ClInclude Include="imgui_internal.h" />
+    <ClInclude Include="imstb_rectpack.h" />
+    <ClInclude Include="imstb_textedit.h" />
+    <ClInclude Include="imstb_truetype.h" />
     <ClInclude Include="KernelEnemy.h" />
     <ClInclude Include="KeyboardNavigator.h" />
     <ClInclude Include="EnemyCard.h" />
@@ -332,6 +383,7 @@
     <ClInclude Include="ItemShop.h" />
     <ClInclude Include="MapBattleScene.h" />
     <ClInclude Include="MapEnemy.h" />
+    <ClInclude Include="misc\cpp\imgui_stdlib.h" />
     <ClInclude Include="PlayerHUD.h" />
     <ClInclude Include="KeyeEnemy.h" />
     <ClInclude Include="OutroScene.h" />

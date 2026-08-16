@@ -59,6 +59,7 @@ namespace Demo {
         sprite->Begin();
         sprite->Draw(camera, deltaTime);
         sprite->End();
+		DrawPosition(deltaTime, gd, camera);
     }
 
     void Demo::ShopPoint::DrawUI(DX9GF::Camera* uiCamera, unsigned long long deltaTime) {

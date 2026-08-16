@@ -17,13 +17,16 @@ namespace DX9GF {
 		std::wstring pendingIconPath;
 		static Application* instance;
 	public:
+		void OverrideWindowProc(LRESULT(*customWndProc)(HWND, UINT, WPARAM, LPARAM));
+		void SetOnDeviceResetHandler(void(*handler)());
+
 		/// <summary>
 		/// Initialize an Application instance with the specified window parameters.
 		/// </summary>
 		/// <param name="hInstance">The handle to the application instance provided by Windows.</param>
 		/// <param name="appTitle">The title to display in the application window's title bar.</param>
 		/// <param name="screenWidth">The width of the application window in pixels.</param>
-      /// <param name="screenHeight">The height of the application window in pixels.</param>
+		/// <param name="screenHeight">The height of the application window in pixels.</param>
 		/// <param name="resizable">Whether the application window is resizable.</param>
 		void Init(HINSTANCE hInstance, std::wstring appTitle, UINT screenWidth, UINT screenHeight, bool resizable = true);
 		void SetAppIcon(const std::wstring& iconPath);
