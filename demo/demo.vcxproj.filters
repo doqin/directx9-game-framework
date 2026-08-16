@@ -20,6 +20,7 @@
     <ClCompile Include="IConversation.cpp" />
     <ClCompile Include="IDraggable.cpp" />
     <ClCompile Include="INPC.cpp" />
+    <ClCompile Include="BattleMenu.cpp" />
     <ClCompile Include="InventoryMenu.cpp" />
     <ClCompile Include="IStatementCard.cpp" />
     <ClCompile Include="PlayerHUD.cpp" />
@@ -119,6 +120,7 @@
     <ClInclude Include="IConversation.h" />
     <ClInclude Include="IDraggable.h" />
     <ClInclude Include="INPC.h" />
+    <ClInclude Include="BattleMenu.h" />
     <ClInclude Include="InventoryMenu.h" />
     <ClInclude Include="ItemShop.h" />
     <ClInclude Include="PlayerHUD.h" />

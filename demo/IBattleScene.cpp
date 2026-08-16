@@ -15,6 +15,7 @@
 #include "DrawUtils.h"
 #include "VirtualBattleState.h"
 #include "RNG.h"
+#include "BattleMenu.h"
 namespace {
 	constexpr float HiddenPileX = -10000.f;
 	constexpr float HiddenPileY = -10000.f;
@@ -2821,6 +2822,9 @@ void Demo::IBattleScene::Init()
 	popUpMessage = std::make_shared<PopUpMessage>(transformManager);
 	popUpMessage->Init(game->GetGraphicsDevice(), &camera);
 
+	battleMenu = std::make_shared<BattleMenu>(game, transformManager, &uiCamera);
+	battleMenu->Init();
+
 	//Init BGM
 	auto audio = DX9GF::AudioManager::GetInstance();
 	audio->Load("battle_loop1", IDR_BGM_B1);
@@ -2847,6 +2851,28 @@ void Demo::IBattleScene::Update(unsigned long long deltaTime)
 	inpMan->ReadKeyboard(deltaTime);
 	this->camera.Update();
 	this->uiCamera.Update();
+
+	static float escCooldown = 0.0f;
+	if (escCooldown > 0) escCooldown -= deltaTime;
+
+	if (inpMan->KeyPress(SettingsManager::GetInstance()->GetKeybind("OPEN_INVENTORY")) && escCooldown <= 0) {
+		if (battleMenu) battleMenu->Toggle();
+		escCooldown = 300.0f;
+	}
+
+	if (battleMenu && battleMenu->IsPendingLeave()) {
+		auto sceMan = game->GetSceneManager();
+		sceMan->GoToScene(0);
+		auto audio = DX9GF::AudioManager::GetInstance();
+		audio->PlayBGM_Fade("bgm_sky", 0.9f, 1.5f);
+		return;
+	}
+
+	if (battleMenu && battleMenu->IsOpen()) {
+		battleMenu->Update(deltaTime);
+		transformManager->UpdateAll();
+		return;
+	}
 
 	if (isDefeatSequence) {
 		if (!EnemyAttackUpdate(deltaTime)) {
@@ -3131,6 +3157,11 @@ void Demo::IBattleScene::DrawUI(unsigned long long deltaTime)
 		}
 
 		DrawKeyboardReticleUI(deltaTime);
+
+		if (battleMenu) {
+			battleMenu->Draw(gd, deltaTime);
+			battleMenu->DrawKeyboardReticle(gd, deltaTime);
+		}
 
 		if (isDefeatSequence && defeatElapsedMs >= 1000.f) {
 			auto [camW, camH] = uiCamera.GetScreenResolution();

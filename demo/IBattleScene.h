@@ -15,6 +15,7 @@
 #include "AdvancedCards.h"
 #include "TextIconButton.h"
 #include "KeyboardNavigator.h"
+#include "BattleMenu.h"
 
 namespace Demo {
 	class IBattleScene : public DX9GF::IScene {
@@ -141,6 +142,7 @@ namespace Demo {
 		std::shared_ptr<IconButton> executeButton;
 		std::shared_ptr<IconButton> runInitButton;
 		std::shared_ptr<IconButton> closeItemMenuButton;
+		std::shared_ptr<BattleMenu> battleMenu;
 
 		std::vector<std::shared_ptr<IconButton>> buffItems;
 		std::shared_ptr<TextIconButton> btnNextPage;
