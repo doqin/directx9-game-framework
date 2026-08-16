@@ -198,7 +198,7 @@ namespace Demo {
 		}
 
 		size_t GetCost() const override { return 2; }
-		std::wstring GetDescription() const override { return L"Deal 3 damage. Consumes all Burn on target to deal 5 extra damage per stack."; }
+		std::wstring GetDescription() const override { return L"Deal 3 damage. Consumes all Spark on target to deal 5 extra damage per stack."; }
 		RECT GetFaceRect() const override { return RECT{ 160, 400, 272, 416 }; }
 
 		bool Execute() override;
