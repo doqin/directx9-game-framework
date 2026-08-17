@@ -1,4 +1,4 @@
-﻿#include "pch.h"
+#include "pch.h"
 #include "Player.h"
 #include "resource.h"
 #include "DamageTextManager.h"
@@ -17,7 +17,6 @@ void Demo::Player::GenerateSaveData(nlohmann::json& outData) {
 
 	outData["x"] = x;
 	outData["y"] = y;
-	outData["health"] = health;
 }
 
 void Demo::Player::RestoreSaveData(const nlohmann::json& inData) {
@@ -26,13 +25,13 @@ void Demo::Player::RestoreSaveData(const nlohmann::json& inData) {
 
 	if (inData.contains("x")) savedX = inData["x"];
 	if (inData.contains("y")) savedY = inData["y"];
-	if (inData.contains("health")) health = inData["health"];
 
 	SetLocalPosition(savedX, savedY);
 }
 
 void Demo::Player::GenerateSaveGlobalData(nlohmann::json& outData) const {
 	outData["gold"] = gold;
+	outData["health"] = health;
 	outData["deck"] = nlohmann::json::array();
 	for (auto& card : deck) {
 		outData["deck"].push_back(card);
@@ -50,6 +49,7 @@ void Demo::Player::GenerateSaveGlobalData(nlohmann::json& outData) const {
 
 void Demo::Player::RestoreSaveGlobalData(const nlohmann::json& inData) {
 	if (inData.contains("gold")) gold = inData["gold"];
+	if (inData.contains("health")) health = inData["health"];
 	if (inData.contains("deck")) {
 		deck.clear();
 		for (auto& item : inData["deck"]) {
