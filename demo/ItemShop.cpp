@@ -34,7 +34,7 @@ void Demo::ItemShop::LoadItems()
 	switch (currentTier) {
 	case ShopTier::BASIC:
 		AddShopItem(0, 30);
-		AddShopItem(1, 35);
+		AddShopItem(1, 30);
 		AddShopItem(2, 40);
 		break;
 
@@ -45,10 +45,10 @@ void Demo::ItemShop::LoadItems()
 		break;
 
 	case ShopTier::PREMIUM:
-		AddShopItem(6, 70);
-		AddShopItem(7, 70);
-		AddShopItem(8, 70);
-		AddShopItem(9, 70);
+		AddShopItem(6, 100);
+		AddShopItem(7, 100);
+		AddShopItem(8, 200);
+		AddShopItem(9, 150);
 		break;
 	case ShopTier::RK_HYBRID:
 		//load hybrid items just like HYBRID shop
