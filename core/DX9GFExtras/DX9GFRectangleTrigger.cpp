@@ -112,6 +112,16 @@ float DX9GF::RectangleTrigger::GetHeight() const
     return height;
 }
 
+void DX9GF::RectangleTrigger::SetWidth(float width)
+{
+	this->width = width;
+}
+
+void DX9GF::RectangleTrigger::SetHeight(float height)
+{
+	this->height = height;
+}
+
 void DX9GF::RectangleTrigger::Draw(GraphicsDevice* graphicsDevice, const Camera& camera)
 {
 	if (!ITrigger::drawTrigger) return;

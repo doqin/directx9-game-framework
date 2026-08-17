@@ -20,6 +20,12 @@ int Demo::IStatementCard::GetStatusCoverPanelWidth() const
 	return contentWidth + USES_COVER_PAD_LEFT + USES_COVER_PAD_RIGHT + USES_COVER_CAP_WIDTH;
 }
 
+void Demo::IStatementCard::Init(std::shared_ptr<DraggableManager> manager, DX9GF::GraphicsDevice* graphicsDevice, DX9GF::Camera* camera)
+{
+	IDraggable::Init(manager, graphicsDevice, camera);
+	trigger->SetWidth(GetWidth());
+}
+
 size_t Demo::IStatementCard::GetStatusCoverWidth() const
 {
 	const int panelWidth = GetStatusCoverPanelWidth();

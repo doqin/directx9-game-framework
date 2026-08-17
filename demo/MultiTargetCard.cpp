@@ -29,7 +29,7 @@ namespace Demo {
 	bool MultiTargetCard::AttachEnemyCard(std::shared_ptr<EnemyCard> card) {
 		if (!card || targets.size() >= maxTargets) return false;
 
-		float localX = (float)dragAreaWidth;
+		float localX = (float)GetWidth();
 		for (auto& wp : targets) {
 			if (auto lock = wp.lock()) localX += lock->GetWidth();
 		}
@@ -116,14 +116,6 @@ namespace Demo {
 				}
 			}
 		}
-	}
-
-	size_t MultiTargetCard::GetWidth() const {
-		size_t totalWidth = IDraggable::GetWidth();
-		for (auto& wp : targets) {
-			if (auto lock = wp.lock()) totalWidth += lock->GetWidth();
-		}
-		return totalWidth + GetStatusCoverWidth();
 	}
 
 	void MultiTargetCard::Draw(unsigned long long deltaTime) {

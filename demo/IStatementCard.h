@@ -116,6 +116,7 @@ namespace Demo {
 		virtual void DrawCardFace(unsigned long long deltaTime) {}
 
 	public:
+		virtual void Init(std::shared_ptr<DraggableManager> manager, DX9GF::GraphicsDevice* graphicsDevice, DX9GF::Camera* camera) override;
 		// How far the status cover extends past the card on screen, net of its overlap, or 0 when
 		// the card is persistent and unlimited. Included in GetWidth() so containers size and
 		// crop to it instead of clipping it off.
