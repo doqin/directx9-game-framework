@@ -177,6 +177,11 @@ void DX9GF::FontSprite::SetText(std::wstring&& text)
 	this->text = text;
 }
 
+void DX9GF::FontSprite::SetText(const std::wstring& text)
+{
+	this->text = text;
+}
+
 void DX9GF::FontSprite::SetColor(D3DCOLOR color)
 {
 	this->color = color;

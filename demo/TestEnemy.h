@@ -13,6 +13,9 @@ namespace Demo {
 
 	public:
 		using IEnemy::IEnemy;
+		// Unscaled 64px sprite.
+		float GetBodyWidth() const override { return 64.f; }
+		float GetBodyHeight() const override { return 64.f; }
 		void Init(DX9GF::GraphicsDevice* graphicsDevice, DX9GF::Camera* camera);
 		void Draw(DX9GF::GraphicsDevice* graphicsDevice, DX9GF::Camera* camera, unsigned long long deltaTime) override;
 

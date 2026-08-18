@@ -61,66 +61,66 @@ void Demo::TestBattleScene::Init()
 	//warlock->SetOnRequestEnemyCard([this](std::shared_ptr<IEnemy> enemy) { CreateEnemyCard(enemy); });
 	//enemies.push_back(warlock);
 
-	//auto keyeproEnemy = std::make_shared<KeyeproEnemy>(transformManager, 500.f);
-	//keyeproEnemy->Init(game->GetGraphicsDevice(), &camera);
-	//keyeproEnemy->SetOnRequestEnemyCard([this](std::shared_ptr<IEnemy> enemy) { CreateEnemyCard(enemy); });
-	//enemies.push_back(keyeproEnemy);
+	auto keyeproEnemy = std::make_shared<KeyeproEnemy>(transformManager, 600.f);
+	keyeproEnemy->Init(game->GetGraphicsDevice(), &camera);
+	keyeproEnemy->SetOnRequestEnemyCard([this](std::shared_ptr<IEnemy> enemy) { CreateEnemyCard(enemy); });
+	enemies.push_back(keyeproEnemy);
 
 	//auto keyeEnemy = std::make_shared<KeyeEnemy>(transformManager, 25.f);
 	//keyeEnemy->Init(game->GetGraphicsDevice(), &camera);
 	//keyeEnemy->SetOnRequestEnemyCard([this](std::shared_ptr<IEnemy> enemy) { CreateEnemyCard(enemy); });
 	//enemies.push_back(keyeEnemy);
 
-	auto trojanEnemy = std::make_shared<TrojanEnemy>(transformManager, 50.f);
-	trojanEnemy->Init(game->GetGraphicsDevice(), &camera);
-	trojanEnemy->SetOnRequestEnemyCard([this](std::shared_ptr<IEnemy> enemy) { CreateEnemyCard(enemy); });
-	enemies.push_back(trojanEnemy);
+	//auto trojanEnemy = std::make_shared<TrojanEnemy>(transformManager, 50.f);
+	//trojanEnemy->Init(game->GetGraphicsDevice(), &camera);
+	//trojanEnemy->SetOnRequestEnemyCard([this](std::shared_ptr<IEnemy> enemy) { CreateEnemyCard(enemy); });
+	//enemies.push_back(trojanEnemy);
 
-	// Heavy Strike
-	auto heavy = std::make_shared<HeavyStrikeCard>(transformManager, -260.f, -80.f);
-	drawPile.push_back(heavy);
+	//// Heavy Strike
+	//auto heavy = std::make_shared<HeavyStrikeCard>(transformManager, -260.f, -80.f);
+	//drawPile.push_back(heavy);
 
-	// Twin Strike
-	auto twin = std::make_shared<TwinStrikeCard>(transformManager, -260.f, -80.f);
-	drawPile.push_back(twin);
+	//// Twin Strike
+	//auto twin = std::make_shared<TwinStrikeCard>(transformManager, -260.f, -80.f);
+	//drawPile.push_back(twin);
 
-	// Cleave
-	auto cleave = std::make_shared<CleaveCard>(transformManager, -260.f, -80.f);
-	drawPile.push_back(cleave);
+	//// Cleave
+	//auto cleave = std::make_shared<CleaveCard>(transformManager, -260.f, -80.f);
+	//drawPile.push_back(cleave);
 
-	// Chain Lightning
-	auto chain = std::make_shared<ChainLightningCard>(transformManager, -260.f, -80.f);
-	drawPile.push_back(chain);
+	//// Chain Lightning
+	//auto chain = std::make_shared<ChainLightningCard>(transformManager, -260.f, -80.f);
+	//drawPile.push_back(chain);
 
-	// Poison
-	auto poison = std::make_shared<PoisonCard>(transformManager, -260.f, -80.f);
-	drawPile.push_back(poison);
+	//// Poison
+	//auto poison = std::make_shared<PoisonCard>(transformManager, -260.f, -80.f);
+	//drawPile.push_back(poison);
 
-	// Vulnerable
-	auto vuln = std::make_shared<VulnerableCard>(transformManager, -260.f, -80.f);
-	drawPile.push_back(vuln);
+	//// Vulnerable
+	//auto vuln = std::make_shared<VulnerableCard>(transformManager, -260.f, -80.f);
+	//drawPile.push_back(vuln);
 
-	// Weakness
-	auto weak = std::make_shared<WeaknessCard>(transformManager, -260.f, -80.f);
-	drawPile.push_back(weak);
+	//// Weakness
+	//auto weak = std::make_shared<WeaknessCard>(transformManager, -260.f, -80.f);
+	//drawPile.push_back(weak);
 
-	// Stun
-	auto stun = std::make_shared<StunCard>(transformManager, -260.f, -80.f);
-	drawPile.push_back(stun);
+	//// Stun
+	//auto stun = std::make_shared<StunCard>(transformManager, -260.f, -80.f);
+	//drawPile.push_back(stun);
 
-	// Strike
-	auto strikeCard = std::make_shared<StrikeCard>(transformManager, -260.f, -80.f);
-	drawPile.push_back(strikeCard);
+	//// Strike
+	//auto strikeCard = std::make_shared<StrikeCard>(transformManager, -260.f, -80.f);
+	//drawPile.push_back(strikeCard);
 
-	heavy->Init(draggableManager, game->GetGraphicsDevice(), &camera);
-	twin->Init(draggableManager, game->GetGraphicsDevice(), &camera);
-	cleave->Init(draggableManager, game->GetGraphicsDevice(), &camera);
-	chain->Init(draggableManager, game->GetGraphicsDevice(), &camera);
-	poison->Init(draggableManager, game->GetGraphicsDevice(), &camera);
-	vuln->Init(draggableManager, game->GetGraphicsDevice(), &camera);
-	weak->Init(draggableManager, game->GetGraphicsDevice(), &camera);
-	stun->Init(draggableManager, game->GetGraphicsDevice(), &camera);
-	strikeCard->Init(draggableManager, game->GetGraphicsDevice(), &camera);
+	//heavy->Init(draggableManager, game->GetGraphicsDevice(), &camera);
+	//twin->Init(draggableManager, game->GetGraphicsDevice(), &camera);
+	//cleave->Init(draggableManager, game->GetGraphicsDevice(), &camera);
+	//chain->Init(draggableManager, game->GetGraphicsDevice(), &camera);
+	//poison->Init(draggableManager, game->GetGraphicsDevice(), &camera);
+	//vuln->Init(draggableManager, game->GetGraphicsDevice(), &camera);
+	//weak->Init(draggableManager, game->GetGraphicsDevice(), &camera);
+	//stun->Init(draggableManager, game->GetGraphicsDevice(), &camera);
+	//strikeCard->Init(draggableManager, game->GetGraphicsDevice(), &camera);
 
 	this->GiveTestItems();
 

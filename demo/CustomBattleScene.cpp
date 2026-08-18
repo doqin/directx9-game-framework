@@ -52,13 +52,13 @@ namespace Demo {
 					enemies.push_back(enemy);
                 } 
                 else if (enemyName == "KeyeproEnemy") {
-                    auto enemy = std::make_shared<KeyeproEnemy>(transformManager, 500.0f);
+                    auto enemy = std::make_shared<KeyeproEnemy>(transformManager, 600.0f);
                     enemy->Init(game->GetGraphicsDevice(), &camera);
                     enemy->SetOnRequestEnemyCard([this](std::shared_ptr<IEnemy> enemyCardOwner) { CreateEnemyCard(enemyCardOwner); });
                     enemies.push_back(enemy);
                 }
                 else if (enemyName == "KeyeEnemy") {
-                    auto enemy = std::make_shared<KeyeEnemy>(transformManager, 30.0f);
+                    auto enemy = std::make_shared<KeyeEnemy>(transformManager, 50.0f);
                     enemy->Init(game->GetGraphicsDevice(), &camera);
                     enemy->SetOnRequestEnemyCard([this](std::shared_ptr<IEnemy> enemyCardOwner) { CreateEnemyCard(enemyCardOwner); });
                     enemies.push_back(enemy);

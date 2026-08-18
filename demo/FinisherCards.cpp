@@ -110,7 +110,7 @@ bool Demo::OverdriveCard::Execute() {
 	if (isDone) return true;
 	if (owner) {
 		owner->AddStackingModifier(ModifierType::BuffDamage, 3, 4.f, true);
-		owner->AddStackingModifier(ModifierType::Regen, 3, 3.f, true);
+		owner->AddStackingModifier(ModifierType::Regen, 3, 10.f, true);
 		if (battleScene) battleScene->QueuePopUpMessage(L"Overdrive!");
 	}
 	isDone = true;

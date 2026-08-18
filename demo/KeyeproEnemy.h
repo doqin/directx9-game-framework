@@ -1,4 +1,4 @@
-﻿#pragma once
+#pragma once
 #include "IEnemy.h"
 
 namespace Demo {
@@ -14,20 +14,19 @@ namespace Demo {
         int skillTurnThisCycle = -1;
 
         int GetRandomPattern();
-        void PatternSineWaveStorm(float projDamage);
         void PatternTargetedSniping(float projDamage);
         void PatternEcholocation(float projDamage);
         void PatternSwoopBite(float projDamage);
-        void PatternSpiralBloom(float projDamage);
-        void PatternCrossfireSweep(float projDamage);
-        void PatternHomingConstellation(float projDamage);
 
     public:
         using IEnemy::IEnemy;
+        // 128px frames drawn at 2x.
+        float GetBodyWidth() const override { return 256.f; }
+        float GetBodyHeight() const override { return 256.f; }
         void Init(DX9GF::GraphicsDevice* graphicsDevice, DX9GF::Camera* camera);
         void Draw(DX9GF::GraphicsDevice* graphicsDevice, DX9GF::Camera* camera, unsigned long long deltaTime) override;
 
-        void OnTurnBegin(std::shared_ptr<Player> player, std::shared_ptr<PopUpMessage> popUpMessage, int currentTurn) override;
+        void OnTurnBegin(std::shared_ptr<Player> player, std::shared_ptr<PopUpMessage> popUpMessage, int currentTurn, std::vector<std::shared_ptr<IEnemy>>* enemies, DX9GF::GraphicsDevice* graphicsDevice, DX9GF::Camera* camera) override;
         void StartAttack(std::shared_ptr<Player> player, std::vector<std::shared_ptr<IEnemy>>* enemies, std::shared_ptr<PopUpMessage> popUpMessage, DX9GF::GraphicsDevice* graphicsDevice, DX9GF::Camera* camera, int currentTurn) override;
     };
 }

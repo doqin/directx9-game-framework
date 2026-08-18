@@ -58,6 +58,7 @@ namespace DX9GF {
 		FontSprite(Font* font);
 		~FontSprite();
 		void SetText(std::wstring&& text);
+		void SetText(const std::wstring& text);
 		void SetColor(D3DCOLOR color);
 		void SetBold(bool bold);
 		void SetOutline(bool outline, D3DCOLOR color = 0xFF000000, float thickness = 1.0f);

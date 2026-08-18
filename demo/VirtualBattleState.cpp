@@ -30,7 +30,7 @@ namespace Demo {
 			vc.weak = enemy->HasModifier(ModifierType::Weak);
 
 			for (const auto& mod : enemy->GetModifiers()) {
-				if (mod.type == ModifierType::Poison && mod.duration > 0 && mod.delayTurns <= 0) {
+				if (mod.type == ModifierType::Poison && mod.duration > 0) {
 					vc.poisonDuration += mod.duration;
 					vc.poisonValue = (std::max)(vc.poisonValue, mod.value);
 				}

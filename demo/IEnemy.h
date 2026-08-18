@@ -1,4 +1,4 @@
-﻿#pragma once
+#pragma once
 #include "DX9GF.h"
 #include "DX9GFExtras.h"
 #include "Player.h"
@@ -23,6 +23,10 @@ namespace Demo {
 		};
 		bool isOnStandby = true;
 		std::function<void(int)> onRequestLockCard = nullptr;
+		// Hands a newly created enemy to the battle scene instead of touching its enemy list
+		// directly. Spawns run from deferred commands inside the scene's enemy update loop, so
+		// inserting straight into that vector would reallocate it mid-iteration.
+		std::function<void(std::shared_ptr<IEnemy>)> onRequestSpawnEnemy = nullptr;
 		std::shared_ptr<DX9GF::RectangleTrigger> cardSpawnTrigger;
 		std::function<void(std::shared_ptr<IEnemy>)> onRequestEnemyCard = [](std::shared_ptr<IEnemy>) {};
 		std::vector<DamageIndicator> damageIndicators;
@@ -57,9 +61,19 @@ namespace Demo {
 		bool IsOnStandby() const { return isOnStandby; }
 		bool IsDoneAttacking();
 		int GetGoldReward() const { return goldReward; }
+		// On-screen size of the sprite, used by the battle scene to pack enemies without
+		// overlapping them. Subclasses that draw larger art override these; the default matches
+		// the common 64px frame at the 2x scale every enemy sets in Init.
+		// Deliberately separate from cardSpawnTrigger, which is the click box.
+		virtual float GetBodyWidth() const { return 128.f; }
+		virtual float GetBodyHeight() const { return 128.f; }
 		std::weak_ptr<DX9GF::RectangleTrigger> GetCardSpawnTrigger() const { return cardSpawnTrigger; }
 		void SetOnRequestLockCard(std::function<void(int)> callback) { onRequestLockCard = callback; }
+		void SetOnRequestSpawnEnemy(std::function<void(std::shared_ptr<IEnemy>)> callback) { onRequestSpawnEnemy = callback; }
 		virtual void OnTurnBegin(std::shared_ptr<Player> player, std::shared_ptr<PopUpMessage> popUpMessage, int currentTurn) {}
+		virtual void OnTurnBegin(std::shared_ptr<Player> player, std::shared_ptr<PopUpMessage> popUpMessage, int currentTurn, std::vector<std::shared_ptr<IEnemy>>* enemies, DX9GF::GraphicsDevice* graphicsDevice, DX9GF::Camera* camera) {
+			OnTurnBegin(player, popUpMessage, currentTurn);
+		}
 
 		bool TakeIndirectDamage(float damage, DamageType type) override;
 		void SpawnHealText(float actualHeal) override;

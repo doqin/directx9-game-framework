@@ -123,6 +123,10 @@ namespace Demo {
 		std::vector<std::shared_ptr<ICard>> nullifiedPile;
 		std::vector<std::shared_ptr<ICard>> queuedToDraw;
 		std::vector<std::shared_ptr<IEnemy>> enemies;
+		// Enemies spawned by other enemies wait here until FlushPendingEnemies runs. Spawns are
+		// triggered from deferred commands that execute inside the loops walking `enemies`, so
+		// appending directly would reallocate the vector out from under the running iteration.
+		std::vector<std::shared_ptr<IEnemy>> pendingEnemies;
 		float enemyCardRemoveAreaX = 220.f;
 		float enemyCardRemoveAreaY = -140.f;
 		float enemyCardRemoveAreaWidth = 180.f;
@@ -183,6 +187,22 @@ namespace Demo {
 		static constexpr float PILE_BUTTON_SIZE = 48.f;
 		static constexpr float PILE_BUTTON_GAP = 8.f;
 
+		// PlayerAttack enemy grid. Columns are anchored to the right edge and march toward the
+		// screen midpoint, so the enemy area never reaches the program blocks or the card hand.
+		// Clear of the right edge, leaving room for the status icons an enemy draws at +64..+140.
+		static constexpr float ENEMY_GRID_RIGHT_PAD = 140.f;
+		static constexpr float ENEMY_GRID_COLUMN_PITCH = 170.f;
+		// Extra clearance when a wide body (the boss is 256px) pushes the next column over.
+		static constexpr float ENEMY_GRID_COLUMN_GAP = 16.f;
+		// An enemy draws its HP text 120px above its centre, so that - not the sprite - is what
+		// binds at the top of the screen. Includes room for the glyphs themselves.
+		static constexpr float ENEMY_GRID_HP_TEXT_HEADROOM = 130.f;
+		static constexpr float ENEMY_GRID_BOTTOM_PAD = 12.f;
+		static constexpr float ENEMY_GRID_ROW_GAP = 16.f;
+		// Leftmost pixel an enemy body may reach. The void main() / void Init() blocks sit at
+		// x = +70 by default, so columns stop just clear of them rather than at the midpoint.
+		static constexpr float ENEMY_GRID_LEFT_EDGE_X = 76.f;
+
 		std::shared_ptr<PopUpMessage> popUpMessage;
 		std::shared_ptr<DX9GF::StaticSprite> energyIcon;
 		std::shared_ptr<DX9GF::StaticSprite> hourglassIcon;
@@ -233,6 +253,12 @@ namespace Demo {
 		// Ages the entries alongside the player's modifiers and drops the spent ones.
 		void TickActiveItems();
 		void CollectDeadEnemies();
+		// Moves anything queued by onRequestSpawnEnemy into `enemies`. Safe to call between
+		// iterations, never during one.
+		void FlushPendingEnemies();
+		// Wires the scene callbacks an enemy needs. Applied to the starting line-up and to
+		// every enemy spawned mid-battle.
+		void WireEnemyCallbacks(const std::shared_ptr<IEnemy>& enemy);
 		// The two program bodies, in the order keyboard navigation should walk them. Skips any
 		// that have not been created yet.
 		std::vector<std::shared_ptr<IBlockCard>> GetBlockCards() const;
@@ -253,6 +279,12 @@ namespace Demo {
 		void PlayerViewPileUpdate(unsigned long long deltaTime);
 		bool EnemyAttackUpdate(unsigned long long deltaTime);
 		void QueueEnemyLayoutTransition(State targetState);
+		// One target position per entry in `enemies`, packed into right-anchored columns that
+		// grow leftward. Columns are filled in list order, so a mid-battle spawn takes the next
+		// free slot instead of reshuffling the enemies already placed.
+		std::vector<D3DXVECTOR2> BuildEnemyGridSlots() const;
+		// Vertical band the enemy grid may occupy, in world coordinates.
+		void GetEnemyGridBand(float& top, float& bottom) const;
 		void RemoveEnemyCardsInRemoveArea();
 		void StartAttackCountdown(std::shared_ptr<std::vector<std::shared_ptr<IEnemy>>> attackingEnemies);
 		bool UpdateAttackCountdown(unsigned long long deltaTime);
