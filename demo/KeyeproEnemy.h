@@ -17,6 +17,7 @@ namespace Demo {
         void PatternTargetedSniping(float projDamage);
         void PatternEcholocation(float projDamage);
         void PatternSwoopBite(float projDamage);
+        void PatternShatterVolley(float projDamage);
 
     public:
         using IEnemy::IEnemy;

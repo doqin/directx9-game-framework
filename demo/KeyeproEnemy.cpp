@@ -78,23 +78,25 @@ void Demo::KeyeproEnemy::OnTurnBegin(std::shared_ptr<Player> player, std::shared
 		}
 	}
 
+	constexpr float LOCK_CHANCE = 0.4f;
+	if (RNG::Range(0.f, 1.f) <= LOCK_CHANCE) {
+		CastAbility([this]() {
+			if (this->onRequestLockCard) this->onRequestLockCard(2);
+			}, popUpMessage, L"Boss locks your mind!");
+	}
+
 	if (currentTurn % 2 == 1) {
-		auto abilityRoll = RNG::Range(1, 6);
+		auto abilityRoll = RNG::Range(1, 5);
 		if (abilityRoll == 1) {
-			CastAbility([this]() {
-				if (this->onRequestLockCard) this->onRequestLockCard(2);
-				}, popUpMessage, L"Boss locks your mind!");
-		}
-		else if (abilityRoll == 2) {
 			CastAbility([this]() { this->player.lock()->AddModifier(ModifierType::Vulnerable, 1, 5.0f, false); }, popUpMessage, L"Boss lowers your defenses!");
 		}
-		else if (abilityRoll == 3) {
+		else if (abilityRoll == 2) {
 			CastAbility([this]() { this->player.lock()->AddModifier(ModifierType::Weak, 2, 5.0f, false); }, popUpMessage, L"Boss weakens your attacks!");
 		}
-		else if (abilityRoll == 4) {
+		else if (abilityRoll == 3) {
 			CastAbility([this]() { this->AddModifier(ModifierType::BuffDefense, 2, 30.0f, true); }, popUpMessage, L"Boss fortifies itself!");
 		}
-		else if (abilityRoll == 5) {
+		else if (abilityRoll == 4) {
 			CastAbility([this]() { this->AddModifier(ModifierType::HealHP, 0, 50.0f, true); }, popUpMessage, L"Boss regenerates!");
 		}
 		else {
@@ -109,13 +111,11 @@ void Demo::KeyeproEnemy::StartAttack(std::shared_ptr<Player> player, std::vector
 	float baseDamage = 5.f;
 
 	if (enemies != nullptr && graphicsDevice != nullptr && camera != nullptr) {
-		int patternId = GetSmartRandomPattern(1, 3);
+		int patternId = GetSmartRandomPattern(1, 4);
 		if (patternId == 1) PatternTargetedSniping(baseDamage);
 		else if (patternId == 2) PatternEcholocation(baseDamage);
 		else if (patternId == 3) PatternSwoopBite(baseDamage);
-		//else if (patternId == 4) PatternSpiralBloom(baseDamage);
-		//else if (patternId == 5) PatternCrossfireSweep(baseDamage);
-		//else PatternHomingConstellation(baseDamage);
+		else if (patternId == 4) PatternShatterVolley(baseDamage);
 	}
 }
 
@@ -155,6 +155,7 @@ void Demo::KeyeproEnemy::PatternTargetedSniping(float baseDamage) {
 					.SetDelay(0.f)
 					.SetDecayTime(4.f)
 					.SetDamage(finalDamage)
+					.SetStatusEffect(ModifierType::Poison, 0.f, 1)
 				);
 			}
 			markFinished();
@@ -167,11 +168,12 @@ void Demo::KeyeproEnemy::PatternEcholocation(float baseDamage) {
 	const int BULLETS = 10;
 	const int VELOCITY = 180;
 	const int SPACING = 96;
-	auto rightAttack = std::make_shared<DX9GF::CustomCommand>([this, baseDamage](std::function<void(void)> markFinished) {
+	std::shared_ptr<int> yOffset = std::make_shared<int>(0);
+	auto rightAttack = std::make_shared<DX9GF::CustomCommand>([this, baseDamage, yOffset, SPACING](std::function<void(void)> markFinished) {
 		float finalDamage = this->CalculateOutgoingDamage(baseDamage);
 		for (int i = 0; i < BULLETS; i++) {
 			if (auto lock = this->player.lock()) {
-				float startY = (i - BULLETS / 2.f) * SPACING;
+				float startY = (i - BULLETS / 2.f) * SPACING + *yOffset;
 				projectiles.Spawn(
 					lock,
 					ProjectileDesc(projTexture.get(), projFrames, 12, 16, 16, 16, 16, 320, startY)
@@ -182,16 +184,19 @@ void Demo::KeyeproEnemy::PatternEcholocation(float baseDamage) {
 					.SetVelocity(VELOCITY)
 					.SetDamage(finalDamage)
 					.SetGhostSprite(projTexture.get(), projFrames.front(), 16, 16)
+					.SetStatusEffect(ModifierType::Freeze, 0.05f, 1)
 				);
 			}
 		}
+		*yOffset += 16;
+		*yOffset %= SPACING;
 		markFinished();
 		});
-	auto leftAttack = std::make_shared<DX9GF::CustomCommand>([this, baseDamage](std::function<void(void)> markFinished) {
+	auto leftAttack = std::make_shared<DX9GF::CustomCommand>([this, baseDamage, yOffset](std::function<void(void)> markFinished) {
 		float finalDamage = this->CalculateOutgoingDamage(baseDamage);
 		for (int i = 0; i < BULLETS; i++) {
 			if (auto lock = this->player.lock()) {
-				float startY = (i - BULLETS / 2.f) * SPACING;
+				float startY = (i - BULLETS / 2.f) * SPACING + *yOffset;
 				projectiles.Spawn(
 					lock,
 					ProjectileDesc(projTexture.get(), projFrames, 12, 16, 16, 16, 16, -320, startY)
@@ -205,6 +210,8 @@ void Demo::KeyeproEnemy::PatternEcholocation(float baseDamage) {
 				);
 			}
 		}
+		*yOffset += 16;
+		*yOffset %= SPACING;
 		markFinished();
 		});
 	for (int i = 0; i < 40; i++) {
@@ -288,5 +295,67 @@ void Demo::KeyeproEnemy::PatternSwoopBite(float baseDamage) {
 		if (RNG::Range(1, 2) == 1) commandBuffer.PushCommand(std::make_shared<DX9GF::CustomCommand>(*leftAttack));
 		else commandBuffer.PushCommand(std::make_shared<DX9GF::CustomCommand>(*rightAttack));
 		commandBuffer.PushCommand(std::make_shared<DX9GF::DelayCommand>(0.5f));
+	}
+}
+
+// Shells cross the arena from one side and burst at a random point near its centre,
+// throwing a ring of shards outward. The burst point moves every wave, so no corner
+// stays safe and the player has to keep reading the incoming shell instead of settling.
+void Demo::KeyeproEnemy::PatternShatterVolley(float baseDamage) {
+	constexpr int SHELLS_PER_WAVE = 3;
+	// Wide enough that the three shells in a wave land as three separate pops the
+	// player can read one at a time, rather than one wall of shards.
+	constexpr float SHELL_STAGGER = 0.35f;
+	constexpr float WAVE_GAP = 1.3f;
+	constexpr float SHELL_VELOCITY = 180.f;
+	constexpr float SPAWN_X = 320.f;
+	constexpr float SPAWN_Y_RANGE = 120.f;
+	// The battle box is 256px square around the origin. Keeping burst points well
+	// inside it means the shards sweep across the arena rather than off its edge.
+	constexpr float BURST_RANGE = 90.f;
+	constexpr int SHARDS = 8;
+	constexpr float SHARD_VELOCITY = 100.f;
+	// Shards clear the 256px box roughly 0.7s after a centre burst; 1.6s carries them
+	// past the visible border without leaving dead sprites padding the phase out.
+	constexpr float SHARD_DECAY = 1.6f;
+	constexpr float SHARD_DAMAGE_SCALE = 0.6f;
+
+	// Only the wave gap costs command time - the shells inside a wave are staggered by
+	// their own spawn delay - so the barrage runs waves * WAVE_GAP, about 10.5-12s.
+	// The last wave then needs its stagger, ~1s of shell flight and the shard decay to
+	// play out: ~3.3s more, for 14-15s under fire. Enough that the player runs out of
+	// easy dodges, and short of the 20s Echolocation spends, which is the point where
+	// the pressure starts reading as a slog instead.
+	const int waves = RNG::Range(8, 9);
+	for (int w = 0; w < waves; w++) {
+		commandBuffer.PushCommand(std::make_shared<DX9GF::CustomCommand>([this, baseDamage](std::function<void(void)> markFinished) {
+			if (auto lock = this->player.lock()) {
+				const float shellDamage = this->CalculateOutgoingDamage(baseDamage);
+				const float shardDamage = this->CalculateOutgoingDamage(baseDamage * SHARD_DAMAGE_SCALE);
+				for (int i = 0; i < SHELLS_PER_WAVE; i++) {
+					const float spawnX = (RNG::Range(1, 2) == 1) ? -SPAWN_X : SPAWN_X;
+					const float spawnY = RNG::Range(-SPAWN_Y_RANGE, SPAWN_Y_RANGE);
+					const float burstX = RNG::Range(-BURST_RANGE, BURST_RANGE);
+					const float burstY = RNG::Range(-BURST_RANGE, BURST_RANGE);
+
+					projectiles.Spawn(
+						lock,
+						ProjectileDesc(projTexture.get(), projFrames, 12, 16, 16, 16, 16, spawnX, spawnY)
+						.SetSplitOnArrival(burstX, burstY, SHARDS, SHARD_VELOCITY)
+						.SetSplitRandomAngle()
+						.SetSplitDecayTime(SHARD_DECAY)
+						.SetSplitDamage(shardDamage)
+						.SetVelocity(SHELL_VELOCITY)
+						.SetDelay(i * SHELL_STAGGER)
+						.SetDecayTime(4.f)
+						.SetDamage(shellDamage)
+						.SetGhostSprite(projTexture.get(), projFrames.front(), 16, 16)
+						.SetStatusEffect(ModifierType::Burn, 1.f, 1)
+					);
+				}
+			}
+			markFinished();
+			}));
+		commandBuffer.PushCommand(std::make_shared<DX9GF::DelayCommand>(WAVE_GAP));
 	}
 }

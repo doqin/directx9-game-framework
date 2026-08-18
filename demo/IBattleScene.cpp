@@ -2250,6 +2250,55 @@ void Demo::IBattleScene::DrawHealthAndDefenseBar(const float y, DX9GF::GraphicsD
 	gd->DrawRectangle(this->uiCamera, x, y, w_, 10, 0xFF9cdb43, true);
 	gd->DrawRectangle(this->uiCamera, x, y, w, 20, 0xFF000000, false);
 
+	auto [screenX, screenY] = DX9GF::InputManager::GetInstance()->GetVirtualAbsoluteMousePos(&this->uiCamera);
+	auto [mouseX, mouseY] = DX9GF::Utils::WindowToWorldCoords(this->uiCamera, screenX, screenY);
+
+	bool isTooltipActive = false;
+	std::wstring activeTooltipText = L"";
+
+	// The items that put those buffs there, listed beside the bars. A modifier icon the mouse is
+	// already on wins the tooltip - the two never overlap, so at most one of them is hovered.
+	std::wstring itemTooltip = DrawActiveItems(x + w, y);
+	if (!isTooltipActive && !itemTooltip.empty()) {
+		isTooltipActive = true;
+		activeTooltipText = std::move(itemTooltip);
+	}
+
+	//draw tooltip after
+	if (isTooltipActive) {
+		DrawTooltip(activeTooltipText, screenX, screenY, gd);
+	}
+}
+
+void Demo::IBattleScene::DrawTooltip(std::wstring& activeTooltipText, float screenX, float screenY, DX9GF::GraphicsDevice* gd)
+{
+	fontSprite->SetText(std::move(activeTooltipText));
+	float tooltipWidth = fontSprite->GetWidth() + 8.f;
+	float tooltipHeight = fontSprite->GetHeight() + 8.f;
+
+	auto [screenW, screenH] = this->uiCamera.GetScreenResolution();
+	float targetScreenX = screenX;
+	float targetScreenY = screenY - tooltipHeight;
+
+	if (targetScreenX + tooltipWidth > screenW) targetScreenX = screenW - tooltipWidth;
+	if (targetScreenY < 0) targetScreenY = screenY + 32.f;
+
+	auto [worldDrawX, worldDrawY] = DX9GF::Utils::WindowToWorldCoords(this->uiCamera, targetScreenX, targetScreenY);
+
+	gd->SetAlphaBlending(true);
+	gd->DrawRectangle(this->uiCamera, worldDrawX, worldDrawY, tooltipWidth, tooltipHeight, 0, 1, 1, 0, 0, D3DCOLOR_ARGB(220, 0, 0, 0), true);
+	gd->SetAlphaBlending(false);
+
+	fontSprite->SetColor(0xFFFFFFFF);
+	fontSprite->SetOutline(true, 0xFF000000, 1.f);
+	fontSprite->SetPosition(worldDrawX + 4.f, worldDrawY + 4.f);
+	fontSprite->Begin();
+	fontSprite->Draw(this->uiCamera, 0);
+	fontSprite->End();
+}
+
+void Demo::IBattleScene::DrawModifierIcons(const float x, const float y, DX9GF::GraphicsDevice* gd)
+{
 	auto modifiers = battlePlayer->GetModifiers();
 	auto modY = y - 48.f;
 
@@ -2410,39 +2459,9 @@ void Demo::IBattleScene::DrawHealthAndDefenseBar(const float y, DX9GF::GraphicsD
 		modY -= 32.f;
 	}
 
-	// The items that put those buffs there, listed beside the bars. A modifier icon the mouse is
-	// already on wins the tooltip - the two never overlap, so at most one of them is hovered.
-	std::wstring itemTooltip = DrawActiveItems(x + w, y);
-	if (!isTooltipActive && !itemTooltip.empty()) {
-		isTooltipActive = true;
-		activeTooltipText = std::move(itemTooltip);
-	}
-
 	//draw tooltip after
 	if (isTooltipActive) {
-		fontSprite->SetText(std::move(activeTooltipText));
-		float tooltipWidth = fontSprite->GetWidth() + 8.f;
-		float tooltipHeight = fontSprite->GetHeight() + 8.f;
-
-		auto [screenW, screenH] = this->uiCamera.GetScreenResolution();
-		float targetScreenX = screenX;
-		float targetScreenY = screenY - tooltipHeight;
-
-		if (targetScreenX + tooltipWidth > screenW) targetScreenX = screenW - tooltipWidth;
-		if (targetScreenY < 0) targetScreenY = screenY + 32.f;
-
-		auto [worldDrawX, worldDrawY] = DX9GF::Utils::WindowToWorldCoords(this->uiCamera, targetScreenX, targetScreenY);
-
-		gd->SetAlphaBlending(true);
-		gd->DrawRectangle(this->uiCamera, worldDrawX, worldDrawY, tooltipWidth, tooltipHeight, 0, 1, 1, 0, 0, D3DCOLOR_ARGB(220, 0, 0, 0), true);
-		gd->SetAlphaBlending(false);
-
-		fontSprite->SetColor(0xFFFFFFFF);
-		fontSprite->SetOutline(true, 0xFF000000, 1.f);
-		fontSprite->SetPosition(worldDrawX + 4.f, worldDrawY + 4.f);
-		fontSprite->Begin();
-		fontSprite->Draw(this->uiCamera, 0);
-		fontSprite->End();
+		DrawTooltip(activeTooltipText, screenX, screenY, gd);
 	}
 }
 
@@ -3340,10 +3359,14 @@ void Demo::IBattleScene::DrawUI(unsigned long long deltaTime)
 	auto gd = game->GetGraphicsDevice();
 
 	if (SUCCEEDED(gd->BeginDraw())) {
-
+		auto width = game->GetVirtualWidth();
+		auto height = game->GetVirtualHeight();
+		const float modifierIconOffsetX = 40.f - width / 2.f;
+		const float modifierIconOffsetY = -40.f + height / 2.f;
 		switch (state) {
 		case State::PlayerStandBy:
 			PlayerStandByDraw(deltaTime);
+			DrawModifierIcons(modifierIconOffsetX, modifierIconOffsetY, gd);
 			break;
 		case State::PlayerAttack:
 			PlayerAttackDraw(deltaTime);
@@ -3357,6 +3380,7 @@ void Demo::IBattleScene::DrawUI(unsigned long long deltaTime)
 		case State::EnemyAttack:
 			float y = game->GetVirtualHeight() / 2.f - 40.f;
 			DrawHealthAndDefenseBar(y, gd);
+			DrawModifierIcons(modifierIconOffsetX, modifierIconOffsetY, gd);
 			break;
 		}
 

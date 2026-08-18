@@ -315,6 +315,8 @@ namespace Demo {
 		// That total, drawn at each enemy's bottom-left through the attack phase.
 		void DrawProjectedDamage(unsigned long long deltaTime);
 		void DrawHealthAndDefenseBar(const float y, DX9GF::GraphicsDevice* gd);
+		void DrawTooltip(std::wstring& activeTooltipText, float screenX, float screenY, DX9GF::GraphicsDevice* gd);
+		void DrawModifierIcons(const float x, const float y, DX9GF::GraphicsDevice* gd);
 		// The row of used-item icons beside the health bar. Returns the tooltip text for whichever
 		// icon the mouse is over (empty if none), so it can share the bar's tooltip renderer.
 		std::wstring DrawActiveItems(const float barRightX, const float y);
