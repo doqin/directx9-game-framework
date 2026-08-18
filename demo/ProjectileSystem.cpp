@@ -152,6 +152,66 @@ namespace {
 
 		return false;
 	}
+
+	// Separating-axis test between the player's box and a beam's oriented box.
+	// Both boxes' axes are unit length, so the projections need no normalizing.
+	bool ObbOverlapsRect(
+		const RectShape& rect,
+		float centerX,
+		float centerY,
+		float rotation,
+		float halfLength,
+		float halfThickness
+	)
+	{
+		if (halfLength <= floatEpsilon || halfThickness <= floatEpsilon) {
+			return false;
+		}
+
+		const float c = std::cos(rotation);
+		const float s = std::sin(rotation);
+		const Vec2 beamX{ c, s };
+		const Vec2 beamY{ -s, c };
+		const Vec2 delta = Vec2{ centerX, centerY } - rect.center;
+
+		const Vec2 axes[4] = { rect.axisX, rect.axisY, beamX, beamY };
+		for (const auto& axis : axes) {
+			const float rectExtent = std::abs(Dot(rect.axisX, axis)) * rect.halfX
+				+ std::abs(Dot(rect.axisY, axis)) * rect.halfY;
+			const float beamExtent = std::abs(Dot(beamX, axis)) * halfLength
+				+ std::abs(Dot(beamY, axis)) * halfThickness;
+			if (std::abs(Dot(delta, axis)) > rectExtent + beamExtent + floatEpsilon) {
+				return false;
+			}
+		}
+		return true;
+	}
+
+	D3DCOLOR ScaleAlpha(D3DCOLOR color, float multiplier)
+	{
+		const float clamped = (std::max)(0.f, (std::min)(1.f, multiplier));
+		const D3DCOLOR alpha = static_cast<D3DCOLOR>(((color >> 24) & 0xFF) * clamped);
+		return (color & 0x00FFFFFF) | (alpha << 24);
+	}
+
+	// One beam quad, rotated about its own centre.
+	void DrawBeam(
+		DX9GF::GraphicsDevice* graphicsDevice,
+		const DX9GF::Camera& camera,
+		float x,
+		float y,
+		float angle,
+		float length,
+		float thickness,
+		D3DCOLOR color,
+		bool isFilled = true
+	)
+	{
+		graphicsDevice->DrawRectangle(
+			camera, x, y, length, thickness, angle,
+			1.f, 1.f, length * 0.5f, thickness * 0.5f, color, isFilled
+		);
+	}
 }
 
 Demo::ProjectileDesc& Demo::ProjectileDesc::SetTrajectory(D3DXVECTOR2 trajectory)
@@ -315,6 +375,85 @@ Demo::ProjectileDesc& Demo::ProjectileDesc::SetRandomStatusEffect(
 	return *this;
 }
 
+Demo::LaserDesc Demo::LaserDesc::Vertical(float x, float centerY, float length)
+{
+	return LaserDesc(x, centerY, pi * 0.5f, length);
+}
+
+Demo::LaserDesc Demo::LaserDesc::Horizontal(float y, float centerX, float length)
+{
+	return LaserDesc(centerX, y, 0.f, length);
+}
+
+Demo::LaserDesc& Demo::LaserDesc::SetThickness(float thickness)
+{
+	this->thickness = thickness;
+	return *this;
+}
+
+Demo::LaserDesc& Demo::LaserDesc::SetDelay(float delay)
+{
+	this->delay = delay;
+	return *this;
+}
+
+Demo::LaserDesc& Demo::LaserDesc::SetWarnTime(float warnTime)
+{
+	this->warnTime = warnTime;
+	return *this;
+}
+
+Demo::LaserDesc& Demo::LaserDesc::SetFireTime(float fireTime)
+{
+	this->fireTime = fireTime;
+	return *this;
+}
+
+Demo::LaserDesc& Demo::LaserDesc::SetDamage(float damage)
+{
+	this->damage = damage;
+	return *this;
+}
+
+Demo::LaserDesc& Demo::LaserDesc::SetGlowThickness(float glowThickness)
+{
+	this->glowThickness = glowThickness;
+	return *this;
+}
+
+Demo::LaserDesc& Demo::LaserDesc::SetColors(D3DCOLOR warnColor, D3DCOLOR glowColor, D3DCOLOR coreColor)
+{
+	this->warnColor = warnColor;
+	this->glowColor = glowColor;
+	this->coreColor = coreColor;
+	return *this;
+}
+
+Demo::LaserDesc& Demo::LaserDesc::SetStatusEffect(ModifierType type, float value, int duration)
+{
+	this->hasStatusEffect = true;
+	this->randomizeStatusEffect = false;
+	this->statusEffectType = type;
+	this->statusEffectValue = value;
+	this->statusEffectDuration = duration;
+	return *this;
+}
+
+Demo::LaserDesc& Demo::LaserDesc::SetRandomStatusEffect(
+	ModifierType typeA, float valueA, int durationA,
+	ModifierType typeB, float valueB, int durationB)
+{
+	this->hasStatusEffect = true;
+	this->randomizeStatusEffect = true;
+	this->statusEffectType = typeA;
+	this->statusEffectValue = valueA;
+	this->statusEffectDuration = durationA;
+	this->altStatusEffectType = typeB;
+	this->altStatusEffectValue = valueB;
+	this->altStatusEffectDuration = durationB;
+	return *this;
+}
+
 unsigned int Demo::ProjectileSystem::GetOrCreateBatch(const ProjectileDesc& desc)
 {
 	for (unsigned int i = 0; i < batches.size(); i++) {
@@ -429,6 +568,84 @@ void Demo::ProjectileSystem::Spawn(const std::shared_ptr<Player>& player, const 
 	emitters.push_back(std::move(emitter));
 
 	dead.push_back(0);
+}
+
+void Demo::ProjectileSystem::Spawn(const std::shared_ptr<Player>& player, const LaserDesc& desc)
+{
+	target = player;
+
+	LaserComponent laser{};
+	laser.x = desc.x;
+	laser.y = desc.y;
+	laser.angle = desc.angle;
+	laser.length = desc.length;
+	laser.thickness = desc.thickness;
+	laser.warnThickness = desc.warnThickness;
+	laser.glowThickness = desc.glowThickness;
+	laser.delay = desc.delay;
+	laser.warnTime = desc.warnTime;
+	laser.fireTime = desc.fireTime;
+	laser.elapsed = 0.f;
+	laser.warnColor = desc.warnColor;
+	laser.glowColor = desc.glowColor;
+	laser.coreColor = desc.coreColor;
+	lasers.push_back(laser);
+
+	// The beam keeps burning through a hit, so it never destroys on contact; the
+	// player's own invincibility window is what limits how often it can land.
+	laserCombats.push_back({
+		desc.damage, desc.length, desc.thickness, false,
+		desc.hasStatusEffect, desc.randomizeStatusEffect,
+		desc.statusEffectType, desc.statusEffectValue, desc.statusEffectDuration,
+		desc.altStatusEffectType, desc.altStatusEffectValue, desc.altStatusEffectDuration,
+		false
+		});
+
+	laserDead.push_back(0);
+}
+
+void Demo::ProjectileSystem::ApplyHit(Player& player, CombatComponent& combat)
+{
+	player.TakeDamage(combat.damage);
+
+	if (!combat.hasStatusEffect || combat.statusApplied) {
+		return;
+	}
+	combat.statusApplied = true;
+
+	ModifierType type = combat.statusEffectType;
+	int duration = combat.statusEffectDuration;
+	float value = combat.statusEffectValue;
+	if (combat.randomizeStatusEffect) {
+		bool pickAlt = (RNG::Range(1, 2) == 2);
+		if (pickAlt) {
+			type = combat.altStatusEffectType;
+			duration = combat.altStatusEffectDuration;
+			value = combat.altStatusEffectValue;
+		}
+	}
+	switch (type) {
+	case ModifierType::Burn:
+	case ModifierType::Marked:
+	case ModifierType::Freeze:
+		player.AddStackingModifier(type, duration, value, false);
+		break;
+	default:
+		player.AddModifier(type, duration, value, false);
+	}
+}
+
+void Demo::ProjectileSystem::DestroyLaserAt(size_t index)
+{
+	const size_t last = lasers.size() - 1;
+	if (index != last) {
+		lasers[index] = lasers[last];
+		laserCombats[index] = laserCombats[last];
+		laserDead[index] = laserDead[last];
+	}
+	lasers.pop_back();
+	laserCombats.pop_back();
+	laserDead.pop_back();
 }
 
 void Demo::ProjectileSystem::DestroyAt(size_t index)
@@ -555,7 +772,7 @@ void Demo::ProjectileSystem::EmitBurst(const PendingBurst& burst)
 
 void Demo::ProjectileSystem::Update(unsigned long long deltaTime)
 {
-	if (transforms.empty()) {
+	if (transforms.empty() && lasers.empty()) {
 		return;
 	}
 
@@ -660,31 +877,7 @@ void Demo::ProjectileSystem::Update(unsigned long long deltaTime)
 		if (hasPlayerRect && EllipseOverlapsRect(
 			playerRect, tr.x, tr.y, tr.rotation,
 			combat.colliderWidth * 0.5f, combat.colliderHeight * 0.5f)) {
-			player->TakeDamage(combat.damage);
-
-			if (combat.hasStatusEffect && !combat.statusApplied) {
-				combat.statusApplied = true;
-				ModifierType type = combat.statusEffectType;
-				int duration = combat.statusEffectDuration;
-				float value = combat.statusEffectValue;
-				if (combat.randomizeStatusEffect) {
-					bool pickAlt = (RNG::Range(1, 2) == 2);
-					if (pickAlt) {
-						type = combat.altStatusEffectType;
-						duration = combat.altStatusEffectDuration;
-						value = combat.altStatusEffectValue;
-					}
-				}
-				switch (type) {
-				case ModifierType::Burn:
-				case ModifierType::Marked:
-				case ModifierType::Freeze:
-					player->AddStackingModifier(type, duration, value, false);
-					break;
-				default:
-					player->AddModifier(type, duration, value, false);
-				}
-			}
+			ApplyHit(*player, combat);
 
 			if (combat.destroyOnHit) {
 				dead[i] = 1;
@@ -714,12 +907,63 @@ void Demo::ProjectileSystem::Update(unsigned long long deltaTime)
 		EmitBurst(burst);
 	}
 	pendingBursts.clear();
+
+	// Beams only damage once they have finished telegraphing, and they keep
+	// damaging for as long as they burn.
+	for (size_t i = 0; i < lasers.size(); i++) {
+		auto& laser = lasers[i];
+		if (laser.elapsed >= laser.delay + laser.warnTime + laser.fireTime) {
+			laserDead[i] = 1;
+			continue;
+		}
+
+		if (laser.elapsed >= laser.delay + laser.warnTime && hasPlayerRect && ObbOverlapsRect(
+			playerRect, laser.x, laser.y, laser.angle,
+			laser.length * 0.5f, laser.thickness * 0.5f)) {
+			ApplyHit(*player, laserCombats[i]);
+		}
+
+		laser.elapsed += dtSec;
+	}
+
+	for (size_t i = 0; i < lasers.size();) {
+		if (laserDead[i]) {
+			DestroyLaserAt(i);
+		}
+		else {
+			++i;
+		}
+	}
 }
 
 void Demo::ProjectileSystem::Draw(DX9GF::GraphicsDevice* graphicsDevice, const DX9GF::Camera& camera, unsigned long long deltaTime)
 {
-	if (transforms.empty()) {
+	if (transforms.empty() && lasers.empty()) {
 		return;
+	}
+
+	// Beams are the backdrop of a pattern, so they go under everything else.
+	if (!lasers.empty() && graphicsDevice) {
+		graphicsDevice->SetAlphaBlending(true);
+		for (const auto& laser : lasers) {
+			if (laser.elapsed < laser.delay) {
+				continue;
+			}
+			const float phase = laser.elapsed - laser.delay;
+			if (phase < laser.warnTime) {
+				// A thin sight line pulsing about three times a second.
+				const float pulse = std::sin(phase * 20.f) * 0.5f + 0.5f;
+				DrawBeam(graphicsDevice, camera, laser.x, laser.y, laser.angle,
+					laser.length, laser.warnThickness, ScaleAlpha(laser.warnColor, pulse));
+			}
+			else {
+				DrawBeam(graphicsDevice, camera, laser.x, laser.y, laser.angle,
+					laser.length, laser.glowThickness, laser.glowColor);
+				DrawBeam(graphicsDevice, camera, laser.x, laser.y, laser.angle,
+					laser.length, laser.thickness, laser.coreColor);
+			}
+		}
+		graphicsDevice->SetAlphaBlending(false);
 	}
 
 	// Trails and afterimages go underneath the projectiles themselves.
@@ -767,6 +1011,10 @@ void Demo::ProjectileSystem::Draw(DX9GF::GraphicsDevice* graphicsDevice, const D
 	}
 
 	if (DX9GF::ICollider::drawCollider && graphicsDevice) {
+		for (const auto& laser : lasers) {
+			DrawBeam(graphicsDevice, camera, laser.x, laser.y, laser.angle,
+				laser.length, laser.thickness, 0x550000FF, false);
+		}
 		for (size_t i = 0; i < count; i++) {
 			const auto& tr = transforms[i];
 			const auto& combat = combats[i];

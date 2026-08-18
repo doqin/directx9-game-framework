@@ -1,6 +1,7 @@
 ﻿#pragma once
 #include "IEnemy.h"
 #include "DX9GFExtras.h"
+#include <utility>
 #include <vector>
 
 namespace Demo {
@@ -14,11 +15,14 @@ namespace Demo {
 
 		std::weak_ptr<Player> player;
 
-		int laserState = 0;
-		float storedProjDamage = 0.f;
-
+		// The beams themselves live in the projectile system; Bad Sector only keeps the
+		// lines it picked so it can work out which cell the player is boxed into, and
+		// whether that cell is currently being telegraphed.
+		bool telegraphingCell = false;
 		std::vector<float> laserVerticals;
 		std::vector<float> laserHorizontals;
+
+		std::pair<float, float> GetSafeCellCenter(float playerX, float playerY) const;
 
 		//ability vars
 		int currentCycle = -1;
@@ -32,7 +36,6 @@ namespace Demo {
 		using IEnemy::IEnemy;
 
 		void Init(DX9GF::GraphicsDevice* graphicsDevice, DX9GF::Camera* camera);
-		void Update(unsigned long long deltaTime) override;
 		void Draw(DX9GF::GraphicsDevice* graphicsDevice, DX9GF::Camera* camera, unsigned long long deltaTime) override;
 
 		void OnTurnBegin(std::shared_ptr<Player> player, std::shared_ptr<PopUpMessage> popUpMessage, int currentTurn) override;

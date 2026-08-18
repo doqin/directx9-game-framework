@@ -151,6 +151,58 @@ namespace Demo {
 		);
 	};
 
+	// A laser is a stationary beam rather than a travelling bullet: it telegraphs
+	// along its line for warnTime, then turns lethal for fireTime before vanishing.
+	// The system owns the blink, the beam rendering and the damage, so a pattern
+	// only describes the geometry and how long each phase lasts.
+	struct LaserDesc {
+		// Placement (the collider is an oriented box centred on x/y)
+		float x = 0.f;
+		float y = 0.f;
+		float angle = 0.f;         // radians; 0 = the beam runs along +X
+		float length = 0.f;
+		float thickness = 4.f;     // lethal core; the glow is drawn wider
+		// Timing
+		float delay = 0.f;
+		float warnTime = 1.5f;
+		float fireTime = 1.f;
+		float damage = 0.f;
+		// Render
+		float warnThickness = 2.f;
+		float glowThickness = 16.f;
+		D3DCOLOR warnColor = D3DCOLOR_ARGB(150, 255, 100, 100);
+		D3DCOLOR glowColor = D3DCOLOR_ARGB(120, 255, 20, 147);
+		D3DCOLOR coreColor = 0xFFFFFFFF;
+		// Status effect on hit
+		bool hasStatusEffect = false;
+		bool randomizeStatusEffect = false;
+		ModifierType statusEffectType = ModifierType::Freeze;
+		float statusEffectValue = 0.f;
+		int statusEffectDuration = 0;
+		ModifierType altStatusEffectType = ModifierType::Burn;
+		float altStatusEffectValue = 0.f;
+		int altStatusEffectDuration = 0;
+
+		LaserDesc(float x, float y, float angle, float length)
+			: x(x), y(y), angle(angle), length(length) {}
+		// Arena beams are nearly always axis aligned, so both spans are spelled out.
+		static LaserDesc Vertical(float x, float centerY, float length);
+		static LaserDesc Horizontal(float y, float centerX, float length);
+
+		LaserDesc& SetThickness(float thickness);
+		LaserDesc& SetDelay(float delay);
+		LaserDesc& SetWarnTime(float warnTime);
+		LaserDesc& SetFireTime(float fireTime);
+		LaserDesc& SetDamage(float damage);
+		LaserDesc& SetGlowThickness(float glowThickness);
+		LaserDesc& SetColors(D3DCOLOR warnColor, D3DCOLOR glowColor, D3DCOLOR coreColor);
+		LaserDesc& SetStatusEffect(ModifierType type, float value, int duration);
+		LaserDesc& SetRandomStatusEffect(
+			ModifierType typeA, float valueA, int durationA,
+			ModifierType typeB, float valueB, int durationB
+		);
+	};
+
 	// Data-oriented replacement for the old IProjectile class hierarchy.
 	// Entities are dense indices into the parallel component arrays below;
 	// destruction swap-pops, so indices never escape this class. Behaviors
@@ -208,6 +260,17 @@ namespace Demo {
 			bool visibleDuringDelay;
 		};
 
+		// Lasers sit beside the projectiles instead of inside the component arrays:
+		// they never move, they collide as an oriented box rather than an ellipse and
+		// they are drawn as primitives rather than sprites. Combat data is shared, so
+		// their damage and status effects behave exactly like a bullet's.
+		struct LaserComponent {
+			float x, y, angle, length;
+			float thickness, warnThickness, glowThickness;
+			float delay, warnTime, fireTime, elapsed;
+			D3DCOLOR warnColor, glowColor, coreColor;
+		};
+
 		// One batch per unique (texture, frames, frame rate, origin); every
 		// projectile in a batch is drawn through the same sprite object.
 		struct SpriteBatch {
@@ -229,6 +292,10 @@ namespace Demo {
 		std::vector<std::unique_ptr<DX9GF::ParticleSystem>> emitters;
 		std::vector<unsigned char> dead;
 
+		std::vector<LaserComponent> lasers;
+		std::vector<CombatComponent> laserCombats;
+		std::vector<unsigned char> laserDead;
+
 		// A burst snapshots everything its children need, so the children can be
 		// created after the update loop has finished. Spawning them inline would
 		// push onto the component arrays the loop is iterating and invalidate the
@@ -247,14 +314,17 @@ namespace Demo {
 		std::shared_ptr<DX9GF::Texture> trailTexture; // shared 4x4 white square
 
 		unsigned int GetOrCreateBatch(const ProjectileDesc& desc);
+		void ApplyHit(Player& player, CombatComponent& combat);
 		void DestroyAt(size_t index);
+		void DestroyLaserAt(size_t index);
 		void QueueBurst(size_t index);
 		void EmitBurst(const PendingBurst& burst);
 	public:
 		void Spawn(const std::shared_ptr<Player>& player, const ProjectileDesc& desc);
+		void Spawn(const std::shared_ptr<Player>& player, const LaserDesc& desc);
 		void Update(unsigned long long deltaTime);
 		void Draw(DX9GF::GraphicsDevice* graphicsDevice, const DX9GF::Camera& camera, unsigned long long deltaTime);
-		bool IsEmpty() const { return transforms.empty(); }
-		size_t Count() const { return transforms.size(); }
+		bool IsEmpty() const { return transforms.empty() && lasers.empty(); }
+		size_t Count() const { return transforms.size() + lasers.size(); }
 	};
 }

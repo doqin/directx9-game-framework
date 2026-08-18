@@ -1,10 +1,12 @@
-﻿#include "pch.h"
+#include "pch.h"
 #include "KernelEnemy.h"
 #include "PopUpMessage.h"
 #include "resource.h"
 #include "RNG.h"
 
 const float PI = 3.14159265359f;
+// Half-width of the bullet-hell arena the patterns play out in.
+const float ARENA_HALF = 128.f;
 
 namespace Demo {
 
@@ -24,82 +26,22 @@ namespace Demo {
 		InitCardSpawnTrigger(camera, 128.f, 128.f);
 	}
 
-	void KernelEnemy::Update(unsigned long long deltaTime) {
-		IEnemy::Update(deltaTime);
-
-		if (laserState == 2) {
+	void KernelEnemy::Draw(DX9GF::GraphicsDevice* graphicsDevice, DX9GF::Camera* camera, unsigned long long deltaTime) {
+		// Marks the cell the beams are about to box the player into, which is also where
+		// the spiral will erupt from once they fire.
+		if (telegraphingCell) {
 			if (auto p = player.lock()) {
 				auto [px, py] = p->GetWorldPosition();
+				auto [centerX, centerY] = GetSafeCellCenter(px, py);
 
-				float pw = 10.f;
-				float ph = 10.f;
-				float lw = 2.f;
+				float targetAlphaMult = sin(timeSinceStart * 0.04f) * 0.5f + 0.5f;
+				D3DCOLOR targetColor = D3DCOLOR_ARGB(static_cast<int>(200 * targetAlphaMult), 255, 50, 50);
 
-				bool hit = false;
-				for (float v : laserVerticals) {
-					if (px + pw > v - lw && px - pw < v + lw && py + ph > -128.f && py - ph < 128.f) hit = true;
-				}
-				for (float h : laserHorizontals) {
-					if (px + pw > -128.f && px - pw < 128.f && py + ph > h - lw && py - ph < h + lw) hit = true;
-				}
-
-				if (hit) {
-					p->TakeDamage(storedProjDamage);
-				}
+				graphicsDevice->SetAlphaBlending(true);
+				graphicsDevice->DrawRectangle(*camera, centerX - 8.f, centerY - 8.f, 16.f, 16.f, targetColor, true);
+				graphicsDevice->DrawRectangle(*camera, centerX - 16.f, centerY - 16.f, 32.f, 32.f, targetColor, false);
+				graphicsDevice->SetAlphaBlending(false);
 			}
-		}
-	}
-
-	void KernelEnemy::Draw(DX9GF::GraphicsDevice* graphicsDevice, DX9GF::Camera* camera, unsigned long long deltaTime) {
-		if (laserState > 0) {
-			graphicsDevice->SetAlphaBlending(true);
-
-			if (laserState == 1) {
-				float alphaMult = sin(timeSinceStart * 0.02f) * 0.5f + 0.5f;
-				int alpha = static_cast<int>(150 * alphaMult);
-				D3DCOLOR warnColor = D3DCOLOR_ARGB(alpha, 255, 100, 100);
-
-				for (float v : laserVerticals) graphicsDevice->DrawRectangle(*camera, v - 1.f, -128.f, 2.f, 256.f, warnColor, true);
-				for (float h : laserHorizontals) graphicsDevice->DrawRectangle(*camera, -128.f, h - 1.f, 256.f, 2.f, warnColor, true);
-
-				if (auto p = player.lock()) {
-					auto [px, py] = p->GetWorldPosition();
-					float minX = -128.f, maxX = 128.f;
-					float minY = -128.f, maxY = 128.f;
-
-					for (float v : laserVerticals) {
-						if (px > v) minX = (std::max)(minX, v);
-						if (px < v) maxX = (std::min)(maxX, v);
-					}
-					for (float h : laserHorizontals) {
-						if (py > h) minY = (std::max)(minY, h);
-						if (py < h) maxY = (std::min)(maxY, h);
-					}
-
-					float centerX = (minX + maxX) * 0.5f;
-					float centerY = (minY + maxY) * 0.5f;
-
-					float targetAlphaMult = sin(timeSinceStart * 0.04f) * 0.5f + 0.5f;
-					D3DCOLOR targetColor = D3DCOLOR_ARGB(static_cast<int>(200 * targetAlphaMult), 255, 50, 50);
-
-					graphicsDevice->DrawRectangle(*camera, centerX - 8.f, centerY - 8.f, 16.f, 16.f, targetColor, true);
-					graphicsDevice->DrawRectangle(*camera, centerX - 16.f, centerY - 16.f, 32.f, 32.f, targetColor, false);
-				}
-			}
-			else if (laserState == 2) {
-				D3DCOLOR glowColor = D3DCOLOR_ARGB(120, 255, 20, 147);
-				D3DCOLOR coreColor = 0xFFFFFFFF;
-
-				for (float v : laserVerticals) {
-					graphicsDevice->DrawRectangle(*camera, v - 8.f, -128.f, 16.f, 256.f, glowColor, true);
-					graphicsDevice->DrawRectangle(*camera, v - 2.f, -128.f, 4.f, 256.f, coreColor, true);
-				}
-				for (float h : laserHorizontals) {
-					graphicsDevice->DrawRectangle(*camera, -128.f, h - 8.f, 256.f, 16.f, glowColor, true);
-					graphicsDevice->DrawRectangle(*camera, -128.f, h - 2.f, 256.f, 4.f, coreColor, true);
-				}
-			}
-			graphicsDevice->SetAlphaBlending(false);
 		}
 
 		if (sprite) {
@@ -226,51 +168,72 @@ namespace Demo {
 		}
 	}
 
+	// Boxes the player in with the beams that are up and hands back the middle of that
+	// cell, clamped to the arena; both the reticle and the spiral spawn point use it.
+	std::pair<float, float> KernelEnemy::GetSafeCellCenter(float playerX, float playerY) const {
+		float minX = -ARENA_HALF, maxX = ARENA_HALF;
+		float minY = -ARENA_HALF, maxY = ARENA_HALF;
+
+		for (float v : laserVerticals) {
+			if (playerX > v) minX = (std::max)(minX, v);
+			if (playerX < v) maxX = (std::min)(maxX, v);
+		}
+		for (float h : laserHorizontals) {
+			if (playerY > h) minY = (std::max)(minY, h);
+			if (playerY < h) maxY = (std::min)(maxY, h);
+		}
+
+		return { (minX + maxX) * 0.5f, (minY + maxY) * 0.5f };
+	}
+
 	void KernelEnemy::PatternBadSector(float baseDamage) {
 		const int WAVES = RNG::Range(2, 4);
+		const float WARN_TIME = 1.5f;
+		const float HOLD_TIME = 4.0f;
 
 		for (int w = 0; w < WAVES; ++w) {
-			commandBuffer.PushCommand(std::make_shared<DX9GF::CustomCommand>([this](auto markFinished) {
+			commandBuffer.PushCommand(std::make_shared<DX9GF::CustomCommand>([this, baseDamage, WARN_TIME, HOLD_TIME](auto markFinished) {
 				this->laserVerticals.clear();
 				this->laserHorizontals.clear();
 				this->laserVerticals.push_back(RNG::Range(-80.f, 80.f));
 				this->laserHorizontals.push_back(RNG::Range(-80.f, 80.f));
+				this->telegraphingCell = true;
 
-				this->laserState = 1; //warning line
+				if (auto p = this->player.lock()) {
+					float finalDamage = this->CalculateOutgoingDamage(baseDamage);
+
+					// The beams telegraph themselves and start burning on their own, so the
+					// command buffer only has to line the spiral up with the moment they fire.
+					for (float v : this->laserVerticals) {
+						projectiles.Spawn(p, LaserDesc::Vertical(v, 0.f, ARENA_HALF * 2.f)
+							.SetWarnTime(WARN_TIME)
+							.SetFireTime(HOLD_TIME)
+							.SetDamage(finalDamage));
+					}
+					for (float h : this->laserHorizontals) {
+						projectiles.Spawn(p, LaserDesc::Horizontal(h, 0.f, ARENA_HALF * 2.f)
+							.SetWarnTime(WARN_TIME)
+							.SetFireTime(HOLD_TIME)
+							.SetDamage(finalDamage));
+					}
+				}
 				markFinished();
 				}));
 
-			commandBuffer.PushCommand(std::make_shared<DX9GF::DelayCommand>(1.5f));
+			commandBuffer.PushCommand(std::make_shared<DX9GF::DelayCommand>(WARN_TIME));
 
-			commandBuffer.PushCommand(std::make_shared<DX9GF::CustomCommand>([this, baseDamage](auto markFinished) {
-				this->laserState = 2;
-
-				this->storedProjDamage = this->CalculateOutgoingDamage(baseDamage);
-				float finalDamage = this->storedProjDamage;
+			commandBuffer.PushCommand(std::make_shared<DX9GF::CustomCommand>([this, baseDamage, HOLD_TIME](auto markFinished) {
+				this->telegraphingCell = false;
 
 				if (auto p = this->player.lock()) {
+					float finalDamage = this->CalculateOutgoingDamage(baseDamage);
 					auto [px, py] = p->GetWorldPosition();
-
-					float minX = -128.f, maxX = 128.f;
-					float minY = -128.f, maxY = 128.f;
-
-					for (float v : this->laserVerticals) {
-						if (px > v) minX = (std::max)(minX, v);
-						if (px < v) maxX = (std::min)(maxX, v);
-					}
-					for (float h : this->laserHorizontals) {
-						if (py > h) minY = (std::max)(minY, h);
-						if (py < h) maxY = (std::min)(maxY, h);
-					}
-
-					float centerX = (minX + maxX) * 0.5f;
-					float centerY = (minY + maxY) * 0.5f;
-					float holdTime = 4.0f;
+					auto [centerX, centerY] = this->GetSafeCellCenter(px, py);
 
 					projectiles.Spawn(p, ProjectileDesc(bulletTexture.get(), 8, 8, 16, 16, centerX, centerY)
 						.SetVelocity(0.f)
 						.SetDamage(finalDamage)
-						.SetDecayTime(holdTime));
+						.SetDecayTime(HOLD_TIME));
 
 					int numArms = RNG::Range(1, 4);
 					float direction = (RNG::Range(0, 1) == 0) ? 1.0f : -1.0f;
@@ -286,21 +249,15 @@ namespace Demo {
 							projectiles.Spawn(p, ProjectileDesc(bulletTexture.get(), 8, 8, 16, 16, centerX, centerY)
 								.SetSpiralParams(startAngle, radialSpeed, angularSpeed)
 								.SetDamage(finalDamage)
-								.SetDecayTime(holdTime));
+								.SetDecayTime(HOLD_TIME));
 						}
 					}
 				}
 				markFinished();
 				}));
 
-			commandBuffer.PushCommand(std::make_shared<DX9GF::DelayCommand>(4.0f));
-
-			commandBuffer.PushCommand(std::make_shared<DX9GF::CustomCommand>([this](auto markFinished) {
-				this->laserState = 0;
-				markFinished();
-				}));
-
-			commandBuffer.PushCommand(std::make_shared<DX9GF::DelayCommand>(0.4f));
+			// The beams burn for HOLD_TIME, then a short breather before the next wave.
+			commandBuffer.PushCommand(std::make_shared<DX9GF::DelayCommand>(HOLD_TIME + 0.4f));
 		}
 	}
 }
