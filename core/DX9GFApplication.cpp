@@ -6,14 +6,37 @@
 #include "DX9GFAudioManager.h"
 DX9GF::Application* DX9GF::Application::instance = nullptr;
 DX9GF::IGame* p_game = nullptr;
+LRESULT(*customWndProc)(HWND, UINT, WPARAM, LPARAM) = nullptr;
+void(*onDeviceResetHandler)() = nullptr;
+
+void DX9GF::Application::OverrideWindowProc(LRESULT(*_customWndProc)(HWND, UINT, WPARAM, LPARAM))
+{
+	customWndProc = _customWndProc;
+}
+
+void DX9GF::Application::SetOnDeviceResetHandler(void(*handler)())
+{
+	onDeviceResetHandler = handler;
+}
 
 LRESULT CALLBACK WinProc(HWND hwnd, UINT msg, WPARAM wParam, LPARAM lParam)
 {
+	if (customWndProc != nullptr) {
+		LRESULT result = customWndProc(hwnd, msg, wParam, lParam);
+		if (result != 0) {
+			return result;
+		}
+	}
 	switch (msg)
 	{
 	case WM_SIZE:
 		if (wParam == SIZE_MINIMIZED) {
 			return 0;
+		}
+		if (p_game != nullptr && p_game->GetGraphicsDevice() != nullptr) {
+			if (onDeviceResetHandler != nullptr) {
+				onDeviceResetHandler();
+			}
 		}
 		if (p_game != nullptr) {
 			p_game->OnResize(LOWORD(lParam), HIWORD(lParam));
@@ -135,11 +158,16 @@ void DX9GF::Application::OnResize(UINT width, UINT height)
 void DX9GF::Application::AttachGame(IGame* game)
 {
 	p_game = game;
+	if (p_game != nullptr && hwnd != nullptr) {
+		RECT rect;
+		if (GetClientRect(hwnd, &rect)) {
+			p_game->OnResize(rect.right - rect.left, rect.bottom - rect.top);
+		}
+	}
 }
 
 void DX9GF::Application::Run()
 {
-	p_game->Init();
 
 	//test audio
 	auto audioManager = AudioManager::GetInstance();

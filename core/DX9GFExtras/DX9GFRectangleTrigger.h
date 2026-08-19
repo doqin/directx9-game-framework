@@ -40,6 +40,8 @@ namespace DX9GF {
 		bool IsHovering(unsigned long long deltaTime) override;
 		float GetWidth() const;
 		float GetHeight() const;
+		void SetWidth(float width);
+		void SetHeight(float height);
 
 		void Draw(GraphicsDevice* graphicsDevice, const Camera& camera) override;
 	};

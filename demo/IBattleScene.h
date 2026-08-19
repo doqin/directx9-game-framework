@@ -1,4 +1,4 @@
-﻿#pragma once
+#pragma once
 #include "DX9GF.h"
 #include "DX9GFExtras.h"
 #include "Player.h"
@@ -9,15 +9,16 @@
 #include "InitBlockCard.h"
 #include "StrikeCard.h"
 #include "EnemyCard.h"
-#include "HandContainer.h"
+#include "CardContainer.h"
 #include "TestEnemy.h"
 #include "PopUpMessage.h"
 #include "AdvancedCards.h"
 #include "TextIconButton.h"
 #include "KeyboardNavigator.h"
-#include "IToken.h"
+#include "BattleMenu.h"
 #include "BattleEncounter.h"
 #include "EnergyToken.h"
+#include "GoldToken.h"
 namespace Demo {
 	class IBattleScene : public DX9GF::IScene {
 	protected:
@@ -113,7 +114,7 @@ namespace Demo {
 		// Battle cards
 		std::shared_ptr<MainBlockCard> mainBlockCard;
 		std::shared_ptr<InitBlockCard> initBlockCard;
-		std::shared_ptr<HandContainer> handContainer;
+		std::shared_ptr<CardContainer> handContainer;
 		std::vector<std::shared_ptr<ICard>> cardHand;
 		std::vector<std::shared_ptr<EnemyCard>> enemyCards;
 		std::vector<std::shared_ptr<ICard>> drawPile;
@@ -143,6 +144,7 @@ namespace Demo {
 		std::shared_ptr<IconButton> executeButton;
 		std::shared_ptr<IconButton> runInitButton;
 		std::shared_ptr<IconButton> closeItemMenuButton;
+		std::shared_ptr<BattleMenu> battleMenu;
 
 		std::vector<std::shared_ptr<IconButton>> buffItems;
 		std::shared_ptr<TextIconButton> btnNextPage;

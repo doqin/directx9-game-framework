@@ -22,8 +22,9 @@ namespace Demo {
     }
 
     void INPC::Draw(const DX9GF::Camera& camera, unsigned long long deltaTime) {
-
+		DrawPosition(deltaTime, gd, camera);
     }
+
     void INPC::DrawUI(DX9GF::Camera* uiCamera, unsigned long long deltaTime) {
         if (isPlayerNear && fontSprite && uiCamera && worldCamera) {
             auto [worldX, worldY] = GetWorldPosition();

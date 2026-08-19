@@ -3,9 +3,10 @@
 #include "DX9GFExtras.h"
 #include "DX9GFInputManager.h"
 #include "Player.h"
+#include "Debug.h"
 
 namespace Demo {
-    class SavePoint : public DX9GF::IGameObject {
+    class SavePoint : public DX9GF::IGameObject, virtual public Pointable {
     private:
         DX9GF::GraphicsDevice* gd;
         DX9GF::Camera* worldCamera;
@@ -25,6 +26,9 @@ namespace Demo {
     public:
         SavePoint(std::weak_ptr<DX9GF::TransformManager> tm, float x = 0, float y = 0);
 
+		std::pair<float, float> GetPoint() const override {
+			return { GetWorldX(), GetWorldY() };
+		}
         void Init(DX9GF::GraphicsDevice* gd, DX9GF::Camera* worldCamera, std::shared_ptr<Player> p, std::shared_ptr<DX9GF::ColliderManager> cm, std::shared_ptr<DX9GF::SaveManager> sm, std::shared_ptr<DX9GF::Font> font, std::shared_ptr<DX9GF::CommandBuffer> drawBuffer);
 
         void Update(unsigned long long deltaTime);

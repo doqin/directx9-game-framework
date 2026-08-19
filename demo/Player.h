@@ -78,6 +78,7 @@ namespace Demo {
 		std::string currentSurface = "default";
 		float surfaceTimeout = 0.0f;
 	public:
+		static bool ignoreCollisions; // For debugging purposes
 		Player(std::weak_ptr<DX9GF::TransformManager> tm) : ICombatant(tm, 50.0) {}
 		Player(std::weak_ptr<DX9GF::TransformManager> tm,
 			float x, float y, float rot = 0, float sx = 1, float sy = 1)
@@ -99,8 +100,9 @@ namespace Demo {
 		std::weak_ptr<DX9GF::RectangleCollider> GetCollider();
 
 		int GetGold() const { return gold; }
+		void SetGold(int amount) { gold = amount; }
 		void AddGold(int amount) { gold += amount; }
-		void AddCardToDeck(const std::string& card) { deck.push_back(card); }
+		void AddCardToDeck(const std::string& card) { deck.push_back(card); } // Should probably validate that the card exists in the game, but for now we just add it
 		const std::vector<std::string>& GetDeck() const { return deck; }
 		void ClearDeck() { deck.clear(); }
 		const std::vector<std::string>& GetInventoryCards() const { return inventoryCards; }

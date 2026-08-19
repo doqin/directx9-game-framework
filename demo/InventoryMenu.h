@@ -4,7 +4,7 @@
 #include "Game.h"
 #include "Player.h"
 #include "TextButton.h"
-#include "IContainer.h"
+#include "CardContainer.h"
 #include "IconButton.h"
 #include "KeyboardNavigator.h"
 namespace Demo {
@@ -33,8 +33,8 @@ namespace Demo {
 		std::shared_ptr<DX9GF::FontSprite> fontSprite;
 
 		// Deck Builder Containers
-		std::shared_ptr<IContainer> deckContainer;
-		std::shared_ptr<IContainer> inventoryContainer;
+		std::shared_ptr<CardContainer> deckContainer;
+		std::shared_ptr<CardContainer> inventoryContainer;
 
 		//Tab Items
 		std::shared_ptr<DX9GF::Texture> itemSheetTex;

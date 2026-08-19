@@ -3,6 +3,8 @@
 #include "MapBattleScene.h"
 #include "EncounterGenerator.h"
 namespace Demo {
+	bool MapEnemy::isDisabled = false;
+
 	MapEnemy::MapEnemy(std::weak_ptr<DX9GF::TransformManager> tm, float x, float y, const BattleEncounter& data)
 		: IGameObject(tm, x, y), startX(x), startY(y), encounterData(data) {
 	}
@@ -104,6 +106,8 @@ namespace Demo {
 			}
 			return;
 		}
+		
+		if (isDisabled) return;
 
 		if (auto player = targetPlayer.lock()) {
 			if (postBattleCooldown > 0) {
@@ -304,6 +308,7 @@ namespace Demo {
 		sprite->SetPosition(x, y);
 		sprite->Draw(*camera, deltaTime);
 		sprite->End();
+		DrawPosition(deltaTime, game->GetGraphicsDevice(), *camera);
 	}
 
 	bool MapEnemy::CheckLineOfSight(float startX, float startY, float targetX, float targetY) {

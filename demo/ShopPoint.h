@@ -4,9 +4,10 @@
 #include "DX9GFInputManager.h"
 #include "Player.h"
 #include "Game.h"
+#include "Debug.h"
 
 namespace Demo {
-    class ShopPoint : public DX9GF::IGameObject {
+    class ShopPoint : public DX9GF::IGameObject, virtual public Pointable {
     private:
         Game* game;
         DX9GF::GraphicsDevice* gd;
@@ -29,6 +30,10 @@ namespace Demo {
 		ShopPoint(std::weak_ptr<DX9GF::TransformManager> tm, float x = 0, float y = 0);
 
         void Init(Game* game, DX9GF::GraphicsDevice* gd, DX9GF::Camera* camera, std::shared_ptr<Player> p, std::shared_ptr<DX9GF::ColliderManager> cm, std::shared_ptr<DX9GF::Font> font, std::shared_ptr<DX9GF::CommandBuffer> drawBuffer, std::function<DX9GF::IScene* (Game*, Player*, int, int)> factory);
+
+		std::pair<float, float> GetPoint() const override {
+			return { GetWorldX(), GetWorldY() };
+		}
 
 		void Update(unsigned long long deltaTime);
 		void Draw(const DX9GF::Camera& camera, unsigned long long deltaTime);

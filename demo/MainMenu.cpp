@@ -1,4 +1,4 @@
-﻿#include "pch.h"
+#include "pch.h"
 #include "MainMenu.h"
 #include "resource.h"
 #include "IconButton.h"
@@ -14,6 +14,34 @@
 
 namespace Demo
 {
+	class WhiteFadeOutCommand : public DX9GF::ICommand {
+		DX9GF::GraphicsDevice* gd;
+		DX9GF::Camera* camera;
+		float duration;
+		float timer = 0.0f;
+		int vw, vh;
+	public:
+		WhiteFadeOutCommand(DX9GF::GraphicsDevice* gd, DX9GF::Camera* camera, float duration, int vw, int vh) 
+			: gd(gd), camera(camera), duration(duration), vw(vw), vh(vh) {}
+		void Execute(unsigned long long deltaTime) override {
+			if (IsFinished()) return;
+			timer += deltaTime / 1000.0f;
+			if (timer >= duration) {
+				timer = duration;
+				MarkFinished();
+			}
+			float alpha = 1.0f - (timer / duration);
+			int a = std::clamp(static_cast<int>(alpha * 255.0f), 0, 255);
+			if (a > 0) {
+				float startX = -vw / 2.0f;
+				float startY = -vh / 2.0f;
+				gd->SetAlphaBlending(true);
+				gd->DrawRectangle(*camera, startX, startY, static_cast<float>(vw), static_cast<float>(vh), D3DCOLOR_ARGB(a, 255, 255, 255), true);
+				gd->SetAlphaBlending(false);
+			}
+		}
+	};
+
 	std::shared_ptr<SaveGameState> MainMenu::gameSaveState = nullptr;
 	void MainMenu::UpdateLayout(int screenW, int screenH)
 	{
@@ -266,6 +294,9 @@ namespace Demo
 		//call it to setup the update layout
 		UpdateLayout(lastScreenWidth, lastScreenHeight);
 		transformManager->RebuildHierarchy();
+		
+		// Queue a white fade out when MainMenu starts to blend from SplashScene
+		drawBuffer->PushCommand(std::make_shared<WhiteFadeOutCommand>(game->GetGraphicsDevice(), &this->uiCamera, 1.5f, game->GetVirtualWidth(), game->GetVirtualHeight()));
 	}
 
 	std::vector<KeyboardNavigator::Candidate> MainMenu::CollectKeyboardCandidates()

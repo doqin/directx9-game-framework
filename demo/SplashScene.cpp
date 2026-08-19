@@ -32,6 +32,10 @@ namespace Demo {
     }
 
     void SplashScene::Update(unsigned long long deltaTime) {
+        auto inpMan = DX9GF::InputManager::GetInstance();
+        inpMan->ReadMouse(deltaTime);
+        inpMan->ReadKeyboard(deltaTime);
+
         float dt = deltaTime / 1000.0f;
         timer += dt;
 
@@ -88,6 +92,14 @@ namespace Demo {
             logo2Sprite->Begin(); logo2Sprite->Draw(camera, deltaTime); logo2Sprite->End();
             gd->SetAlphaBlending(false);
 
+            gd->EndDraw();
+        }
+    }
+    void SplashScene::DrawUI(unsigned long long deltaTime)
+    {
+        auto gd = game->GetGraphicsDevice();
+        if (SUCCEEDED(gd->BeginDraw())) {
+            DX9GF::InputManager::GetInstance()->DrawCursor(&this->uiCamera, deltaTime);
             gd->EndDraw();
         }
     }

@@ -14,6 +14,9 @@
 #include "EnemyFactory.h"
 #include "QuestManager.h"
 #include "MapBattleScene.h"
+#include "Debug.h"
+#include "imgui.h"
+#include "backends/imgui_impl_dx9.h"
 void Demo::ThreadAlleyScene::Init()
 {
 	camera.SetZoom(2.0f);
@@ -540,6 +543,7 @@ void Demo::ThreadAlleyScene::DrawWorld(unsigned long long deltaTime)
 
 void Demo::ThreadAlleyScene::DrawUI(unsigned long long deltaTime)
 {
+	CreateImGuiDebugFrame(player);
 	auto gd = game->GetGraphicsDevice();
 	if (SUCCEEDED(gd->BeginDraw())) {
 
@@ -572,6 +576,8 @@ void Demo::ThreadAlleyScene::DrawUI(unsigned long long deltaTime)
 			DX9GF::InputManager::GetInstance()->DrawCursor(&this->uiCamera, deltaTime);
 		}
 
+		ImGui::Render();
+		ImGui_ImplDX9_RenderDrawData(ImGui::GetDrawData());
 		gd->EndDraw();
 	}
 }

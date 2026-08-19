@@ -13,6 +13,9 @@
 #include "EnemyFactory.h"
 #include "EncounterGenerator.h"
 #include "MapBattleScene.h"
+#include "Debug.h"
+#include "imgui.h"
+#include "backends/imgui_impl_dx9.h"
 
 void Demo::SecretPuzzleScene::Init()
 {
@@ -533,6 +536,7 @@ void Demo::SecretPuzzleScene::DrawWorld(unsigned long long deltaTime)
 
 void Demo::SecretPuzzleScene::DrawUI(unsigned long long deltaTime)
 {
+	CreateImGuiDebugFrame(player);
 	auto gd = game->GetGraphicsDevice();
 	if (SUCCEEDED(gd->BeginDraw())) {
 
@@ -566,6 +570,8 @@ void Demo::SecretPuzzleScene::DrawUI(unsigned long long deltaTime)
 			DX9GF::InputManager::GetInstance()->DrawCursor(&this->uiCamera, deltaTime);
 		}
 
+		ImGui::Render();
+		ImGui_ImplDX9_RenderDrawData(ImGui::GetDrawData());
 		gd->EndDraw();
 	}
 }

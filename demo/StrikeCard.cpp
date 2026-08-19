@@ -202,13 +202,3 @@ std::wstring Demo::StrikeCard::GetInputsDescription() const
 	}
 	return L"0/1 Enemy";
 }
-
-size_t Demo::StrikeCard::GetWidth() const
-{
-	if (auto lock = enemyCard.lock()) {
-		return IDraggable::GetWidth() + lock->GetWidth() + GetStatusCoverWidth();
-	}
-	else {
-		return IDraggable::GetWidth() + GetStatusCoverWidth();
-	}
-}

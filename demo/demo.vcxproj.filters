@@ -1,4 +1,4 @@
-﻿<?xml version="1.0" encoding="utf-8"?>
+<?xml version="1.0" encoding="utf-8"?>
 <Project ToolsVersion="4.0" xmlns="http://schemas.microsoft.com/developer/msbuild/2003">
   <ItemGroup>
     <ClCompile Include="CardShop.cpp" />
@@ -11,7 +11,7 @@
     <ClCompile Include="KeyboardNavigator.cpp" />
     <ClCompile Include="Game.cpp" />
     <ClCompile Include="GameItems.cpp" />
-    <ClCompile Include="HandContainer.cpp" />
+    <ClCompile Include="CardContainer.cpp" />
     <ClCompile Include="HealingPoint.cpp" />
     <ClCompile Include="IBattleScene.cpp" />
     <ClCompile Include="IButton.cpp" />
@@ -20,6 +20,7 @@
     <ClCompile Include="IConversation.cpp" />
     <ClCompile Include="IDraggable.cpp" />
     <ClCompile Include="INPC.cpp" />
+    <ClCompile Include="BattleMenu.cpp" />
     <ClCompile Include="InventoryMenu.cpp" />
     <ClCompile Include="IStatementCard.cpp" />
     <ClCompile Include="PlayerHUD.cpp" />
@@ -83,6 +84,16 @@
     <ClCompile Include="ICombatant.cpp" />
     <ClCompile Include="TrojanEnemy.cpp" />
     <ClCompile Include="VirtualBattleState.cpp" />
+    <ClCompile Include="backends\imgui_impl_dx9.cpp" />
+    <ClCompile Include="backends\imgui_impl_win32.cpp" />
+    <ClCompile Include="imgui.cpp" />
+    <ClCompile Include="imgui_demo.cpp" />
+    <ClCompile Include="imgui_draw.cpp" />
+    <ClCompile Include="imgui_tables.cpp" />
+    <ClCompile Include="imgui_widgets.cpp" />
+    <ClCompile Include="Debug.cpp" />
+    <ClCompile Include="misc\cpp\imgui_stdlib.cpp" />
+    <ClCompile Include="ICard.cpp" />
     <ClCompile Include="GoldToken.cpp" />
     <ClCompile Include="EnergyToken.cpp" />
   </ItemGroup>
@@ -100,7 +111,7 @@
     <ClInclude Include="EnemyCard.h" />
     <ClInclude Include="Game.h" />
     <ClInclude Include="GameItems.h" />
-    <ClInclude Include="HandContainer.h" />
+    <ClInclude Include="CardContainer.h" />
     <ClInclude Include="HealingPoint.h" />
     <ClInclude Include="IBattleScene.h" />
     <ClInclude Include="IBlockCard.h" />
@@ -111,6 +122,7 @@
     <ClInclude Include="IConversation.h" />
     <ClInclude Include="IDraggable.h" />
     <ClInclude Include="INPC.h" />
+    <ClInclude Include="BattleMenu.h" />
     <ClInclude Include="InventoryMenu.h" />
     <ClInclude Include="ItemShop.h" />
     <ClInclude Include="PlayerHUD.h" />
@@ -176,6 +188,16 @@
     <ClInclude Include="GoldToken.h" />
     <ClInclude Include="IToken.h" />
     <ClInclude Include="EnergyToken.h" />
+    <ClInclude Include="backends\imgui_impl_dx9.h" />
+    <ClInclude Include="backends\imgui_impl_win32.h" />
+    <ClInclude Include="imconfig.h" />
+    <ClInclude Include="imgui.h" />
+    <ClInclude Include="imgui_internal.h" />
+    <ClInclude Include="imstb_rectpack.h" />
+    <ClInclude Include="imstb_textedit.h" />
+    <ClInclude Include="imstb_truetype.h" />
+    <ClInclude Include="Debug.h" />
+    <ClInclude Include="misc\cpp\imgui_stdlib.h" />
   </ItemGroup>
   <ItemGroup>
     <ResourceCompile Include="demo.rc" />

@@ -1,4 +1,4 @@
-﻿#include "pch.h"
+#include "pch.h"
 #include "InventoryMenu.h"
 #include "SettingsScene.h"
 #include "DX9GFAudioManager.h"
@@ -93,11 +93,11 @@ namespace Demo {
 		btnLeaveGame->SetSpriteScale(2.f, 2.f);
 		btnLeaveGame->Init(uiCamera);
 
-		deckContainer = std::make_shared<IContainer>(transformManager, containerW, 40.0f, leftContainerX, containerY);
+		deckContainer = std::make_shared<CardContainer>(transformManager, containerW, 40.0f, leftContainerX, containerY);
 		deckContainer->Init(draggableManager, game->GetGraphicsDevice(), uiCamera);
 		deckContainer->SetMaxHeight(sh * 0.5f);
 
-		inventoryContainer = std::make_shared<IContainer>(transformManager, containerW, 40.0f, rightContainerX, containerY);
+		inventoryContainer = std::make_shared<CardContainer>(transformManager, containerW, 40.0f, rightContainerX, containerY);
 		inventoryContainer->Init(draggableManager, game->GetGraphicsDevice(), uiCamera);
 		inventoryContainer->SetMaxHeight(sh * 0.5f);
 	}
@@ -178,7 +178,7 @@ namespace Demo {
 		if (currentTab == Tab::DECK) {
 			// Cards in either container; activating one moves it to the other container
 			// (deck order doesn't matter - it's shuffled at battle start).
-			auto addCards = [&](std::shared_ptr<IContainer> from, std::shared_ptr<IContainer> to) {
+			auto addCards = [&](std::shared_ptr<CardContainer> from, std::shared_ptr<CardContainer> to) {
 				for (auto& weakChild : from->GetChildren()) {
 					auto card = weakChild.lock();
 					if (!card || card->IsDragging()) {

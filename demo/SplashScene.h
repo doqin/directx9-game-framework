@@ -18,6 +18,6 @@ namespace Demo {
         void Init() override;
         void Update(unsigned long long deltaTime) override;
         void DrawWorld(unsigned long long deltaTime) override;
-        void DrawUI(unsigned long long deltaTime) override {}; //nah it's useless here
+        void DrawUI(unsigned long long deltaTime) override;
     };
 }
