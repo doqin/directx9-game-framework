@@ -1,4 +1,4 @@
-#include "pch.h"
+﻿#include "pch.h"
 #include "SettingsManager.h"
 #include "BossWorldScene.h"
 #include "RandomEncounter.h"
@@ -167,6 +167,13 @@ void Demo::BossWorldScene::Init() {
 			x, y, id, types, isRand, isGlobal, "battle_loop", bgDraw,
 			transformManager, game, colliderManager.get(), player
 		);
+
+		//token spawning area
+		Demo::EventType generatedEvent = Demo::EventType::None;
+		if (enemy->GetEncounterData().enemyTypes.size() >= 2 && Demo::RNG::Range(1, 100) <= 30) {
+			generatedEvent = (Demo::RNG::Range(1, 100) <= 50) ? Demo::EventType::Gold : Demo::EventType::Energy;
+		}
+		enemy->SetEventState(generatedEvent);
 
 		enemy->SetOnEncounterTriggered([this](std::shared_ptr<MapEnemy> e) {
 			if (this->isTransitioning) return;
@@ -742,7 +749,8 @@ void Demo::BossWorldScene::GenerateSaveData(nlohmann::json& outData) {
 	for (auto& enemy : mapEnemies) {
 		enemiesState[enemy->GetEnemyID()] = {
 			{"isDefeated", enemy->IsDefeated()},
-			{"respawnTimer", enemy->GetRespawnTimer()}
+			{"respawnTimer", enemy->GetRespawnTimer()},
+			{ "eventType", static_cast<int>(enemy->GetEncounterData().eventType) }
 		};
 	}
 	outData["mapEnemies"] = enemiesState;
@@ -792,7 +800,10 @@ void Demo::BossWorldScene::RestoreSaveData(const nlohmann::json& inData) {
 			if (enemiesState.contains(id)) {
 				bool def = enemiesState[id]["isDefeated"].get<bool>();
 				float timer = enemiesState[id]["respawnTimer"].get<float>();
+				EventType savedEvent = static_cast<EventType>(enemiesState[id].value("eventType", 0));
+
 				enemy->SetDefeatedState(def, timer);
+				enemy->SetEventState(savedEvent);
 			}
 		}
 	}

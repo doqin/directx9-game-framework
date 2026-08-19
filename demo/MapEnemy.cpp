@@ -1,4 +1,4 @@
-#include "pch.h"
+﻿#include "pch.h"
 #include "MapEnemy.h"
 #include "MapBattleScene.h"
 #include "EncounterGenerator.h"
@@ -50,6 +50,19 @@ namespace Demo {
 		);
 
 		collider->SetOrigin(0.f, 0.f);
+
+		particleTex = std::make_shared<DX9GF::Texture>(gd);
+		particleTex->LoadTexture(L"assets/ui.png");
+
+		wealthyAura = std::make_unique<DX9GF::ParticleSystem>(particleTex.get(), 16);
+		wealthyAura->SetSrcRect({ 261, 277, 267, 283});
+		wealthyAura->SetOrigin(6.f, 6.f);
+		wealthyAura->SetEmissionInterval(100.f);
+		wealthyAura->SetLifeTime(500.f);
+		wealthyAura->SetFadeOutTime(200.f);
+		wealthyAura->SetScaleRange(1.f, 0.2f);
+		wealthyAura->SetColorRange(0xFFFF00FF, 0xFF8B00FF);
+		wealthyAura->SetEnabled(encounterData.eventType != EventType::None);
 	}
 
 	void MapEnemy::Update(unsigned long long deltaTime) {
@@ -61,6 +74,9 @@ namespace Demo {
 				isDefeated = false;
 				SetLocalPosition(startX, startY);
 				currentState = State::Idle;
+				
+				//avoid spamming gold token on 1 enemy
+				SetEventState(EventType::None);
 
 				if (colliderManager) {
 					float hitBoxW = encounterData.hitBoxWidth;
@@ -250,6 +266,15 @@ namespace Demo {
 				sprite->SetScale(dir.x > 0 ? -baseScaleX : baseScaleX, baseScaleY);
 			}
 		}
+		if (!isDefeated && encounterData.eventType != EventType::None && wealthyAura) {
+			auto [ex, ey] = GetWorldPosition();
+
+			//aura particle
+			float randomOffsetX = Demo::RNG::Range(-24.f, 24.f);
+			float randomOffsetY = Demo::RNG::Range(-24.f, 24.f);
+
+			wealthyAura->Update(deltaTime, ex + randomOffsetX, ey + randomOffsetY, 0.f, 1.f, 1.f, 0xFFFFFFFF, true);
+		}
 	}
 
 	void MapEnemy::Draw(DX9GF::Camera* camera, unsigned long long deltaTime) {
@@ -272,7 +297,9 @@ namespace Demo {
 			gd->DrawEllipse(*camera, x, shadowY, shadowWidth, shadowHeight, 0x64000000, true);
 			gd->SetAlphaBlending(false);
 		}
-
+		if (!isDefeated && encounterData.eventType != EventType::None && wealthyAura) {
+			wealthyAura->Draw(*camera, deltaTime);
+		}
 		sprite->Begin();
 		sprite->SetPosition(x, y);
 		sprite->Draw(*camera, deltaTime);
@@ -316,5 +343,9 @@ namespace Demo {
 			}
 		}
 		return true;
+	}
+	void MapEnemy::SetEventState(EventType type) {
+		encounterData.eventType = type;
+		if (wealthyAura) wealthyAura->SetEnabled(type != EventType::None);
 	}
 }

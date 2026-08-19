@@ -10,6 +10,7 @@ namespace Demo {
     }
 
     void MapBattleScene::Init() {
+        this->battleEventType = encounter.eventType;
         IBattleScene::Init();
         std::string finalBGM = encounter.bgmName;
 

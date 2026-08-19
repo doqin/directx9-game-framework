@@ -83,6 +83,8 @@
     <ClCompile Include="ICombatant.cpp" />
     <ClCompile Include="TrojanEnemy.cpp" />
     <ClCompile Include="VirtualBattleState.cpp" />
+    <ClCompile Include="GoldToken.cpp" />
+    <ClCompile Include="EnergyToken.cpp" />
   </ItemGroup>
   <ItemGroup>
     <ClInclude Include="AdvancedCards.h" />
@@ -171,6 +173,9 @@
     <ClInclude Include="ICombatant.h" />
     <ClInclude Include="VirtualBattleState.h" />
     <ClInclude Include="TrojanEnemy.h" />
+    <ClInclude Include="GoldToken.h" />
+    <ClInclude Include="IToken.h" />
+    <ClInclude Include="EnergyToken.h" />
   </ItemGroup>
   <ItemGroup>
     <ResourceCompile Include="demo.rc" />
@@ -240,6 +245,8 @@
     <Image Include="assets\trojan.png" />
     <Image Include="assets\arrow_1.png" />
     <Image Include="assets\Trojan_outside.png" />
+    <Image Include="assets\energy-token.png" />
+    <Image Include="assets\gold-token.png" />
   </ItemGroup>
   <ItemGroup>
     <Font Include="assets\arcade-among-2-r46pv.ttf" />
@@ -336,5 +343,15 @@
     <Media Include="assets\audio\card_draw5.wav" />
     <Media Include="assets\audio\card_snap3.wav" />
     <Media Include="assets\audio\card_snap4.wav" />
+    <Media Include="assets\audio\token-collect-01.wav" />
+    <Media Include="assets\audio\token-collect-02.wav" />
+    <Media Include="assets\audio\token-collect-03.wav" />
+    <Media Include="assets\audio\token-collect-04.wav" />
+    <Media Include="assets\audio\token-collect-05.wav" />
+    <Media Include="assets\audio\token-collect-06.wav" />
+    <Media Include="assets\audio\token-spawn-01.wav" />
+    <Media Include="assets\audio\token-spawn-02.wav" />
+    <Media Include="assets\audio\token-spawn-03.wav" />
+    <Media Include="assets\audio\token-spawn-04.wav" />
   </ItemGroup>
 </Project>

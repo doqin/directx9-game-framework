@@ -216,6 +216,8 @@
     <ClCompile Include="DemonEyeEnemy.cpp" />
     <ClCompile Include="DrawUtils.cpp" />
     <ClCompile Include="EnemyFactory.cpp" />
+    <ClCompile Include="EnergyToken.cpp" />
+    <ClCompile Include="GoldToken.cpp" />
     <ClCompile Include="ICombatant.cpp" />
     <ClCompile Include="KernelEnemy.cpp">
       <DeploymentContent>false</DeploymentContent>
@@ -308,7 +310,12 @@
     <ClInclude Include="DialogueLine.h" />
     <ClInclude Include="DrawUtils.h" />
     <ClInclude Include="EncounterGenerator.h" />
+    <ClInclude Include="EnergyToken.h" />
+    <ClInclude Include="GoldToken.h">
+      <DeploymentContent>false</DeploymentContent>
+    </ClInclude>
     <ClInclude Include="ICombatant.h" />
+    <ClInclude Include="IToken.h" />
     <ClInclude Include="KernelEnemy.h" />
     <ClInclude Include="KeyboardNavigator.h" />
     <ClInclude Include="EnemyCard.h" />
@@ -481,10 +488,16 @@
     <Image Include="assets\department_logo.png">
       <DeploymentContent>true</DeploymentContent>
     </Image>
+    <Image Include="assets\energy-token.png">
+      <DeploymentContent>true</DeploymentContent>
+    </Image>
     <Image Include="assets\First Asset pack.png">
       <DeploymentContent>true</DeploymentContent>
     </Image>
     <Image Include="assets\gate.png">
+      <DeploymentContent>true</DeploymentContent>
+    </Image>
+    <Image Include="assets\gold-token.png">
       <DeploymentContent>true</DeploymentContent>
     </Image>
     <Image Include="assets\grab.png">
@@ -719,6 +732,16 @@
     <Media Include="assets\audio\step_vinyl2.wav" />
     <Media Include="assets\audio\step_vinyl3.wav" />
     <Media Include="assets\audio\step_vinyl4.wav" />
+    <Media Include="assets\audio\token-collect-01.wav" />
+    <Media Include="assets\audio\token-collect-02.wav" />
+    <Media Include="assets\audio\token-collect-03.wav" />
+    <Media Include="assets\audio\token-collect-04.wav" />
+    <Media Include="assets\audio\token-collect-05.wav" />
+    <Media Include="assets\audio\token-collect-06.wav" />
+    <Media Include="assets\audio\token-spawn-01.wav" />
+    <Media Include="assets\audio\token-spawn-02.wav" />
+    <Media Include="assets\audio\token-spawn-03.wav" />
+    <Media Include="assets\audio\token-spawn-04.wav" />
     <Media Include="assets\audio\tutorial-loop.wav" />
     <Media Include="Sounds\button-hover.wav" />
   </ItemGroup>
