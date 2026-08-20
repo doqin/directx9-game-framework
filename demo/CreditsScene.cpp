@@ -246,10 +246,16 @@ namespace Demo
 			L"Battle: BloodPixelHero",
 			L"- https://freesound.org/s/724507/",
 			L"Battle: levelclearer",
-			L"- https://freesound.org/s/346200/",
+			L"- https://freesound.org/s/346200/"
+			});
+		creditsPages.push_back({
+			L"-- AUDIO RESOURCES --",
+			L"Retro, Coin Collect: LilMati",
+			L"- https://freesound.org/s/515736/",
+			L"Coin_C: cabled_mess ",
+			L"- https://freesound.org/s/350871/",
 			L"Licensed under CC BY 4.0 & Public Domain"
 			});
-
 		creditsPages.push_back({
 			L"-- SPECIAL THANKS --",
 			L"",

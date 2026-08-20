@@ -16,7 +16,9 @@
 #include "TextIconButton.h"
 #include "KeyboardNavigator.h"
 #include "BattleMenu.h"
-
+#include "BattleEncounter.h"
+#include "EnergyToken.h"
+#include "GoldToken.h"
 namespace Demo {
 	class IBattleScene : public DX9GF::IScene {
 	protected:
@@ -200,6 +202,25 @@ namespace Demo {
 		void LockRandomCard(int turns);
 		void OnAllEnemiesDefeated();
 
+		//Tokens
+		std::vector<std::shared_ptr<Demo::IToken>> activeTokens;
+		int pendingGoldTokenReward = 0;
+		float tokenSpawnTimer = 0.f;
+		int tokensSpawnedThisTurn = 0;
+		int maxTokensThisTurn = 0;
+		EventType battleEventType = EventType::None;
+		int targetTokenTurn = -1;
+
+		bool isFlawlessChallengeActive = false;
+		bool isFlawlessCompleted = false;
+		float startingHealthForFlawless = 0.f;
+		float startingDefenseForFlawless = 0.f;
+
+		std::shared_ptr<DX9GF::Texture> energyTokenTex;
+		std::shared_ptr<DX9GF::StaticSprite> energyTokenUI;
+		std::shared_ptr<DX9GF::StaticSprite> goldTokenUI;
+		std::shared_ptr<DX9GF::Texture> goldTex;
+		int currentEnergyPieces = 0;
 	private:
 		// midTurn drops the hold and stagger from the deal animation - a mid-turn draw blocks the
 		// Execute/Run buttons until it lands, so it should not linger.
@@ -323,5 +344,8 @@ namespace Demo {
 		void GainEnergyNow(int amount) { energy += amount; }
 		void DrawCardsNow(int amount);
 		void QueuePopUpMessage(const std::wstring& msg) { if (popUpMessage) popUpMessage->QueueMessage(&commandBuffer, msg); }
+		void AddPendingGoldTokenReward(int amount) { pendingGoldTokenReward += amount; }
+		void SpawnRandomToken(float x, float y);
+		void AddEnergyPieceToken();
 	};
 }
