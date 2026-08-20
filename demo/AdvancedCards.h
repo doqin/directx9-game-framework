@@ -136,12 +136,12 @@ namespace Demo {
 		std::shared_ptr<DX9GF::StaticSprite> strikeSprite;
 	public:
 		WeaknessCard(std::weak_ptr<DX9GF::TransformManager> tm, float x = 0, float y = 0)
-			: IGameObject(tm, x, y), MultiTargetCard(tm, 2, L"Weakness", x, y, 192, 32) {
+			: IGameObject(tm, x, y), MultiTargetCard(tm, 1, L"Weakness", x, y, 192, 32) {
 			SetPersistent(false);
 		}
 
 		size_t GetCost() const override { return 1; }
-		std::wstring GetDescription() const override { return L"Apply Weak 2 to up to 2 enemies."; }
+		std::wstring GetDescription() const override { return L"Apply Weak 2 to an enemy."; }
 		RECT GetFaceRect() const override { return RECT{ 96, 320, 192, 336 }; }
 
 		bool Execute() override;
@@ -236,7 +236,7 @@ namespace Demo {
 		OverloadCard(std::weak_ptr<DX9GF::TransformManager> tm)
 			: IGameObject(tm, 0, 0), MultiTargetCard(tm, 1, L"Overload", 0, 0, 160, 32) {
 			SetPersistent(false);
-			SetMaxUses(1);
+			//SetMaxUses(1);
 		}
 		bool Execute() override;
 		void CollectProjectedSteps(VirtualBattleState& state) override;
