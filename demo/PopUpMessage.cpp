@@ -12,12 +12,12 @@ void Demo::PopUpMessage::Init(DX9GF::GraphicsDevice* graphicsDevice, DX9GF::Came
 
 void Demo::PopUpMessage::QueueMessage(DX9GF::CommandBuffer* commandBuffer, std::wstring message, float duration)
 {
-	fontSprite->SetText(std::move(message));
 	auto fontHeight = fontSprite->GetHeight();
 	auto app = DX9GF::Application::GetInstance();
 	auto commands = std::make_shared<DX9GF::MultiCommand>(std::vector<std::shared_ptr<DX9GF::ICommand>>{
 		std::make_shared<DX9GF::SetPositionCommand>(shared_from_this(), 0, -static_cast<float>(app->GetScreenHeight())),
-		std::make_shared<DX9GF::CustomCommand>([this](std::function<void(void)> markFinished) {
+		std::make_shared<DX9GF::CustomCommand>([this, message](std::function<void(void)> markFinished) {
+			fontSprite->SetText(message);
 			isDrawing = true;
 			markFinished();
 		}),

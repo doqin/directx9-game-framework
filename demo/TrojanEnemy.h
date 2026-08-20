@@ -22,6 +22,9 @@ namespace Demo {
 		static constexpr int BURN_DURATION = 1;
 	public:
 		using IEnemy::IEnemy;
+		// 96px frames drawn at 2x.
+		float GetBodyWidth() const override { return 192.f; }
+		float GetBodyHeight() const override { return 192.f; }
 		void Init(DX9GF::GraphicsDevice* graphicsDevice, DX9GF::Camera* camera);
 		void Draw(DX9GF::GraphicsDevice* graphicsDevice, DX9GF::Camera* camera, unsigned long long deltaTime) override;
 		void OnTurnBegin(std::shared_ptr<Player> player, std::shared_ptr<PopUpMessage> popUpMessage, int currentTurn) override;

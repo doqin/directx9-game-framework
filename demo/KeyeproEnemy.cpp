@@ -1,4 +1,4 @@
-﻿#include "pch.h"
+#include "pch.h"
 #include "KeyeproEnemy.h"
 #include "resource.h"
 #include "KeyeEnemy.h"
@@ -36,37 +36,11 @@ int Demo::KeyeproEnemy::GetRandomPattern() {
 	return RNG::Range(1, 6);
 }
 
-void Demo::KeyeproEnemy::OnTurnBegin(std::shared_ptr<Player> player, std::shared_ptr<PopUpMessage> popUpMessage, int currentTurn) {
+void Demo::KeyeproEnemy::OnTurnBegin(std::shared_ptr<Player> player, std::shared_ptr<PopUpMessage> popUpMessage, int currentTurn, std::vector<std::shared_ptr<IEnemy>>* enemies, DX9GF::GraphicsDevice* graphicsDevice, DX9GF::Camera* camera) {
 	this->player = player;
-
-	int cycle = (currentTurn - 1) / 3;
-
-	if (currentCycle != cycle) {
-		currentCycle = cycle;
-		skillTurnThisCycle = RNG::Range(1, 3);
-	}
-
-	int turnInCycle = (currentTurn - 1) % 3 + 1;
-
-	if (turnInCycle == skillTurnThisCycle) {
-		if (RNG::Range(1, 2) == 1) {
-			CastAbility([this]() {
-				if (this->onRequestLockCard) this->onRequestLockCard(2);
-				}, popUpMessage, L"Boss locks your mind!");
-		}
-		else {
-			CastAbility([this]() { this->AddModifier(ModifierType::BuffDamage, 2, 5.0f, true); }, popUpMessage, L"Boss enters a frenzy!");
-		}
-	}
-}
-
-void Demo::KeyeproEnemy::StartAttack(std::shared_ptr<Player> player, std::vector<std::shared_ptr<IEnemy>>* enemies, std::shared_ptr<PopUpMessage> popUpMessage, DX9GF::GraphicsDevice* graphicsDevice, DX9GF::Camera* camera, int currentTurn) {
-	this->player = player;
-
-	float baseDamage = 5.f;
 
 	if (enemies != nullptr && graphicsDevice != nullptr && camera != nullptr) {
-		constexpr float MINION_SPAWN_CHANCE = 0.35f;
+		constexpr float MINION_SPAWN_CHANCE = 0.5f;
 		if (RNG::Range(0.f, 1.f) <= MINION_SPAWN_CHANCE) {
 			size_t keyeCount = 0;
 			for (const auto& enemy : *enemies) {
@@ -80,98 +54,69 @@ void Demo::KeyeproEnemy::StartAttack(std::shared_ptr<Player> player, std::vector
 				}
 			}
 
-			constexpr size_t MAX_KEYE_ENEMIES = 1;
+			constexpr size_t MAX_KEYE_ENEMIES = 4;
 			const size_t spawnCount = (keyeCount < MAX_KEYE_ENEMIES)
 				? (std::min)(static_cast<size_t>(1), MAX_KEYE_ENEMIES - keyeCount)
 				: 0;
 
-			if (spawnCount > 0) {
-				auto [bossX, bossY] = GetWorldPosition();
-				for (size_t i = 0; i < spawnCount; ++i) {
-					float spawnX = 1200;
-					float spawnY = 0;
-					auto minion = std::make_shared<KeyeEnemy>(transformManager, 25.0f, spawnX, spawnY);
-					minion->Init(graphicsDevice, camera);
-					minion->SetOnRequestEnemyCard(onRequestEnemyCard);
-					enemies->push_back(minion);
-				}
-
-				if (auto tm = transformManager.lock())
-				{
-					tm->RebuildHierarchy();
-				}
-
-				if (popUpMessage) {
-					popUpMessage->QueueMessage(&commandBuffer, L"The boss spawned a minion!", 1.5f);
-				}
-				return;
+			if (spawnCount > 0 && onRequestSpawnEnemy) {
+				// This runs as a deferred command, which the scene drains from inside its loop over
+				// the enemy list. Hand the minion to the scene instead of appending to that list
+				// here: a push_back would reallocate the vector the loop is iterating and leave it
+				// reading freed memory. The scene inserts the minion once the loop has finished.
+				CastAbility([this, spawnCount, graphicsDevice, camera]() {
+					for (size_t i = 0; i < spawnCount; ++i) {
+						float spawnX = 1200;
+						float spawnY = 0;
+						auto minion = std::make_shared<KeyeEnemy>(this->transformManager, 40.0f, spawnX, spawnY);
+						minion->Init(graphicsDevice, camera);
+						minion->SetOnRequestEnemyCard(this->onRequestEnemyCard);
+						this->onRequestSpawnEnemy(minion);
+					}
+				}, popUpMessage, L"The boss spawned a minion!");
 			}
 		}
+	}
 
-		int patternId = GetSmartRandomPattern(1, 6);
-		if (patternId == 1) PatternTargetedSniping(baseDamage);
-		else if (patternId == 2) PatternEcholocation(baseDamage);
-		else if (patternId == 3) PatternSwoopBite(baseDamage);
-		else if (patternId == 4) PatternSpiralBloom(baseDamage);
-		else if (patternId == 5) PatternCrossfireSweep(baseDamage);
-		else PatternHomingConstellation(baseDamage);
+	constexpr float LOCK_CHANCE = 0.4f;
+	if (RNG::Range(0.f, 1.f) <= LOCK_CHANCE) {
+		CastAbility([this]() {
+			if (this->onRequestLockCard) this->onRequestLockCard(2);
+			}, popUpMessage, L"Boss locks your mind!");
+	}
+
+	if (currentTurn % 2 == 1) {
+		auto abilityRoll = RNG::Range(1, 5);
+		if (abilityRoll == 1) {
+			CastAbility([this]() { this->player.lock()->AddModifier(ModifierType::Vulnerable, 1, 5.0f, false); }, popUpMessage, L"Boss lowers your defenses!");
+		}
+		else if (abilityRoll == 2) {
+			CastAbility([this]() { this->player.lock()->AddModifier(ModifierType::Weak, 2, 5.0f, false); }, popUpMessage, L"Boss weakens your attacks!");
+		}
+		else if (abilityRoll == 3) {
+			CastAbility([this]() { this->AddModifier(ModifierType::BuffDefense, 2, 30.0f, true); }, popUpMessage, L"Boss fortifies itself!");
+		}
+		else if (abilityRoll == 4) {
+			CastAbility([this]() { this->AddModifier(ModifierType::HealHP, 0, 50.0f, true); }, popUpMessage, L"Boss regenerates!");
+		}
+		else {
+			CastAbility([this]() { this->AddModifier(ModifierType::BuffDamage, 2, 3.0f, true); }, popUpMessage, L"Boss enters a frenzy!");
+		}
 	}
 }
 
-void Demo::KeyeproEnemy::PatternSineWaveStorm(float baseDamage) {
-	const int BULLETS = 10;
-	const int SPACING = 80;
-	const int WAVE_COUNT = 10;
+void Demo::KeyeproEnemy::StartAttack(std::shared_ptr<Player> player, std::vector<std::shared_ptr<IEnemy>>* enemies, std::shared_ptr<PopUpMessage> popUpMessage, DX9GF::GraphicsDevice* graphicsDevice, DX9GF::Camera* camera, int currentTurn) {
+	this->player = player;
 
-	auto leftAttack = std::make_shared<DX9GF::CustomCommand>([this, baseDamage, BULLETS, SPACING, WAVE_COUNT](std::function<void(void)> markFinished) {
-		if (auto lock = this->player.lock()) {
-			float finalDamage = this->CalculateOutgoingDamage(baseDamage);
+	float baseDamage = 5.f;
 
-			for (int waveCount = 0; waveCount < WAVE_COUNT; waveCount++) {
-				for (int i = 0; i < BULLETS; i++) {
-					float startY = (i - BULLETS / 2.f) * SPACING;
-
-					projectiles.Spawn(
-						lock,
-						ProjectileDesc(projTexture.get(), projFrames, 12, 16, 16, 16, 16, -350.f, startY)
-						.SetTrajectory(D3DXVECTOR2(1, 0))
-						.SetWave(20.f, 4.0f)
-						.SetDelay((waveCount * 0.25f) + (i * 0.05f))
-						.SetDecayTime(10.f)
-						.SetVelocity(100.f)
-						.SetDamage(finalDamage)
-						.SetGhostSprite(projTexture.get(), projFrames.front(), 16, 16)
-					);
-				}
-			}
-		}
-		markFinished();
-		});
-	//auto topAttack = std::make_shared<DX9GF::CustomCommand>([this, projDamage, BULLETS, SPACING, WAVE_COUNT](std::function<void(void)> markFinished) {
-	//	if (auto lock = this->player.lock()) {
-	//		for (int waveCount = 0; waveCount < WAVE_COUNT; waveCount++) {
-	//			for (int i = 0; i < BULLETS; i++) {
-	//				float startX = (i - BULLETS / 2.f) * SPACING;
-	//				projectiles.push_back(
-	//					SineWaveProjectile::Builder(transformManager, lock, projSprite, 16, 16, startX, -350.f)
-	//					.SetTrajectory(D3DXVECTOR2(0, 1))
-	//					.SetWave(20.f, 4.0f)
-	//					.SetDelay((waveCount * 0.25f) + (i * 0.05f))
-	//					.SetDecayTime(10.f)
-	//					.SetVelocity(100.f)
-	//					.SetDamage(projDamage)
-	//					.Build()
-	//				);
-	//				projectiles.back()->Init();
-	//			}
-	//		}
-	//		transformManager.lock()->RebuildHierarchy();
-	//	}
-	//	markFinished();
-	//	});
-
-	commandBuffer.PushCommand(std::make_shared<DX9GF::CustomCommand>(*leftAttack));
-	//commandBuffer.PushCommand(std::make_shared<DX9GF::CustomCommand>(*topAttack));
+	if (enemies != nullptr && graphicsDevice != nullptr && camera != nullptr) {
+		int patternId = GetSmartRandomPattern(1, 4);
+		if (patternId == 1) PatternTargetedSniping(baseDamage);
+		else if (patternId == 2) PatternEcholocation(baseDamage);
+		else if (patternId == 3) PatternSwoopBite(baseDamage);
+		else if (patternId == 4) PatternShatterVolley(baseDamage);
+	}
 }
 
 void Demo::KeyeproEnemy::PatternTargetedSniping(float baseDamage) {
@@ -210,6 +155,7 @@ void Demo::KeyeproEnemy::PatternTargetedSniping(float baseDamage) {
 					.SetDelay(0.f)
 					.SetDecayTime(4.f)
 					.SetDamage(finalDamage)
+					.SetStatusEffect(ModifierType::Poison, 0.f, 1)
 				);
 			}
 			markFinished();
@@ -222,11 +168,12 @@ void Demo::KeyeproEnemy::PatternEcholocation(float baseDamage) {
 	const int BULLETS = 10;
 	const int VELOCITY = 180;
 	const int SPACING = 96;
-	auto rightAttack = std::make_shared<DX9GF::CustomCommand>([this, baseDamage](std::function<void(void)> markFinished) {
+	std::shared_ptr<int> yOffset = std::make_shared<int>(0);
+	auto rightAttack = std::make_shared<DX9GF::CustomCommand>([this, baseDamage, yOffset, SPACING](std::function<void(void)> markFinished) {
 		float finalDamage = this->CalculateOutgoingDamage(baseDamage);
 		for (int i = 0; i < BULLETS; i++) {
 			if (auto lock = this->player.lock()) {
-				float startY = (i - BULLETS / 2.f) * SPACING;
+				float startY = (i - BULLETS / 2.f) * SPACING + *yOffset;
 				projectiles.Spawn(
 					lock,
 					ProjectileDesc(projTexture.get(), projFrames, 12, 16, 16, 16, 16, 320, startY)
@@ -237,16 +184,19 @@ void Demo::KeyeproEnemy::PatternEcholocation(float baseDamage) {
 					.SetVelocity(VELOCITY)
 					.SetDamage(finalDamage)
 					.SetGhostSprite(projTexture.get(), projFrames.front(), 16, 16)
+					.SetStatusEffect(ModifierType::Freeze, 0.05f, 1)
 				);
 			}
 		}
+		*yOffset += 16;
+		*yOffset %= SPACING;
 		markFinished();
 		});
-	auto leftAttack = std::make_shared<DX9GF::CustomCommand>([this, baseDamage](std::function<void(void)> markFinished) {
+	auto leftAttack = std::make_shared<DX9GF::CustomCommand>([this, baseDamage, yOffset](std::function<void(void)> markFinished) {
 		float finalDamage = this->CalculateOutgoingDamage(baseDamage);
 		for (int i = 0; i < BULLETS; i++) {
 			if (auto lock = this->player.lock()) {
-				float startY = (i - BULLETS / 2.f) * SPACING;
+				float startY = (i - BULLETS / 2.f) * SPACING + *yOffset;
 				projectiles.Spawn(
 					lock,
 					ProjectileDesc(projTexture.get(), projFrames, 12, 16, 16, 16, 16, -320, startY)
@@ -260,6 +210,8 @@ void Demo::KeyeproEnemy::PatternEcholocation(float baseDamage) {
 				);
 			}
 		}
+		*yOffset += 16;
+		*yOffset %= SPACING;
 		markFinished();
 		});
 	for (int i = 0; i < 40; i++) {
@@ -346,126 +298,64 @@ void Demo::KeyeproEnemy::PatternSwoopBite(float baseDamage) {
 	}
 }
 
-void Demo::KeyeproEnemy::PatternSpiralBloom(float baseDamage) {
-	const int WAVE_COUNT = 4;
-	const int BULLETS_PER_WAVE = 8;
-	const float WAVE_DELAY = 0.55f;
-	const float RADIAL_SPEED = 65.f;
-	const float ANGULAR_SPEED = 1.35f;
-	const float DECAY_TIME = 5.5f;
-	const float ORIGIN_X = 240.f;
-	const float ORIGIN_Y = -160.f;
+// Shells cross the arena from one side and burst at a random point near its centre,
+// throwing a ring of shards outward. The burst point moves every wave, so no corner
+// stays safe and the player has to keep reading the incoming shell instead of settling.
+void Demo::KeyeproEnemy::PatternShatterVolley(float baseDamage) {
+	constexpr int SHELLS_PER_WAVE = 3;
+	// Wide enough that the three shells in a wave land as three separate pops the
+	// player can read one at a time, rather than one wall of shards.
+	constexpr float SHELL_STAGGER = 0.35f;
+	constexpr float WAVE_GAP = 1.3f;
+	constexpr float SHELL_VELOCITY = 180.f;
+	constexpr float SPAWN_X = 320.f;
+	constexpr float SPAWN_Y_RANGE = 120.f;
+	// The battle box is 256px square around the origin. Keeping burst points well
+	// inside it means the shards sweep across the arena rather than off its edge.
+	constexpr float BURST_RANGE = 90.f;
+	constexpr int SHARDS = 8;
+	constexpr float SHARD_VELOCITY = 100.f;
+	// Shards clear the 256px box roughly 0.7s after a centre burst; 1.6s carries them
+	// past the visible border without leaving dead sprites padding the phase out.
+	constexpr float SHARD_DECAY = 1.6f;
+	constexpr float SHARD_DAMAGE_SCALE = 0.6f;
 
-	for (int wave = 0; wave < WAVE_COUNT; wave++) {
-		commandBuffer.PushCommand(std::make_shared<DX9GF::CustomCommand>([this, baseDamage, wave, BULLETS_PER_WAVE, RADIAL_SPEED, ANGULAR_SPEED, DECAY_TIME, ORIGIN_X, ORIGIN_Y](std::function<void(void)> markFinished) {
+	// Only the wave gap costs command time - the shells inside a wave are staggered by
+	// their own spawn delay - so the barrage runs waves * WAVE_GAP, about 10.5-12s.
+	// The last wave then needs its stagger, ~1s of shell flight and the shard decay to
+	// play out: ~3.3s more, for 14-15s under fire. Enough that the player runs out of
+	// easy dodges, and short of the 20s Echolocation spends, which is the point where
+	// the pressure starts reading as a slog instead.
+	const int waves = RNG::Range(8, 9);
+	for (int w = 0; w < waves; w++) {
+		commandBuffer.PushCommand(std::make_shared<DX9GF::CustomCommand>([this, baseDamage](std::function<void(void)> markFinished) {
 			if (auto lock = this->player.lock()) {
-				float finalDamage = this->CalculateOutgoingDamage(baseDamage);
-				float spinDirection = (wave % 2 == 0) ? 1.f : -1.f;
-				float waveOffset = wave * 0.35f;
-
-				for (int i = 0; i < BULLETS_PER_WAVE; i++) {
-					float angle = waveOffset + i * (2.f * 3.14159265359f / BULLETS_PER_WAVE);
-
-					projectiles.Spawn(
-						lock,
-						ProjectileDesc(projTexture.get(), projFrames, 12, 16, 16, 16, 16, ORIGIN_X, ORIGIN_Y)
-						.SetSpiralParams(angle, RADIAL_SPEED, spinDirection * ANGULAR_SPEED)
-						.SetDelay(0.f)
-						.SetDecayTime(DECAY_TIME)
-						.SetDamage(finalDamage)
-					);
-				}
-			}
-			markFinished();
-			}));
-		commandBuffer.PushCommand(std::make_shared<DX9GF::DelayCommand>(WAVE_DELAY));
-	}
-}
-
-void Demo::KeyeproEnemy::PatternCrossfireSweep(float baseDamage) {
-	constexpr float PI = 3.14159265359f;
-	const int PAIR_COUNT = 56;
-	const float SPAWN_DELAY = 0.08f;
-	const float BULLET_SPEED = 220.f;
-	const float DECAY_TIME = 4.f;
-	const float START_X = 0.f;
-	const float TOP_Y = -350.f;
-	const float BOTTOM_Y = 350.f;
-	const float SWEEP_RANGE = PI * 0.38f;
-
-	for (int i = 0; i < PAIR_COUNT; i++) {
-		float sweep = std::sin(i * 0.65f) * SWEEP_RANGE;
-		commandBuffer.PushCommand(std::make_shared<DX9GF::CustomCommand>([this, baseDamage, BULLET_SPEED, DECAY_TIME, START_X, TOP_Y, BOTTOM_Y, sweep](std::function<void(void)> markFinished) {
-			if (auto lock = this->player.lock()) {
-				float finalDamage = this->CalculateOutgoingDamage(baseDamage);
-
-				projectiles.Spawn(
-					lock,
-					ProjectileDesc(projTexture.get(), projFrames, 12, 16, 16, 16, 16, START_X, TOP_Y)
-					.SetTrajectory(D3DXVECTOR2(std::sin(sweep), 1.f))
-					.SetVelocity(BULLET_SPEED)
-					.SetDelay(0.f)
-					.SetDecayTime(DECAY_TIME)
-					.SetDamage(finalDamage)
-				);
-
-				projectiles.Spawn(
-					lock,
-					ProjectileDesc(projTexture.get(), projFrames, 12, 16, 16, 16, 16, -START_X, BOTTOM_Y)
-					.SetTrajectory(D3DXVECTOR2(-std::sin(sweep), -1.f))
-					.SetVelocity(BULLET_SPEED)
-					.SetDelay(0.f)
-					.SetDecayTime(DECAY_TIME)
-					.SetDamage(finalDamage)
-				);
-			}
-			markFinished();
-			}));
-		commandBuffer.PushCommand(std::make_shared<DX9GF::DelayCommand>(SPAWN_DELAY));
-	}
-}
-
-void Demo::KeyeproEnemy::PatternHomingConstellation(float baseDamage) {
-	constexpr float PI = 3.14159265359f;
-	const int POINT_COUNT = 7;
-	const int WAVE_COUNT = 4;
-	const float RADIUS = 360.f;
-	const float ARC_WIDTH = PI * 0.85f;
-	const float WAVE_DELAY = 0.8f;
-	const float BULLET_SPEED = 115.f;
-	const float TURN_SPEED = 0.8f;
-	const float DECAY_TIME = 5.5f;
-	const float BULLET_DELAY = 0.12f;
-
-	for (int wave = 0; wave < WAVE_COUNT; wave++) {
-		commandBuffer.PushCommand(std::make_shared<DX9GF::CustomCommand>([this, baseDamage, wave, POINT_COUNT, RADIUS, ARC_WIDTH, BULLET_SPEED, TURN_SPEED, DECAY_TIME, BULLET_DELAY](std::function<void(void)> markFinished) {
-			if (auto lock = this->player.lock()) {
-				float finalDamage = this->CalculateOutgoingDamage(baseDamage);
-				float centerAngle = (wave % 2 == 0) ? 0.f : 3.14159265359f;
-				float waveOffset = (wave / 2) * 0.35f;
-
-				for (int i = 0; i < POINT_COUNT; i++) {
-					float arcRatio = (POINT_COUNT == 1) ? 0.5f : static_cast<float>(i) / (POINT_COUNT - 1);
-					float angle = centerAngle - ARC_WIDTH * 0.5f + arcRatio * ARC_WIDTH + waveOffset;
-					float spawnX = std::cos(angle) * RADIUS;
-					float spawnY = std::sin(angle) * RADIUS;
-					float tangentDirection = (wave % 2 == 0) ? 1.f : -1.f;
-					D3DXVECTOR2 tangent(-std::sin(angle) * tangentDirection, std::cos(angle) * tangentDirection);
+				const float shellDamage = this->CalculateOutgoingDamage(baseDamage);
+				const float shardDamage = this->CalculateOutgoingDamage(baseDamage * SHARD_DAMAGE_SCALE);
+				for (int i = 0; i < SHELLS_PER_WAVE; i++) {
+					const float spawnX = (RNG::Range(1, 2) == 1) ? -SPAWN_X : SPAWN_X;
+					const float spawnY = RNG::Range(-SPAWN_Y_RANGE, SPAWN_Y_RANGE);
+					const float burstX = RNG::Range(-BURST_RANGE, BURST_RANGE);
+					const float burstY = RNG::Range(-BURST_RANGE, BURST_RANGE);
 
 					projectiles.Spawn(
 						lock,
 						ProjectileDesc(projTexture.get(), projFrames, 12, 16, 16, 16, 16, spawnX, spawnY)
-						.SetTrajectory(tangent)
-						.SetHoming(TURN_SPEED)
-						.SetVelocity(BULLET_SPEED)
-						.SetDelay(i * BULLET_DELAY)
-						.SetDecayTime(DECAY_TIME)
-						.SetDamage(finalDamage)
+						.SetSplitOnArrival(burstX, burstY, SHARDS, SHARD_VELOCITY)
+						.SetSplitRandomAngle()
+						.SetSplitDecayTime(SHARD_DECAY)
+						.SetSplitDamage(shardDamage)
+						.SetVelocity(SHELL_VELOCITY)
+						.SetDelay(i * SHELL_STAGGER)
+						.SetDecayTime(4.f)
+						.SetDamage(shellDamage)
+						.SetGhostSprite(projTexture.get(), projFrames.front(), 16, 16)
+						.SetStatusEffect(ModifierType::Burn, 1.f, 1)
 					);
 				}
 			}
 			markFinished();
 			}));
-		commandBuffer.PushCommand(std::make_shared<DX9GF::DelayCommand>(WAVE_DELAY));
+		commandBuffer.PushCommand(std::make_shared<DX9GF::DelayCommand>(WAVE_GAP));
 	}
 }

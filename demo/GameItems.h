@@ -30,7 +30,10 @@ namespace Demo
 		int duration;
 		float value;
 		bool isBuff;
-		int delayTurns = 0;  //got trouble with turns, use item cost 1 turn so I use this flag to prevent "Turn Eater"
+		// Grace turns: the modifier is active from the moment it is applied, but its duration does
+		// not start counting down until these are burned off. Using an item costs a turn, so items
+		// set this to 1 to stop that turn eating the buff they just handed out.
+		int delayTurns = 0;
 	};
 
 	class ConsumableItem

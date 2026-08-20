@@ -109,8 +109,8 @@ void Demo::SystemPurgeCard::DrawCardFace(unsigned long long deltaTime) {
 bool Demo::OverdriveCard::Execute() {
 	if (isDone) return true;
 	if (owner) {
-		owner->AddStackingModifier(ModifierType::BuffDamage, 3, 4.f, true);
-		owner->AddStackingModifier(ModifierType::Regen, 3, 3.f, true);
+		owner->AddStackingModifier(ModifierType::BuffDamage, 3, 3.f, true);
+		owner->AddStackingModifier(ModifierType::Regen, 3, 8.f, true);
 		if (battleScene) battleScene->QueuePopUpMessage(L"Overdrive!");
 	}
 	isDone = true;
@@ -126,5 +126,5 @@ void Demo::OverdriveCard::DrawCardFace(unsigned long long deltaTime) {
 }
 
 void Demo::OverdriveCard::CollectProjectedSteps(VirtualBattleState& state) {
-	state.player.buffDamage += 4.f;
+	state.player.buffDamage += 3.f;
 }

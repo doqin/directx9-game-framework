@@ -74,7 +74,7 @@ namespace Demo {
 		}
 
 		size_t GetCost() const override { return 3; }
-		std::wstring GetDescription() const override { return L"Gain 4 attack and Regen 3 for 3 turns."; }
+		std::wstring GetDescription() const override { return L"Gain 3 attack and Regen 8 for 3 turns."; }
 		RECT GetFaceRect() const override { return RECT{ 176, 384, 256, 400 }; }
 
 		bool Execute() override;

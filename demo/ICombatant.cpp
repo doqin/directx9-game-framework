@@ -37,8 +37,7 @@ namespace Demo {
 
 			float dmgToDeduct = blockedDamage;
 			for (auto& mod : modifiers) {
-				//check delay
-				if (mod.type == ModifierType::BuffDefense && mod.value > 0.f && mod.delayTurns <= 0) {
+				if (mod.type == ModifierType::BuffDefense && mod.value > 0.f) {
 					float deduct = (std::min)(mod.value, dmgToDeduct);
 					mod.value -= deduct;
 					dmgToDeduct -= deduct;
@@ -94,7 +93,7 @@ namespace Demo {
 
 	bool ICombatant::HasModifier(ModifierType type) const {
 		for (const auto& mod : modifiers) {
-			if (mod.type == type && mod.duration > 0 && mod.delayTurns <= 0) return true;
+			if (mod.type == type && mod.duration > 0) return true;
 		}
 		return false;
 	}
@@ -102,7 +101,7 @@ namespace Demo {
 	float ICombatant::GetModifierValue(ModifierType type) const {
 		float val = 0.f;
 		for (const auto& mod : modifiers) {
-			if (mod.type == type && mod.delayTurns <= 0) {
+			if (mod.type == type) {
 				val += mod.value;
 			}
 		}
@@ -117,7 +116,7 @@ namespace Demo {
 
 	void ICombatant::TriggerEffects(TickPhase phase) {
 		for (auto& it : modifiers) {
-			if (it.duration > 0 && it.delayTurns <= 0) {
+			if (it.duration > 0) {
 				if (it.type == ModifierType::Poison && phase == TickPhase::EndOfTurn) {
 					const float poisonDamage = (it.value > 0.f) ? it.value : static_cast<float>(it.duration);
 
@@ -126,7 +125,7 @@ namespace Demo {
 
 					int vulnDuration = 0;
 					for (auto& m : modifiers) {
-						if (m.type == ModifierType::Vulnerable && m.delayTurns <= 0) {
+						if (m.type == ModifierType::Vulnerable) {
 							vulnDuration = m.duration;
 							m.duration = 0;
 						}
@@ -157,6 +156,8 @@ namespace Demo {
 		if (phase != TickPhase::EndOfRound) return;
 
 		for (auto it = modifiers.begin(); it != modifiers.end(); ) {
+			// Grace turns are spent instead of duration, so a buff applied this round keeps every
+			// turn it advertised - it is already in effect, it just does not age yet.
 			if (it->delayTurns > 0) {
 				it->delayTurns--;
 				++it;
@@ -178,7 +179,7 @@ namespace Demo {
 	float ICombatant::ConsumeModifier(ModifierType type) {
 		float totalVal = 0.f;
 		for (auto it = modifiers.begin(); it != modifiers.end(); ) {
-			if (it->type == type && it->delayTurns <= 0) {
+			if (it->type == type) {
 				totalVal += it->value;
 				it = modifiers.erase(it);
 			}

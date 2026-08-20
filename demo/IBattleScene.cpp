@@ -36,12 +36,12 @@ namespace {
 		card->SetLocalPosition(HiddenPileX, HiddenPileY);
 	}
 
-	// Turns left on a modifier the combatant already carries, skipping delayed and expired ones
-	// the way ICombatant::TriggerEffects does. 0 when it is not there at all.
+	// Turns left on a modifier the combatant already carries, skipping expired ones the way
+	// ICombatant::TriggerEffects does. 0 when it is not there at all.
 	int ActiveModifierDuration(const Demo::ICombatant& combatant, Demo::ModifierType type)
 	{
 		for (const auto& mod : combatant.GetModifiers()) {
-			if (mod.type == type && mod.duration > 0 && mod.delayTurns <= 0) {
+			if (mod.type == type && mod.duration > 0) {
 				return mod.duration;
 			}
 		}
@@ -99,12 +99,13 @@ void Demo::IBattleScene::StartBattle()
 	pendingGoldTokenReward = 0;
 	tokenSpawnTimer = 0.f;
 	for (auto& enemy : enemies) {
-		enemy->SetOnRequestLockCard([this](int turns) { this->LockRandomCard(turns); });
+		WireEnemyCallbacks(enemy);
 	}
-	for (auto& enemy : enemies) {
-		enemy->OnTurnBegin(this->battlePlayer, this->popUpMessage, this->currentTurn);
+	for (size_t i = 0; i < enemies.size(); ++i) {
+		auto enemy = enemies[i];
+		enemy->OnTurnBegin(this->battlePlayer, this->popUpMessage, this->currentTurn, &this->enemies, game->GetGraphicsDevice(), &this->camera);
 	}
-
+	FlushPendingEnemies();
 	if (!customBGMName.empty()) {
 		DX9GF::AudioManager::GetInstance()->PlayBGM_Fade(customBGMName, 0.3f, 1.5f);
 	}
@@ -145,6 +146,40 @@ void Demo::IBattleScene::LockRandomCard(int turns)
 		hiddenCards[randIdx]->SetLocked(turns);
 		this->pendingLockMessage = true;
 	}
+}
+
+void Demo::IBattleScene::WireEnemyCallbacks(const std::shared_ptr<IEnemy>& enemy)
+{
+	if (!enemy) {
+		return;
+	}
+	enemy->SetOnRequestLockCard([this](int turns) { this->LockRandomCard(turns); });
+	enemy->SetOnRequestSpawnEnemy([this](std::shared_ptr<IEnemy> spawned) {
+		if (spawned) {
+			this->pendingEnemies.push_back(std::move(spawned));
+		}
+		});
+}
+
+void Demo::IBattleScene::FlushPendingEnemies()
+{
+	if (pendingEnemies.empty()) {
+		return;
+	}
+	// Move out first: wiring the callbacks or rebuilding the hierarchy could queue another
+	// spawn, and that one has to land in a fresh pendingEnemies rather than in the list we
+	// are walking here.
+	std::vector<std::shared_ptr<IEnemy>> spawned;
+	spawned.swap(pendingEnemies);
+	for (auto& enemy : spawned) {
+		WireEnemyCallbacks(enemy);
+		enemies.push_back(enemy);
+	}
+	if (transformManager) {
+		transformManager->RebuildHierarchy();
+	}
+	// The line-up changed, so the cached layout no longer covers every enemy.
+	enemyLayoutInitialized = false;
 }
 
 void Demo::IBattleScene::CollectDeadEnemies()
@@ -588,10 +623,142 @@ void Demo::IBattleScene::BeginNextTurn()
 
 	battlePlayer->TickDurations(TickPhase::EndOfRound);
 	TickActiveItems();
-	for (auto& enemy : enemies) {
+	for (size_t i = 0; i < enemies.size(); ++i) {
+		auto enemy = enemies[i];
 		enemy->TickDurations(TickPhase::EndOfRound);
-		enemy->OnTurnBegin(this->battlePlayer, this->popUpMessage, this->currentTurn);
+		enemy->OnTurnBegin(this->battlePlayer, this->popUpMessage, this->currentTurn, &this->enemies, game->GetGraphicsDevice(), &this->camera);
 	}
+	FlushPendingEnemies();
+}
+
+void Demo::IBattleScene::GetEnemyGridBand(float& top, float& bottom) const
+{
+	const auto app = DX9GF::Application::GetInstance();
+	const float screenHeight = static_cast<float>(app->GetScreenHeight());
+	// Same baseline PlayerAttackUpdate uses for the action bar and the discard strip, so the
+	// grid and the bar cannot drift apart.
+	const float actionBarY = screenHeight / 2.f - 20.f - (attackButton ? attackButton->GetHeight() : 32.f);
+	top = -screenHeight / 2.f + ENEMY_GRID_HP_TEXT_HEADROOM;
+	bottom = actionBarY - ENEMY_GRID_BOTTOM_PAD;
+}
+
+std::vector<D3DXVECTOR2> Demo::IBattleScene::BuildEnemyGridSlots() const
+{
+	std::vector<D3DXVECTOR2> slots;
+	if (enemies.empty()) {
+		return slots;
+	}
+	slots.resize(enemies.size(), D3DXVECTOR2{ 0.f, 0.f });
+
+	const auto app = DX9GF::Application::GetInstance();
+	const float screenWidth = static_cast<float>(app->GetScreenWidth());
+	const float screenHeight = static_cast<float>(app->GetScreenHeight());
+
+	// The band is expressed in terms of slot *centres*, not sprite extents, because both things
+	// that can overflow hang off the centre: the HP text above it and the body below it.
+	float centreTop = 0.f;
+	float bandBottom = 0.f;
+	GetEnemyGridBand(centreTop, bandBottom);
+
+	const float rightColumnX = screenWidth / 2.f - ENEMY_GRID_RIGHT_PAD;
+	// Budget the column count off a default-width body; the per-column clamp below handles
+	// anything wider.
+	const float defaultColumnCentreLimit = ENEMY_GRID_LEFT_EDGE_X + 64.f;
+	const int maxColumns = (std::max)(1, static_cast<int>(
+		std::floor((rightColumnX - defaultColumnCentreLimit) / ENEMY_GRID_COLUMN_PITCH)) + 1);
+
+	auto bodyHeight = [this](size_t index) {
+		const auto& enemy = enemies[index];
+		return enemy ? (std::max)(1.f, enemy->GetBodyHeight()) : 1.f;
+	};
+	auto columnWidth = [this](const std::vector<size_t>& column) {
+		float widest = 0.f;
+		for (size_t index : column) {
+			const auto& enemy = enemies[index];
+			widest = (std::max)(widest, enemy ? enemy->GetBodyWidth() : 0.f);
+		}
+		return widest;
+	};
+	// Distance from the first centre in a column to the last.
+	auto columnSpan = [&](const std::vector<size_t>& column) {
+		float span = 0.f;
+		for (size_t k = 1; k < column.size(); ++k) {
+			span += (bodyHeight(column[k - 1]) + bodyHeight(column[k])) / 2.f + ENEMY_GRID_ROW_GAP;
+		}
+		return span;
+	};
+	// A tall enemy at either end of the column eats into the room the rest can use.
+	auto columnTop = [&](const std::vector<size_t>& column) {
+		return (std::max)(centreTop, -screenHeight / 2.f + bodyHeight(column.front()) / 2.f);
+	};
+	auto availableSpan = [&](const std::vector<size_t>& column) {
+		if (column.empty()) {
+			return 0.f;
+		}
+		return (std::max)(0.f, (bandBottom - bodyHeight(column.back()) / 2.f) - columnTop(column));
+	};
+
+	// Fill a column top-to-bottom until the next enemy would not fit, then start a new one to
+	// the left. Walking `enemies` in order keeps the assignment stable: appending an enemy
+	// cannot move the ones already placed ahead of it.
+	std::vector<std::vector<size_t>> columns;
+	std::vector<size_t> current;
+	for (size_t i = 0; i < enemies.size(); ++i) {
+		if (!current.empty()) {
+			std::vector<size_t> trial = current;
+			trial.push_back(i);
+			if (columnSpan(trial) > availableSpan(trial)) {
+				columns.push_back(current);
+				current.clear();
+			}
+		}
+		current.push_back(i);
+	}
+	if (!current.empty()) {
+		columns.push_back(current);
+	}
+
+	// More columns than the right half can hold. Spread the enemies evenly over the columns we
+	// do have and let the squeeze below overlap them rather than push any off-screen.
+	if (static_cast<int>(columns.size()) > maxColumns) {
+		const size_t perColumn = (enemies.size() + static_cast<size_t>(maxColumns) - 1) / static_cast<size_t>(maxColumns);
+		columns.clear();
+		for (size_t i = 0; i < enemies.size(); i += perColumn) {
+			std::vector<size_t> column;
+			for (size_t j = i; j < (std::min)(i + perColumn, enemies.size()); ++j) {
+				column.push_back(j);
+			}
+			columns.push_back(std::move(column));
+		}
+	}
+
+	// Step left by whatever the neighbouring bodies actually need, so a 256px boss pushes the
+	// next column clear of itself instead of having a minion drawn over its wing.
+	float columnX = rightColumnX;
+	for (size_t c = 0; c < columns.size(); ++c) {
+		const auto& column = columns[c];
+		if (c > 0) {
+			const float step = (columnWidth(columns[c - 1]) + columnWidth(column)) / 2.f + ENEMY_GRID_COLUMN_GAP;
+			columnX -= (std::max)(ENEMY_GRID_COLUMN_PITCH, step);
+			// Never encroach on the program blocks. Very wide bodies overlap each other here
+			// instead, the horizontal counterpart of the vertical squeeze below.
+			columnX = (std::max)(columnX, ENEMY_GRID_LEFT_EDGE_X + columnWidth(column) / 2.f);
+		}
+		const float span = columnSpan(column);
+		const float available = availableSpan(column);
+		// Overlap rather than clip once a column genuinely cannot fit at natural spacing. Only
+		// the gaps between centres shrink - the sprites keep their real size.
+		const float squeeze = (span > available && span > 0.f) ? available / span : 1.f;
+
+		float y = columnTop(column) + (available - span * squeeze) / 2.f;
+		slots[column.front()] = D3DXVECTOR2{ columnX, y };
+		for (size_t k = 1; k < column.size(); ++k) {
+			y += ((bodyHeight(column[k - 1]) + bodyHeight(column[k])) / 2.f + ENEMY_GRID_ROW_GAP) * squeeze;
+			slots[column[k]] = D3DXVECTOR2{ columnX, y };
+		}
+	}
+
+	return slots;
 }
 
 void Demo::IBattleScene::QueueEnemyLayoutTransition(State targetState)
@@ -601,41 +768,54 @@ void Demo::IBattleScene::QueueEnemyLayoutTransition(State targetState)
 	}
 
 	const auto app = DX9GF::Application::GetInstance();
+	const float screenWidth = static_cast<float>(app->GetScreenWidth());
 	const float centerLineY = -120.f;
 	const float horizontalSpacing = 120.f;
 	const float verticalSpacing = 240.f;
-	const float rightSideX = app->GetScreenWidth() / 2.f - 186.f;
 
-	bool hasQueued = false;
 	const size_t enemyCount = enemies.size();
+
+	// PlayerAttack is the phase the player reads and clicks through, so it gets the full grid.
+	const std::vector<D3DXVECTOR2> gridSlots = (targetState != State::PlayerStandBy && targetState != State::EnemyAttack)
+		? BuildEnemyGridSlots()
+		: std::vector<D3DXVECTOR2>{};
+
+	// The standby row and the off-screen attack queue keep their single-line arrangement, but
+	// both used to run off the edge once enough enemies were alive. Clamp their pitch to fit.
+	float rowSpacing = horizontalSpacing;
+	if (enemyCount > 1) {
+		const float usableWidth = screenWidth - 2.f * ENEMY_GRID_RIGHT_PAD;
+		rowSpacing = (std::min)(horizontalSpacing, usableWidth / static_cast<float>(enemyCount - 1));
+	}
+	float queueSpacing = verticalSpacing;
+	if (enemyCount > 1) {
+		float centreTop = 0.f;
+		float centreBottom = 0.f;
+		GetEnemyGridBand(centreTop, centreBottom);
+		queueSpacing = (std::min)(verticalSpacing, (centreBottom - centreTop) / static_cast<float>(enemyCount - 1));
+	}
+
 	for (size_t i = 0; i < enemyCount; ++i) {
 		float targetX = 0.f;
 		float targetY = 0.f;
 
 		if (targetState == State::PlayerStandBy) {
-			const float totalWidth = (enemyCount > 1) ? (enemyCount - 1) * horizontalSpacing : 0.f;
-			targetX = -totalWidth / 2.f + i * horizontalSpacing;
+			const float totalWidth = (enemyCount > 1) ? (enemyCount - 1) * rowSpacing : 0.f;
+			targetX = -totalWidth / 2.f + i * rowSpacing;
 			targetY = centerLineY;
 		}
 		else if (targetState == State::EnemyAttack) {
-			const float totalHeight = (enemyCount > 1) ? (enemyCount - 1) * verticalSpacing : 0.f;
-			targetX = app->GetScreenWidth() / 1.5f;
-			targetY = -totalHeight / 2.f + i * verticalSpacing;
+			const float totalHeight = (enemyCount > 1) ? (enemyCount - 1) * queueSpacing : 0.f;
+			targetX = screenWidth / 1.5f;
+			targetY = -totalHeight / 2.f + i * queueSpacing;
 		}
 		else {
-			const float totalHeight = (enemyCount > 1) ? (enemyCount - 1) * verticalSpacing : 0.f;
-			targetX = rightSideX;
-			targetY = -totalHeight / 2.f + i * verticalSpacing;
+			targetX = gridSlots[i].x;
+			targetY = gridSlots[i].y;
 		}
 
 		auto command = std::make_shared<DX9GF::GoToCommand>(enemies[i], targetX, targetY, 0.4f, DX9GF::TimeTag{}, DX9GF::EaseInOutTag{});
-		if (!hasQueued) {
-			commandBuffer.StackCommand(command);
-			hasQueued = true;
-		}
-		else {
-			commandBuffer.StackCommand(command);
-		}
+		commandBuffer.StackCommand(command);
 	}
 }
 
@@ -815,7 +995,7 @@ int Demo::IBattleScene::GetActiveItemTurnsLeft(const ActiveItemEffect& entry) co
 	for (const auto& mod : battlePlayer->GetModifiers()) {
 		if (mod.duration <= 0) continue;
 		if (std::find(entry.modifierTypes.begin(), entry.modifierTypes.end(), mod.type) == entry.modifierTypes.end()) continue;
-		// A delayed modifier has not started ticking yet, so it still owes its full duration.
+		// A modifier still holding grace turns has not started ticking yet, so it owes its full duration.
 		turns = (std::max)(turns, mod.duration + mod.delayTurns);
 	}
 	// Capped by the entry's own countdown: the modifier may have been topped up by a card, and
@@ -856,9 +1036,13 @@ void Demo::IBattleScene::PlayerStandByUpdate(unsigned long long deltaTime)
 		itemsButton->Update(deltaTime);
 		attackButton->Update(deltaTime);
 	}
-	for (auto& enemy : enemies) {
+	// Indexed, and holding a strong reference for the duration of the call: Update drains the
+	// enemy's command buffer, which can spawn or remove enemies and resize this vector.
+	for (size_t i = 0; i < enemies.size(); ++i) {
+		auto enemy = enemies[i];
 		enemy->Update(deltaTime);
 	}
+	FlushPendingEnemies();
 }
 
 void Demo::IBattleScene::PlayerAttackUpdate(unsigned long long deltaTime)
@@ -930,13 +1114,17 @@ void Demo::IBattleScene::PlayerAttackUpdate(unsigned long long deltaTime)
 			nullifiedPileButton->Update(deltaTime);
 		}
 	}
-	for (auto& enemy : enemies) {
-		enemy->Update(deltaTime);
-	}
 	if (!isTransitioning) {
 		draggableManager->Update(deltaTime);
 		RemoveEnemyCardsInRemoveArea();
 	}
+	// Indexed, and holding a strong reference for the duration of the call: Update drains the
+	// enemy's command buffer, which can spawn or remove enemies and resize this vector.
+	for (size_t i = 0; i < enemies.size(); ++i) {
+		auto enemy = enemies[i];
+		enemy->Update(deltaTime);
+	}
+	FlushPendingEnemies();
 }
 
 void Demo::IBattleScene::StartAttackCountdown(std::shared_ptr<std::vector<std::shared_ptr<IEnemy>>> attackingEnemies)
@@ -1608,7 +1796,7 @@ void Demo::IBattleScene::QueueToEnemyAttack(unsigned long long deltaTime)
 
 			this->isTransitioning = false;
 			markFinished();
-					})
+		})
 	};
 	commandBuffer.PushCommand(std::make_shared<DX9GF::MultiCommand>(std::move(commands)));
 	return;
@@ -1633,9 +1821,13 @@ void Demo::IBattleScene::PlayerOpenItemsUpdate(unsigned long long deltaTime)
 			btn->Update(deltaTime);
 		}
 	}
-	for (auto& enemy : enemies) {
+	// Indexed, and holding a strong reference for the duration of the call: Update drains the
+	// enemy's command buffer, which can spawn or remove enemies and resize this vector.
+	for (size_t i = 0; i < enemies.size(); ++i) {
+		auto enemy = enemies[i];
 		enemy->Update(deltaTime);
 	}
+	FlushPendingEnemies();
 }
 
 void Demo::IBattleScene::PlayerViewPileUpdate(unsigned long long deltaTime)
@@ -1649,9 +1841,13 @@ void Demo::IBattleScene::PlayerViewPileUpdate(unsigned long long deltaTime)
 		if (currentPilePage > 0) btnPilePrevPage->Update(deltaTime);
 		if (currentPilePage < maxPilePage) btnPileNextPage->Update(deltaTime);
 	}
-	for (auto& enemy : enemies) {
+	// Indexed, and holding a strong reference for the duration of the call: Update drains the
+	// enemy's command buffer, which can spawn or remove enemies and resize this vector.
+	for (size_t i = 0; i < enemies.size(); ++i) {
+		auto enemy = enemies[i];
 		enemy->Update(deltaTime);
 	}
+	FlushPendingEnemies();
 }
 
 bool Demo::IBattleScene::EnemyAttackUpdate(unsigned long long deltaTime)
@@ -1721,7 +1917,10 @@ bool Demo::IBattleScene::EnemyAttackUpdate(unsigned long long deltaTime)
 		for (auto& enemy : enemies) {
 			enemy->SetState(true);
 		}
-		for (auto& enemy : enemies) {
+		// StartAttack can append to `enemies`, so walk by index over a strong reference rather
+		// than holding an iterator into a buffer it may reallocate.
+		for (size_t i = 0; i < enemies.size(); ++i) {
+			auto enemy = enemies[i];
 			bool isStunned = enemy->HasModifier(ModifierType::Stun);
 
 			if (enemy->IsDead()) {
@@ -1732,13 +1931,16 @@ bool Demo::IBattleScene::EnemyAttackUpdate(unsigned long long deltaTime)
 			}
 			enemy->StartAttack(this->battlePlayer, &this->enemies, this->popUpMessage, game->GetGraphicsDevice(), &this->camera, this->currentTurn);
 		}
+		FlushPendingEnemies();
 		enemyAttackStartPending = false;
 	}
 	bool isDoneAttacking = true;
-	for (auto& enemy : enemies) {
+	for (size_t i = 0; i < enemies.size(); ++i) {
+		auto enemy = enemies[i];
 		enemy->Update(deltaTime);
 		isDoneAttacking &= enemy->IsDoneAttacking();
 	}
+	FlushPendingEnemies();
 	if (isAttackCountdownActive) {
 		isDoneAttacking = false;
 	}
@@ -2176,6 +2378,55 @@ void Demo::IBattleScene::DrawHealthAndDefenseBar(const float y, DX9GF::GraphicsD
 	gd->DrawRectangle(this->uiCamera, x, y, w_, 10, 0xFF9cdb43, true);
 	gd->DrawRectangle(this->uiCamera, x, y, w, 20, 0xFF000000, false);
 
+	auto [screenX, screenY] = DX9GF::InputManager::GetInstance()->GetVirtualAbsoluteMousePos(&this->uiCamera);
+	auto [mouseX, mouseY] = DX9GF::Utils::WindowToWorldCoords(this->uiCamera, screenX, screenY);
+
+	bool isTooltipActive = false;
+	std::wstring activeTooltipText = L"";
+
+	// The items that put those buffs there, listed beside the bars. A modifier icon the mouse is
+	// already on wins the tooltip - the two never overlap, so at most one of them is hovered.
+	std::wstring itemTooltip = DrawActiveItems(x + w, y);
+	if (!isTooltipActive && !itemTooltip.empty()) {
+		isTooltipActive = true;
+		activeTooltipText = std::move(itemTooltip);
+	}
+
+	//draw tooltip after
+	if (isTooltipActive) {
+		DrawTooltip(activeTooltipText, screenX, screenY, gd);
+	}
+}
+
+void Demo::IBattleScene::DrawTooltip(std::wstring& activeTooltipText, float screenX, float screenY, DX9GF::GraphicsDevice* gd)
+{
+	fontSprite->SetText(std::move(activeTooltipText));
+	float tooltipWidth = fontSprite->GetWidth() + 8.f;
+	float tooltipHeight = fontSprite->GetHeight() + 8.f;
+
+	auto [screenW, screenH] = this->uiCamera.GetScreenResolution();
+	float targetScreenX = screenX;
+	float targetScreenY = screenY - tooltipHeight;
+
+	if (targetScreenX + tooltipWidth > screenW) targetScreenX = screenW - tooltipWidth;
+	if (targetScreenY < 0) targetScreenY = screenY + 32.f;
+
+	auto [worldDrawX, worldDrawY] = DX9GF::Utils::WindowToWorldCoords(this->uiCamera, targetScreenX, targetScreenY);
+
+	gd->SetAlphaBlending(true);
+	gd->DrawRectangle(this->uiCamera, worldDrawX, worldDrawY, tooltipWidth, tooltipHeight, 0, 1, 1, 0, 0, D3DCOLOR_ARGB(220, 0, 0, 0), true);
+	gd->SetAlphaBlending(false);
+
+	fontSprite->SetColor(0xFFFFFFFF);
+	fontSprite->SetOutline(true, 0xFF000000, 1.f);
+	fontSprite->SetPosition(worldDrawX + 4.f, worldDrawY + 4.f);
+	fontSprite->Begin();
+	fontSprite->Draw(this->uiCamera, 0);
+	fontSprite->End();
+}
+
+void Demo::IBattleScene::DrawModifierIcons(const float x, const float y, DX9GF::GraphicsDevice* gd)
+{
 	auto modifiers = battlePlayer->GetModifiers();
 	auto modY = y - 48.f;
 
@@ -2336,39 +2587,9 @@ void Demo::IBattleScene::DrawHealthAndDefenseBar(const float y, DX9GF::GraphicsD
 		modY -= 32.f;
 	}
 
-	// The items that put those buffs there, listed beside the bars. A modifier icon the mouse is
-	// already on wins the tooltip - the two never overlap, so at most one of them is hovered.
-	std::wstring itemTooltip = DrawActiveItems(x + w, y);
-	if (!isTooltipActive && !itemTooltip.empty()) {
-		isTooltipActive = true;
-		activeTooltipText = std::move(itemTooltip);
-	}
-
 	//draw tooltip after
 	if (isTooltipActive) {
-		fontSprite->SetText(std::move(activeTooltipText));
-		float tooltipWidth = fontSprite->GetWidth() + 8.f;
-		float tooltipHeight = fontSprite->GetHeight() + 8.f;
-
-		auto [screenW, screenH] = this->uiCamera.GetScreenResolution();
-		float targetScreenX = screenX;
-		float targetScreenY = screenY - tooltipHeight;
-
-		if (targetScreenX + tooltipWidth > screenW) targetScreenX = screenW - tooltipWidth;
-		if (targetScreenY < 0) targetScreenY = screenY + 32.f;
-
-		auto [worldDrawX, worldDrawY] = DX9GF::Utils::WindowToWorldCoords(this->uiCamera, targetScreenX, targetScreenY);
-
-		gd->SetAlphaBlending(true);
-		gd->DrawRectangle(this->uiCamera, worldDrawX, worldDrawY, tooltipWidth, tooltipHeight, 0, 1, 1, 0, 0, D3DCOLOR_ARGB(220, 0, 0, 0), true);
-		gd->SetAlphaBlending(false);
-
-		fontSprite->SetColor(0xFFFFFFFF);
-		fontSprite->SetOutline(true, 0xFF000000, 1.f);
-		fontSprite->SetPosition(worldDrawX + 4.f, worldDrawY + 4.f);
-		fontSprite->Begin();
-		fontSprite->Draw(this->uiCamera, 0);
-		fontSprite->End();
+		DrawTooltip(activeTooltipText, screenX, screenY, gd);
 	}
 }
 
@@ -3060,6 +3281,7 @@ void Demo::IBattleScene::Update(unsigned long long deltaTime)
 				}
 				countdownAttackingEnemies.reset();
 			}
+			FlushPendingEnemies();
 			CollectDeadEnemies();
 			if (enemies.empty()) {
 				OnAllEnemiesDefeated();
@@ -3304,13 +3526,18 @@ void Demo::IBattleScene::DrawUI(unsigned long long deltaTime)
 	auto gd = game->GetGraphicsDevice();
 
 	if (SUCCEEDED(gd->BeginDraw())) {
-
+		auto screenW = (float)game->GetVirtualWidth();
+		auto screenH = (float)game->GetVirtualHeight();
+		const float modifierIconOffsetX = -screenW / 2.f + 96.f;
+		const float modifierIconOffsetY = screenH / 2.f - 64.f;
 		switch (state) {
 		case State::PlayerStandBy:
 			PlayerStandByDraw(deltaTime);
+			DrawModifierIcons(modifierIconOffsetX, modifierIconOffsetY, gd);
 			break;
 		case State::PlayerAttack:
 			PlayerAttackDraw(deltaTime);
+			DrawModifierIcons(modifierIconOffsetX, modifierIconOffsetY, gd);
 			break;
 		case State::PlayerOpenItems:
 			PlayerOpenItemsDraw(deltaTime);
@@ -3321,13 +3548,12 @@ void Demo::IBattleScene::DrawUI(unsigned long long deltaTime)
 		case State::EnemyAttack:
 			float y = game->GetVirtualHeight() / 2.f - 40.f;
 			DrawHealthAndDefenseBar(y, gd);
+			DrawModifierIcons(modifierIconOffsetX, modifierIconOffsetY, gd);
 			break;
 		}
 
 		//tokens ui
 		auto app = DX9GF::Application::GetInstance();
-		float screenW = static_cast<float>(app->GetScreenWidth());
-		float screenH = static_cast<float>(app->GetScreenHeight());
 
 		float startX = -screenW / 2.f + 20.f;
 		float drawY = screenH / 2.f - 20.f - 32.f - 80.f;
