@@ -1,4 +1,4 @@
-#include "pch.h"
+﻿#include "pch.h"
 #include "SettingsManager.h"
 #include "TutorialWorldScene.h"
 #include "RandomEncounter.h"
@@ -182,6 +182,13 @@ void Demo::TutorialWorldScene::Init()
 			transformManager, game, colliderManager.get(), player
 		);
 
+		//token spawning area
+		Demo::EventType generatedEvent = Demo::EventType::None;
+		if (enemy->GetEncounterData().enemyTypes.size() >= 2 && Demo::RNG::Range(1, 100) <= 30) {
+			generatedEvent = (Demo::RNG::Range(1, 100) <= 50) ? Demo::EventType::Gold : Demo::EventType::Energy;
+		}
+		enemy->SetEventState(generatedEvent);
+
 		enemy->SetOnEncounterTriggered([this](std::shared_ptr<MapEnemy> e) {
 			if (this->isTransitioning) return;
 			this->isTransitioning = true;
@@ -214,10 +221,10 @@ void Demo::TutorialWorldScene::Init()
 		};
 
 	//test kernel
-	spawn(615.f, -170.f, "tutorial_keye_01", { "KernelEnemy" }, false, false);
+	spawn(615.f, -170.f, "tutorial_keye_01", { "KeyeEnemy"}, false, false);
 	spawn(510.f, -380.f, "tutorial_demoneye_01", { "DemonEyeEnemy" }, false, false);
-	spawn(500.f, -590.f, "tutorial_random_01", { "KernelEnemy", "DemonEyeEnemy" }, true, false);
-	spawn(50.f, -330.f, "tutorial_random_02", { "KernelEnemy", "DemonEyeEnemy", "MimicEnemy" }, true, false);
+	spawn(500.f, -590.f, "tutorial_random_01", { "KeyeEnemy", "DemonEyeEnemy" }, true, false);
+	spawn(50.f, -330.f, "tutorial_random_02", { "KeyeEnemy", "DemonEyeEnemy", "MimicEnemy" }, true, false);
 	spawn(-90.f, -400.f, "tutorial_mixed_01", { "TrojanEnemy", "DemonEyeEnemy" }, false, false);
 
 	draggableManager = std::make_shared<Demo::DraggableManager>();
@@ -584,7 +591,8 @@ void Demo::TutorialWorldScene::GenerateSaveData(nlohmann::json& outData)
 	for (auto& enemy : mapEnemies) {
 		enemiesState[enemy->GetEnemyID()] = {
 			{"isDefeated", enemy->IsDefeated()},
-			{"respawnTimer", enemy->GetRespawnTimer()}
+			{"respawnTimer", enemy->GetRespawnTimer()},
+			{ "eventType", static_cast<int>(enemy->GetEncounterData().eventType) }
 		};
 	}
 	outData["mapEnemies"] = enemiesState;
@@ -614,7 +622,10 @@ void Demo::TutorialWorldScene::RestoreSaveData(const nlohmann::json& inData)
 			if (enemiesState.contains(id)) {
 				bool def = enemiesState[id]["isDefeated"].get<bool>();
 				float timer = enemiesState[id]["respawnTimer"].get<float>();
+				EventType savedEvent = static_cast<EventType>(enemiesState[id].value("eventType", 0));
+
 				enemy->SetDefeatedState(def, timer);
+				enemy->SetEventState(savedEvent);
 			}
 		}
 	}

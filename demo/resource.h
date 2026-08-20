@@ -73,15 +73,25 @@
 #define IDR_BGM_B4                      176
 #define IDR_BGM_BOSS                    177
 #define IDR_BGM_SECRET                  178
-#define IDR_CARD_DRAW5                       179
-#define IDR_CARD_SNAP3                       180
-#define IDR_CARD_SNAP4                       181
+#define IDR_CARD_DRAW5                  179
+#define IDR_CARD_SNAP3                  180
+#define IDR_CARD_SNAP4                  181
+#define IDR_TOKEN_COLLECT1              182
+#define IDR_TOKEN_COLLECT2              183
+#define IDR_TOKEN_COLLECT3              184
+#define IDR_TOKEN_COLLECT4              185
+#define IDR_TOKEN_COLLECT5              186
+#define IDR_TOKEN_COLLECT6              187
+#define IDR_TOKEN_SPAWN1                188
+#define IDR_TOKEN_SPAWN2                189
+#define IDR_TOKEN_SPAWN3                190
+#define IDR_TOKEN_SPAWN4                191
 
 // Next default values for new objects
 // 
 #ifdef APSTUDIO_INVOKED
 #ifndef APSTUDIO_READONLY_SYMBOLS
-#define _APS_NEXT_RESOURCE_VALUE        182
+#define _APS_NEXT_RESOURCE_VALUE        192
 #define _APS_NEXT_COMMAND_VALUE         40002
 #define _APS_NEXT_CONTROL_VALUE         1001
 #define _APS_NEXT_SYMED_VALUE           101

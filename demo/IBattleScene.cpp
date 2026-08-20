@@ -82,6 +82,8 @@ void Demo::IBattleScene::StartBattle()
 	committedEnergy = 0;
 	pendingBonusEnergy = 0;
 	pendingBonusDraw = 0;
+	currentEnergyPieces = 0;
+	isFlawlessCompleted = false;
 	initialEnemyCount = enemies.size();
 	battleGoldReward = 0;
 	isBattleEnding = false;
@@ -93,6 +95,9 @@ void Demo::IBattleScene::StartBattle()
 	std::shuffle(drawPile.begin(), drawPile.end(), gen);
 	currentTurn = 1;
 	DrawCards(CARDS_DRAWN_PER_TURN);
+	activeTokens.clear();
+	pendingGoldTokenReward = 0;
+	tokenSpawnTimer = 0.f;
 	for (auto& enemy : enemies) {
 		WireEnemyCallbacks(enemy);
 	}
@@ -107,6 +112,14 @@ void Demo::IBattleScene::StartBattle()
 	else {
 		DX9GF::AudioManager::GetInstance()->PlayRandomBGM_Fade("battle_bgm", 0.3f, 1.5f);
 	}
+
+	if (battleEventType == EventType::Gold) {
+		targetTokenTurn = Demo::RNG::Range(1, 3);
+	}
+	else {
+		targetTokenTurn = -1;
+	}
+
 }
 
 void Demo::IBattleScene::LockRandomCard(int turns)
@@ -191,7 +204,7 @@ void Demo::IBattleScene::OnAllEnemiesDefeated()
 		const float multiplier = 1.25f * static_cast<float>(initialEnemyCount - 1);
 		finalGold = static_cast<int>(std::round(finalGold * multiplier));
 	}
-
+	finalGold += pendingGoldTokenReward;
 	player->AddGold(finalGold);
 	popUpMessage->QueueMessage(&commandBuffer, L"You earned " + std::to_wstring(finalGold) + L" gold!", 1.5f);
 	DX9GF::AudioManager::GetInstance()->Play("coin_gather", false, 0.8f);
@@ -1034,6 +1047,12 @@ void Demo::IBattleScene::PlayerStandByUpdate(unsigned long long deltaTime)
 
 void Demo::IBattleScene::PlayerAttackUpdate(unsigned long long deltaTime)
 {
+
+	if (battleEventType == EventType::Energy && enemies.size() < 2 && !isFlawlessCompleted) {
+		battleEventType = EventType::None;
+		currentEnergyPieces = 0;
+		isFlawlessChallengeActive = false;
+	}
 	auto app = DX9GF::Application::GetInstance();
 	float screenWidth = static_cast<float>(app->GetScreenWidth());
 	float screenHeight = static_cast<float>(app->GetScreenHeight());
@@ -1709,29 +1728,64 @@ void Demo::IBattleScene::QueueToEnemyAttack(unsigned long long deltaTime)
 				std::vector<std::shared_ptr<DX9GF::ICommand>> commands = {
 					std::make_shared<DX9GF::DelayCommand>(0.8f),
 					std::make_shared<DX9GF::CustomCommand>([this](std::function<void(void)> markFinished2) {
-						if (this->battlePlayer->IsDead()) {
+						if (this->battlePlayer->IsDead())
+						{
 							this->isDefeatSequence = true;
 							this->defeatElapsedMs = 0.f;
 							this->defeatFadeAlpha = 0.f;
 							this->popUpMessage->QueueMessage(&this->commandBuffer, L"You were defeated", 1.5f);
 						}
-						else {
+						else
+						{
 							this->BeginNextTurn();
 							this->state = State::PlayerStandBy;
 							this->QueueEnemyLayoutTransition(State::PlayerStandBy);
 							this->lastEnemyLayoutState = State::PlayerStandBy;
 							this->enemyLayoutInitialized = true;
 						}
-						this->isTransitioning = false;
-						markFinished2();
+					this->isTransitioning = false;
+					markFinished2();
 					})
 				};
 				this->commandBuffer.PushCommand(std::make_shared<DX9GF::MultiCommand>(std::move(commands)));
 				markFinished();
 				return;
 			}
-
+			//Tokens
 			this->state = State::EnemyAttack;
+			this->tokensSpawnedThisTurn = 0;
+
+			//Energy Tokens 
+			if (this->battleEventType == EventType::Energy) {
+				if (this->isFlawlessCompleted) {
+					this->isFlawlessChallengeActive = false;
+				}
+				else if (this->enemies.size() >= 2) {
+					this->isFlawlessChallengeActive = true;
+					this->startingHealthForFlawless = this->battlePlayer->GetHealth();
+					this->startingDefenseForFlawless = this->battlePlayer->GetTemporaryDefense();
+
+					if (this->currentTurn == 1) {
+						this->popUpMessage->QueueMessage(&this->commandBuffer, L"FLAWLESS CHALLENGE!", 2.0f);
+						DX9GF::AudioManager::GetInstance()->PlayRandom("card_snap", 0.8f);
+					}
+				}
+				else {
+					this->isFlawlessChallengeActive = false;
+					this->battleEventType = EventType::None;
+					this->currentEnergyPieces = 0;
+				}
+			}
+			else {
+				this->isFlawlessChallengeActive = false;
+			}
+			//Gold Tokens
+			if (this->currentTurn == this->targetTokenTurn) {
+				this->maxTokensThisTurn = Demo::RNG::Range(3, 6); //3-6 tokens
+			}
+			else {
+				this->maxTokensThisTurn = 0;
+			}
 			this->QueueEnemyLayoutTransition(State::EnemyAttack);
 			for (auto& enemy : this->enemies) {
 				enemy->SetState(true);
@@ -1817,6 +1871,37 @@ bool Demo::IBattleScene::EnemyAttackUpdate(unsigned long long deltaTime)
 	}
 	if (!isAttackCountdownActive) {
 		battlePlayer->Update(deltaTime);
+
+		//spawn token logic
+		if (battleEventType == EventType::Gold && currentTurn == targetTokenTurn && tokensSpawnedThisTurn < maxTokensThisTurn) {
+			tokenSpawnTimer += deltaTime;
+			if (tokenSpawnTimer > 2500.f) {
+				tokenSpawnTimer = 0.f;
+				const float halfSize = battleBoxSize * 0.4f;
+				float rX = Demo::RNG::Range(-halfSize, halfSize);
+				float rY = Demo::RNG::Range(-halfSize, halfSize);
+				SpawnRandomToken(rX, rY);
+				tokensSpawnedThisTurn++;
+				DX9GF::AudioManager::GetInstance()->PlayRandom("token_spawn", 0.6f);
+			}
+		}
+
+		//collect and delete junk logic
+		auto playerCollider = battlePlayer->GetCollider().lock();
+		for (auto it = activeTokens.begin(); it != activeTokens.end(); ) {
+			auto token = *it;
+			token->Update(deltaTime);
+
+			if (!token->IsCollected() && playerCollider) {
+				auto tokenCollider = token->GetCollider().lock();
+				if (tokenCollider && playerCollider->IsCollidedRectangle(tokenCollider, true)) {
+					token->OnCollect(battlePlayer.get(), this);
+				}
+			}
+
+			if (token->IsDone()) it = activeTokens.erase(it);
+			else ++it;
+		}
 	}
 	if (battlePlayer->IsDead()) {
 		isDefeatSequence = true;
@@ -1860,7 +1945,49 @@ bool Demo::IBattleScene::EnemyAttackUpdate(unsigned long long deltaTime)
 		isDoneAttacking = false;
 	}
 	if (isDoneAttacking && !isTransitioning) {
+		activeTokens.clear();
 		CollectDeadEnemies();
+
+		float transitionDelay = 0.8f;
+
+		if (isFlawlessChallengeActive) {
+			float currentHP = battlePlayer->GetHealth();
+			float currentDef = battlePlayer->GetTemporaryDefense();
+
+			//check flawless
+			if (currentHP >= startingHealthForFlawless && currentDef >= startingDefenseForFlawless) {
+				float angle = Demo::RNG::Range(0.f, 6.28318f);
+				float distance = Demo::RNG::Range(80.f, 150.f);
+
+				float dx = std::cos(angle) * distance;
+				float dy = std::sin(angle) * distance;
+
+				float spawnX = battlePlayer->GetWorldX() + dx;
+				float spawnY = battlePlayer->GetWorldY() + dy;
+
+				const float battleHalfSize = battleBoxSize * 0.5f;
+				const float padding = 16.f;
+				const float limit = battleHalfSize - padding;
+
+				//anti corner camping 
+				if (spawnX < -limit || spawnX > limit || spawnY < -limit || spawnY > limit) {
+					spawnX = battlePlayer->GetWorldX() - dx;
+					spawnY = battlePlayer->GetWorldY() - dy;
+				}
+
+				spawnX = (std::max)(-limit, (std::min)(spawnX, limit));
+				spawnY = (std::max)(-limit, (std::min)(spawnY, limit));
+
+				auto token = std::make_shared<EnergyToken>(transformManager, game->GetGraphicsDevice(), spawnX, spawnY);
+				activeTokens.push_back(token);
+
+				transitionDelay = 1.5f;
+				DX9GF::AudioManager::GetInstance()->PlayRandom("token_spawn", 0.6f);
+			}
+
+			isFlawlessChallengeActive = false;
+		}
+
 		if (enemies.empty()) {
 			OnAllEnemiesDefeated();
 			return false;
@@ -1872,7 +1999,7 @@ bool Demo::IBattleScene::EnemyAttackUpdate(unsigned long long deltaTime)
 		battlePlayer->TriggerEffects(TickPhase::EndOfTurn);
 
 		std::vector<std::shared_ptr<DX9GF::ICommand>> commands = {
-			std::make_shared<DX9GF::DelayCommand>(0.8f),
+			std::make_shared<DX9GF::DelayCommand>(transitionDelay),
 			std::make_shared<DX9GF::CustomCommand>([this](std::function<void(void)> markFinished) {
 				if (!battlePlayer->IsDead()) {
 					BeginNextTurn();
@@ -1881,6 +2008,7 @@ bool Demo::IBattleScene::EnemyAttackUpdate(unsigned long long deltaTime)
 					lastEnemyLayoutState = State::PlayerStandBy;
 					enemyLayoutInitialized = true;
 				}
+				activeTokens.clear();
 				isTransitioning = false;
 				markFinished();
 			})
@@ -2172,7 +2300,7 @@ void Demo::IBattleScene::ComputeProjectedDamage(std::unordered_map<IEnemy*, floa
 		}
 
 		float totalProjected = healthLost + armorLost + tick;
-		
+
 		if (totalProjected > 0.f) {
 			out[enemy.get()] = totalProjected;
 		}
@@ -2552,6 +2680,20 @@ void Demo::IBattleScene::Init()
 
 	itemsTex = std::make_shared<DX9GF::Texture>(game->GetGraphicsDevice());
 	itemsTex->LoadTexture(L"assets/items.png");
+
+	energyTokenTex = std::make_shared<DX9GF::Texture>(game->GetGraphicsDevice());
+	energyTokenTex->LoadTexture(L"assets/energy-token.png");
+
+	energyTokenUI = std::make_shared<DX9GF::StaticSprite>(energyTokenTex.get());
+	energyTokenUI->SetScale(1.5f, 1.5f);
+
+	goldTex = std::make_shared<DX9GF::Texture>(game->GetGraphicsDevice());
+	goldTex->LoadTexture(L"assets/gold-token.png");
+
+	goldTokenUI = std::make_shared<DX9GF::StaticSprite>(goldTex.get());
+	goldTokenUI->SetSrcRect({ 7, 7, 26, 26 });
+	goldTokenUI->SetScale(1.5f, 1.5f);
+
 	attackBuffIcon = std::make_shared<DX9GF::StaticSprite>(uiSheetTex.get());
 	attackBuffIcon->SetSrcRect({ .left = 112, .top = 240, .right = 128, .bottom = 256 });
 	defenseBuffIcon = std::make_shared<DX9GF::StaticSprite>(uiSheetTex.get());
@@ -2795,9 +2937,9 @@ void Demo::IBattleScene::Init()
 
 	runInitButton = std::make_shared<IconButton>(transformManager, 0, 0, buttonWidth, buttonHeight, uiSheetTex);
 	runInitButton->SetSpriteRects({
-		{ .left = 48, .top = 48, .right = 96, .bottom = 64 },
-		{ .left = 48, .top = 64, .right = 96, .bottom = 80 },
-		{ .left = 48, .top = 80, .right = 96, .bottom = 96 }
+		{.left = 48, .top = 48, .right = 96, .bottom = 64 },
+		{.left = 48, .top = 64, .right = 96, .bottom = 80 },
+		{.left = 48, .top = 80, .right = 96, .bottom = 96 }
 		});
 	runInitButton->SetOnReleaseLeft([&](DX9GF::ITrigger* thisObj) {
 		if (!initBlockCard || initBlockCard->GetStatementCards().empty()) {
@@ -2856,9 +2998,9 @@ void Demo::IBattleScene::Init()
 
 	closePileViewButton = std::make_shared<IconButton>(transformManager, 0, 0, buttonWidth, buttonHeight, uiSheetTex);
 	closePileViewButton->SetSpriteRects({
-		{ .left = 96, .top = 48, .right = 144, .bottom = 64 },
-		{ .left = 96, .top = 64, .right = 144, .bottom = 80 },
-		{ .left = 96, .top = 80, .right = 144, .bottom = 96 }
+		{.left = 96, .top = 48, .right = 144, .bottom = 64 },
+		{.left = 96, .top = 64, .right = 144, .bottom = 80 },
+		{.left = 96, .top = 80, .right = 144, .bottom = 96 }
 		});
 	closePileViewButton->SetSpriteScale(2.f, 2.f);
 	closePileViewButton->SetOnReleaseLeft([&](DX9GF::ITrigger* thisObj) {
@@ -3056,6 +3198,28 @@ void Demo::IBattleScene::Init()
 	audio->Load("battle_boss", IDR_BGM_BAT_BOSS);
 
 	audio->RegisterBank("battle_bgm", { "battle_loop1","battle_loop2","battle_loop3","battle_loop4" });
+
+	//token sfx
+	audio->Load("token_collect1", IDR_TOKEN_COLLECT1);
+	audio->Load("token_collect2", IDR_TOKEN_COLLECT2);
+	audio->Load("token_collect3", IDR_TOKEN_COLLECT3);
+	audio->Load("token_collect4", IDR_TOKEN_COLLECT4);
+	audio->Load("token_collect5", IDR_TOKEN_COLLECT5);
+	audio->Load("token_collect6", IDR_TOKEN_COLLECT6);
+
+	audio->RegisterBank("token_collect", {
+		"token_collect1", "token_collect2", "token_collect3",
+		"token_collect4", "token_collect5", "token_collect6"
+		});
+
+	audio->Load("token_spawn1", IDR_TOKEN_SPAWN1);
+	audio->Load("token_spawn2", IDR_TOKEN_SPAWN2);
+	audio->Load("token_spawn3", IDR_TOKEN_SPAWN3);
+	audio->Load("token_spawn4", IDR_TOKEN_SPAWN4);
+
+	audio->RegisterBank("token_spawn", {
+		"token_spawn1", "token_spawn2", "token_spawn3", "token_spawn4"
+		});
 
 	transformManager->RebuildHierarchy();
 	DamageTextManager::GetInstance()->Init(this->game);
@@ -3338,6 +3502,9 @@ void Demo::IBattleScene::DrawWorld(unsigned long long deltaTime)
 			gd->SetAlphaBlending(false);
 
 			battlePlayer->Draw(deltaTime);
+			for (auto& token : activeTokens) {
+				token->Draw(gd, &camera, deltaTime);
+			}
 			for (auto& enemy : enemies) {
 				enemy->Draw(gd, &camera, deltaTime);
 			}
@@ -3384,6 +3551,114 @@ void Demo::IBattleScene::DrawUI(unsigned long long deltaTime)
 			break;
 		}
 
+		//tokens ui
+		auto app = DX9GF::Application::GetInstance();
+		float screenW = static_cast<float>(app->GetScreenWidth());
+		float screenH = static_cast<float>(app->GetScreenHeight());
+
+		float startX = -screenW / 2.f + 20.f;
+		float drawY = screenH / 2.f - 20.f - 32.f - 80.f;
+
+		//token's icon
+		if (battleEventType == EventType::Gold) {
+			goldTokenUI->SetPosition(startX, drawY);
+			goldTokenUI->Begin();
+			goldTokenUI->Draw(this->uiCamera, deltaTime);
+			goldTokenUI->End();
+
+			fontSprite->Begin();
+			fontSprite->SetColor(0xFFFFFFFF);
+			fontSprite->SetOutline(true, 0xFF000000, 2.f);
+			int totalGold = battleGoldReward + pendingGoldTokenReward;
+			fontSprite->SetText(L"+ " + std::to_wstring(totalGold));
+			fontSprite->SetPosition(startX + 32.f, drawY + 6.f);
+			fontSprite->Draw(this->uiCamera, deltaTime);
+			fontSprite->End();
+			fontSprite->SetOutline(false);
+		}
+		else if (battleEventType == EventType::Energy) {
+			if (currentEnergyPieces == 0) energyTokenUI->SetSrcRect({ 7, 2, 25, 31 });
+			else if (currentEnergyPieces == 1) energyTokenUI->SetSrcRect({ 38, 2, 57, 31 });
+			else energyTokenUI->SetSrcRect({ 72, 2, 90, 31 });
+
+			energyTokenUI->SetPosition(startX, drawY);
+
+			//disable
+			if (isFlawlessCompleted) {
+				energyTokenUI->SetColor(D3DCOLOR_ARGB(255, 120, 120, 120));
+				fontSprite->SetColor(D3DCOLOR_ARGB(255, 150, 150, 150));
+			}
+			else {
+				energyTokenUI->SetColor(D3DCOLOR_ARGB(255, 255, 255, 255));
+				fontSprite->SetColor(0xFFFFFFFF);
+			}
+
+			energyTokenUI->Begin();
+			energyTokenUI->Draw(this->uiCamera, deltaTime);
+			energyTokenUI->End();
+
+			fontSprite->Begin();
+			fontSprite->SetOutline(true, 0xFF000000, 2.f);
+			fontSprite->SetText(std::to_wstring(currentEnergyPieces) + L"/2");
+			fontSprite->SetPosition(startX + 32.f, drawY + 14.f);
+			fontSprite->Draw(this->uiCamera, deltaTime);
+			fontSprite->End();
+
+			fontSprite->SetColor(0xFFFFFFFF);
+			fontSprite->SetOutline(false);
+		}
+
+		//tooltip
+		if (state == State::PlayerStandBy || state == State::PlayerAttack) {
+			auto [mouseXSc, mouseYSc] = DX9GF::InputManager::GetInstance()->GetVirtualAbsoluteMousePos(&this->uiCamera);
+			auto [mouseWX, mouseWY] = DX9GF::Utils::WindowToWorldCoords(this->uiCamera, mouseXSc, mouseYSc);
+
+			bool showTooltip = false;
+			std::wstring tooltipText = L"";
+
+			if (mouseWX >= startX && mouseWX <= startX + 28.f && mouseWY >= drawY && mouseWY <= drawY + 44.f) {
+				if (battleEventType == EventType::Gold) {
+					showTooltip = true;
+					tooltipText = L"Gold Event\nSurvive and grab the gold tokens!";
+				}
+				else if (battleEventType == EventType::Energy) {
+					showTooltip = true;
+					if (isFlawlessCompleted) {
+						tooltipText = L"Challenge Completed!\n+1 Energy gained this battle.";
+					}
+					else {
+						tooltipText = L"Flawless Challenge\nEvade perfectly to gain pieces.\n2 Pieces = +1 Energy next turn.";
+					}
+				}
+			}
+
+			if (showTooltip) {
+				fontSprite->SetText(std::move(tooltipText));
+				float ttW = fontSprite->GetWidth() + 8.f;
+				float ttH = fontSprite->GetHeight() + 8.f;
+
+				float targetScX = mouseXSc;
+				float targetScY = mouseYSc - ttH;
+				if (targetScX + ttW > screenW) targetScX = screenW - ttW;
+				if (targetScY < 0) targetScY = mouseYSc + 32.f;
+
+				auto [worldX, worldY] = DX9GF::Utils::WindowToWorldCoords(this->uiCamera, targetScX, targetScY);
+
+				gd->SetAlphaBlending(true);
+				gd->DrawRectangle(this->uiCamera, worldX, worldY, ttW, ttH, 0, 1, 1, 0, 0, D3DCOLOR_ARGB(220, 0, 0, 0), true);
+				gd->SetAlphaBlending(false);
+
+				fontSprite->SetColor(0xFFFFFFFF);
+				fontSprite->SetOutline(true, 0xFF000000, 1.f);
+				fontSprite->SetPosition(worldX + 4.f, worldY + 4.f);
+				fontSprite->Begin();
+				fontSprite->Draw(this->uiCamera, 0);
+				fontSprite->End();
+				fontSprite->SetOutline(false);
+			}
+		}
+
+
 		DrawKeyboardReticleUI(deltaTime);
 
 		if (battleMenu) {
@@ -3409,5 +3684,22 @@ void Demo::IBattleScene::DrawUI(unsigned long long deltaTime)
 			DX9GF::InputManager::GetInstance()->DrawCursor(&this->uiCamera, deltaTime);
 		}
 		gd->EndDraw();
+	}
+}
+
+void Demo::IBattleScene::SpawnRandomToken(float x, float y) {
+	int goldAmt = RNG::Range(2, 5);
+	auto token = std::make_shared<GoldToken>(transformManager, game->GetGraphicsDevice(), x, y, goldAmt);
+	activeTokens.push_back(token);
+}
+
+void Demo::IBattleScene::AddEnergyPieceToken() {
+	currentEnergyPieces++;
+	if (currentEnergyPieces >= 2) {
+		QueueBonusEnergy(1);
+		QueuePopUpMessage(L"Gained +1 Energy!");
+
+		isFlawlessChallengeActive = false;
+		isFlawlessCompleted = true;
 	}
 }
