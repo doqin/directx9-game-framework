@@ -3526,10 +3526,10 @@ void Demo::IBattleScene::DrawUI(unsigned long long deltaTime)
 	auto gd = game->GetGraphicsDevice();
 
 	if (SUCCEEDED(gd->BeginDraw())) {
-		auto width = game->GetVirtualWidth();
-		auto height = game->GetVirtualHeight();
-		const float modifierIconOffsetX = 40.f - width / 2.f;
-		const float modifierIconOffsetY = -40.f + height / 2.f;
+		auto screenW = (float)game->GetVirtualWidth();
+		auto screenH = (float)game->GetVirtualHeight();
+		const float modifierIconOffsetX = -screenW / 2.f + 96.f;
+		const float modifierIconOffsetY = screenH / 2.f - 64.f;
 		switch (state) {
 		case State::PlayerStandBy:
 			PlayerStandByDraw(deltaTime);
@@ -3537,6 +3537,7 @@ void Demo::IBattleScene::DrawUI(unsigned long long deltaTime)
 			break;
 		case State::PlayerAttack:
 			PlayerAttackDraw(deltaTime);
+			DrawModifierIcons(modifierIconOffsetX, modifierIconOffsetY, gd);
 			break;
 		case State::PlayerOpenItems:
 			PlayerOpenItemsDraw(deltaTime);
@@ -3553,8 +3554,6 @@ void Demo::IBattleScene::DrawUI(unsigned long long deltaTime)
 
 		//tokens ui
 		auto app = DX9GF::Application::GetInstance();
-		float screenW = static_cast<float>(app->GetScreenWidth());
-		float screenH = static_cast<float>(app->GetScreenHeight());
 
 		float startX = -screenW / 2.f + 20.f;
 		float drawY = screenH / 2.f - 20.f - 32.f - 80.f;
