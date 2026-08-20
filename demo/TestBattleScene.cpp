@@ -134,13 +134,13 @@ void Demo::TestBattleScene::GiveTestItems()
 	testItems.InitFixedInventory(10);
 
 	testItems.AddItem(0, 5);
-	testItems.AddItem(1, 3);
-	testItems.AddItem(2, 2);
-	testItems.AddItem(3, 1);
-	testItems.AddItem(4, 1);
-	testItems.AddItem(5, 1);
-	testItems.AddItem(6, 1);
-	testItems.AddItem(7, 1);
-	testItems.AddItem(8, 1);
-	testItems.AddItem(9, 1);
+	testItems.AddItem(1, 5);
+	testItems.AddItem(2, 5);
+	testItems.AddItem(3, 5);
+	testItems.AddItem(4, 5);
+	testItems.AddItem(5, 5);
+	testItems.AddItem(6, 5);
+	testItems.AddItem(7, 5);
+	testItems.AddItem(8, 5);
+	testItems.AddItem(9, 5);
 }
