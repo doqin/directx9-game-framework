@@ -1,4 +1,4 @@
-<?xml version="1.0" encoding="utf-8"?>
+﻿<?xml version="1.0" encoding="utf-8"?>
 <Project DefaultTargets="Build" xmlns="http://schemas.microsoft.com/developer/msbuild/2003">
   <ItemGroup Label="ProjectConfigurations">
     <ProjectConfiguration Include="Debug|Win32">
@@ -263,6 +263,9 @@
     <ClCompile Include="Game.cpp" />
     <ClCompile Include="GameItems.cpp" />
     <ClCompile Include="HackTerminal.cpp" />
+    <ClCompile Include="AuthTerminal.cpp" />
+    <ClCompile Include="PasswordMenu.cpp" />
+    <ClCompile Include="TrojanNPC.cpp" />
     <ClCompile Include="IntroScene.cpp" />
     <ClCompile Include="CardContainer.cpp" />
     <ClCompile Include="HealingPoint.cpp" />
@@ -375,6 +378,9 @@
     <ClInclude Include="Game.h" />
     <ClInclude Include="GameItems.h" />
     <ClInclude Include="HackTerminal.h" />
+    <ClInclude Include="AuthTerminal.h" />
+    <ClInclude Include="PasswordMenu.h" />
+    <ClInclude Include="TrojanNPC.h" />
     <ClInclude Include="IntroScene.h" />
     <ClInclude Include="CardContainer.h" />
     <ClInclude Include="HealingPoint.h" />

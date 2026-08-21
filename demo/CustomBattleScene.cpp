@@ -10,6 +10,7 @@
 #include "KeyeEnemy.h"
 #include "KeyeproEnemy.h"
 #include "RNG.h"
+#include "TrojanEnemy.h"
 namespace Demo {
     void CustomBattleScene::Init() {
         IBattleScene::Init(); // Initialize hand etc. using base class base init
@@ -63,6 +64,12 @@ namespace Demo {
                     enemy->SetOnRequestEnemyCard([this](std::shared_ptr<IEnemy> enemyCardOwner) { CreateEnemyCard(enemyCardOwner); });
                     enemies.push_back(enemy);
                 }
+				else if (enemyName == "TrojanEnemy") {
+					auto enemy = std::make_shared<TrojanEnemy>(transformManager, 350.0f);
+					enemy->Init(game->GetGraphicsDevice(), &camera);
+					enemy->SetOnRequestEnemyCard([this](std::shared_ptr<IEnemy> enemyCardOwner) { CreateEnemyCard(enemyCardOwner); });
+					enemies.push_back(enemy);
+				}
             }
         }
 

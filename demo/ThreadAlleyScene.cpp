@@ -14,6 +14,7 @@
 #include "EnemyFactory.h"
 #include "QuestManager.h"
 #include "MapBattleScene.h"
+#include "CustomBattleScene.h"
 #include "Debug.h"
 #include "imgui.h"
 #include "backends/imgui_impl_dx9.h"
@@ -99,6 +100,47 @@ void Demo::ThreadAlleyScene::Init()
 	dauDau = std::make_shared<DauDauNPC>(transformManager, -580.f, 100.f);
 	dauDau->Init(game->GetGraphicsDevice(), &camera, player, colliderManager, font, drawBuffer);
 	dauDau->AddLine(L"Dau Dau", L"This alley is full of malware. Watch out!");
+
+	// Rolled fresh for a new game; RestoreSaveData overwrites it when a save is loaded, which always
+	// happens after every scene has been Init()ed.
+	{
+		char codeBuf[8];
+		sprintf_s(codeBuf, "%04d", RNG::Range(0, 9999));
+		authPassword = codeBuf;
+	}
+
+	authTerminal = std::make_shared<AuthTerminal>(transformManager, 1128.f, -280.f);
+	authTerminal->Init(game, game->GetGraphicsDevice(), &camera, &this->uiCamera, player, colliderManager, font);
+	authTerminal->SetPassword(std::wstring(authPassword.begin(), authPassword.end()));
+	authTerminal->SetVisible(true);
+	authTerminal->SetOnSolved([this]() {
+		authTerminalSolved = true;
+		player->GetInventoryItems().AddItem(ITEM_AUTH_TOKEN, 1);
+		auto [sw, sh] = camera.GetScreenResolution();
+		currentConversation = std::make_shared<IConversation>(std::make_shared<DX9GF::FontSprite>(font.get()), sw, sh);
+		currentConversation->AddLine({ .name = L"Terminal", .content = L"ACCESS GRANTED.\nYou obtained the Authentication Token." });
+		});
+
+	trojanNPC = std::make_shared<TrojanNPC>(transformManager, 224.f, -832.f);
+	trojanNPC->Init(game->GetGraphicsDevice(), &camera, player, colliderManager, font, drawBuffer);
+
+	trojanNPC->AddFriendlyLine(L"???", L"Oh thank the kernel, a live process!\nI was starting to think nobody came down this alley any more.");
+	trojanNPC->AddFriendlyLine(L"???", L"I'm a maintenance job. Was, anyway.\nMy session expired halfway through a patch and now the gate won't read me.");
+	trojanNPC->AddFriendlyLine(L"???", L"There's a terminal further down the alley that still hands out\nauthentication tokens. Four digits, old-style.");
+	trojanNPC->AddFriendlyLine(L"???", L"Bring one back to me and I'll be out of your way.\nYou'd be doing the whole sector a favour, honestly.");
+	trojanNPC->AddFriendlyLine(L"Player", L"...Alright. I'll see what I can find.");
+
+	trojanNPC->AddWaitingLine(L"???", L"Still looking for that token?\nTake your time. It's not like I'm going anywhere.");
+	trojanNPC->AddWaitingLine(L"???", L"Four digits. The terminal tells you which ones you got right.\nYou'll get there.");
+
+	trojanNPC->AddRevealLine(L"???", L"You actually brought it.");
+	trojanNPC->AddRevealLine(L"???", L"...Honestly? I didn't think that would work.");
+	trojanNPC->AddRevealLine(L"Trojan", L"Let me walk you through what just happened.\nThat token was never mine. It was yours.");
+	trojanNPC->AddRevealLine(L"Trojan", L"I didn't break a single lock. I didn't have to.\nI asked nicely, and you handed me the keys to your own system.");
+	trojanNPC->AddRevealLine(L"Trojan", L"That's all I am. A friendly face wrapped around something\nyou would never have let through the door.");
+	trojanNPC->AddRevealLine(L"Player", L"...No.");
+	trojanNPC->AddRevealLine(L"Player", L"You didn't trick me into anything.\nI'm taking it back - and I'm deleting you with it.");
+	trojanNPC->AddRevealLine(L"Trojan", L"Ha! Then stop talking and try.");
 
 	savePoints.push_back(std::make_shared<SavePoint>(transformManager, -710, -554));
 	savePoints.back()->Init(game->GetGraphicsDevice(), &camera, player, colliderManager, saveManager, font, drawBuffer);
@@ -319,11 +361,10 @@ void Demo::ThreadAlleyScene::Init()
 	spawn(-410.f, -1500.f, "th_end_04", { "WarlockEnemy", "KernelEnemy", "DemonEyeEnemy" }, false, false);
 	spawn(620.f, -165.f, "th_extra_01", { "KeyeEnemy" }, false, false);
 	spawn(950.f, -220.f, "th_extra_02", { "DemonEyeEnemy" }, false, false);
-	spawn(1160.f, -280.f, "th_extra_03", { "KernelEnemy" }, false, false);
+	// Moved off (1160, -280): that spawn sat 32px from the AuthTerminal, so its 80px aggro bubble
+	// fired before the player could ever reach the keypad.
+	spawn(1024.f, -120.f, "th_extra_03", { "KernelEnemy" }, false, false);
 	spawn(1135.f, -525.f, "th_extra_04", {}, false, true);
-	spawn(440.f, -249.f, "th_trojan_01", { "TrojanEnemy", "WarlockEnemy" }, false, false);
-	spawn(440.f, -585.f, "th_trojan_02", { "TrojanEnemy", "KernelEnemy" }, false, false);
-	spawn(-984.f, -1064.f, "th_trojan_03", { "TrojanEnemy", "DemonEyeEnemy" }, false, false);
 
 	draggableManager = std::make_shared<Demo::DraggableManager>();
 	inventoryMenu = std::make_shared<InventoryMenu>(game, player, transformManager, draggableManager, &uiCamera, font.get());
@@ -364,11 +405,10 @@ void Demo::ThreadAlleyScene::Update(unsigned long long deltaTime)
 {
 	PopupManager::GetInstance()->SetUICamera(&this->uiCamera);
 	QuestManager::GetInstance()->SetUICamera(&this->uiCamera);
-	QuestManager::GetInstance()->SetQuest(
-		questStarted ? L"Quest: Find the malware through this alley!" : L"Quest: ???"
-	);
+	QuestManager::GetInstance()->SetQuest(GetQuestText());
 	QuestManager::GetInstance()->SetVirtualResolution(game->GetVirtualWidth(), game->GetVirtualHeight());
-	QuestManager::GetInstance()->SetVisible(!(inventoryMenu && inventoryMenu->IsOpen()));
+	QuestManager::GetInstance()->SetVisible(!(inventoryMenu && inventoryMenu->IsOpen())
+		&& !(authTerminal && authTerminal->IsMenuOpen()));
 	QuestManager::GetInstance()->Update(deltaTime);
 
 	auto OpenChestWithDialog = [&](std::shared_ptr<TreasureChestNPC>& chest) {
@@ -400,15 +440,26 @@ void Demo::ThreadAlleyScene::Update(unsigned long long deltaTime)
 	inpMan->ReadMouse(deltaTime);
 	inpMan->ReadKeyboard(deltaTime);
 
+	// The password menu owns the keyboard while it is up. It runs before anything else and consumes
+	// its own close key; the cooldown below stops a still-held ESC from opening the inventory on the
+	// frame after it closes.
+	bool wasTerminalMenuOpen = authTerminal && authTerminal->IsMenuOpen();
+	if (authTerminal && (wasTerminalMenuOpen
+		|| (!currentConversation && !PopupManager::GetInstance()->IsActive()))) {
+		authTerminal->Update(deltaTime);
+	}
+	bool isTerminalMenuOpen = authTerminal && authTerminal->IsMenuOpen();
+
 	static float escCooldown = 0.0f;
 	if (escCooldown > 0) escCooldown -= deltaTime;
+	if (wasTerminalMenuOpen && !isTerminalMenuOpen) escCooldown = 300.0f;
 
-	if (inpMan->KeyPress(SettingsManager::GetInstance()->GetKeybind("OPEN_INVENTORY")) && escCooldown <= 0) {
+	if (!isTerminalMenuOpen && inpMan->KeyPress(SettingsManager::GetInstance()->GetKeybind("OPEN_INVENTORY")) && escCooldown <= 0) {
 		if (inventoryMenu) inventoryMenu->Toggle();
 		escCooldown = 300.0f;
 	}
 
-	bool isGamePaused = this->isGamePaused;
+	bool isGamePaused = this->isGamePaused || isTerminalMenuOpen;
 
 	if (PopupManager::GetInstance()->IsActive()) {
 		PopupManager::GetInstance()->Update(deltaTime, &this->uiCamera);
@@ -418,7 +469,15 @@ void Demo::ThreadAlleyScene::Update(unsigned long long deltaTime)
 	if (currentConversation) {
 		isGamePaused = true;
 		currentConversation->Execute(deltaTime);
-		if (currentConversation->IsFinished()) currentConversation = nullptr;
+		if (currentConversation->IsFinished()) {
+			currentConversation = nullptr;
+			// Clear before invoking: the callback may queue the next conversation.
+			if (onConversationEnd) {
+				auto callback = std::move(onConversationEnd);
+				onConversationEnd = nullptr;
+				callback();
+			}
+		}
 	}
 
 	if (dauDau) {
@@ -431,6 +490,14 @@ void Demo::ThreadAlleyScene::Update(unsigned long long deltaTime)
 			}
 			QuestManager::GetInstance()->SetQuest(L"Quest: Find the malware through this alley!");
 			questStarted = true;
+		}
+	}
+
+	if (trojanNPC) {
+		trojanNPC->Update(deltaTime);
+		if (!currentConversation && !isTerminalMenuOpen && trojanNPC->CanInteract()
+			&& inpMan->KeyPress(SettingsManager::GetInstance()->GetKeybind("INTERACT"))) {
+			StartTrojanConversation();
 		}
 	}
 
@@ -530,6 +597,8 @@ void Demo::ThreadAlleyScene::DrawWorld(unsigned long long deltaTime)
 		for (auto& enemy : mapEnemies) depthNodes.push_back({ enemy->GetWorldY(), [&, enemy]() { enemy->Draw(&camera, deltaTime); } });
 
 		if (dauDau) depthNodes.push_back({ dauDau->GetWorldY(), [&]() { dauDau->Draw(camera, deltaTime); } });
+		if (authTerminal) depthNodes.push_back({ authTerminal->GetWorldY(), [&]() { authTerminal->Draw(camera, deltaTime); } });
+		if (trojanNPC) depthNodes.push_back({ trojanNPC->GetWorldY(), [&]() { trojanNPC->Draw(camera, deltaTime); } });
 		if (player) depthNodes.push_back({ player->GetWorldY(), [&]() { player->Draw(deltaTime); } });
 
 		std::sort(depthNodes.begin(), depthNodes.end());
@@ -553,12 +622,16 @@ void Demo::ThreadAlleyScene::DrawUI(unsigned long long deltaTime)
 		for (auto& shopPoint : shopPoints) shopPoint->DrawUI(&this->uiCamera, deltaTime);
 
 		if (dauDau) dauDau->DrawUI(&this->uiCamera, deltaTime);
+		if (trojanNPC && trojanNPC->GetPhase() != Demo::TrojanNPC::Phase::Defeated) trojanNPC->DrawUI(&this->uiCamera, deltaTime);
 		if (playerHUD) playerHUD->Draw(gd, deltaTime);
 		if (inventoryMenu) inventoryMenu->Draw(gd, deltaTime);
 		if (draggableManager && inventoryMenu && inventoryMenu->IsOpen() && inventoryMenu->GetCurrentTab() == Demo::InventoryMenu::Tab::DECK) {
 			draggableManager->Draw(deltaTime);
 		}
 		if (inventoryMenu) inventoryMenu->DrawKeyboardReticle(gd, deltaTime);
+
+		// After the HUD and inventory so the password panel sits on top of them.
+		if (authTerminal) authTerminal->DrawUI(&this->uiCamera, deltaTime);
 
 		if (currentConversation) {
 			currentConversation->Draw(gd, &this->uiCamera, deltaTime);
@@ -599,6 +672,12 @@ void Demo::ThreadAlleyScene::GenerateSaveData(nlohmann::json& outData)
 
 	outData["quest"] = { {"questStarted", questStarted} };
 
+	outData["authTerminal"] = {
+		{"password", authPassword},
+		{"solved", authTerminalSolved}
+	};
+	if (trojanNPC) outData["trojanNPC"] = { {"phase", static_cast<int>(trojanNPC->GetPhase())} };
+
 	nlohmann::json chestStates = nlohmann::json::array();
 	for (auto& c : treasureChests) chestStates.push_back(c->GetIsOpened());
 	outData["treasureChests"] = chestStates;
@@ -623,6 +702,20 @@ void Demo::ThreadAlleyScene::RestoreSaveData(const nlohmann::json& inData)
 	if (inData.contains("quest")) {
 		questStarted = inData["quest"].value("questStarted", false);
 		questRestoredFromSave = true;
+	}
+
+	if (inData.contains("authTerminal")) {
+		authPassword = inData["authTerminal"].value("password", authPassword);
+		authTerminalSolved = inData["authTerminal"].value("solved", false);
+		if (authTerminal) {
+			authTerminal->SetPassword(std::wstring(authPassword.begin(), authPassword.end()));
+			authTerminal->SetSolved(authTerminalSolved);
+		}
+	}
+
+	if (inData.contains("trojanNPC") && trojanNPC) {
+		// SetPhase(Defeated) also drops the collider, which is what re-opens the corridor.
+		trojanNPC->SetPhase(static_cast<TrojanNPC::Phase>(inData["trojanNPC"].value("phase", 0)));
 	}
 
 	if (inData.contains("treasureChests")) {
@@ -650,6 +743,88 @@ void Demo::ThreadAlleyScene::RestoreSaveData(const nlohmann::json& inData)
 void Demo::ThreadAlleyScene::GiveTestItems()
 {
 
+}
+
+std::wstring Demo::ThreadAlleyScene::GetQuestText() const
+{
+	// The Trojan's questline takes over the single quest slot while it is running.
+	if (trojanNPC) {
+		switch (trojanNPC->GetPhase()) {
+		case TrojanNPC::Phase::AwaitingToken:
+			return player->GetInventoryItems().HasItem(ITEM_AUTH_TOKEN)
+				? L"Quest: Bring the auth token back to the stranger"
+				: L"Quest: Find an auth token somewhere in the alley";
+		case TrojanNPC::Phase::Revealed:
+			return L"Quest: Delete the Trojan!";
+		default:
+			break;
+		}
+	}
+	return questStarted ? L"Quest: Find the malware through this alley!" : L"Quest: ???";
+}
+
+void Demo::ThreadAlleyScene::StartTrojanConversation()
+{
+	auto phase = trojanNPC->GetPhase();
+
+	// Coming back with the token in hand is what makes it drop the act.
+	if (phase == TrojanNPC::Phase::AwaitingToken && player->GetInventoryItems().HasItem(ITEM_AUTH_TOKEN)) {
+		player->GetInventoryItems().ConsumeItem(ITEM_AUTH_TOKEN);
+		trojanNPC->SetPhase(TrojanNPC::Phase::Revealed);
+		phase = TrojanNPC::Phase::Revealed;
+	}
+
+	auto [sw, sh] = camera.GetScreenResolution();
+	currentConversation = std::make_shared<IConversation>(std::make_shared<DX9GF::FontSprite>(font.get()), sw, sh);
+	for (auto& line : trojanNPC->GetDialogueLines()) {
+		currentConversation->AddLine(line);
+	}
+
+	switch (phase) {
+	case TrojanNPC::Phase::Friendly:
+		onConversationEnd = [this]() { trojanNPC->SetPhase(TrojanNPC::Phase::AwaitingToken); };
+		break;
+	case TrojanNPC::Phase::Revealed:
+		// Losing the fight leaves the NPC in Revealed, so talking again replays the taunt and rematches.
+		onConversationEnd = [this]() { StartTrojanBattle(); };
+		break;
+	default:
+		onConversationEnd = nullptr;
+		break;
+	}
+}
+
+void Demo::ThreadAlleyScene::StartTrojanBattle()
+{
+	if (isTransitioning) return;
+	isTransitioning = true;
+
+	auto transitionIn = std::make_shared<TransitionCommand>(game->GetGraphicsDevice(), &this->uiCamera, 1.f, true);
+	drawBuffer->PushCommand(transitionIn);
+
+	commandBuffer->PushCommand(std::make_shared<DX9GF::CustomCommand>([this, transitionIn](std::function<void(void)> markFinished) {
+		if (!transitionIn->IsFinished()) return;
+
+		auto app = DX9GF::Application::GetInstance();
+		auto sceMan = game->GetSceneManager();
+		auto battleScene = new CustomBattleScene(game, player, app->GetScreenWidth(), app->GetScreenHeight(),
+			std::map<std::string, int>{ { "TrojanEnemy", 100 } });
+		battleScene->SetCustomBGM("battle_boss");
+		battleScene->SetCustomBackgroundDraw([this](DX9GF::GraphicsDevice* gd, unsigned long long dt) {
+			DrawCheckerBackground(gd, dt);
+			});
+		battleScene->SetOnVictoryCallback([this]() {
+			trojanNPC->SetPhase(TrojanNPC::Phase::Defeated);
+			});
+
+		sceMan->InsertScene(sceMan->GetIndex() + 1, battleScene);
+		sceMan->GoToNext();
+
+		isTransitioning = false;
+		markFinished();
+		}));
+
+	drawBuffer->PushCommand(std::make_shared<TransitionCommand>(game->GetGraphicsDevice(), &this->uiCamera, 1.f, false));
 }
 
 void Demo::ThreadAlleyScene::DrawCheckerBackground(DX9GF::GraphicsDevice* gd, unsigned long long deltaTime)

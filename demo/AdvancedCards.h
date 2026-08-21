@@ -70,17 +70,19 @@ namespace Demo {
 	class ChainLightningCard : public MultiTargetCard {
 		std::shared_ptr<DX9GF::Texture> strikeTexture;
 		std::shared_ptr<DX9GF::StaticSprite> strikeSprite;
+		const float baseDamage = 20.f;
+		const float damageReductionPerRepeat = 75.f;
 	public:
 		ChainLightningCard(std::weak_ptr<DX9GF::TransformManager> tm, float x = 0, float y = 0)
 			: IGameObject(tm, x, y), MultiTargetCard(tm, 3, L"Chain L.", x, y, 224, 32) {
 		}
 
 		size_t GetCost() const override { return 3; }
-		std::wstring GetDescription() const override { return L"Deal 10 damage to up to 3 enemies."; }
+		std::wstring GetDescription() const override { return std::format(L"Deal {} damage to up to 3 enemies, but base damage is reduced by {}% \neach time it targets the same enemy.", baseDamage, damageReductionPerRepeat); }
 		RECT GetFaceRect() const override { return RECT{ 80, 304, 192, 320 }; }
 
 		bool Execute() override;
-		void CollectProjectedSteps(VirtualBattleState& state) override { CollectHitsOnTargets(state, 10.f, 3); }
+		void CollectProjectedSteps(VirtualBattleState& state) override;
 
 		void Draw(unsigned long long deltaTime) override;
 	};

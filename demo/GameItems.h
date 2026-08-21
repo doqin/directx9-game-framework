@@ -1,7 +1,10 @@
-#pragma once
+﻿#pragma once
 #include "DX9GF.h"
 namespace Demo
 {
+
+	// Registry key of the Authentication Token key item (see ItemData::LoadData).
+	constexpr int ITEM_AUTH_TOKEN = 12;
 
 	enum class ModifierType {
 		HealHP,

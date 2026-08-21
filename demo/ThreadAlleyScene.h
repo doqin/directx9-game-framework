@@ -12,6 +12,8 @@
 #include "IConversation.h"
 #include "PlayerHUD.h"
 #include "DauDauNPC.h"
+#include "AuthTerminal.h"
+#include "TrojanNPC.h"
 
 #include "MapEnemy.h"
 
@@ -40,10 +42,17 @@ namespace Demo {
 		std::shared_ptr<DX9GF::CommandBuffer> drawBuffer;
 		std::shared_ptr<DX9GF::CommandBuffer> commandBuffer;
 		std::shared_ptr<DauDauNPC> dauDau;
+		std::shared_ptr<AuthTerminal> authTerminal;
+		std::shared_ptr<TrojanNPC> trojanNPC;
+		// Four digits, rolled once per save file and persisted so it survives a reload.
+		std::string authPassword;
+		bool authTerminalSolved = false;
 
 
 		std::vector<std::shared_ptr<TreasureChestNPC>> treasureChests;
 		std::shared_ptr<IConversation> currentConversation;
+		// IConversation has no completion hook, so the scene fires this when the box closes.
+		std::function<void()> onConversationEnd;
 		std::vector<std::shared_ptr<MapEnemy>> mapEnemies;
 
 		float bgBaseScrollX = 0;
@@ -59,6 +68,9 @@ namespace Demo {
 		D3DCOLOR bgBaseColor2 = 0xFF793a80;
 
 		void DrawCheckerBackground(DX9GF::GraphicsDevice* gd, unsigned long long deltaTime);
+		std::wstring GetQuestText() const;
+		void StartTrojanConversation();
+		void StartTrojanBattle();
 
 	public:
 		ThreadAlleyScene(Game* game, std::shared_ptr<DX9GF::SaveManager> sm, UINT sw, UINT sh) : IScene(sw, sh), game(game), saveManager(sm) {}

@@ -148,7 +148,7 @@ void Demo::Player::Init(DX9GF::GraphicsDevice* graphicsDevice, DX9GF::ColliderMa
 	footprintEmitter->SetEnabled(footprintsEnabled);
 	deck = { "StrikeCard", "StrikeCard", "StrikeCard", "TwinStrikeCard", "TwinStrikeCard" };
 	this->colliderManager->Add(collider);
-	inventoryItems.InitFixedInventory(12);
+	inventoryItems.InitFixedInventory(13);
 }
 
 void Demo::Player::Update(unsigned long long deltaTime) {

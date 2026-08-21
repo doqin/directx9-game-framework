@@ -122,15 +122,35 @@ void Demo::CleaveCard::Draw(unsigned long long deltaTime) {
 
 bool Demo::ChainLightningCard::Execute() {
 	if (isDone) return true;
-	float damages[] = { 10.f, 10.f, 10.f };
 	for (size_t i = 0; i < targets.size() && i < 3; ++i) {
+		float finalDamage = baseDamage;
+		for (size_t j = 0; j < i; ++j) {
+			if (targets[j].lock()->GetValue() == targets[i].lock()->GetValue()) {
+				finalDamage *= (100.f - damageReductionPerRepeat) / 100.f;
+			}
+		}
 		if (auto enemy = targets[i].lock()) {
 			if (auto e = enemy->GetValue())
-				if (owner) owner->DealDamage(e.get(), damages[i]);
+				if (owner) owner->DealDamage(e.get(), finalDamage);
 		}
 	}
 	isDone = true;
 	return true;
+}
+
+void Demo::ChainLightningCard::CollectProjectedSteps(VirtualBattleState& state) { 
+	for (size_t i = 0; i < targets.size() && i < 3; ++i) {
+		float finalDamage = baseDamage;
+		for (size_t j = 0; j < i; ++j) {
+			if (targets[j].lock() && targets[i].lock() && targets[j].lock()->GetValue() == targets[i].lock()->GetValue()) {
+				finalDamage *= (100.f - damageReductionPerRepeat) / 100.f;
+			}
+		}
+		if (auto enemy = targets[i].lock()) {
+			if (auto e = enemy->GetValue())
+				state.SimulateDamage(e.get(), finalDamage);
+		}
+	}
 }
 
 void Demo::ChainLightningCard::Draw(unsigned long long deltaTime) {

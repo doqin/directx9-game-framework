@@ -1,4 +1,4 @@
-<?xml version="1.0" encoding="utf-8"?>
+﻿<?xml version="1.0" encoding="utf-8"?>
 <Project ToolsVersion="4.0" xmlns="http://schemas.microsoft.com/developer/msbuild/2003">
   <ItemGroup>
     <ClCompile Include="CardShop.cpp" />
@@ -62,6 +62,9 @@
     <ClCompile Include="SaveGameState.cpp" />
     <ClCompile Include="BossWorldScene.cpp" />
     <ClCompile Include="HackTerminal.cpp" />
+    <ClCompile Include="AuthTerminal.cpp" />
+    <ClCompile Include="PasswordMenu.cpp" />
+    <ClCompile Include="TrojanNPC.cpp" />
     <ClCompile Include="IntroScene.cpp" />
     <ClCompile Include="OutroScene.cpp" />
     <ClCompile Include="RustyChestNPC.cpp" />
@@ -163,6 +166,9 @@
     <ClInclude Include="SaveGameState.h" />
     <ClInclude Include="BossWorldScene.h" />
     <ClInclude Include="HackTerminal.h" />
+    <ClInclude Include="AuthTerminal.h" />
+    <ClInclude Include="PasswordMenu.h" />
+    <ClInclude Include="TrojanNPC.h" />
     <ClInclude Include="IntroScene.h" />
     <ClInclude Include="OutroScene.h" />
     <ClInclude Include="RustyChestNPC.h" />

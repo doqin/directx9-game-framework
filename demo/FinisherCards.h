@@ -67,6 +67,9 @@ namespace Demo {
 	class OverdriveCard : public IStatementCard {
 	private:
 		bool isDone = false;
+		const float attackBuff = 2.f;
+		const float turns = 3.f;
+		const float regenBuff = 6.f;
 	public:
 		OverdriveCard(std::weak_ptr<DX9GF::TransformManager> tm, float x = 0, float y = 0)
 			: IGameObject(tm, x, y), IStatementCard(tm, 160, 32, x, y) {
@@ -74,7 +77,7 @@ namespace Demo {
 		}
 
 		size_t GetCost() const override { return 3; }
-		std::wstring GetDescription() const override { return L"Gain 3 attack and Regen 8 for 3 turns."; }
+		std::wstring GetDescription() const override { return std::format(L"Gain {} attack and Regen {} for {} turns.", attackBuff, regenBuff, turns); }
 		RECT GetFaceRect() const override { return RECT{ 176, 384, 256, 400 }; }
 
 		bool Execute() override;
