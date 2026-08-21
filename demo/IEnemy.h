@@ -44,7 +44,7 @@ namespace Demo {
 		void SetGoldReward(int reward) { goldReward = reward; }
 		int lastPattern = -1;
 		int streakCount = 0;
-		int GetSmartRandomPattern(int minPattern, int maxPattern, int maxStreak = 2, int breakChance = 80);
+		int GetSmartRandomPattern(int minPattern, int maxPattern, int maxStreak = 1, int breakChance = 80);
 	public:
 		IEnemy(std::weak_ptr<DX9GF::TransformManager> tm, float maxHealth) : ICombatant(tm, maxHealth) {}
 
