@@ -44,7 +44,7 @@ namespace Demo {
 		void SetGoldReward(int reward) { goldReward = reward; }
 		int lastPattern = -1;
 		int streakCount = 0;
-		int GetSmartRandomPattern(int minPattern, int maxPattern, int maxStreak = 2, int breakChance = 80);
+		int GetSmartRandomPattern(const int&& minPattern, const int&& maxPattern);
 	public:
 		IEnemy(std::weak_ptr<DX9GF::TransformManager> tm, float maxHealth) : ICombatant(tm, maxHealth) {}
 
@@ -78,5 +78,24 @@ namespace Demo {
 		bool TakeIndirectDamage(float damage, DamageType type) override;
 		void SpawnHealText(float actualHeal) override;
 		void CastAbility(std::function<void()> effect, std::shared_ptr<PopUpMessage> popUpMessage, const std::wstring& message);
+
+	protected:
+		virtual std::vector<int>& GetPatternOrder() = 0;
+		virtual size_t& GetCurrentPatternIndex() = 0;
+	};
+
+	template <typename T>
+	class EnemyBase : public IEnemy {
+	protected:
+		std::vector<int>& GetPatternOrder() override {
+			static std::vector<int> patternOrder;
+			return patternOrder;
+		}
+		size_t& GetCurrentPatternIndex() override {
+			static size_t currentIndex = 0;
+			return currentIndex;
+		}
+	public:
+		using IEnemy::IEnemy;
 	};
 }

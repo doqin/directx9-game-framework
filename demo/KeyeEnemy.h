@@ -2,7 +2,7 @@
 #include "IEnemy.h"
 
 namespace Demo {
-    class KeyeEnemy : public IEnemy {
+    class KeyeEnemy : public EnemyBase<KeyeEnemy> {
     private:
         std::shared_ptr<DX9GF::Texture> texture;
         std::shared_ptr<DX9GF::AnimatedSprite> sprite;
@@ -16,7 +16,7 @@ namespace Demo {
         void PatternRoundCircle(float projDamage);
         void PatternSightline(float projDamage);
     public:
-        using IEnemy::IEnemy;
+        using EnemyBase<KeyeEnemy>::EnemyBase;
         void Init(DX9GF::GraphicsDevice* graphicsDevice, DX9GF::Camera* camera);
         void Draw(DX9GF::GraphicsDevice* graphicsDevice, DX9GF::Camera* camera, unsigned long long deltaTime) override;
         void OnTurnBegin(std::shared_ptr<Player> player, std::shared_ptr<PopUpMessage> popUpMessage, int currentTurn) override;

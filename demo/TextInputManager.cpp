@@ -1,4 +1,4 @@
-#include "pch.h"
+﻿#include "pch.h"
 #include "TextInputManager.h"
 #include <DX9GFInputManager.h>
 #include <dinput.h>
@@ -37,7 +37,11 @@ static const KeyMap keyMappings[] = {
 	{ DIK_LBRACKET, '[', '{' }, { DIK_RBRACKET, ']', '}' },
 	{ DIK_SEMICOLON, ';', ':' }, { DIK_APOSTROPHE, '\'', '\"' },
 	{ DIK_COMMA, ',', '<' }, { DIK_PERIOD, '.', '>' }, { DIK_SLASH, '/', '?' },
-	{ DIK_BACKSLASH, '\\', '|' }
+	{ DIK_BACKSLASH, '\\', '|' },
+	{ DIK_NUMPAD0, '0', '0' }, { DIK_NUMPAD1, '1', '1' }, { DIK_NUMPAD2, '2', '2' },
+	{ DIK_NUMPAD3, '3', '3' }, { DIK_NUMPAD4, '4', '4' }, { DIK_NUMPAD5, '5', '5' },
+	{ DIK_NUMPAD6, '6', '6' }, { DIK_NUMPAD7, '7', '7' }, { DIK_NUMPAD8, '8', '8' },
+	{ DIK_NUMPAD9, '9', '9' }
 };
 
 std::vector<char> Demo::TextInputManager::ReadInput()

@@ -2,7 +2,7 @@
 #include "IEnemy.h"
 
 namespace Demo {
-	class WarlockEnemy : public IEnemy {
+	class WarlockEnemy : public EnemyBase<WarlockEnemy> {
 	private:
 		std::shared_ptr<DX9GF::Texture> texture;
 		std::shared_ptr<DX9GF::AnimatedSprite> sprite;
@@ -18,7 +18,7 @@ namespace Demo {
 		void PatternHomingCurse(float projDamage, std::vector<std::shared_ptr<IEnemy>>* enemies);
 
 	public:
-		using IEnemy::IEnemy;
+		using EnemyBase<WarlockEnemy>::EnemyBase;
 		void Init(DX9GF::GraphicsDevice* graphicsDevice, DX9GF::Camera* camera);
 		void Draw(DX9GF::GraphicsDevice* graphicsDevice, DX9GF::Camera* camera, unsigned long long deltaTime) override;
 

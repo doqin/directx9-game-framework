@@ -70,17 +70,19 @@ namespace Demo {
 	class ChainLightningCard : public MultiTargetCard {
 		std::shared_ptr<DX9GF::Texture> strikeTexture;
 		std::shared_ptr<DX9GF::StaticSprite> strikeSprite;
+		const float baseDamage = 20.f;
+		const float damageReductionPerRepeat = 75.f;
 	public:
 		ChainLightningCard(std::weak_ptr<DX9GF::TransformManager> tm, float x = 0, float y = 0)
 			: IGameObject(tm, x, y), MultiTargetCard(tm, 3, L"Chain L.", x, y, 224, 32) {
 		}
 
 		size_t GetCost() const override { return 3; }
-		std::wstring GetDescription() const override { return L"Deal 10 damage to up to 3 enemies."; }
+		std::wstring GetDescription() const override { return std::format(L"Deal {} damage to up to 3 enemies, but base damage is reduced by {}% \neach time it targets the same enemy.", baseDamage, damageReductionPerRepeat); }
 		RECT GetFaceRect() const override { return RECT{ 80, 304, 192, 320 }; }
 
 		bool Execute() override;
-		void CollectProjectedSteps(VirtualBattleState& state) override { CollectHitsOnTargets(state, 10.f, 3); }
+		void CollectProjectedSteps(VirtualBattleState& state) override;
 
 		void Draw(unsigned long long deltaTime) override;
 	};
@@ -90,23 +92,25 @@ namespace Demo {
 	class PoisonCard : public MultiTargetCard {
 		std::shared_ptr<DX9GF::Texture> strikeTexture;
 		std::shared_ptr<DX9GF::StaticSprite> strikeSprite;
+		const int poisonTurns = 2;
 	public:
 		PoisonCard(std::weak_ptr<DX9GF::TransformManager> tm, float x = 0, float y = 0)
 			: IGameObject(tm, x, y), MultiTargetCard(tm, 1, L"Poison", x, y, 160, 32) {
+			SetPersistent(false);
 		}
 
 		size_t GetCost() const override { return 1; }
-		std::wstring GetDescription() const override { return L"Apply Poison 3 (damage equals remaining turns)."; }
+		std::wstring GetDescription() const override { return std::format(L"Apply Poison {} (damage equals remaining turns).", poisonTurns); }
 		RECT GetFaceRect() const override { return RECT{ 192, 304, 272, 320 }; }
 
 		bool Execute() override;
 		// No value of its own, so its tick is worth however many turns are on it - and AddModifier
 		// adds to whatever is already there, so poisoning an already-poisoned enemy ticks harder.
 		void CollectProjectedSteps(VirtualBattleState& state) override {
-			CollectEffectOnTargets(state, ModifierType::Poison, 0.f, 3, 1);
+			CollectEffectOnTargets(state, ModifierType::Poison, 0.f, poisonTurns, 1);
 		}
 
-		void Draw(unsigned long long deltaTime) override;
+		void DrawCardFace(unsigned long long deltaTime) override;
 	};
 
 	class VulnerableCard : public MultiTargetCard {
@@ -218,7 +222,7 @@ namespace Demo {
 
 		size_t GetCost() const override { return 1; }
 		std::wstring GetDescription() const override {
-			return L"Deal " + std::to_wstring(currentDamage) + L" damage. Increases this card's damage by 3 when played.";
+			return L"Deal " + std::to_wstring(currentDamage) + L" damage. Increases this card's damage by 3 when played. Resets to 4 damage on discard.";
 		}
 		RECT GetFaceRect() const override { return RECT{ 80, 416, 176, 432 }; }
 

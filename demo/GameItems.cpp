@@ -70,6 +70,10 @@ namespace Demo
 
 		itemRegistry[10] = ConsumableItem(99, L"Rusty Key", L"...", {}, { 120, 0, 143, 35 });
 		itemRegistry[11] = ConsumableItem(99, L"G(r)ayStone", L"Has no practical use. Just a trophy for our winner.", {}, { 120, 36, 143, 71 });
+
+		itemRegistry[12] = ConsumableItem(12, L"Authentication Token",
+			L"A one-time access credential, pulled from a terminal in the alley.",
+			{}, { 144, 0, 167, 35 });
 	}
 
 	const ConsumableItem* ItemData::GetItemBlueprint(int id)

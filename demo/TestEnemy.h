@@ -2,7 +2,7 @@
 #include "IEnemy.h"
 
 namespace Demo {
-	class TestEnemy : public IEnemy {
+	class TestEnemy : public EnemyBase<TestEnemy> {
 	private:
 		std::shared_ptr<DX9GF::Texture> texture;
 		std::shared_ptr<DX9GF::StaticSprite> sprite;
@@ -12,7 +12,7 @@ namespace Demo {
 		int skillTurnThisCycle = -1;
 
 	public:
-		using IEnemy::IEnemy;
+		using EnemyBase<TestEnemy>::EnemyBase;
 		// Unscaled 64px sprite.
 		float GetBodyWidth() const override { return 64.f; }
 		float GetBodyHeight() const override { return 64.f; }

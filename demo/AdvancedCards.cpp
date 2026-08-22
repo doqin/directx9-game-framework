@@ -122,15 +122,35 @@ void Demo::CleaveCard::Draw(unsigned long long deltaTime) {
 
 bool Demo::ChainLightningCard::Execute() {
 	if (isDone) return true;
-	float damages[] = { 10.f, 10.f, 10.f };
 	for (size_t i = 0; i < targets.size() && i < 3; ++i) {
+		float finalDamage = baseDamage;
+		for (size_t j = 0; j < i; ++j) {
+			if (targets[j].lock()->GetValue() == targets[i].lock()->GetValue()) {
+				finalDamage *= (100.f - damageReductionPerRepeat) / 100.f;
+			}
+		}
 		if (auto enemy = targets[i].lock()) {
 			if (auto e = enemy->GetValue())
-				if (owner) owner->DealDamage(e.get(), damages[i]);
+				if (owner) owner->DealDamage(e.get(), finalDamage);
 		}
 	}
 	isDone = true;
 	return true;
+}
+
+void Demo::ChainLightningCard::CollectProjectedSteps(VirtualBattleState& state) { 
+	for (size_t i = 0; i < targets.size() && i < 3; ++i) {
+		float finalDamage = baseDamage;
+		for (size_t j = 0; j < i; ++j) {
+			if (targets[j].lock() && targets[i].lock() && targets[j].lock()->GetValue() == targets[i].lock()->GetValue()) {
+				finalDamage *= (100.f - damageReductionPerRepeat) / 100.f;
+			}
+		}
+		if (auto enemy = targets[i].lock()) {
+			if (auto e = enemy->GetValue())
+				state.SimulateDamage(e.get(), finalDamage);
+		}
+	}
 }
 
 void Demo::ChainLightningCard::Draw(unsigned long long deltaTime) {
@@ -162,7 +182,6 @@ bool Demo::PoisonCard::Execute() {
 	if (!targets.empty()) {
 		if (auto enemy = targets[0].lock()) {
           if (auto e = enemy->GetValue()) {
-				const int poisonTurns = 3;
 				e->AddModifier(ModifierType::Poison, poisonTurns, 0.f, false);
 		  }
 		}
@@ -171,28 +190,8 @@ bool Demo::PoisonCard::Execute() {
 	return true;
 }
 
-void Demo::PoisonCard::Draw(unsigned long long deltaTime) {
-	if (isCropped) {
-		graphicsDevice->SetScissorRect(scissorRect);
-		graphicsDevice->SetScissorTest(true);
-	}
-	if (!strikeTexture) {
-		strikeTexture = std::make_shared<DX9GF::Texture>(graphicsDevice);
-		strikeTexture->LoadTexture(L"assets/ui.png");
-		strikeSprite = std::make_shared<DX9GF::StaticSprite>(strikeTexture.get());
-		strikeSprite->SetSrcRect(GetFaceRect());
-	}
-	if (strikeSprite) {
-		strikeSprite->Begin();
-		strikeSprite->SetPosition(GetWorldX(), GetWorldY());
-		strikeSprite->SetScale(2.f, 2.f);
-		strikeSprite->Draw(*camera, deltaTime);
-		strikeSprite->End();
-	}
-	if (isCropped) {
-		graphicsDevice->SetScissorTest(false);
-	}
-	MultiTargetCard::Draw(deltaTime);
+void Demo::PoisonCard::DrawCardFace(unsigned long long deltaTime) { 
+	DrawSheetFace(deltaTime, GetFaceRect()); 
 }
 
 bool Demo::VulnerableCard::Execute() {

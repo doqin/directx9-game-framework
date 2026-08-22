@@ -1,4 +1,4 @@
-﻿#include "pch.h"
+#include "pch.h"
 #include "IEnemy.h"
 #include <cmath>
 #include <algorithm>
@@ -434,26 +434,30 @@ bool Demo::IEnemy::IsDoneAttacking()
 	return !commandBuffer.IsBusy() && !animationBuffer.IsBusy() && projectiles.IsEmpty() && hitImpactSprites.empty();
 }
 
-int Demo::IEnemy::GetSmartRandomPattern(int minPattern, int maxPattern, int maxStreak, int breakChance)
+int Demo::IEnemy::GetSmartRandomPattern(const int&& minPattern, const int&& maxPattern)
 {
-	int patternId = RNG::Range(minPattern, maxPattern);
+	if (minPattern > maxPattern) {
+		throw std::invalid_argument("minPattern cannot be greater than maxPattern");
+	}
+	
+	std::vector<int>& patternOrder = GetPatternOrder();
+	size_t& currentIndex = GetCurrentPatternIndex();
 
-	if (patternId == lastPattern) {
-		streakCount++;
-		if (streakCount >= maxStreak) {
-			if (RNG::Range(1, 100) <= breakChance) {
-				do {
-					patternId = RNG::Range(minPattern, maxPattern);
-				} while (patternId == lastPattern);
-				streakCount = 0; //reset if switched skill
-			}
+	// Initialize the pattern order vector with values from minPattern to maxPattern
+	if (patternOrder.size() != static_cast<size_t>(maxPattern - minPattern + 1)) {
+		patternOrder.resize(maxPattern - minPattern + 1);
+		currentIndex = 0;
+	}
+
+	if (currentIndex == 0) {
+		for (int i = minPattern; i <= maxPattern; ++i) {
+			patternOrder[i - minPattern] = i;
 		}
+		std::shuffle(patternOrder.begin(), patternOrder.end(), RNG::GetEngine());
 	}
-	else {
-		streakCount = 0;
-	}
-
-	lastPattern = patternId;
+	
+	int patternId = patternOrder[currentIndex];
+	currentIndex = (currentIndex + 1) % patternOrder.size();
 	return patternId;
 }
 
