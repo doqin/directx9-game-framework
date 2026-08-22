@@ -84,7 +84,7 @@ void Demo::KeyeEnemy::PatternRoundCircle(float projDamage) {
 					ProjectileDesc(projTexture.get(), projFrames, 12, 16, 16, 16, 16, randX, -220.f)
 					.SetTargetPosition(lock->GetCollider().lock()->GetWorldX(), lock->GetCollider().lock()->GetWorldY())
 					.SetVelocity(220.f)
-					.SetDecayTime(6.f)
+					.SetDecayTime(4.f)
 					.SetDamage(projDamage)
 				);
 			}

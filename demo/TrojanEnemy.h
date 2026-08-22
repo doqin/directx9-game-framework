@@ -1,7 +1,7 @@
 #pragma once
 #include "IEnemy.h"
 namespace Demo {
-	class TrojanEnemy : public IEnemy {
+	class TrojanEnemy : public EnemyBase<TrojanEnemy> {
 	private:
 		std::shared_ptr<DX9GF::Texture> texture;
 		std::shared_ptr<DX9GF::AnimatedSprite> sprite;
@@ -22,7 +22,7 @@ namespace Demo {
 		static constexpr int FREEZE_DURATION = 1;
 		static constexpr int BURN_DURATION = 1;
 	public:
-		using IEnemy::IEnemy;
+		using EnemyBase<TrojanEnemy>::EnemyBase;
 		// 96px frames drawn at 2x.
 		float GetBodyWidth() const override { return 192.f; }
 		float GetBodyHeight() const override { return 192.f; }

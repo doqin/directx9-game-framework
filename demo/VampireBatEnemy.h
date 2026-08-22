@@ -2,7 +2,7 @@
 #include "IEnemy.h"
 
 namespace Demo {
-	class VampireBatEnemy : public IEnemy {
+	class VampireBatEnemy : public EnemyBase<VampireBatEnemy> {
 	private:
 		std::shared_ptr<DX9GF::Texture> texture;
 		std::shared_ptr<DX9GF::AnimatedSprite> sprite;
@@ -17,7 +17,7 @@ namespace Demo {
 		void PatternEcholocation(float projDamage, std::vector<std::shared_ptr<IEnemy>>* enemies);
 		void PatternSwoopBite(float projDamage);
 	public:
-		using IEnemy::IEnemy;
+		using EnemyBase<VampireBatEnemy>::EnemyBase;
 		void Init(DX9GF::GraphicsDevice* graphicsDevice, DX9GF::Camera* camera);
 		void Draw(DX9GF::GraphicsDevice* graphicsDevice, DX9GF::Camera* camera, unsigned long long deltaTime) override;
 

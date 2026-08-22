@@ -2,7 +2,7 @@
 #include "IEnemy.h"
 
 namespace Demo {
-	class CupidEnemy : public IEnemy {
+	class CupidEnemy : public EnemyBase<CupidEnemy> {
 	private:
 		std::shared_ptr<DX9GF::Texture> texture;
 		std::shared_ptr<DX9GF::AnimatedSprite> sprite;
@@ -22,7 +22,7 @@ namespace Demo {
 		void PatternHeartNova(float projDamage);
 
 	public:
-		using IEnemy::IEnemy;
+		using EnemyBase<CupidEnemy>::EnemyBase;
 		void Init(DX9GF::GraphicsDevice* graphicsDevice, DX9GF::Camera* camera);
 		void Draw(DX9GF::GraphicsDevice* graphicsDevice, DX9GF::Camera* camera, unsigned long long deltaTime) override;
 

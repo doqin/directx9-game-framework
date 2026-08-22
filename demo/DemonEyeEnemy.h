@@ -2,7 +2,7 @@
 #include "IEnemy.h"
 
 namespace Demo {
-	class DemonEyeEnemy : public IEnemy {
+	class DemonEyeEnemy : public EnemyBase<DemonEyeEnemy> {
 	private:
 		std::shared_ptr<DX9GF::Texture> texture;
 		std::shared_ptr<DX9GF::AnimatedSprite> sprite;
@@ -20,7 +20,7 @@ namespace Demo {
 		void PatternBloodCross(float projDamage, std::vector<std::shared_ptr<IEnemy>>* enemies);
 
 	public:
-		using IEnemy::IEnemy;
+		using EnemyBase<DemonEyeEnemy>::EnemyBase;
 		void Init(DX9GF::GraphicsDevice* graphicsDevice, DX9GF::Camera* camera);
 		void Draw(DX9GF::GraphicsDevice* graphicsDevice, DX9GF::Camera* camera, unsigned long long deltaTime) override;
 

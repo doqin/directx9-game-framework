@@ -111,11 +111,12 @@ void Demo::KeyeproEnemy::StartAttack(std::shared_ptr<Player> player, std::vector
 	float baseDamage = 5.f;
 
 	if (enemies != nullptr && graphicsDevice != nullptr && camera != nullptr) {
-		int patternId = GetSmartRandomPattern(1, 4);
+		int patternId = GetSmartRandomPattern(1, 5);
 		if (patternId == 1) PatternTargetedSniping(baseDamage);
 		else if (patternId == 2) PatternEcholocation(baseDamage);
 		else if (patternId == 3) PatternSwoopBite(baseDamage);
 		else if (patternId == 4) PatternShatterVolley(baseDamage);
+		else if (patternId == 5) PatternFanning(CalculateOutgoingDamage(1.f));
 	}
 }
 
@@ -358,4 +359,49 @@ void Demo::KeyeproEnemy::PatternShatterVolley(float baseDamage) {
 			}));
 		commandBuffer.PushCommand(std::make_shared<DX9GF::DelayCommand>(WAVE_GAP));
 	}
+}
+
+void Demo::KeyeproEnemy::PatternFanning(float projDamage)
+{
+	const int WAVE_COUNT = 15;
+	const int BULLET_COUNT = 30;
+	const float SPAWN_DISTANCE = 400.f;
+	const float SPREAD_ANGLE = 60.f * (3.14159265f / 180.f); // Convert degrees to radians
+	const float BASE_ANGLE = RNG::Range(0.f, 360.f) * (3.14159265f / 180.f);
+	const float ANGLE_INCREMENT = SPREAD_ANGLE / (BULLET_COUNT - 1);
+	const float DELAY_BETWEEN_BULLETS = 0.01f;
+	const float DELAY_BETWEEN_WAVES = 0.03f;
+	const float JITTER_RADIUS = 250.f;
+	for (int wave = 0; wave < WAVE_COUNT; wave++) {
+		for (int i = 0; i < BULLET_COUNT; i++) {
+			float angle = BASE_ANGLE - SPREAD_ANGLE / 2 + ANGLE_INCREMENT * i;
+			D3DXVECTOR2 dir{ std::cos(angle), std::sin(angle) };
+			float jitterAngle = RNG::Range(0.f, 360.f) * (3.14159265f / 180.f);
+			float jitterDist = std::sqrt(RNG::Range(0.f, 1.f)) * JITTER_RADIUS;
+			float jitterX = std::cos(jitterAngle) * jitterDist;
+			float jitterY = std::sin(jitterAngle) * jitterDist;
+			commandBuffer.PushCommand(std::make_shared<DX9GF::CustomCommand>([this, projDamage, dir, SPAWN_DISTANCE, jitterX, jitterY](std::function<void(void)> markFinished) {
+				if (auto lock = this->player.lock()) {
+					auto [px, py] = lock->GetWorldPosition();
+					float spawnX = px - dir.x * SPAWN_DISTANCE + jitterX;
+					float spawnY = py - dir.y * SPAWN_DISTANCE + jitterY;
+					auto desc = ProjectileDesc(projTexture.get(), projFrames, 12, 8, 8, 16, 16, spawnX, spawnY)
+						.SetTrajectory(dir)
+						.SetVelocity(100.f)
+						.SetDecayTime(8.f)
+						.SetReturnAcceleration(200.f)
+						.SetWave(100.f, 0.5f)
+						.SetDamage(projDamage)
+						.SetStatusEffect(
+							ModifierType::Burn, 1.f, 1
+						);
+					projectiles.Spawn(lock, desc);
+				}
+				markFinished();
+				}));
+			commandBuffer.PushCommand(std::make_shared<DX9GF::DelayCommand>(DELAY_BETWEEN_BULLETS));
+		}
+		commandBuffer.PushCommand(std::make_shared<DX9GF::DelayCommand>(DELAY_BETWEEN_WAVES));
+	}
+
 }

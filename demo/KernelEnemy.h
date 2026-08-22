@@ -5,7 +5,7 @@
 #include <vector>
 
 namespace Demo {
-	class KernelEnemy : public IEnemy {
+	class KernelEnemy : public EnemyBase<KernelEnemy> {
 	private:
 		std::shared_ptr<DX9GF::Texture> texture;
 		std::shared_ptr<DX9GF::AnimatedSprite> sprite;
@@ -33,7 +33,7 @@ namespace Demo {
 		void PatternBadSector(float projDamage);
 
 	public:
-		using IEnemy::IEnemy;
+		using EnemyBase<KernelEnemy>::EnemyBase;
 
 		void Init(DX9GF::GraphicsDevice* graphicsDevice, DX9GF::Camera* camera);
 		void Draw(DX9GF::GraphicsDevice* graphicsDevice, DX9GF::Camera* camera, unsigned long long deltaTime) override;
