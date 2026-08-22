@@ -11,7 +11,7 @@ bool Demo::Pointable::isDrawing = false;
 std::shared_ptr<DX9GF::Font> Demo::Pointable::font = nullptr;
 std::shared_ptr<DX9GF::FontSprite> Demo::Pointable::fontSprite = nullptr;
 
-void Demo::CreateImGuiDebugFrame(std::shared_ptr<Player> player)
+void Demo::CreateImGuiDebugFrame(std::shared_ptr<Player> player, Game* game)
 {
 	ImGui_ImplDX9_NewFrame();
 	ImGui_ImplWin32_NewFrame();
@@ -23,6 +23,12 @@ void Demo::CreateImGuiDebugFrame(std::shared_ptr<Player> player)
 	ImGui::Text("Player Position: (%.1f, %.1f)", playerCurrentX, playerCurrentY);
 	ImGui::End();
 	ImGui::Begin("Cheats");
+	if (ImGui::Button("Next Scene")) {
+		game->GetSceneManager()->GoToNext();
+	}
+	if (ImGui::Button("Previous Scene")) {
+		game->GetSceneManager()->GoToPrevious();
+	}
 	ImGui::Text("Set Player Position");
 	static float playerX = playerCurrentX, playerY = playerCurrentY;
 	ImGui::InputFloat("X", &playerX);

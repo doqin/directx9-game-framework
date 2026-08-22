@@ -39,9 +39,11 @@ int Demo::KeyeproEnemy::GetRandomPattern() {
 void Demo::KeyeproEnemy::OnTurnBegin(std::shared_ptr<Player> player, std::shared_ptr<PopUpMessage> popUpMessage, int currentTurn, std::vector<std::shared_ptr<IEnemy>>* enemies, DX9GF::GraphicsDevice* graphicsDevice, DX9GF::Camera* camera) {
 	this->player = player;
 
+	float desperato = 1.f - this->GetHealth() / this->GetMaxHealth(); // Desperation factor, ranges from 0 to 1 as health decreases
+
 	if (enemies != nullptr && graphicsDevice != nullptr && camera != nullptr) {
 		constexpr float MINION_SPAWN_CHANCE = 0.5f;
-		if (RNG::Range(0.f, 1.f) <= MINION_SPAWN_CHANCE) {
+		if (RNG::Range(0.f, 1.f) <= std::max(MINION_SPAWN_CHANCE, desperato)) {
 			size_t keyeCount = 0;
 			for (const auto& enemy : *enemies) {
 				if (!enemy || enemy->IsDead())
@@ -79,25 +81,31 @@ void Demo::KeyeproEnemy::OnTurnBegin(std::shared_ptr<Player> player, std::shared
 	}
 
 	constexpr float LOCK_CHANCE = 0.4f;
-	if (RNG::Range(0.f, 1.f) <= LOCK_CHANCE) {
+	if (RNG::Range(0.f, 1.f) <= std::max(LOCK_CHANCE, desperato)) {
 		CastAbility([this]() {
 			if (this->onRequestLockCard) this->onRequestLockCard(2);
 			}, popUpMessage, L"Boss locks your mind!");
 	}
 
-	if (currentTurn % 2 == 1) {
-		auto abilityRoll = RNG::Range(1, 5);
+	if (RNG::Range(0.f, 1.f) <= desperato) {
+		CastAbility([this]() {
+			this->Heal(45.f);
+			}, popUpMessage, L"Boss regenerates 45HP!");
+	}
+
+	if (RNG::Range(0.f, 1.f) <= desperato) {
+		CastAbility([this]() { 
+			this->AddModifier(ModifierType::BuffDefense, 2, 30.0f, true); 
+			}, popUpMessage, L"Boss fortifies itself with 30DEF!");
+	}
+
+	if (currentTurn % 2 == 1 || desperato > 0.6f) {
+		auto abilityRoll = RNG::Range(1, 3);
 		if (abilityRoll == 1) {
 			CastAbility([this]() { this->player.lock()->AddModifier(ModifierType::Vulnerable, 1, 5.0f, false); }, popUpMessage, L"Boss lowers your defenses!");
 		}
 		else if (abilityRoll == 2) {
 			CastAbility([this]() { this->player.lock()->AddModifier(ModifierType::Weak, 2, 5.0f, false); }, popUpMessage, L"Boss weakens your attacks!");
-		}
-		else if (abilityRoll == 3) {
-			CastAbility([this]() { this->AddModifier(ModifierType::BuffDefense, 2, 30.0f, true); }, popUpMessage, L"Boss fortifies itself!");
-		}
-		else if (abilityRoll == 4) {
-			CastAbility([this]() { this->AddModifier(ModifierType::HealHP, 0, 50.0f, true); }, popUpMessage, L"Boss regenerates!");
 		}
 		else {
 			CastAbility([this]() { this->AddModifier(ModifierType::BuffDamage, 2, 3.0f, true); }, popUpMessage, L"Boss enters a frenzy!");

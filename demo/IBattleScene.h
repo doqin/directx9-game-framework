@@ -65,8 +65,6 @@ namespace Demo {
 		bool isTransitioning = false;
 		bool enemyAttackStartPending = false;
 		bool isFleeing = false;
-		float timeSinceLastTargetPopUp = 999.f;
-		const float targetPopUpCooldown = 3.f;
 		bool isAttackCountdownActive = false;
 		int attackCountdownNumber = 3;
 		float attackCountdownTimer = 0.f;
@@ -377,7 +375,9 @@ namespace Demo {
 		// block executes as the turn ends, so anything gained there is never spent.
 		void GainEnergyNow(int amount) { energy += amount; }
 		void DrawCardsNow(int amount);
-		void QueuePopUpMessage(const std::wstring& msg) { if (popUpMessage) popUpMessage->QueueMessage(&commandBuffer, msg); }
+		// Feedback for something the player just did, so it shows up now instead of queueing
+		// behind whatever animation the command buffer is running.
+		void QueuePopUpMessage(const std::wstring& msg) { if (popUpMessage) popUpMessage->ShowMessage(msg); }
 		void AddPendingGoldTokenReward(int amount) { pendingGoldTokenReward += amount; }
 		void SpawnRandomToken(float x, float y);
 		void AddEnergyPieceToken();

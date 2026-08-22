@@ -30,7 +30,7 @@ namespace Demo {
 		spritesheet = std::make_shared<DX9GF::Texture>(gd);
 		spritesheet->LoadTexture(L"assets/Trojan_outside.png");
 		sprite = std::make_shared<DX9GF::AnimatedSprite>(spritesheet.get(), DX9GF::Utils::CreateRectsHorizontal(0, 0, 64, 64, 12), 6, true);
-		sprite->SetOrigin(16.f, 48.f);
+		sprite->SetOrigin(32.f, 48.f);
 		sprite->SetPosition(GetWorldX(), GetWorldY());
 
 		// A save restored before Init would have set the phase already; re-apply it so a defeated
