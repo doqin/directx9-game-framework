@@ -34,6 +34,7 @@ namespace Demo
 		keybinds["OPEN_INVENTORY"] = DIK_ESCAPE;
 		keybinds["INTERACT"] = DIK_E;
 		keybinds["SPRINT"] = DIK_LSHIFT;
+		keybinds["TOGGLE_LOG"] = DIK_L;
 	}
 
 	bool SettingsManager::LoadSettings()

@@ -14,5 +14,5 @@ namespace Demo {
 		void DrawPosition(unsigned long long deltaTime, DX9GF::GraphicsDevice* gd, const DX9GF::Camera& camera) const;
 	};
 
-	void CreateImGuiDebugFrame(std::shared_ptr<Player> player);
+	void CreateImGuiDebugFrame(std::shared_ptr<Player> player, Game* game);
 }

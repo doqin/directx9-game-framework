@@ -684,7 +684,7 @@ void Demo::BossWorldScene::DrawWorld(unsigned long long deltaTime) {
 
 void Demo::BossWorldScene::DrawUI(unsigned long long deltaTime)
 {
-	CreateImGuiDebugFrame(player);
+	CreateImGuiDebugFrame(player, game);
 	auto gd = game->GetGraphicsDevice();
 	if (SUCCEEDED(gd->BeginDraw())) {
 

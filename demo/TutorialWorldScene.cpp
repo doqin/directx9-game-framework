@@ -480,7 +480,7 @@ void Demo::TutorialWorldScene::DrawWorld(unsigned long long deltaTime)
 
 void Demo::TutorialWorldScene::DrawUI(unsigned long long deltaTime)
 {
-	CreateImGuiDebugFrame(player);
+	CreateImGuiDebugFrame(player, game);
 	auto gd = game->GetGraphicsDevice();
 
 	if (SUCCEEDED(gd->BeginDraw())) {

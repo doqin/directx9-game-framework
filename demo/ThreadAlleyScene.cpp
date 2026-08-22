@@ -612,7 +612,7 @@ void Demo::ThreadAlleyScene::DrawWorld(unsigned long long deltaTime)
 
 void Demo::ThreadAlleyScene::DrawUI(unsigned long long deltaTime)
 {
-	CreateImGuiDebugFrame(player);
+	CreateImGuiDebugFrame(player, game);
 	auto gd = game->GetGraphicsDevice();
 	if (SUCCEEDED(gd->BeginDraw())) {
 

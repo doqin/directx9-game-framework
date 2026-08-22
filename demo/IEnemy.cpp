@@ -479,9 +479,12 @@ void Demo::IEnemy::CastAbility(std::function<void()> effect, std::shared_ptr<Pop
 		markFinished();
 		}));
 
-	if (popUpMessage && !message.empty()) {
-		popUpMessage->QueueMessage(&commandBuffer, message, 1.5f);
-	}
 
+	commandBuffer.PushCommand(std::make_shared<DX9GF::CustomCommand>([popUpMessage, message](std::function<void(void)> markFinished) {
+		if (popUpMessage && !message.empty()) {
+			popUpMessage->ShowMessage(message, 3.f);
+		}
+		markFinished();
+	}));
 	commandBuffer.PushCommand(std::make_shared<DX9GF::DelayCommand>(0.5f));
 }

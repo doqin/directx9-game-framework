@@ -94,6 +94,11 @@ void Demo::IBattleScene::StartBattle()
 	static std::mt19937 gen(rd());
 	std::shuffle(drawPile.begin(), drawPile.end(), gen);
 	currentTurn = 1;
+	if (popUpMessage) {
+		popUpMessage->Reset();
+		popUpMessage->ClearHistory(); // the log's timestamps count from the start of the battle
+	}
+	popUpMessage->ShowMessage(L"Turn " + std::to_wstring(currentTurn), 3.f);
 	DrawCards(CARDS_DRAWN_PER_TURN);
 	activeTokens.clear();
 	pendingGoldTokenReward = 0;
@@ -615,6 +620,7 @@ void Demo::IBattleScene::BeginNextTurn()
 	++currentTurn;
 	MovePlayedPileToDiscardPileIfNeeded();
 	DrawCards(CARDS_DRAWN_PER_TURN + pendingBonusDraw);
+	popUpMessage->ShowMessage(L"Turn " + std::to_wstring(currentTurn), 3.f);
 	pendingBonusDraw = 0;
 	energy = MAX_ENERGY + pendingBonusEnergy;
 	pendingBonusEnergy = 0;
@@ -2842,7 +2848,6 @@ void Demo::IBattleScene::Init()
 	backButton = std::make_shared<IconButton>(transformManager, 0, 0, buttonWidth, buttonHeight, uiSheetTex);
 	backButton->SetOnReleaseLeft([&](DX9GF::ITrigger* thisObj) {
 		commandBuffer.Clear();
-		popUpMessage->Reset(); // Really bad hack, please never do this in a production game lol
 		commandBuffer.StackCommand(std::make_shared<DX9GF::CustomCommand>([&](std::function<void(void)> markFinished) {
 			this->state = State::PlayerStandBy;
 			for (auto& enemy : enemies) {
@@ -2898,11 +2903,11 @@ void Demo::IBattleScene::Init()
 		// a mid-turn draw. Clearing it mid-flight would strand those cards in queuedToDraw -
 		// never reaching the hand, never discarded - so refuse until they have landed.
 		if (!queuedToDraw.empty()) {
-			popUpMessage->QueueMessage(&commandBuffer, L"Still drawing");
+			popUpMessage->ShowMessage(L"Still drawing");
 			DX9GF::AudioManager::GetInstance()->Play("error", false, 0.8f);
 		}
 		else if (usedEnergy > energy) {
-			popUpMessage->QueueMessage(&commandBuffer, L"Not enough energy");
+			popUpMessage->ShowMessage(L"Not enough energy");
 			DX9GF::AudioManager::GetInstance()->Play("error", false, 0.8f);
 		}
 		else if (mainBlockCard && !mainBlockCard->IsExecuting()) {
@@ -2911,15 +2916,13 @@ void Demo::IBattleScene::Init()
 			const bool runInitFirst = initBlockCard && !initBlockCard->GetStatementCards().empty();
 			if (!mainBlockCard->HasAllRequiredTargets()
 				|| (runInitFirst && !initBlockCard->HasAllRequiredTargets())) {
-				if (timeSinceLastTargetPopUp >= targetPopUpCooldown) {
-					popUpMessage->QueueMessage(&commandBuffer, L"Some cards are missing a target!");
-					DX9GF::AudioManager::GetInstance()->Play("error", false, 0.8f);
-					timeSinceLastTargetPopUp = 0.f;
-				}
+				// Repeats fold into the line already on screen, so pressing this a dozen times
+				// reads as one message counting up rather than a dozen queued pop-ups.
+				popUpMessage->ShowMessage(L"Some cards are missing a target!");
+				DX9GF::AudioManager::GetInstance()->Play("error", false, 0.8f);
 				return;
 			}
 			commandBuffer.Clear();
-			popUpMessage->Reset(); // Really bad hack, please never do this in a production game lol
 			if (runInitFirst) {
 				// PlayerAttackUpdate picks this up when init finishes and chains into the main
 				// block, after FinishInitBlockExecution has committed and discarded the init cards.
@@ -2949,12 +2952,12 @@ void Demo::IBattleScene::Init()
 		// kicks off survives - but a draw already in flight still has to land first, because the
 		// next Execute would clear the buffer out from under it.
 		if (!queuedToDraw.empty()) {
-			popUpMessage->QueueMessage(&commandBuffer, L"Still drawing");
+			popUpMessage->ShowMessage(L"Still drawing");
 			DX9GF::AudioManager::GetInstance()->Play("error", false, 0.8f);
 			return;
 		}
 		if (usedEnergy > energy) {
-			popUpMessage->QueueMessage(&commandBuffer, L"Not enough energy");
+			popUpMessage->ShowMessage(L"Not enough energy");
 			DX9GF::AudioManager::GetInstance()->Play("error", false, 0.8f);
 			return;
 		}
@@ -2962,11 +2965,8 @@ void Demo::IBattleScene::Init()
 			return;
 		}
 		if (!initBlockCard->HasAllRequiredTargets()) {
-			if (timeSinceLastTargetPopUp >= targetPopUpCooldown) {
-				popUpMessage->QueueMessage(&commandBuffer, L"Some cards are missing a target!");
-				DX9GF::AudioManager::GetInstance()->Play("error", false, 0.8f);
-				timeSinceLastTargetPopUp = 0.f;
-			}
+			popUpMessage->ShowMessage(L"Some cards are missing a target!");
+			DX9GF::AudioManager::GetInstance()->Play("error", false, 0.8f);
 			return;
 		}
 		isExecutingInit = true;
@@ -3183,8 +3183,9 @@ void Demo::IBattleScene::Init()
 	}
 
 	// Init pop up message
-	popUpMessage = std::make_shared<PopUpMessage>(transformManager);
+	popUpMessage = std::make_shared<PopUpMessage>(transformManager, game);
 	popUpMessage->Init(game->GetGraphicsDevice(), &camera);
+	//popUpMessage->ToggleHistory();
 
 	battleMenu = std::make_shared<BattleMenu>(game, transformManager, &uiCamera);
 	battleMenu->Init();
@@ -3238,6 +3239,13 @@ void Demo::IBattleScene::Update(unsigned long long deltaTime)
 	this->camera.Update();
 	this->uiCamera.Update();
 
+	// Ahead of every early return below: the pop-up stack drives its own animation now, and a
+	// menu or a defeat sequence should not freeze messages half way on screen.
+	if (popUpMessage) {
+		popUpMessage->SetCurrentTurn(static_cast<int>(currentTurn));
+		popUpMessage->Update(deltaTime);
+	}
+
 	static float escCooldown = 0.0f;
 	if (escCooldown > 0) escCooldown -= deltaTime;
 
@@ -3258,6 +3266,16 @@ void Demo::IBattleScene::Update(unsigned long long deltaTime)
 		battleMenu->Update(deltaTime);
 		transformManager->UpdateAll();
 		return;
+	}
+
+	static float logCooldown = 0.0f;
+	if (logCooldown > 0) logCooldown -= deltaTime;
+	if (popUpMessage) {
+		if (inpMan->KeyPress(SettingsManager::GetInstance()->GetKeybind("TOGGLE_LOG")) && logCooldown <= 0) {
+			popUpMessage->ToggleHistory();
+			logCooldown = 300.0f;
+		}
+		popUpMessage->UpdateHistory();
 	}
 
 	if (isDefeatSequence) {
@@ -3663,6 +3681,12 @@ void Demo::IBattleScene::DrawUI(unsigned long long deltaTime)
 		if (battleMenu) {
 			battleMenu->Draw(gd, deltaTime);
 			battleMenu->DrawKeyboardReticle(gd, deltaTime);
+		}
+
+		// The log is a read-only overlay, so it yields to the battle menu rather than stacking
+		// on top of it.
+		if (popUpMessage && !(battleMenu && battleMenu->IsOpen())) {
+			popUpMessage->DrawHistory(this->uiCamera, deltaTime);
 		}
 
 		if (isDefeatSequence && defeatElapsedMs >= 1000.f) {
