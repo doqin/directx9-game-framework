@@ -254,6 +254,8 @@ namespace Demo
 			L"- https://freesound.org/s/515736/",
 			L"Coin_C: cabled_mess ",
 			L"- https://freesound.org/s/350871/",
+			L"Text/Dialogue Bleeps: dmochas",
+			L"- https://dmochas-assets.itch.io/dmochas-bleeps-pack",
 			L"Licensed under CC BY 4.0 & Public Domain"
 			});
 		creditsPages.push_back({

@@ -8,6 +8,7 @@ namespace Demo {
         this->worldCamera = camera;
         fontSprite = std::make_shared<DX9GF::FontSprite>(font.get());
         this->drawBuffer = drawBuffer;
+		MapCharacterVoices(characterVoices);
     }
 
     void INPC::Update(unsigned long long deltaTime) {
@@ -54,6 +55,7 @@ namespace Demo {
         DialogueLine line;
         line.name = name;
         line.content = content;
+		line.voiceClip = characterVoices.count(name) ? std::optional<std::string>(characterVoices[name]) : std::nullopt;
         dialogueLines.push_back(line);
     }
 }

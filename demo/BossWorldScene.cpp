@@ -490,7 +490,7 @@ void Demo::BossWorldScene::Update(unsigned long long deltaTime) {
 		auto [sw, sh] = camera.GetScreenResolution();
 		currentConversation = std::make_shared<IConversation>(
 			std::make_shared<DX9GF::FontSprite>(font.get()), sw, sh);
-		currentConversation->AddLine({ .name = L"Treasure Chest", .content = msg });
+		currentConversation->AddLine({ .name = L"Treasure Chest", .content = msg, .voiceClip = std::optional<std::string>("bleep20") });
 		};
 
 	auto inpMan = DX9GF::InputManager::GetInstance();
@@ -601,7 +601,7 @@ void Demo::BossWorldScene::Update(unsigned long long deltaTime) {
 				auto [sw, sh] = camera.GetScreenResolution();
 				currentConversation = std::make_shared<IConversation>(
 					std::make_shared<DX9GF::FontSprite>(font.get()), sw, sh);
-				currentConversation->AddLine({ .name = L"Treasure Chest", .content = msg });
+				currentConversation->AddLine({ .name = L"Treasure Chest", .content = msg, .voiceClip = std::optional<std::string>("bleep20") });
 			}
 		}
 	}

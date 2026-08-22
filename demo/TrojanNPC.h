@@ -22,8 +22,11 @@ namespace Demo {
 		std::vector<DialogueLine> waitingLines;
 		std::vector<DialogueLine> revealLines;
 
-		static void Append(std::vector<DialogueLine>& lines, std::wstring name, std::wstring content);
-
+		void Append(std::vector<DialogueLine>& lines, std::wstring name, std::wstring content);
+		void MapCharacterVoices(std::unordered_map<std::wstring, std::string>& voiceMap) override {
+			voiceMap[L"???"] = "bleep21";
+			voiceMap[L"Trojan"] = "bleep21";
+		}
 	public:
 		TrojanNPC(std::weak_ptr<DX9GF::TransformManager> tm, float x, float y);
 

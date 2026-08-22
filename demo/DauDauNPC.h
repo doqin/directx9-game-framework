@@ -4,6 +4,10 @@
 
 namespace Demo {
     class DauDauNPC : public INPC {
+    private:
+		void MapCharacterVoices(std::unordered_map<std::wstring, std::string>& voiceMap) override {
+			voiceMap[L"DauDau"] = "bleep12";
+		}
     public:
         DauDauNPC(std::weak_ptr<DX9GF::TransformManager> tm, float x, float y);
 

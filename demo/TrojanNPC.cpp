@@ -11,6 +11,7 @@ namespace Demo {
 		DialogueLine line;
 		line.name = std::move(name);
 		line.content = std::move(content);
+		line.voiceClip = characterVoices.count(line.name) ? std::optional<std::string>(characterVoices[line.name]) : std::nullopt;
 		lines.push_back(std::move(line));
 	}
 

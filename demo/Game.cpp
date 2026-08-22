@@ -17,6 +17,8 @@ void Demo::Game::Init()
 
 	auto audio = DX9GF::AudioManager::GetInstance();
 	audio->Init();
+
+	// Load sound effects
 	audio->Load("btn_hover", IDR_WAV_HOVER);
 	audio->Load("btn_click", IDR_WAV_CLICK);
 	audio->Load("open_inv", IDR_WAVE_OPEN_INV);
@@ -75,8 +77,38 @@ void Demo::Game::Init()
 	audio->Load("dialog_voice3", IDR_DIALOG_VOICE3);
 	audio->Load("dialog_voice4", IDR_DIALOG_VOICE4);
 	audio->Load("dialog_voice5", IDR_DIALOG_VOICE5);
-
 	audio->RegisterBank("dialog_voice", { "dialog_voice1", "dialog_voice2", "dialog_voice3", "dialog_voice4", "dialog_voice5" });
+
+	audio->Load("bleep1", IDR_BLEEP1);
+	audio->Load("bleep2", IDR_BLEEP2);
+	audio->Load("bleep3", IDR_BLEEP3);
+	audio->Load("bleep4", IDR_BLEEP4);
+	audio->Load("bleep5", IDR_BLEEP5);
+	audio->Load("bleep6", IDR_BLEEP6);
+	audio->Load("bleep7", IDR_BLEEP7);
+	audio->Load("bleep8", IDR_BLEEP8);
+	audio->Load("bleep9", IDR_BLEEP9);
+	audio->Load("bleep10", IDR_BLEEP10);
+	audio->Load("bleep11", IDR_BLEEP11);
+	audio->Load("bleep12", IDR_BLEEP12);
+	audio->Load("bleep13", IDR_BLEEP13);
+	audio->Load("bleep14", IDR_BLEEP14);
+	audio->Load("bleep15", IDR_BLEEP15);
+	audio->Load("bleep16", IDR_BLEEP16);
+	audio->Load("bleep17", IDR_BLEEP17);
+	audio->Load("bleep18", IDR_BLEEP18);
+	audio->Load("bleep19", IDR_BLEEP19);
+	audio->Load("bleep20", IDR_BLEEP20);
+	audio->Load("bleep21", IDR_BLEEP21);
+	audio->Load("bleep22", IDR_BLEEP22);
+	audio->Load("bleep23", IDR_BLEEP23);
+	audio->Load("bleep24", IDR_BLEEP24);
+	audio->Load("bleep25", IDR_BLEEP25);
+	audio->Load("bleep26", IDR_BLEEP26);
+	audio->Load("bleep27", IDR_BLEEP27);
+	audio->Load("bleep28", IDR_BLEEP28);
+	audio->Load("bleep29", IDR_BLEEP29);
+	audio->Load("bleep30", IDR_BLEEP30);
 
 	audio->Load("power_up1", IDR_POWERUP1);
 	audio->Load("power_up2", IDR_POWERUP2);
@@ -86,7 +118,7 @@ void Demo::Game::Init()
 
 	audio->Load("checkpoint", IDR_CHECKPOINT);
 
-	//load maps
+	//load maps bgm
 	audio->Load("bgm_tutorial", IDR_BGM_TUTORIAL);
 	audio->Load("bgm_secret", IDR_BGM_SECRET);
 	audio->Load("bgm_boss", IDR_BGM_BOSS);

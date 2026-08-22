@@ -22,10 +22,11 @@ namespace Demo {
         std::shared_ptr<DX9GF::FontSprite> fontSprite;
         std::weak_ptr<DX9GF::CommandBuffer> drawBuffer;
 
+        std::unordered_map<std::wstring, std::string> characterVoices = { { L"Player", "bleep8" } }; // Maps character names to voice clip identifiers
         std::vector<DialogueLine> dialogueLines;
         bool isPlayerNear = false;
         const float INTERACTION_DISTANCE = 40.0f;
-
+        virtual void MapCharacterVoices(std::unordered_map<std::wstring, std::string>& voiceMap) = 0;
     public:
         INPC(std::weak_ptr<DX9GF::TransformManager> tm, float x, float y) : DX9GF::IGameObject(tm, x, y), transformManager(tm) {}
         virtual ~INPC() = default;

@@ -36,7 +36,7 @@ void Demo::IConversation::Execute(unsigned long long deltaTime)
 				displayedContent = currentLine.content.substr(0, currentCharIndex);
 				//skip space
 				if (currentLine.content[currentCharIndex - 1] != L' ') {
-					DX9GF::AudioManager::GetInstance()->PlayRandom("dialog_voice", 0.3f);
+					DX9GF::AudioManager::GetInstance()->Play(currentLine.voiceClip.has_value() ? currentLine.voiceClip.value() : "bleep5");
 				}
 			}
 			else {

@@ -381,5 +381,100 @@
     <Media Include="assets\audio\token-spawn-02.wav" />
     <Media Include="assets\audio\token-spawn-03.wav" />
     <Media Include="assets\audio\token-spawn-04.wav" />
+    <Media Include="assets\audio\bleeps\bleep001.wav">
+      <Filter>bleeps</Filter>
+    </Media>
+    <Media Include="assets\audio\bleeps\bleep002.wav">
+      <Filter>bleeps</Filter>
+    </Media>
+    <Media Include="assets\audio\bleeps\bleep003.wav">
+      <Filter>bleeps</Filter>
+    </Media>
+    <Media Include="assets\audio\bleeps\bleep004.wav">
+      <Filter>bleeps</Filter>
+    </Media>
+    <Media Include="assets\audio\bleeps\bleep005.wav">
+      <Filter>bleeps</Filter>
+    </Media>
+    <Media Include="assets\audio\bleeps\bleep006.wav">
+      <Filter>bleeps</Filter>
+    </Media>
+    <Media Include="assets\audio\bleeps\bleep007.wav">
+      <Filter>bleeps</Filter>
+    </Media>
+    <Media Include="assets\audio\bleeps\bleep008.wav">
+      <Filter>bleeps</Filter>
+    </Media>
+    <Media Include="assets\audio\bleeps\bleep009.wav">
+      <Filter>bleeps</Filter>
+    </Media>
+    <Media Include="assets\audio\bleeps\bleep010.wav">
+      <Filter>bleeps</Filter>
+    </Media>
+    <Media Include="assets\audio\bleeps\bleep011.wav">
+      <Filter>bleeps</Filter>
+    </Media>
+    <Media Include="assets\audio\bleeps\bleep012.wav">
+      <Filter>bleeps</Filter>
+    </Media>
+    <Media Include="assets\audio\bleeps\bleep013.wav">
+      <Filter>bleeps</Filter>
+    </Media>
+    <Media Include="assets\audio\bleeps\bleep014.wav">
+      <Filter>bleeps</Filter>
+    </Media>
+    <Media Include="assets\audio\bleeps\bleep015.wav">
+      <Filter>bleeps</Filter>
+    </Media>
+    <Media Include="assets\audio\bleeps\bleep016.wav">
+      <Filter>bleeps</Filter>
+    </Media>
+    <Media Include="assets\audio\bleeps\bleep017.wav">
+      <Filter>bleeps</Filter>
+    </Media>
+    <Media Include="assets\audio\bleeps\bleep018.wav">
+      <Filter>bleeps</Filter>
+    </Media>
+    <Media Include="assets\audio\bleeps\bleep019.wav">
+      <Filter>bleeps</Filter>
+    </Media>
+    <Media Include="assets\audio\bleeps\bleep020.wav">
+      <Filter>bleeps</Filter>
+    </Media>
+    <Media Include="assets\audio\bleeps\bleep021.wav">
+      <Filter>bleeps</Filter>
+    </Media>
+    <Media Include="assets\audio\bleeps\bleep022.wav">
+      <Filter>bleeps</Filter>
+    </Media>
+    <Media Include="assets\audio\bleeps\bleep023.wav">
+      <Filter>bleeps</Filter>
+    </Media>
+    <Media Include="assets\audio\bleeps\bleep024.wav">
+      <Filter>bleeps</Filter>
+    </Media>
+    <Media Include="assets\audio\bleeps\bleep025.wav">
+      <Filter>bleeps</Filter>
+    </Media>
+    <Media Include="assets\audio\bleeps\bleep026.wav">
+      <Filter>bleeps</Filter>
+    </Media>
+    <Media Include="assets\audio\bleeps\bleep027.wav">
+      <Filter>bleeps</Filter>
+    </Media>
+    <Media Include="assets\audio\bleeps\bleep028.wav">
+      <Filter>bleeps</Filter>
+    </Media>
+    <Media Include="assets\audio\bleeps\bleep029.wav">
+      <Filter>bleeps</Filter>
+    </Media>
+    <Media Include="assets\audio\bleeps\bleep030.wav">
+      <Filter>bleeps</Filter>
+    </Media>
+  </ItemGroup>
+  <ItemGroup>
+    <Filter Include="bleeps">
+      <UniqueIdentifier>{5413bfd1-32da-445f-a876-9722d2d2d9f5}</UniqueIdentifier>
+    </Filter>
   </ItemGroup>
 </Project>

@@ -8,6 +8,9 @@ namespace Demo {
 		bool isOpened = false;
 		std::shared_ptr<DX9GF::Texture> openedTexture;
 		std::shared_ptr<DX9GF::AnimatedSprite> openedSprite;
+		void MapCharacterVoices(std::unordered_map<std::wstring, std::string>& voiceMap) override {
+			voiceMap[L"RustyChest"] = "bleep20";
+		}
 	public:
 		RustyChestNPC(std::weak_ptr<DX9GF::TransformManager> tm, float x, float y);
 

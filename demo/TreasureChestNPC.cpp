@@ -54,7 +54,7 @@ namespace Demo {
                 p->GetInventoryItems().AddItem(r.itemID, r.quantity);
             }
             else if (r.type == ChestRewardType::CARD) {
-                p->AddCardToDeck(r.cardSaveID);
+                p->AddCardToInventory(r.cardSaveID);
             }
         }
         return given;
