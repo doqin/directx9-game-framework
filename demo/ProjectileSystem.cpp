@@ -517,8 +517,7 @@ void Demo::ProjectileSystem::Spawn(const std::shared_ptr<Player>& player, const 
 
 	lifetimes.push_back({ desc.delay, 0.f, desc.decayTime });
 
-	const bool destroyOnHit = desc.behavior == ProjectileBehavior::Spiral
-		|| desc.behavior == ProjectileBehavior::Boomerang;
+	const bool destroyOnHit = desc.behavior == ProjectileBehavior::Boomerang;
 	combats.push_back({
 	desc.damage, desc.colliderWidth, desc.colliderHeight, destroyOnHit,
 	desc.hasStatusEffect, desc.randomizeStatusEffect,

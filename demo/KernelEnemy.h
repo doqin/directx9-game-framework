@@ -1,4 +1,4 @@
-﻿#pragma once
+#pragma once
 #include "IEnemy.h"
 #include "DX9GFExtras.h"
 #include <utility>
@@ -19,6 +19,8 @@ namespace Demo {
 		// lines it picked so it can work out which cell the player is boxed into, and
 		// whether that cell is currently being telegraphed.
 		bool telegraphingCell = false;
+		float badSectorSpinDirection = 1.f;
+		std::vector<float> badSectorArmAngles;
 		std::vector<float> laserVerticals;
 		std::vector<float> laserHorizontals;
 
