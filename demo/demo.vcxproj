@@ -596,6 +596,9 @@
     <Image Include="assets\Keyepro-Sheet.png">
       <DeploymentContent>true</DeploymentContent>
     </Image>
+    <Image Include="assets\mine.png">
+      <DeploymentContent>true</DeploymentContent>
+    </Image>
     <Image Include="assets\minion-Sheet.png">
       <DeploymentContent>true</DeploymentContent>
     </Image>

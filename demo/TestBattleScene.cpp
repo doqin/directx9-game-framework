@@ -8,6 +8,7 @@
 #include "KeyeEnemy.h"
 #include "KeyeproEnemy.h"
 #include "TrojanEnemy.h"
+#include "KernelEnemy.h"
 void Demo::TestBattleScene::Init()
 {
 	IBattleScene::Init();
@@ -71,10 +72,15 @@ void Demo::TestBattleScene::Init()
 	//keyeEnemy->SetOnRequestEnemyCard([this](std::shared_ptr<IEnemy> enemy) { CreateEnemyCard(enemy); });
 	//enemies.push_back(keyeEnemy);
 
-	auto trojanEnemy = std::make_shared<TrojanEnemy>(transformManager, 350.f);
-	trojanEnemy->Init(game->GetGraphicsDevice(), &camera);
-	trojanEnemy->SetOnRequestEnemyCard([this](std::shared_ptr<IEnemy> enemy) { CreateEnemyCard(enemy); });
-	enemies.push_back(trojanEnemy);
+	//auto trojanEnemy = std::make_shared<TrojanEnemy>(transformManager, 350.f);
+	//trojanEnemy->Init(game->GetGraphicsDevice(), &camera);
+	//trojanEnemy->SetOnRequestEnemyCard([this](std::shared_ptr<IEnemy> enemy) { CreateEnemyCard(enemy); });
+	//enemies.push_back(trojanEnemy);
+
+	auto kernelEnemy = std::make_shared<KernelEnemy>(transformManager, 100.f);
+	kernelEnemy->Init(game->GetGraphicsDevice(), &camera);
+	kernelEnemy->SetOnRequestEnemyCard([this](std::shared_ptr<IEnemy> enemy) { CreateEnemyCard(enemy); });
+	enemies.push_back(kernelEnemy);
 
 	//// Heavy Strike
 	//auto heavy = std::make_shared<HeavyStrikeCard>(transformManager, -260.f, -80.f);

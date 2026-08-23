@@ -259,11 +259,12 @@ Demo::ProjectileDesc& Demo::ProjectileDesc::SetHoming(float turnSpeed)
 	return *this;
 }
 
-Demo::ProjectileDesc& Demo::ProjectileDesc::SetWave(float amplitude, float frequency)
+Demo::ProjectileDesc& Demo::ProjectileDesc::SetWave(float amplitude, float frequency, bool zigzag)
 {
 	this->behavior = ProjectileBehavior::SineWave;
 	this->amplitude = amplitude;
 	this->frequency = frequency;
+	this->zigzag = zigzag;
 	return *this;
 }
 
@@ -504,6 +505,7 @@ void Demo::ProjectileSystem::Spawn(const std::shared_ptr<Player>& player, const 
 	motion.turnSpeed = desc.turnSpeed;
 	motion.amplitude = desc.amplitude;
 	motion.frequency = desc.frequency;
+	motion.zigzag = desc.zigzag;
 	motion.baseX = desc.x;
 	motion.baseY = desc.y;
 	motion.radius = 0.f;
@@ -532,7 +534,8 @@ void Demo::ProjectileSystem::Spawn(const std::shared_ptr<Player>& player, const 
 	// Spiral and boomerang projectiles stayed hidden until their delay
 	// expired; the other behaviors were always drawn.
 	render.visibleDuringDelay = desc.behavior != ProjectileBehavior::Spiral
-		&& desc.behavior != ProjectileBehavior::Boomerang;
+		//&& desc.behavior != ProjectileBehavior::Boomerang
+		;
 	renders.push_back(render);
 
 	SplitComponent split{};
@@ -828,11 +831,33 @@ void Demo::ProjectileSystem::Update(unsigned long long deltaTime)
 				motion.baseY += motion.trajectory.y * motion.velocity * dtSec;
 				D3DXVECTOR2 perpendicular(-motion.trajectory.y, motion.trajectory.x);
 				float moveTime = life.elapsed - life.delay;
-				float waveOffset = std::sin(moveTime * motion.frequency) * motion.amplitude;
+				float waveOffset = 0.f;
+					if (motion.zigzag) {
+						if (motion.frequency > floatEpsilon && motion.amplitude > floatEpsilon) {
+							float phase = std::fmod(moveTime * motion.frequency, 1.f);
+							if (phase < 0.f) {
+								phase += 1.f;
+							}
+							float triangle = 1.f - 4.f * std::abs(phase - 0.5f);
+							waveOffset = triangle * motion.amplitude;
+						}
+					}
+					else {
+						waveOffset = std::sin(moveTime * motion.frequency) * motion.amplitude;
+					}
 				tr.x = motion.baseX + perpendicular.x * waveOffset;
 				tr.y = motion.baseY + perpendicular.y * waveOffset;
 
-				float waveDerivative = std::cos(moveTime * motion.frequency) * motion.frequency * motion.amplitude;
+				float waveDerivative = 0.f;
+					if (motion.zigzag) {
+						if (motion.frequency > floatEpsilon && motion.amplitude > floatEpsilon) {
+							waveDerivative = (std::fmod(moveTime * motion.frequency, 1.f) < 0.5f ? 1.f : -1.f)
+								* 4.f * motion.amplitude * motion.frequency;
+						}
+					}
+					else {
+						waveDerivative = std::cos(moveTime * motion.frequency) * motion.frequency * motion.amplitude;
+					}
 				D3DXVECTOR2 instantaneousVelocity = motion.trajectory * motion.velocity + perpendicular * waveDerivative;
 				if (D3DXVec2LengthSq(&instantaneousVelocity) > 0.0001f) {
 					tr.rotation = std::atan2(instantaneousVelocity.y, instantaneousVelocity.x);

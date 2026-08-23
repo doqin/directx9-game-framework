@@ -50,9 +50,10 @@ namespace Demo {
 		float damage = 0.f;
 		// Homing
 		float turnSpeed = 0.f;
-		// Sine wave
+		// Sine wave / zigzag
 		float amplitude = 0.f;
 		float frequency = 0.f;
+			bool zigzag = false;
 		// Spiral
 		float initialAngle = 0.f;
 		float radialSpeed = 0.f;
@@ -130,7 +131,7 @@ namespace Demo {
 		ProjectileDesc& SetDecayTime(float decayTime);
 		ProjectileDesc& SetDamage(float damage);
 		ProjectileDesc& SetHoming(float turnSpeed);
-		ProjectileDesc& SetWave(float amplitude, float frequency);
+		ProjectileDesc& SetWave(float amplitude, float frequency, bool zigzag = false);
 		ProjectileDesc& SetSpiralParams(float initialAngle, float radialSpeed, float angularVelocity);
 		ProjectileDesc& SetInitialVelocity(float velocity);
 		ProjectileDesc& SetReturnAcceleration(float acceleration);
@@ -220,6 +221,7 @@ namespace Demo {
 			float velocity;
 			float turnSpeed;
 			float amplitude, frequency;
+				bool zigzag = false;
 			float baseX, baseY;      // sine wave carrier / spiral origin
 			float radius, angle;     // spiral state
 			float radialSpeed, angularVelocity;

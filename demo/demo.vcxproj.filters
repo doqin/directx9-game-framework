@@ -275,6 +275,7 @@
     <Image Include="assets\Trojan_outside.png" />
     <Image Include="assets\energy-token.png" />
     <Image Include="assets\gold-token.png" />
+    <Image Include="assets\mine.png" />
   </ItemGroup>
   <ItemGroup>
     <Font Include="assets\arcade-among-2-r46pv.ttf" />

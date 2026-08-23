@@ -18,7 +18,7 @@ namespace Demo {
 		sprite->SetScale(2.f);
 
 		mineTexture = std::make_shared<DX9GF::Texture>(graphicsDevice);
-		mineTexture->LoadTexture(L"assets/kernelprojectile.png");
+		mineTexture->LoadTexture(L"assets/mine.png");
 
 		bulletTexture = std::make_shared<DX9GF::Texture>(graphicsDevice);
 		bulletTexture->LoadTexture(L"assets/kernelprojectile.png");
@@ -88,54 +88,60 @@ namespace Demo {
 		this->player = player;
 		float baseDamage = 5.f;
 
-		int patternId = GetSmartRandomPattern(1, 3);
+		int patternId = GetSmartRandomPattern(1, 4);
 		if (patternId == 1) PatternDefrag(baseDamage);
 		else if (patternId == 2) PatternPing999(baseDamage);
+		else if (patternId == 3) PatternZigzag(baseDamage);
 		else PatternBadSector(baseDamage);
 	}
 
 	void KernelEnemy::PatternDefrag(float baseDamage) {
 		struct MineData { float x, y; bool isCross; };
 		std::vector<MineData> mines;
-		const int MINE_COUNT = RNG::Range(3, 5);
+		constexpr int WAVE_COUNT = 5;
 
-		for (int i = 0; i < MINE_COUNT; ++i) {
-			mines.push_back({ RNG::Range(-100.f, 100.f), RNG::Range(-100.f, 100.f), RNG::Range(0, 1) == 0 });
-		}
+		for (int wave = 0; wave < WAVE_COUNT; ++wave) {
+			const int MINE_COUNT = RNG::Range(3, 5);
 
-		commandBuffer.PushCommand(std::make_shared<DX9GF::CustomCommand>([this, mines](auto markFinished) {
-			if (auto p = this->player.lock()) {
-				for (auto& m : mines) {
-					projectiles.Spawn(p, ProjectileDesc(mineTexture.get(), 8, 8, 0, 0, m.x, m.y).SetVelocity(0.f).SetDecayTime(1.5f));
-				}
+			for (int i = 0; i < MINE_COUNT; ++i) {
+				mines.push_back({ RNG::Range(-100.f, 100.f), RNG::Range(-100.f, 100.f), RNG::Range(0, 1) == 0 });
 			}
-			markFinished();
-			}));
 
-		commandBuffer.PushCommand(std::make_shared<DX9GF::DelayCommand>(1.5f));
-
-		commandBuffer.PushCommand(std::make_shared<DX9GF::CustomCommand>([this, mines, baseDamage](auto markFinished) {
-			if (auto p = this->player.lock()) {
-				float finalDamage = this->CalculateOutgoingDamage(baseDamage);
-
-				for (auto& m : mines) {
-					float angles[4];
-					if (m.isCross) { angles[0] = 0; angles[1] = PI / 2; angles[2] = PI; angles[3] = 3 * PI / 2; }
-					else { angles[0] = PI / 4; angles[1] = 3 * PI / 4; angles[2] = 5 * PI / 4; angles[3] = 7 * PI / 4; }
-
-					for (int i = 0; i < 4; ++i) {
-						D3DXVECTOR2 dir(cos(angles[i]), sin(angles[i]));
-						projectiles.Spawn(p, ProjectileDesc(bulletTexture.get(), 8, 8, 16, 16, m.x, m.y)
-							.SetTrajectory(dir).SetVelocity(250.f).SetDamage(finalDamage).SetDecayTime(3.f));
+			commandBuffer.PushCommand(std::make_shared<DX9GF::CustomCommand>([this, mines](auto markFinished) {
+				if (auto p = this->player.lock()) {
+					for (auto& m : mines) {
+						projectiles.Spawn(p, ProjectileDesc(mineTexture.get(), 8, 8, 0, 0, m.x, m.y).SetVelocity(0.f).SetDecayTime(1.5f));
 					}
 				}
-			}
-			markFinished();
-			}));
+				markFinished();
+				}));
+
+			commandBuffer.PushCommand(std::make_shared<DX9GF::DelayCommand>(1.5f));
+
+			commandBuffer.PushCommand(std::make_shared<DX9GF::CustomCommand>([this, mines, baseDamage](auto markFinished) {
+				if (auto p = this->player.lock()) {
+					float finalDamage = this->CalculateOutgoingDamage(baseDamage);
+
+					for (auto& m : mines) {
+						float angles[4];
+						if (m.isCross) { angles[0] = 0; angles[1] = PI / 2; angles[2] = PI; angles[3] = 3 * PI / 2; }
+						else { angles[0] = PI / 4; angles[1] = 3 * PI / 4; angles[2] = 5 * PI / 4; angles[3] = 7 * PI / 4; }
+
+						for (int i = 0; i < 4; ++i) {
+							D3DXVECTOR2 dir(cos(angles[i]), sin(angles[i]));
+							projectiles.Spawn(p, ProjectileDesc(bulletTexture.get(), 8, 8, 16, 16, m.x, m.y)
+								.SetTrajectory(dir).SetVelocity(100.f).SetDamage(finalDamage).SetDecayTime(5.f));
+						}
+					}
+				}
+				markFinished();
+				}));
+			commandBuffer.PushCommand(std::make_shared<DX9GF::DelayCommand>(.7f));
+		}
 	}
 
 	void KernelEnemy::PatternPing999(float baseDamage) {
-		const int WAVE_COUNT = 6;
+		const int WAVE_COUNT = 20;
 
 		for (int w = 0; w < WAVE_COUNT; ++w) {
 			commandBuffer.PushCommand(std::make_shared<DX9GF::CustomCommand>([this, baseDamage](auto markFinished) {
@@ -155,21 +161,59 @@ namespace Demo {
 						float bx = startX + (i * baseSpacing) + jitter;
 
 						projectiles.Spawn(p, ProjectileDesc(bulletTexture.get(), 8, 8, 16, 16, bx, -150.f)
-							.SetTrajectory(D3DXVECTOR2(0, 1))
+							.SetDelay(1.f)
+							.SetTrajectory(D3DXVECTOR2(0.f, -1.f))
 							.SetVelocity(420.f)
-							.SetReturnAcceleration(290.f)
+							.SetReturnAcceleration(800.f)
 							.SetDamage(finalDamage)
 							.SetDecayTime(4.0f));
 					}
 				}
 				markFinished();
 				}));
-			commandBuffer.PushCommand(std::make_shared<DX9GF::DelayCommand>(1.5f));
+			commandBuffer.PushCommand(std::make_shared<DX9GF::DelayCommand>(.5f));
 		}
 	}
 
-	// Boxes the player in with the beams that are up and hands back the middle of that
-	// cell, clamped to the arena; both the reticle and the spiral spawn point use it.
+	// Glitch sweep sends rows of zigzagging shots from alternating sides.
+	//
+	void KernelEnemy::PatternZigzag(float baseDamage) {
+		const int WAVE_COUNT = 6;
+		const int BULLETS_PER_WAVE = 10;
+		const int STEP_Y = 64;
+		const float START_Y = -(BULLETS_PER_WAVE - 1) * STEP_Y * 0.5f;
+		std::shared_ptr<int> offsetY = std::make_shared<int>(0);
+		const int OFFSET_STEP = 8;
+
+		for (int wave = 0; wave < WAVE_COUNT; ++wave) {
+			const bool fromLeft = (wave % 2 == 0);
+			commandBuffer.PushCommand(std::make_shared<DX9GF::CustomCommand>([this, baseDamage, fromLeft, START_Y, STEP_Y, BULLETS_PER_WAVE, offsetY, OFFSET_STEP](auto markFinished) {
+				if (auto p = this->player.lock()) {
+					float finalDamage = this->CalculateOutgoingDamage(baseDamage);
+					float spawnX = fromLeft ? -ARENA_HALF * 4.f : ARENA_HALF * 4.f;
+					D3DXVECTOR2 dir = fromLeft ? D3DXVECTOR2(1, 0) : D3DXVECTOR2(-1, 0);
+
+					for (int i = 0; i < BULLETS_PER_WAVE; ++i) {
+						float spawnY = START_Y + STEP_Y * static_cast<float>(i) + *offsetY;
+						float zigzagAmplitude = 100.f;
+						float zigzagFrequency = 0.3f;
+
+						projectiles.Spawn(p, ProjectileDesc(bulletTexture.get(), 8, 8, 16, 16, spawnX, spawnY)
+							.SetTrajectory(dir)
+							.SetVelocity(120.f)
+							.SetWave(zigzagAmplitude, zigzagFrequency, true)
+							.SetDecayTime(8.5f)
+							.SetDamage(finalDamage));
+					}
+					*offsetY += OFFSET_STEP;
+					*offsetY %= STEP_Y;
+				}
+				markFinished();
+			}));
+			commandBuffer.PushCommand(std::make_shared<DX9GF::DelayCommand>(0.5f));
+		}
+	}
+
 	std::pair<float, float> KernelEnemy::GetSafeCellCenter(float playerX, float playerY) const {
 		float minX = -ARENA_HALF, maxX = ARENA_HALF;
 		float minY = -ARENA_HALF, maxY = ARENA_HALF;

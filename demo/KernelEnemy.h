@@ -30,6 +30,7 @@ namespace Demo {
 
 		void PatternDefrag(float projDamage);
 		void PatternPing999(float projDamage);
+		void PatternZigzag(float projDamage);
 		void PatternBadSector(float projDamage);
 
 	public:
