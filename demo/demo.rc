@@ -225,6 +225,66 @@ IDR_TOKEN_SPAWN3        WAVE                    "assets\\audio\\token-spawn-03.w
 
 IDR_TOKEN_SPAWN4        WAVE                    "assets\\audio\\token-spawn-04.wav"
 
+IDR_BLEEP1              WAVE                    "assets\\audio\\bleeps\\bleep001.wav"
+
+IDR_BLEEP2              WAVE                    "assets\\audio\\bleeps\\bleep002.wav"
+
+IDR_BLEEP3              WAVE                    "assets\\audio\\bleeps\\bleep003.wav"
+
+IDR_BLEEP4              WAVE                    "assets\\audio\\bleeps\\bleep004.wav"
+
+IDR_BLEEP5              WAVE                    "assets\\audio\\bleeps\\bleep005.wav"
+
+IDR_BLEEP6              WAVE                    "assets\\audio\\bleeps\\bleep006.wav"
+
+IDR_BLEEP7              WAVE                    "assets\\audio\\bleeps\\bleep007.wav"
+
+IDR_BLEEP8              WAVE                    "assets\\audio\\bleeps\\bleep008.wav"
+
+IDR_BLEEP9              WAVE                    "assets\\audio\\bleeps\\bleep009.wav"
+
+IDR_BLEEP10             WAVE                    "assets\\audio\\bleeps\\bleep010.wav"
+
+IDR_BLEEP11             WAVE                    "assets\\audio\\bleeps\\bleep011.wav"
+
+IDR_BLEEP12             WAVE                    "assets\\audio\\bleeps\\bleep012.wav"
+
+IDR_BLEEP13             WAVE                    "assets\\audio\\bleeps\\bleep013.wav"
+
+IDR_BLEEP14             WAVE                    "assets\\audio\\bleeps\\bleep014.wav"
+
+IDR_BLEEP15             WAVE                    "assets\\audio\\bleeps\\bleep015.wav"
+
+IDR_BLEEP16             WAVE                    "assets\\audio\\bleeps\\bleep016.wav"
+
+IDR_BLEEP17             WAVE                    "assets\\audio\\bleeps\\bleep017.wav"
+
+IDR_BLEEP18             WAVE                    "assets\\audio\\bleeps\\bleep018.wav"
+
+IDR_BLEEP19             WAVE                    "assets\\audio\\bleeps\\bleep019.wav"
+
+IDR_BLEEP20             WAVE                    "assets\\audio\\bleeps\\bleep020.wav"
+
+IDR_BLEEP21             WAVE                    "assets\\audio\\bleeps\\bleep021.wav"
+
+IDR_BLEEP22             WAVE                    "assets\\audio\\bleeps\\bleep022.wav"
+
+IDR_BLEEP23             WAVE                    "assets\\audio\\bleeps\\bleep023.wav"
+
+IDR_BLEEP24             WAVE                    "assets\\audio\\bleeps\\bleep024.wav"
+
+IDR_BLEEP25             WAVE                    "assets\\audio\\bleeps\\bleep025.wav"
+
+IDR_BLEEP26             WAVE                    "assets\\audio\\bleeps\\bleep026.wav"
+
+IDR_BLEEP27             WAVE                    "assets\\audio\\bleeps\\bleep027.wav"
+
+IDR_BLEEP28             WAVE                    "assets\\audio\\bleeps\\bleep028.wav"
+
+IDR_BLEEP29             WAVE                    "assets\\audio\\bleeps\\bleep029.wav"
+
+IDR_BLEEP30             WAVE                    "assets\\audio\\bleeps\\bleep030.wav"
+
 #endif    // English (United States) resources
 /////////////////////////////////////////////////////////////////////////////
 

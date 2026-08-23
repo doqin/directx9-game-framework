@@ -7,6 +7,70 @@
 const float PI = 3.14159265359f;
 // Half-width of the bullet-hell arena the patterns play out in.
 const float ARENA_HALF = 128.f;
+const float BAD_SECTOR_RING_RADIUS = 32.f;
+const float BAD_SECTOR_ARM_LENGTH = 24.f;
+const float BAD_SECTOR_ARROW_HEAD_LENGTH = 16.f;
+const float BAD_SECTOR_ARROW_HEAD_WIDTH = 8.f;
+const int BAD_SECTOR_ARC_SEGMENTS = 16;
+
+namespace {
+	void DrawSpiralSpinIndicator(DX9GF::GraphicsDevice* graphicsDevice, DX9GF::Camera* camera, float centerX, float centerY, float radius, float spinDirection, D3DCOLOR color) {
+		if (graphicsDevice == nullptr || camera == nullptr || radius <= 0.f) {
+			return;
+		}
+
+		const float tick = static_cast<float>(GetTickCount64()) * 0.001f;
+		const float spinVelocity = 4.f; // radians per second
+		float arcSpan = PI * 1.5f;
+		// Spin animation is based on the current time, so the arc rotates around the center point.
+		float startAngle = spinDirection >= 0.f ? -PI * 0.15f + tick * spinVelocity : PI * 0.85f - tick * spinVelocity;
+		float endAngle = startAngle + spinDirection * arcSpan;
+		float prevX = centerX + std::cos(startAngle) * radius;
+		float prevY = centerY + std::sin(startAngle) * radius;
+
+		// Drawing the arc
+		for (int i = 1; i <= BAD_SECTOR_ARC_SEGMENTS; ++i) {
+			float t = static_cast<float>(i) / BAD_SECTOR_ARC_SEGMENTS;
+			float angle = startAngle + (endAngle - startAngle) * t;
+			float x = centerX + std::cos(angle) * radius;
+			float y = centerY + std::sin(angle) * radius;
+			graphicsDevice->DrawLine(*camera, prevX, prevY, x, y, color, 2.5f);
+			prevX = x;
+			prevY = y;
+		}
+
+		// Drawing the arrowhead at the end of the arc
+		float tipX = centerX + std::cos(endAngle) * radius;
+		float tipY = centerY + std::sin(endAngle) * radius;
+		float tangentX = -std::sin(endAngle) * spinDirection;
+		float tangentY = std::cos(endAngle) * spinDirection;
+		float spreadX = std::cos(endAngle);
+		float spreadY = std::sin(endAngle);
+		float leftX = tipX - tangentX * BAD_SECTOR_ARROW_HEAD_LENGTH + spreadX * (BAD_SECTOR_ARROW_HEAD_WIDTH * 0.5f);
+		float leftY = tipY - tangentY * BAD_SECTOR_ARROW_HEAD_LENGTH + spreadY * (BAD_SECTOR_ARROW_HEAD_WIDTH * 0.5f);
+		float rightX = tipX - tangentX * BAD_SECTOR_ARROW_HEAD_LENGTH - spreadX * (BAD_SECTOR_ARROW_HEAD_WIDTH * 0.5f);
+		float rightY = tipY - tangentY * BAD_SECTOR_ARROW_HEAD_LENGTH - spreadY * (BAD_SECTOR_ARROW_HEAD_WIDTH * 0.5f);
+
+		graphicsDevice->DrawLine(*camera, tipX, tipY, leftX, leftY, color, 2.5f);
+		graphicsDevice->DrawLine(*camera, tipX, tipY, rightX, rightY, color, 2.5f);
+	}
+
+	void DrawBadSectorArmPreview(DX9GF::GraphicsDevice* graphicsDevice, DX9GF::Camera* camera, float centerX, float centerY, float radius, const std::vector<float>& armAngles, float spinDirection, D3DCOLOR color) {
+		if (graphicsDevice == nullptr || camera == nullptr || radius <= 0.f) {
+			return;
+		}
+
+		for (float armAngle : armAngles) {
+			float armEndX = centerX + std::cos(armAngle) * radius;
+			float armEndY = centerY + std::sin(armAngle) * radius;
+			graphicsDevice->DrawLine(*camera, centerX, centerY, armEndX, armEndY, color, 2.5f);
+
+			float tangentX = -std::sin(armAngle) * spinDirection;
+			float tangentY = std::cos(armAngle) * spinDirection;
+			graphicsDevice->DrawLine(*camera, armEndX, armEndY, armEndX + tangentX * 6.f, armEndY + tangentY * 6.f, color, 2.f);
+		}
+	}
+}
 
 namespace Demo {
 
@@ -18,7 +82,7 @@ namespace Demo {
 		sprite->SetScale(2.f);
 
 		mineTexture = std::make_shared<DX9GF::Texture>(graphicsDevice);
-		mineTexture->LoadTexture(L"assets/kernelprojectile.png");
+		mineTexture->LoadTexture(L"assets/mine.png");
 
 		bulletTexture = std::make_shared<DX9GF::Texture>(graphicsDevice);
 		bulletTexture->LoadTexture(L"assets/kernelprojectile.png");
@@ -34,12 +98,24 @@ namespace Demo {
 				auto [px, py] = p->GetWorldPosition();
 				auto [centerX, centerY] = GetSafeCellCenter(px, py);
 
-				float targetAlphaMult = sin(timeSinceStart * 0.04f) * 0.5f + 0.5f;
-				D3DCOLOR targetColor = D3DCOLOR_ARGB(static_cast<int>(200 * targetAlphaMult), 255, 50, 50);
+				const float BLINKING_PERIOD = 1.5f;
+				const float minAlpha = 0.75f;
+				const float maxAlpha = 1.f;
+				double progress = std::fmod(timeSinceStart / 1000.f, BLINKING_PERIOD) / BLINKING_PERIOD;
+				if (progress < 0.0) progress += 1.0;
+				double sin_value = std::sin(progress * 2.0 * PI);
+				double normalized = (sin_value + 1.0) / 2.0;
+				float targetAlphaMult = minAlpha + normalized * (maxAlpha - minAlpha);
+				//D3DCOLOR targetColor = D3DCOLOR_ARGB(static_cast<int>(200 * targetAlphaMult), 255, 50, 50);
+				D3DCOLOR telegraphColor = D3DCOLOR_ARGB(static_cast<int>(170 * targetAlphaMult), 255, 190, 190);
+				D3DCOLOR armColor = D3DCOLOR_ARGB(static_cast<int>(190 * targetAlphaMult), 255, 230, 110);
 
 				graphicsDevice->SetAlphaBlending(true);
-				graphicsDevice->DrawRectangle(*camera, centerX - 8.f, centerY - 8.f, 16.f, 16.f, targetColor, true);
-				graphicsDevice->DrawRectangle(*camera, centerX - 16.f, centerY - 16.f, 32.f, 32.f, targetColor, false);
+				//graphicsDevice->DrawRectangle(*camera, centerX - 8.f, centerY - 8.f, 16.f, 16.f, targetColor, true);
+				//graphicsDevice->DrawRectangle(*camera, centerX - 16.f, centerY - 16.f, 32.f, 32.f, targetColor, false);
+				//graphicsDevice->DrawEllipse(*camera, centerX - BAD_SECTOR_RING_RADIUS, centerY - BAD_SECTOR_RING_RADIUS, BAD_SECTOR_RING_RADIUS * 2.f, BAD_SECTOR_RING_RADIUS * 2.f, telegraphColor, false);
+				DrawSpiralSpinIndicator(graphicsDevice, camera, centerX, centerY, BAD_SECTOR_RING_RADIUS, badSectorSpinDirection, telegraphColor);
+				DrawBadSectorArmPreview(graphicsDevice, camera, centerX, centerY, BAD_SECTOR_ARM_LENGTH, badSectorArmAngles, badSectorSpinDirection, armColor);
 				graphicsDevice->SetAlphaBlending(false);
 			}
 		}
@@ -83,59 +159,65 @@ namespace Demo {
 	}
 
 	void KernelEnemy::StartAttack(std::shared_ptr<Player> player, std::vector<std::shared_ptr<IEnemy>>* enemies, std::shared_ptr<PopUpMessage> popUpMessage, DX9GF::GraphicsDevice* graphicsDevice, DX9GF::Camera* camera, int currentTurn) {
-		(void)enemies; (void)popUpMessage; (void)graphicsDevice; (void)camera;
+		(void)enemies; (void)popUpMessage; (void)graphicsDevice; (void)camera; (void)currentTurn;
 
 		this->player = player;
 		float baseDamage = 5.f;
 
-		int patternId = GetSmartRandomPattern(1, 3);
+		int patternId = GetSmartRandomPattern(1, 4);
 		if (patternId == 1) PatternDefrag(baseDamage);
 		else if (patternId == 2) PatternPing999(baseDamage);
+		else if (patternId == 3) PatternZigzag(baseDamage);
 		else PatternBadSector(baseDamage);
 	}
 
 	void KernelEnemy::PatternDefrag(float baseDamage) {
 		struct MineData { float x, y; bool isCross; };
 		std::vector<MineData> mines;
-		const int MINE_COUNT = RNG::Range(3, 5);
+		constexpr int WAVE_COUNT = 5;
 
-		for (int i = 0; i < MINE_COUNT; ++i) {
-			mines.push_back({ RNG::Range(-100.f, 100.f), RNG::Range(-100.f, 100.f), RNG::Range(0, 1) == 0 });
-		}
+		for (int wave = 0; wave < WAVE_COUNT; ++wave) {
+			const int MINE_COUNT = RNG::Range(3, 5);
 
-		commandBuffer.PushCommand(std::make_shared<DX9GF::CustomCommand>([this, mines](auto markFinished) {
-			if (auto p = this->player.lock()) {
-				for (auto& m : mines) {
-					projectiles.Spawn(p, ProjectileDesc(mineTexture.get(), 8, 8, 0, 0, m.x, m.y).SetVelocity(0.f).SetDecayTime(1.5f));
-				}
+			for (int i = 0; i < MINE_COUNT; ++i) {
+				mines.push_back({ RNG::Range(-100.f, 100.f), RNG::Range(-100.f, 100.f), RNG::Range(0, 1) == 0 });
 			}
-			markFinished();
-			}));
 
-		commandBuffer.PushCommand(std::make_shared<DX9GF::DelayCommand>(1.5f));
-
-		commandBuffer.PushCommand(std::make_shared<DX9GF::CustomCommand>([this, mines, baseDamage](auto markFinished) {
-			if (auto p = this->player.lock()) {
-				float finalDamage = this->CalculateOutgoingDamage(baseDamage);
-
-				for (auto& m : mines) {
-					float angles[4];
-					if (m.isCross) { angles[0] = 0; angles[1] = PI / 2; angles[2] = PI; angles[3] = 3 * PI / 2; }
-					else { angles[0] = PI / 4; angles[1] = 3 * PI / 4; angles[2] = 5 * PI / 4; angles[3] = 7 * PI / 4; }
-
-					for (int i = 0; i < 4; ++i) {
-						D3DXVECTOR2 dir(cos(angles[i]), sin(angles[i]));
-						projectiles.Spawn(p, ProjectileDesc(bulletTexture.get(), 8, 8, 16, 16, m.x, m.y)
-							.SetTrajectory(dir).SetVelocity(250.f).SetDamage(finalDamage).SetDecayTime(3.f));
+			commandBuffer.PushCommand(std::make_shared<DX9GF::CustomCommand>([this, mines](auto markFinished) {
+				if (auto p = this->player.lock()) {
+					for (auto& m : mines) {
+						projectiles.Spawn(p, ProjectileDesc(mineTexture.get(), 8, 8, 0, 0, m.x, m.y).SetVelocity(0.f).SetDecayTime(1.5f));
 					}
 				}
-			}
-			markFinished();
-			}));
+				markFinished();
+				}));
+
+			commandBuffer.PushCommand(std::make_shared<DX9GF::DelayCommand>(1.5f));
+
+			commandBuffer.PushCommand(std::make_shared<DX9GF::CustomCommand>([this, mines, baseDamage](auto markFinished) {
+				if (auto p = this->player.lock()) {
+					float finalDamage = this->CalculateOutgoingDamage(baseDamage);
+
+					for (auto& m : mines) {
+						float angles[4];
+						if (m.isCross) { angles[0] = 0; angles[1] = PI / 2; angles[2] = PI; angles[3] = 3 * PI / 2; }
+						else { angles[0] = PI / 4; angles[1] = 3 * PI / 4; angles[2] = 5 * PI / 4; angles[3] = 7 * PI / 4; }
+
+						for (int i = 0; i < 4; ++i) {
+							D3DXVECTOR2 dir(cos(angles[i]), sin(angles[i]));
+							projectiles.Spawn(p, ProjectileDesc(bulletTexture.get(), 8, 8, 16, 16, m.x, m.y)
+								.SetTrajectory(dir).SetVelocity(100.f).SetDamage(finalDamage).SetDecayTime(5.f));
+						}
+					}
+				}
+				markFinished();
+				}));
+			commandBuffer.PushCommand(std::make_shared<DX9GF::DelayCommand>(.7f));
+		}
 	}
 
 	void KernelEnemy::PatternPing999(float baseDamage) {
-		const int WAVE_COUNT = 6;
+		const int WAVE_COUNT = 20;
 
 		for (int w = 0; w < WAVE_COUNT; ++w) {
 			commandBuffer.PushCommand(std::make_shared<DX9GF::CustomCommand>([this, baseDamage](auto markFinished) {
@@ -155,21 +237,59 @@ namespace Demo {
 						float bx = startX + (i * baseSpacing) + jitter;
 
 						projectiles.Spawn(p, ProjectileDesc(bulletTexture.get(), 8, 8, 16, 16, bx, -150.f)
-							.SetTrajectory(D3DXVECTOR2(0, 1))
+							.SetDelay(1.f)
+							.SetTrajectory(D3DXVECTOR2(0.f, -1.f))
 							.SetVelocity(420.f)
-							.SetReturnAcceleration(290.f)
+							.SetReturnAcceleration(800.f)
 							.SetDamage(finalDamage)
 							.SetDecayTime(4.0f));
 					}
 				}
 				markFinished();
 				}));
-			commandBuffer.PushCommand(std::make_shared<DX9GF::DelayCommand>(1.5f));
+			commandBuffer.PushCommand(std::make_shared<DX9GF::DelayCommand>(.5f));
 		}
 	}
 
-	// Boxes the player in with the beams that are up and hands back the middle of that
-	// cell, clamped to the arena; both the reticle and the spiral spawn point use it.
+	// Glitch sweep sends rows of zigzagging shots from alternating sides.
+	//
+	void KernelEnemy::PatternZigzag(float baseDamage) {
+		const int WAVE_COUNT = 6;
+		const int BULLETS_PER_WAVE = 10;
+		const int STEP_Y = 64;
+		const float START_Y = -(BULLETS_PER_WAVE - 1) * STEP_Y * 0.5f;
+		std::shared_ptr<int> offsetY = std::make_shared<int>(0);
+		const int OFFSET_STEP = 8;
+
+		for (int wave = 0; wave < WAVE_COUNT; ++wave) {
+			const bool fromLeft = (wave % 2 == 0);
+			commandBuffer.PushCommand(std::make_shared<DX9GF::CustomCommand>([this, baseDamage, fromLeft, START_Y, STEP_Y, BULLETS_PER_WAVE, offsetY, OFFSET_STEP](auto markFinished) {
+				if (auto p = this->player.lock()) {
+					float finalDamage = this->CalculateOutgoingDamage(baseDamage);
+					float spawnX = fromLeft ? -ARENA_HALF * 4.f : ARENA_HALF * 4.f;
+					D3DXVECTOR2 dir = fromLeft ? D3DXVECTOR2(1, 0) : D3DXVECTOR2(-1, 0);
+
+					for (int i = 0; i < BULLETS_PER_WAVE; ++i) {
+						float spawnY = START_Y + STEP_Y * static_cast<float>(i) + *offsetY;
+						float zigzagAmplitude = 100.f;
+						float zigzagFrequency = 0.3f;
+
+						projectiles.Spawn(p, ProjectileDesc(bulletTexture.get(), 8, 8, 16, 16, spawnX, spawnY)
+							.SetTrajectory(dir)
+							.SetVelocity(120.f)
+							.SetWave(zigzagAmplitude, zigzagFrequency, true)
+							.SetDecayTime(8.5f)
+							.SetDamage(finalDamage));
+					}
+					*offsetY += OFFSET_STEP;
+					*offsetY %= STEP_Y;
+				}
+				markFinished();
+			}));
+			commandBuffer.PushCommand(std::make_shared<DX9GF::DelayCommand>(0.5f));
+		}
+	}
+
 	std::pair<float, float> KernelEnemy::GetSafeCellCenter(float playerX, float playerY) const {
 		float minX = -ARENA_HALF, maxX = ARENA_HALF;
 		float minY = -ARENA_HALF, maxY = ARENA_HALF;
@@ -195,9 +315,16 @@ namespace Demo {
 			commandBuffer.PushCommand(std::make_shared<DX9GF::CustomCommand>([this, baseDamage, WARN_TIME, HOLD_TIME](auto markFinished) {
 				this->laserVerticals.clear();
 				this->laserHorizontals.clear();
+				this->badSectorArmAngles.clear();
+				this->badSectorSpinDirection = (RNG::Range(0, 1) == 0) ? 1.f : -1.f;
 				this->laserVerticals.push_back(RNG::Range(-80.f, 80.f));
 				this->laserHorizontals.push_back(RNG::Range(-80.f, 80.f));
 				this->telegraphingCell = true;
+
+				int numArms = RNG::Range(1, 4);
+				for (int arm = 0; arm < numArms; ++arm) {
+					this->badSectorArmAngles.push_back(arm * (2.0f * PI / numArms));
+				}
 
 				if (auto p = this->player.lock()) {
 					float finalDamage = this->CalculateOutgoingDamage(baseDamage);
@@ -235,16 +362,14 @@ namespace Demo {
 						.SetDamage(finalDamage)
 						.SetDecayTime(HOLD_TIME));
 
-					int numArms = RNG::Range(1, 4);
-					float direction = (RNG::Range(0, 1) == 0) ? 1.0f : -1.0f;
 					const int BULLETS_PER_ARM = 12;
-
-					for (int arm = 0; arm < numArms; ++arm) {
-						float startAngle = arm * (2.0f * PI / numArms);
+					int armCount = static_cast<int>(this->badSectorArmAngles.size());
+					for (int arm = 0; arm < armCount; ++arm) {
+						float startAngle = this->badSectorArmAngles[arm];
 
 						for (int i = 1; i <= BULLETS_PER_ARM; ++i) {
 							float radialSpeed = i * 12.f;
-							float angularSpeed = (PI * 0.7f - (i * 0.03f)) * direction;
+							float angularSpeed = (PI * 0.7f - (i * 0.03f)) * this->badSectorSpinDirection;
 
 							projectiles.Spawn(p, ProjectileDesc(bulletTexture.get(), 8, 8, 16, 16, centerX, centerY)
 								.SetSpiralParams(startAngle, radialSpeed, angularSpeed)
