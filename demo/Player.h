@@ -95,8 +95,8 @@ namespace Demo {
 		void SetFollowCamera(bool followCamera);
 		float GetVelocity() const;
 		float SetVelocity(float velocity);
-		bool TakeDamage(float damage) override;
-		void DealDamage(IEnemy* target, float cardBaseDamage);
+		bool TakeDamage(float damage, bool ignoreArmor = false) override;
+		void DealDamage(IEnemy* target, float cardBaseDamage, bool ignoreArmor = false);
 		std::weak_ptr<DX9GF::RectangleCollider> GetCollider();
 
 		int GetGold() const { return gold; }

@@ -303,7 +303,7 @@ namespace Demo {
 		void CollectProjectedSteps(VirtualBattleState& state) override;
 		void DrawCardFace(unsigned long long deltaTime) override { DrawSheetFace(deltaTime, GetFaceRect()); }
 		size_t GetCost() const override { return 1; }
-		std::wstring GetDescription() const override { return L"Deal 5 DMG. Deals 2x damage to enemies with Armor."; }
+		std::wstring GetDescription() const override { return L"Deal 5 DMG. Deals 2x damage to enemies with Armor. Ignores their defense."; }
 		RECT GetFaceRect() const override { return RECT{ 0, 432, 96, 448 }; }
 	};
 

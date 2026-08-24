@@ -345,9 +345,9 @@ void Demo::IEnemy::Draw(DX9GF::GraphicsDevice* graphicsDevice, DX9GF::Camera* ca
 	projectiles.Draw(graphicsDevice, *camera, deltaTime);
 }
 
-bool Demo::IEnemy::TakeDamage(float damage)
+bool Demo::IEnemy::TakeDamage(float damage, bool ignoreArmor)
 {
-	float actualDamage = CalculateActualDamage(damage);
+	float actualDamage = CalculateActualDamage(damage, ignoreArmor);
 	health -= actualDamage;
 	if (health < 0) health = 0;
 

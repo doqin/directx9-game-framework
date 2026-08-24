@@ -25,12 +25,12 @@ void Demo::TestBattleScene::Init()
 	});
 	enemies.push_back(testEnemy);*/
 
-	//auto demonEye = std::make_shared<DemonEyeEnemy>(transformManager, 60.f);
-	//demonEye->Init(game->GetGraphicsDevice(), &camera);
-	//demonEye->SetOnRequestEnemyCard([this](std::shared_ptr<IEnemy> enemy) {
-	//	CreateEnemyCard(enemy);
-	//	});
-	//enemies.push_back(demonEye);
+	auto demonEye = std::make_shared<DemonEyeEnemy>(transformManager, 60.f);
+	demonEye->Init(game->GetGraphicsDevice(), &camera);
+	demonEye->SetOnRequestEnemyCard([this](std::shared_ptr<IEnemy> enemy) {
+		CreateEnemyCard(enemy);
+		});
+	enemies.push_back(demonEye);
 
 	//auto cupid = std::make_shared<CupidEnemy>(transformManager, 50.f);
 	//cupid->Init(game->GetGraphicsDevice(), &camera);
@@ -77,10 +77,10 @@ void Demo::TestBattleScene::Init()
 	//trojanEnemy->SetOnRequestEnemyCard([this](std::shared_ptr<IEnemy> enemy) { CreateEnemyCard(enemy); });
 	//enemies.push_back(trojanEnemy);
 
-	auto kernelEnemy = std::make_shared<KernelEnemy>(transformManager, 100.f);
-	kernelEnemy->Init(game->GetGraphicsDevice(), &camera);
-	kernelEnemy->SetOnRequestEnemyCard([this](std::shared_ptr<IEnemy> enemy) { CreateEnemyCard(enemy); });
-	enemies.push_back(kernelEnemy);
+	//auto kernelEnemy = std::make_shared<KernelEnemy>(transformManager, 100.f);
+	//kernelEnemy->Init(game->GetGraphicsDevice(), &camera);
+	//kernelEnemy->SetOnRequestEnemyCard([this](std::shared_ptr<IEnemy> enemy) { CreateEnemyCard(enemy); });
+	//enemies.push_back(kernelEnemy);
 
 	//// Heavy Strike
 	//auto heavy = std::make_shared<HeavyStrikeCard>(transformManager, -260.f, -80.f);

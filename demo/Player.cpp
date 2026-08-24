@@ -463,10 +463,10 @@ float Demo::Player::SetVelocity(float velocity)
 	return this->VELOCITY = velocity;
 }
 
-bool Demo::Player::TakeDamage(float damage) {
+bool Demo::Player::TakeDamage(float damage, bool ignoreArmor) {
 	if (isInvincible) return IsDead();
 
-	float actualDamage = CalculateActualDamage(damage);
+	float actualDamage = CalculateActualDamage(damage, ignoreArmor);
 	health -= actualDamage;
 
 	isInvincible = true;
@@ -510,10 +510,10 @@ bool Demo::Player::TakeIndirectDamage(float damage, DamageType type) {
 	return IsDead();
 }
 
-void Demo::Player::DealDamage(IEnemy* target, float cardBaseDamage) {
+void Demo::Player::DealDamage(IEnemy* target, float cardBaseDamage, bool ignoreArmor) {
 	if (!target) return;
 	float finalDamage = CalculateOutgoingDamage(cardBaseDamage);
-	target->TakeDamage(finalDamage);
+	target->TakeDamage(finalDamage, ignoreArmor);
 }
 
 std::weak_ptr<DX9GF::RectangleCollider> Demo::Player::GetCollider()
