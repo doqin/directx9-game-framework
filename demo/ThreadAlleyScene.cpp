@@ -95,9 +95,9 @@ void Demo::ThreadAlleyScene::Init()
 	PopupManager::GetInstance()->Init(game->GetGraphicsDevice(), borderTex, uiTex, font);
 	QuestManager::GetInstance()->SetVirtualResolution(game->GetVirtualWidth(), game->GetVirtualHeight());
 	QuestManager::GetInstance()->Init(game->GetGraphicsDevice(), transformManager, &this->uiCamera, font);
-	QuestManager::GetInstance()->SetQuest(L"???");
 
 	dauDau = std::make_shared<DauDauNPC>(transformManager, -580.f, 100.f);
+	dauDau->AttachQuestMarker("Quest_ThreadAlley_Start", Demo::QuestMarkerRole::Giver);
 	dauDau->Init(game->GetGraphicsDevice(), &camera, player, colliderManager, font, drawBuffer);
 	dauDau->AddLine(L"Dau Dau", L"This alley is full of malware. Watch out!");
 
@@ -117,12 +117,16 @@ void Demo::ThreadAlleyScene::Init()
 		authTerminalSolved = true;
 		player->GetInventoryItems().AddItem(ITEM_AUTH_TOKEN, 1);
 		QuestManager::GetInstance()->NotifyEvent("TROJAN_HAS_TOKEN", "", player.get());
+		if (trojanNPC && trojanNPC->GetQuestMarker()) {
+			trojanNPC->GetQuestMarker()->SetConditionMet(true);
+		}
 		auto [sw, sh] = camera.GetScreenResolution();
 		currentConversation = std::make_shared<IConversation>(std::make_shared<DX9GF::FontSprite>(font.get()), sw, sh);
 		currentConversation->AddLine({ .name = L"Terminal", .content = L"ACCESS GRANTED.\nYou obtained the Authentication Token." });
 		});
 
 	trojanNPC = std::make_shared<TrojanNPC>(transformManager, 224.f, -832.f);
+	trojanNPC->AttachQuestMarker("Quest_ThreadAlley_Start", Demo::QuestMarkerRole::Receiver);
 	trojanNPC->Init(game->GetGraphicsDevice(), &camera, player, colliderManager, font, drawBuffer);
 
 	trojanNPC->AddFriendlyLine(L"???", L"Oh thank the kernel, a live process!\nI was starting to think nobody came down this alley any more.");
@@ -717,6 +721,7 @@ void Demo::ThreadAlleyScene::RestoreSaveData(const nlohmann::json& inData)
 		if (savedPhase == TrojanNPC::Phase::AwaitingToken) {
 			if (player->GetInventoryItems().HasItem(ITEM_AUTH_TOKEN)) {
 				QuestManager::GetInstance()->NotifyEvent("TROJAN_HAS_TOKEN", "", player.get());
+				if (trojanNPC && trojanNPC->GetQuestMarker()) trojanNPC->GetQuestMarker()->SetConditionMet(true);
 			}
 			else {
 				QuestManager::GetInstance()->NotifyEvent("TROJAN_TALKED", "", player.get());

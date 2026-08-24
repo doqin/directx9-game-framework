@@ -46,6 +46,7 @@ void Demo::BossWorldScene::Init() {
 
 	//dialogue with NPC, rambles about lore regarding the optional battle to get the key, and hints at the correct color sequence for hacking the terminal
 	npcHint = std::make_shared<DauDauNPC>(transformManager, -950.0f, -220.0f);
+
 	npcHint->Init(game->GetGraphicsDevice(), &camera, player, colliderManager, font, drawBuffer);
 	npcHint->AddLine(L"Veteran Debugger", L"Halt, traveler. You shouldn't be here.");
 	npcHint->AddLine(L"Veteran Debugger", L"This sector is deeply corrupted-a graveyard of unresolved bugs and dead code.");
@@ -59,6 +60,7 @@ void Demo::BossWorldScene::Init() {
 	npcHint->AddLine(L"Veteran Debugger", L"Bah, probably just corrupted junk data. Don't mind my rambling.");
 
 	dauDauSpawn = std::make_shared<DauDauNPC>(transformManager, 300.f, 230.f);
+	dauDauSpawn->AttachQuestMarker("Quest_BossWorld", Demo::QuestMarkerRole::Giver);
 	dauDauSpawn->Init(game->GetGraphicsDevice(), &camera, player, colliderManager, font, drawBuffer);
 	dauDauSpawn->AddLine(L"Dau Dau", L"Welcome to the boss sector. Activate all four terminals to unlock the gate.");
 
@@ -128,7 +130,6 @@ void Demo::BossWorldScene::Init() {
 	PopupManager::GetInstance()->Init(game->GetGraphicsDevice(), borderTex, uiTex, font);
 	QuestManager::GetInstance()->SetVirtualResolution(game->GetVirtualWidth(), game->GetVirtualHeight());
 	QuestManager::GetInstance()->Init(game->GetGraphicsDevice(), transformManager, &this->uiCamera, font);
-	QuestManager::GetInstance()->SetQuest(L"Quest: ???");
 
 	savePoints.push_back(std::make_shared<SavePoint>(transformManager, 192.f, 320.f));
 	savePoints.back()->Init(game->GetGraphicsDevice(), &camera, player, colliderManager, saveManager, font, drawBuffer);
@@ -940,6 +941,7 @@ void Demo::BossWorldScene::DrawBackground(DX9GF::GraphicsDevice* gd, unsigned lo
 			}
 
 			if (static_cast<int>(timeAcc * 2.0f + i) % 7 == 0) {
+
 				float crackX = bx + (rand() % static_cast<int>(size)) - size / 2.0f;
 				float crackY = by + (rand() % static_cast<int>(size)) - size / 2.0f;
 				gd->DrawLine(crackX - 20, crackY - 20, crackX + 20, crackY + 20, crackColor);

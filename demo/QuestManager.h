@@ -16,7 +16,8 @@ namespace Demo {
 	};
 
 	class QuestManager {
-		std::wstring questText;
+	private:
+		std::wstring questText = L"Quest: ???";
 		bool isExpanded = true;
 		bool isVisible = true;
 		std::shared_ptr<DX9GF::Font> font;
@@ -33,6 +34,7 @@ namespace Demo {
 		std::string currentTrackedQuest;
 
 		QuestManager() = default;
+		void SetQuest(const std::wstring& text) { questText = text; }
 
 	public:
 		static QuestManager* GetInstance() {
@@ -48,8 +50,6 @@ namespace Demo {
 
 		void Init(DX9GF::GraphicsDevice* gd, std::shared_ptr<DX9GF::TransformManager> tm, DX9GF::Camera* uiCamera, std::shared_ptr<DX9GF::Font> font);
 
-		//TODO: change this to private
-		void SetQuest(const std::wstring& text) { questText = text; }
 		const std::wstring& GetQuestText() const { return questText; }
 
 		void SetVisible(bool v) { isVisible = v; }
@@ -78,5 +78,10 @@ namespace Demo {
 			return questStates.find(questId) != questStates.end() && questStates[questId] == QuestState::Completed;
 		}
 
+		QuestState GetQuestState(const std::string& questId) const {
+			auto it = questStates.find(questId);
+			if (it != questStates.end()) return it->second;
+			return QuestState::Locked;
+		}
 	};
 }

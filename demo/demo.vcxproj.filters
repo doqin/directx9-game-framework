@@ -99,6 +99,7 @@
     <ClCompile Include="ICard.cpp" />
     <ClCompile Include="GoldToken.cpp" />
     <ClCompile Include="EnergyToken.cpp" />
+    <ClCompile Include="QuestMarker.cpp" />
   </ItemGroup>
   <ItemGroup>
     <ClInclude Include="AdvancedCards.h" />
@@ -204,6 +205,7 @@
     <ClInclude Include="imstb_truetype.h" />
     <ClInclude Include="Debug.h" />
     <ClInclude Include="misc\cpp\imgui_stdlib.h" />
+    <ClInclude Include="QuestMarker.h" />
   </ItemGroup>
   <ItemGroup>
     <ResourceCompile Include="demo.rc" />

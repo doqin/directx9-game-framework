@@ -265,6 +265,7 @@
     <ClCompile Include="HackTerminal.cpp" />
     <ClCompile Include="AuthTerminal.cpp" />
     <ClCompile Include="PasswordMenu.cpp" />
+    <ClCompile Include="QuestMarker.cpp" />
     <ClCompile Include="TrojanNPC.cpp" />
     <ClCompile Include="IntroScene.cpp" />
     <ClCompile Include="CardContainer.cpp" />
@@ -380,6 +381,7 @@
     <ClInclude Include="HackTerminal.h" />
     <ClInclude Include="AuthTerminal.h" />
     <ClInclude Include="PasswordMenu.h" />
+    <ClInclude Include="QuestMarker.h" />
     <ClInclude Include="TrojanNPC.h" />
     <ClInclude Include="IntroScene.h" />
     <ClInclude Include="CardContainer.h" />
