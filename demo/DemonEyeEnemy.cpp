@@ -131,26 +131,25 @@ void Demo::DemonEyeEnemy::PatternBloodWall(float baseDamage, std::vector<std::sh
 	const float WAVE_DELAY = isAlone ? 0.6f : 1.2f;
 	const float BULLET_SPEED = isAlone ? 200.f : 100.f;
 	const float DROP_HEIGHT = 350.f;
-	const float WALL_START_X = -200.f;
 	const float BULLET_SPACING = isAlone ? 40.f : 80.f;
 	const float BULLET_DECAY_TIME = isAlone ? 4.f : 8.f;
+	const float WALL_START_X = -(BULLET_PER_WAVE / 2.f) * BULLET_SPACING;
+	std::shared_ptr<float> bulletOffset = std::make_shared<float>(0.f);
 
 	for (int wave = 0; wave < WAVE_COUNT; wave++) {
 		//random hole
 		int emptyHole = RNG::Range(0, BULLET_PER_WAVE - 1);
 
-		commandBuffer.PushCommand(std::make_shared<DX9GF::CustomCommand>([this, baseDamage, emptyHole, BULLET_PER_WAVE, BULLET_SPEED, DROP_HEIGHT, WALL_START_X, BULLET_SPACING, BULLET_DECAY_TIME](std::function<void(void)> markFinished) {
+		commandBuffer.PushCommand(std::make_shared<DX9GF::CustomCommand>([this, baseDamage, emptyHole, BULLET_PER_WAVE, BULLET_SPEED, DROP_HEIGHT, WALL_START_X, BULLET_SPACING, BULLET_DECAY_TIME, bulletOffset](std::function<void(void)> markFinished) {
 			if (auto lock = this->player.lock()) {
 				float finalDamage = this->CalculateOutgoingDamage(baseDamage);
-
-				auto [playerX, playerY] = lock->GetWorldPosition();
 
 				for (int i = 0; i < BULLET_PER_WAVE; i++) {
 					if (i == emptyHole) continue;
 
 					float offsetX = WALL_START_X + (i * BULLET_SPACING);
-					float finalX = playerX + offsetX;
-					float finalY = playerY - DROP_HEIGHT;
+					float finalX = offsetX + *bulletOffset;
+					float finalY = -DROP_HEIGHT;
 
 					projectiles.Spawn(
 						lock,
@@ -162,6 +161,8 @@ void Demo::DemonEyeEnemy::PatternBloodWall(float baseDamage, std::vector<std::sh
 						.SetDamage(finalDamage) 
 					);
 				}
+				*bulletOffset += 10.f; //shift the wall a bit for next wave
+				*bulletOffset = std::fmod(*bulletOffset, BULLET_SPACING); //wrap around to avoid too much offset
 			}
 			markFinished();
 			}));

@@ -99,8 +99,8 @@ void Demo::DebugScene::Init()
 	//continueBtn->ChangeSpriteCoords(500, 2, 60, 32, 20);
 
 	transformManager->RebuildHierarchy();
-	DX9GF::ITrigger::drawTrigger = true;
-	DX9GF::ICollider::drawCollider = true;
+	//DX9GF::ITrigger::drawTrigger = true;
+	//DX9GF::ICollider::drawCollider = true;
 }
 
 void Demo::DebugScene::Update(unsigned long long deltaTime)

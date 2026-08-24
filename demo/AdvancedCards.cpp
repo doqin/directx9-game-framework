@@ -527,7 +527,7 @@ bool Demo::ArmorPiercerCard::Execute() {
 	}
 
 	if (owner) {
-		owner->DealDamage(enemy, finalDamage);
+		owner->DealDamage(enemy, finalDamage, true);
 	}
 	isDone = true;
 	return true;

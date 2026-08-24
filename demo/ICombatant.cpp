@@ -22,7 +22,7 @@ namespace Demo {
 		DamageTextManager::GetInstance()->Spawn(actualHeal, GetWorldX(), GetWorldY() - 40.f, TextType::Heal);
 	}
 
-	float ICombatant::CalculateActualDamage(float baseDamage) {
+	float ICombatant::CalculateActualDamage(float baseDamage, bool ignoreArmor) {
 		// Marked is a flat bonus per hit, so it lands before Vulnerable scales the total and
 		// before block eats into it.
 		float finalDamage = baseDamage + GetModifierValue(ModifierType::Marked);
@@ -30,7 +30,7 @@ namespace Demo {
 			finalDamage *= 1.5f;
 		}
 
-		if (temporaryDefense > 0.f) {
+		if (temporaryDefense > 0.f && !ignoreArmor) {
 			float blockedDamage = (std::min)(temporaryDefense, finalDamage);
 			temporaryDefense -= blockedDamage;
 			finalDamage -= blockedDamage;

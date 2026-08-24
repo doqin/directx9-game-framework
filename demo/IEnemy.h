@@ -55,7 +55,7 @@ namespace Demo {
 		void SetOnRequestEnemyCard(std::function<void(std::shared_ptr<IEnemy>)> callback);
 		virtual void Update(unsigned long long deltaTime);
 		virtual void Draw(DX9GF::GraphicsDevice* graphicsDevice, DX9GF::Camera* camera, unsigned long long deltaTime);
-		virtual bool TakeDamage(float damage);
+		bool TakeDamage(float damage, bool ignoreArmor = false);
 		virtual void StartAttack(std::shared_ptr<Player> player, std::vector<std::shared_ptr<IEnemy>>* enemies = nullptr, std::shared_ptr<PopUpMessage> popUpMessage = nullptr, DX9GF::GraphicsDevice* graphicsDevice = nullptr, DX9GF::Camera* camera = nullptr, int currentTurn = 1) = 0;
 		void SetState(bool isOnStandby);
 		bool IsOnStandby() const { return isOnStandby; }

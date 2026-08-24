@@ -16,7 +16,7 @@ namespace Demo {
 				prototype.GetDescription(),
 				[this]() {
 					auto newCard = std::make_shared<TCard>(this->transformManager);
-					this->player->AddCardToDeck(newCard->GetSaveID());
+					this->player->AddCardToInventory(newCard->GetSaveID());
 				},
 				prototype.GetFaceRect(),
 				ShopIconSheet::CardFaces
