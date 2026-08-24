@@ -298,8 +298,14 @@ void Demo::ThreadAlleyScene::Init()
 
 		//token spawning area
 		Demo::EventType generatedEvent = Demo::EventType::None;
-		if (enemy->GetEncounterData().enemyTypes.size() >= 2 && Demo::RNG::Range(1, 100) <= 30) {
-			generatedEvent = (Demo::RNG::Range(1, 100) <= 50) ? Demo::EventType::Gold : Demo::EventType::Energy;
+
+		if (Demo::RNG::Range(1, 100) <= 38) {
+			if (enemy->GetEncounterData().enemyTypes.size() >= 2) {
+				generatedEvent = (Demo::RNG::Range(1, 100) <= 50) ? Demo::EventType::Gold : Demo::EventType::Energy;
+			}
+			else {
+				generatedEvent = Demo::EventType::Gold;
+			}
 		}
 		enemy->SetEventState(generatedEvent);
 
