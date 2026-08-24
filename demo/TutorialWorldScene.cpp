@@ -259,9 +259,6 @@ void Demo::TutorialWorldScene::Update(unsigned long long deltaTime)
 {
 	PopupManager::GetInstance()->SetUICamera(&this->uiCamera);
 	QuestManager::GetInstance()->SetUICamera(&this->uiCamera);
-	QuestManager::GetInstance()->SetQuest(
-		questStarted ? L"Quest: Fint a way out of this place!" : L"Quest: ???"
-	);
 	QuestManager::GetInstance()->SetVirtualResolution(game->GetVirtualWidth(), game->GetVirtualHeight());
 	QuestManager::GetInstance()->SetVisible(!(inventoryMenu && inventoryMenu->IsOpen()));
 	QuestManager::GetInstance()->Update(deltaTime);
@@ -320,8 +317,7 @@ void Demo::TutorialWorldScene::Update(unsigned long long deltaTime)
 			for (auto& line : npcIntroduction->GetDialogueLines()) {
 				currentConversation->AddLine(line);
 			}
-			QuestManager::GetInstance()->SetQuest(L"Quest: Fint a way out of this place!");
-			questStarted = true;
+			QuestManager::GetInstance()->AcceptQuest("Quest_Tutorial");
 		}
 	}
 	if (npcExplainingHealingPoint) {
@@ -580,8 +576,6 @@ void Demo::TutorialWorldScene::GenerateSaveData(nlohmann::json& outData)
 		{"zoom", camera.GetZoom()}
 	};
 
-	outData["quest"] = { {"questStarted", questStarted} };
-
 	nlohmann::json chestStates = nlohmann::json::array();
 	for (auto& c : treasureChests) chestStates.push_back(c->GetIsOpened());
 	outData["treasureChests"] = chestStates;
@@ -602,11 +596,6 @@ void Demo::TutorialWorldScene::RestoreSaveData(const nlohmann::json& inData)
 	player->RestoreSaveData(inData["player"]);
 	camera.SetPosition(inData["camera"]["x"], inData["camera"]["y"]);
 	camera.SetZoom(inData["camera"]["zoom"]);
-
-	if (inData.contains("quest")) {
-		questStarted = inData["quest"].value("questStarted", false);
-		questRestoredFromSave = true;
-	}
 
 	if (inData.contains("treasureChests")) {
 		auto& arr = inData["treasureChests"];

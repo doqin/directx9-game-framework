@@ -116,6 +116,7 @@ void Demo::ThreadAlleyScene::Init()
 	authTerminal->SetOnSolved([this]() {
 		authTerminalSolved = true;
 		player->GetInventoryItems().AddItem(ITEM_AUTH_TOKEN, 1);
+		QuestManager::GetInstance()->NotifyEvent("TROJAN_HAS_TOKEN", "", player.get());
 		auto [sw, sh] = camera.GetScreenResolution();
 		currentConversation = std::make_shared<IConversation>(std::make_shared<DX9GF::FontSprite>(font.get()), sw, sh);
 		currentConversation->AddLine({ .name = L"Terminal", .content = L"ACCESS GRANTED.\nYou obtained the Authentication Token." });
@@ -411,7 +412,6 @@ void Demo::ThreadAlleyScene::Update(unsigned long long deltaTime)
 {
 	PopupManager::GetInstance()->SetUICamera(&this->uiCamera);
 	QuestManager::GetInstance()->SetUICamera(&this->uiCamera);
-	QuestManager::GetInstance()->SetQuest(GetQuestText());
 	QuestManager::GetInstance()->SetVirtualResolution(game->GetVirtualWidth(), game->GetVirtualHeight());
 	QuestManager::GetInstance()->SetVisible(!(inventoryMenu && inventoryMenu->IsOpen())
 		&& !(authTerminal && authTerminal->IsMenuOpen()));
@@ -494,8 +494,7 @@ void Demo::ThreadAlleyScene::Update(unsigned long long deltaTime)
 			for (auto& line : dauDau->GetDialogueLines()) {
 				currentConversation->AddLine(line);
 			}
-			QuestManager::GetInstance()->SetQuest(L"Quest: Find the malware through this alley!");
-			questStarted = true;
+			QuestManager::GetInstance()->AcceptQuest("Quest_ThreadAlley_Start");
 		}
 	}
 
@@ -676,8 +675,6 @@ void Demo::ThreadAlleyScene::GenerateSaveData(nlohmann::json& outData)
 		{"zoom", camera.GetZoom()}
 	};
 
-	outData["quest"] = { {"questStarted", questStarted} };
-
 	outData["authTerminal"] = {
 		{"password", authPassword},
 		{"solved", authTerminalSolved}
@@ -705,11 +702,6 @@ void Demo::ThreadAlleyScene::RestoreSaveData(const nlohmann::json& inData)
 	camera.SetPosition(inData["camera"]["x"], inData["camera"]["y"]);
 	camera.SetZoom(inData["camera"]["zoom"]);
 
-	if (inData.contains("quest")) {
-		questStarted = inData["quest"].value("questStarted", false);
-		questRestoredFromSave = true;
-	}
-
 	if (inData.contains("authTerminal")) {
 		authPassword = inData["authTerminal"].value("password", authPassword);
 		authTerminalSolved = inData["authTerminal"].value("solved", false);
@@ -718,10 +710,21 @@ void Demo::ThreadAlleyScene::RestoreSaveData(const nlohmann::json& inData)
 			authTerminal->SetSolved(authTerminalSolved);
 		}
 	}
-
 	if (inData.contains("trojanNPC") && trojanNPC) {
-		// SetPhase(Defeated) also drops the collider, which is what re-opens the corridor.
-		trojanNPC->SetPhase(static_cast<TrojanNPC::Phase>(inData["trojanNPC"].value("phase", 0)));
+		auto savedPhase = static_cast<TrojanNPC::Phase>(inData["trojanNPC"].value("phase", 0));
+		trojanNPC->SetPhase(savedPhase);
+
+		if (savedPhase == TrojanNPC::Phase::AwaitingToken) {
+			if (player->GetInventoryItems().HasItem(ITEM_AUTH_TOKEN)) {
+				QuestManager::GetInstance()->NotifyEvent("TROJAN_HAS_TOKEN", "", player.get());
+			}
+			else {
+				QuestManager::GetInstance()->NotifyEvent("TROJAN_TALKED", "", player.get());
+			}
+		}
+		else if (savedPhase == TrojanNPC::Phase::Revealed) {
+			QuestManager::GetInstance()->NotifyEvent("TROJAN_REVEALED", "", player.get());
+		}
 	}
 
 	if (inData.contains("treasureChests")) {
@@ -751,24 +754,6 @@ void Demo::ThreadAlleyScene::GiveTestItems()
 
 }
 
-std::wstring Demo::ThreadAlleyScene::GetQuestText() const
-{
-	// The Trojan's questline takes over the single quest slot while it is running.
-	if (trojanNPC) {
-		switch (trojanNPC->GetPhase()) {
-		case TrojanNPC::Phase::AwaitingToken:
-			return player->GetInventoryItems().HasItem(ITEM_AUTH_TOKEN)
-				? L"Quest: Bring the auth token back to the stranger"
-				: L"Quest: Find an auth token somewhere in the alley";
-		case TrojanNPC::Phase::Revealed:
-			return L"Quest: Delete the Trojan!";
-		default:
-			break;
-		}
-	}
-	return questStarted ? L"Quest: Find the malware through this alley!" : L"Quest: ???";
-}
-
 void Demo::ThreadAlleyScene::StartTrojanConversation()
 {
 	auto phase = trojanNPC->GetPhase();
@@ -789,10 +774,14 @@ void Demo::ThreadAlleyScene::StartTrojanConversation()
 	switch (phase) {
 	case TrojanNPC::Phase::Friendly:
 		onConversationEnd = [this]() { trojanNPC->SetPhase(TrojanNPC::Phase::AwaitingToken); };
+		QuestManager::GetInstance()->NotifyEvent("TROJAN_TALKED", "", player.get());
 		break;
 	case TrojanNPC::Phase::Revealed:
 		// Losing the fight leaves the NPC in Revealed, so talking again replays the taunt and rematches.
-		onConversationEnd = [this]() { StartTrojanBattle(); };
+		onConversationEnd = [this]() {
+			StartTrojanBattle();
+			QuestManager::GetInstance()->NotifyEvent("TROJAN_REVEALED", "", player.get());
+			};
 		break;
 	default:
 		onConversationEnd = nullptr;
@@ -821,6 +810,7 @@ void Demo::ThreadAlleyScene::StartTrojanBattle()
 			});
 		battleScene->SetOnVictoryCallback([this]() {
 			trojanNPC->SetPhase(TrojanNPC::Phase::Defeated);
+			QuestManager::GetInstance()->NotifyEvent("TROJAN_DEFEATED", "", player.get());
 			});
 
 		sceMan->InsertScene(sceMan->GetIndex() + 1, battleScene);

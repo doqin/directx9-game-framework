@@ -21,9 +21,7 @@ namespace Demo {
 	class ThreadAlleyScene : public DX9GF::IScene, public DX9GF::ISaveable {
 		bool isGamePaused = false;
 		bool isTransitioning = false;
-		bool questStarted = false;
-		bool questRestoredFromSave = false;
-		bool hasSetInitialQuest = false;
+
 		Game* game;
 		std::shared_ptr<DX9GF::ColliderManager> colliderManager;
 		std::shared_ptr<DX9GF::TransformManager> transformManager;
@@ -68,7 +66,6 @@ namespace Demo {
 		D3DCOLOR bgBaseColor2 = 0xFF793a80;
 
 		void DrawCheckerBackground(DX9GF::GraphicsDevice* gd, unsigned long long deltaTime);
-		std::wstring GetQuestText() const;
 		void StartTrojanConversation();
 		void StartTrojanBattle();
 
@@ -83,6 +80,6 @@ namespace Demo {
 		void RestoreSaveData(const nlohmann::json& inData) override;
 
 		void GiveTestItems();
-      std::shared_ptr<Player> GetPlayer() const { return player; }
+		std::shared_ptr<Player> GetPlayer() const { return player; }
 	};
 }

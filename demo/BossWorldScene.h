@@ -18,9 +18,6 @@
 namespace Demo {
     class BossWorldScene : public DX9GF::IScene, public DX9GF::ISaveable {
         bool isGamePaused = false;
-        bool hasSetInitialQuest = false;
-        bool questRestoredFromSave = false;
-        bool questGiven = false;
 
         Game* game;
         std::shared_ptr<DX9GF::ColliderManager> colliderManager;
@@ -71,7 +68,6 @@ namespace Demo {
         std::vector<std::shared_ptr<ShopPoint>> shopPoints;
 
         std::shared_ptr<DX9GF::RectangleCollider> bossGateCollider;
-        bool isMimicDead = false;
 
         std::shared_ptr<RustyChestNPC> rustyChest;
         std::vector<std::shared_ptr<TreasureChestNPC>> treasureChests;

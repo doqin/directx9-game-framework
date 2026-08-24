@@ -7,6 +7,8 @@
 #include "SecretPuzzleScene.h"
 #include "ThreadAlleyScene.h"
 #include "BossWorldScene.h"
+#include "QuestManager.h"
+
 namespace Demo {
 	SaveGameState::SaveGameState(Game* game, std::shared_ptr<DX9GF::SaveManager> saveManager)
 		: game(game), saveManager(std::move(saveManager)) {
@@ -62,6 +64,9 @@ namespace Demo {
 		if (auto player = GetPlayerFromScene(sceneManager->GetCurrentScene())) {
 			player->GenerateSaveGlobalData(outData["player"]);
 		}
+
+		QuestManager::GetInstance()->GenerateSaveData(outData["quest_manager"]);
+
 		for (size_t i = 0; i < sceneManager->GetSceneCount(); i++) {
 			nlohmann::json data;
 			auto scene = dynamic_cast<DX9GF::ISaveable*>(sceneManager->GetScene(i));
@@ -101,6 +106,9 @@ namespace Demo {
 				player->RestoreSaveGlobalData(inData["player"]);
 			}
 		}
+		if (inData.contains("quest_manager")) {
+			QuestManager::GetInstance()->RestoreSaveData(inData["quest_manager"]);
+		}
 		if (inData.contains("scene_data")) {
 			for (auto& [key, value] : inData["scene_data"].items()) {
 				auto sceneIt = sceneMap.find(key);
@@ -120,6 +128,7 @@ namespace Demo {
 		saveManager->Register(saveState.get());
 		saveState->ClearScenes();
 		saveState->BuildScenes();
+		QuestManager::GetInstance()->Reset();
 		DX9GF::AudioManager::GetInstance()->StopAll();
 		game->GetSceneManager()->GoToScene(1);
 		return saveState;
@@ -131,6 +140,7 @@ namespace Demo {
 		saveManager->Register(saveState.get());
 		saveState->ClearScenes();
 		saveState->BuildScenes();
+		QuestManager::GetInstance()->Reset();
 		saveManager->Load("savegame.json");
 		return saveState;
 	}

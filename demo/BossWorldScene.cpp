@@ -413,10 +413,10 @@ void Demo::BossWorldScene::OnTerminalHacked(int terminalID) {
 			isBossDoorUnlocked = true;
 			mainTerminal->SetHackedStatus(true);
 			mainTerminal->ShowStatusMessage("Access granted. Core unlocked.", 3.0f);
-			QuestManager::GetInstance()->SetQuest(L"Quest: Defeat the malware!");
+
+			QuestManager::GetInstance()->NotifyEvent("TERMINAL_HACKED", "4", this->player.get());
 
 			audio->Play("hack_success");
-
 			if (bossGateCollider) {
 				colliderManager->Remove(bossGateCollider);
 				bossGateCollider.reset();
@@ -444,7 +444,7 @@ void Demo::BossWorldScene::OnTerminalHacked(int terminalID) {
 		hackMachines[currentHackStep]->ShowStatusMessage(msg, 3.0f);
 		currentHackStep++;
 		audio->Play("hack_success");
-		QuestManager::GetInstance()->SetQuest(L"Quest: Activate the terminals: " + std::to_wstring(currentHackStep) + L"/4");
+		QuestManager::GetInstance()->NotifyEvent("TERMINAL_HACKED", std::to_string(currentHackStep), this->player.get());
 	}
 	else {
 		currentHackStep = 0;
@@ -458,19 +458,13 @@ void Demo::BossWorldScene::OnTerminalHacked(int terminalID) {
 			}
 		}
 		audio->Play("hack_fail");
-		QuestManager::GetInstance()->SetQuest(L"Quest: Activate the terminals: " + std::to_wstring(currentHackStep) + L"/4");
+		QuestManager::GetInstance()->NotifyEvent("TERMINAL_HACKED", "0", this->player.get());
 	}
 }
 
 void Demo::BossWorldScene::Update(unsigned long long deltaTime) {
 	PopupManager::GetInstance()->SetUICamera(&this->uiCamera);
 	QuestManager::GetInstance()->SetUICamera(&this->uiCamera);
-	QuestManager::GetInstance()->SetQuest(
-		!questGiven ? L"Quest: ???"
-		: (isBossDoorUnlocked
-			? L"Quest: Defeat the malware!"
-			: L"Quest: Activate the terminals: " + std::to_wstring(currentHackStep) + L"/4")
-	);
 	QuestManager::GetInstance()->SetVirtualResolution(game->GetVirtualWidth(), game->GetVirtualHeight());
 	QuestManager::GetInstance()->SetVisible(!(inventoryMenu && inventoryMenu->IsOpen()));
 	QuestManager::GetInstance()->Update(deltaTime);
@@ -537,10 +531,7 @@ void Demo::BossWorldScene::Update(unsigned long long deltaTime) {
 			for (auto& line : dauDauSpawn->GetDialogueLines()) {
 				currentConversation->AddLine(line);
 			}
-			questGiven = true;
-			QuestManager::GetInstance()->SetQuest(isBossDoorUnlocked
-				? L"Quest: Defeat the malware!"
-				: L"Quest: Activate the terminals: " + std::to_wstring(currentHackStep) + L"/4");
+			QuestManager::GetInstance()->AcceptQuest("Quest_BossWorld");
 		}
 	}
 
@@ -748,10 +739,8 @@ void Demo::BossWorldScene::GenerateSaveData(nlohmann::json& outData) {
 		{"currentHackStep", currentHackStep},
 		{"isBossDoorUnlocked", isBossDoorUnlocked},
 		{"hasGottenUselessItem", hasGottenUselessItem},
-		{"isMimicDead", isMimicDead},
 		{"isFinalBossDead", isFinalBossDead},
-		{"isChestOpened", rustyChest ? rustyChest->GetIsOpened() : false},
-		{"questGiven", questGiven}
+		{"isChestOpened", rustyChest ? rustyChest->GetIsOpened() : false}
 	};
 
 	nlohmann::json chestStates = nlohmann::json::array();
@@ -778,14 +767,12 @@ void Demo::BossWorldScene::RestoreSaveData(const nlohmann::json& inData) {
 	if (inData.contains("puzzle")) {
 		currentHackStep = inData["puzzle"]["currentHackStep"];
 		isBossDoorUnlocked = inData["puzzle"]["isBossDoorUnlocked"];
-		questRestoredFromSave = true;
 		hasGottenUselessItem = inData["puzzle"]["hasGottenUselessItem"];
-		isMimicDead = inData.value("puzzle", nlohmann::json::object()).value("isMimicDead", false);
 		isFinalBossDead = inData.value("puzzle", nlohmann::json::object()).value("isFinalBossDead", false);
-		questGiven = inData["puzzle"].value("questGiven", false);
 		if (rustyChest) rustyChest->SetOpened(inData.value("puzzle", nlohmann::json::object()).value("isChestOpened", false));
 	}
 
+	QuestManager::GetInstance()->NotifyEvent("TERMINAL_HACKED", std::to_string(currentHackStep), player.get());
 	if (isBossDoorUnlocked) {
 		mainTerminal->SetHackedStatus(true);
 		if (bossGateCollider) {

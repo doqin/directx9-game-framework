@@ -1,5 +1,6 @@
-#include "pch.h"
+﻿#include "pch.h"
 #include "QuestManager.h"
+#include "IConversation.h"
 
 namespace {
 	constexpr float MARGIN_X = 20.0f;
@@ -86,4 +87,136 @@ void Demo::QuestManager::Draw(DX9GF::GraphicsDevice* gd, DX9GF::Camera* uiCamera
 	fontSprite->SetPosition(textX + 6.0f, panelY + (PANEL_H - fontSprite->GetHeight()) / 2.0f);
 	fontSprite->Draw(*uiCamera, deltaTime);
 	fontSprite->End();
+}
+
+//npcs call this function when give quest
+void Demo::QuestManager::AcceptQuest(const std::string& questId) {
+	if (questStates.find(questId) != questStates.end() && questStates[questId] != QuestState::Locked) return;
+
+	questStates[questId] = QuestState::Active;
+	currentTrackedQuest = questId;
+
+	//still hardcode text here
+	if (questId == "SecretBoss_Pacman") {
+		SetQuest(L"Quest: Find secret boss, defeat it and get rewards: Boss defeated 0/1");
+	}
+	else if (questId == "Quest_BossWorld") {
+		SetQuest(L"Quest: Activate the terminals: 0/4");
+	}
+	else if (questId == "Quest_Tutorial") {
+		SetQuest(L"Quest: Find a way out of this place!");
+	}
+	else if (questId == "Quest_ThreadAlley_Start") {
+		SetQuest(L"Quest: Find the malware through this alley!");
+	}
+	// else if (questId == "...") { ... }
+}
+
+Demo::QuestEventResult Demo::QuestManager::NotifyEvent(const std::string& eventType, const std::string& targetId, Player* player) {
+
+	if (eventType == "ENTITY_DEAD" && targetId == "SecretBoss_Pacman") {
+		if (questStates["SecretBoss_Pacman"] == QuestState::Active) {
+			questStates["SecretBoss_Pacman"] = QuestState::Completed;
+
+			SetQuest(L"Quest: Find secret boss, defeat it and get rewards: Boss defeated 1/1");
+
+			player->GetInventoryItems().AddItem(10, 1);
+
+			auto* bp = ItemData::GetInstance()->GetItemBlueprint(10);
+			std::wstring msg = L"You found: ";
+			if (bp) msg += bp->GetName();
+
+			return { true, msg };
+		}
+	}
+
+	if (eventType == "TERMINAL_HACKED") {
+		if (questStates["Quest_BossWorld"] == QuestState::Active) {
+			int step = std::stoi(targetId);
+			if (step >= 4) {
+				SetQuest(L"Quest: Defeat the malware!");
+				// questStates["Quest_BossWorld"] = QuestState::Completed;
+			}
+			else {
+				SetQuest(L"Quest: Activate the terminals: " + std::to_wstring(step) + L"/4");
+			}
+		}
+	}
+
+	if (eventType == "TROJAN_TALKED") {
+		if (questStates.find("Quest_ThreadAlley_Start") != questStates.end() && questStates["Quest_ThreadAlley_Start"] == QuestState::Active) {
+			SetQuest(L"Quest: Find an auth token somewhere in the alley");
+		}
+	}
+
+	if (eventType == "TROJAN_HAS_TOKEN") {
+		if (questStates.find("Quest_ThreadAlley_Start") != questStates.end() && questStates["Quest_ThreadAlley_Start"] == QuestState::Active) {
+			SetQuest(L"Quest: Bring the auth token back to the stranger");
+		}
+	}
+
+	if (eventType == "TROJAN_REVEALED") {
+		if (questStates.find("Quest_ThreadAlley_Start") != questStates.end() && questStates["Quest_ThreadAlley_Start"] == QuestState::Active) {
+			SetQuest(L"Quest: Delete the Trojan!");
+		}
+	}
+
+	if (eventType == "TROJAN_DEFEATED") {
+		if (questStates.find("Quest_ThreadAlley_Start") != questStates.end() && questStates["Quest_ThreadAlley_Start"] == QuestState::Active) {
+			questStates["Quest_ThreadAlley_Start"] = QuestState::Completed;
+			SetQuest(L"Quest: Trojan deleted. Alley is safe.");
+		}
+	}
+
+	return { false, L"" };
+}
+
+void Demo::QuestManager::GenerateSaveData(nlohmann::json& outData) {
+	nlohmann::json questsJson;
+	for (auto& pair : questStates) {
+		questsJson[pair.first] = static_cast<int>(pair.second);
+	}
+	outData["questStates"] = questsJson;
+	outData["trackedQuest"] = currentTrackedQuest;
+}
+
+void Demo::QuestManager::RestoreSaveData(const nlohmann::json& inData) {
+	if (inData.contains("questStates")) {
+		for (auto& item : inData["questStates"].items()) {
+			questStates[item.key()] = static_cast<QuestState>(item.value().get<int>());
+		}
+	}
+	if (inData.contains("trackedQuest")) {
+		currentTrackedQuest = inData["trackedQuest"].get<std::string>();
+
+		if (currentTrackedQuest == "SecretBoss_Pacman") {
+			if (questStates["SecretBoss_Pacman"] == QuestState::Completed) {
+				SetQuest(L"Quest: Find secret boss, defeat it and get rewards: Boss defeated 1/1");
+			}
+			else {
+				SetQuest(L"Quest: Find secret boss, defeat it and get rewards: Boss defeated 0/1");
+			}
+		}
+		else if (currentTrackedQuest == "Quest_Tutorial") {
+			SetQuest(L"Quest: Find a way out of this place!");
+		}
+		else if (currentTrackedQuest == "Quest_BossWorld") {
+			if (questStates["Quest_BossWorld"] == QuestState::Completed) {
+				SetQuest(L"Quest: Defeat the malware!");
+			}
+			else {
+				SetQuest(L"Quest: Activate the terminals: ?/4");
+			}
+		}
+		else if (currentTrackedQuest == "Quest_ThreadAlley_Start") {
+			if (questStates["Quest_ThreadAlley_Start"] == QuestState::Completed) {
+				SetQuest(L"Quest: Trojan deleted. Alley is safe.");
+			}
+			else {
+				//change this later for state saving 
+				SetQuest(L"Quest: Find the malware through this alley!");
+			}
+		}
+	}
+
 }
