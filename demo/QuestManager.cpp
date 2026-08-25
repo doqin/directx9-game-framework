@@ -104,7 +104,7 @@ void Demo::QuestManager::AcceptQuest(const std::string& questId) {
 		SetQuest(L"Quest: Activate the terminals: 0/4");
 	}
 	else if (questId == "Quest_Tutorial") {
-		SetQuest(L"Quest: Find a way out of this place!");
+		SetQuest(L"Quest: First Encounter...?");
 	}
 	else if (questId == "Quest_ThreadAlley_Start") {
 		SetQuest(L"Quest: Find the malware through this alley!");
@@ -168,6 +168,14 @@ Demo::QuestEventResult Demo::QuestManager::NotifyEvent(const std::string& eventT
 		}
 	}
 
+	if (eventType == "FIRST_ENCOUNTER_DEFEATED") {
+		if (targetId == "tutorial_keye_01" && GetQuestState("Quest_Tutorial") == QuestState::Active) {
+			questStates["Quest_Tutorial"] = QuestState::Completed;
+			SetQuest(L"Quest: First Encounter - Completed!");
+			player->AddGold(50);
+			return { true, L"50 Gold - Quest Completed: First Encounter" };
+		}
+	}
 	return { false, L"" };
 }
 
@@ -198,7 +206,7 @@ void Demo::QuestManager::RestoreSaveData(const nlohmann::json& inData) {
 			}
 		}
 		else if (currentTrackedQuest == "Quest_Tutorial") {
-			SetQuest(L"Quest: Find a way out of this place!");
+			SetQuest(L"Quest: First Encounter...?");
 		}
 		else if (currentTrackedQuest == "Quest_BossWorld") {
 			if (questStates["Quest_BossWorld"] == QuestState::Completed) {

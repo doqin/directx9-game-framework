@@ -23,6 +23,13 @@ namespace Demo {
         sprQuesCyan->SetOrigin(0.f, 0.f);
     }
 
+    void QuestMarker::Update(unsigned long long deltaTime) {
+        timeAccumulator += deltaTime * 0.001f;
+
+        //6.0f speed, 1.0f pixel
+        bobbingOffset = std::sin(timeAccumulator * 6.0f) * 1.0f;
+    }
+
     void QuestMarker::Draw(DX9GF::Camera* uiCamera, float x, float y, float scale) {
         QuestState state = QuestManager::GetInstance()->GetQuestState(questId);
         std::shared_ptr<DX9GF::AnimatedSprite> activeSprite = nullptr;
@@ -31,7 +38,7 @@ namespace Demo {
             if (state == QuestState::Locked) {
                 activeSprite = sprExclGold;
             }
-            else {
+            else if (state == QuestState::Active) {
                 activeSprite = sprExclGray;
             }
         }
@@ -43,7 +50,7 @@ namespace Demo {
 
         if (activeSprite) {
             activeSprite->SetScale(scale, scale);
-            activeSprite->SetPosition(x, y);
+            activeSprite->SetPosition(x, y + (bobbingOffset * scale));
             activeSprite->Begin();
             activeSprite->Draw(*uiCamera, 0);
             activeSprite->End();

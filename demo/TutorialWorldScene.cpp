@@ -16,6 +16,7 @@
 #include "Debug.h"
 void Demo::TutorialWorldScene::Init()
 {
+	OutputDebugStringA("[GHOST-BUG] TutorialWorldScene::Init() vừa bị gọi!\n");
 	camera.SetZoom(2.0f);
 	transformManager = std::make_shared<DX9GF::TransformManager>();
 	colliderManager = std::make_shared<DX9GF::ColliderManager>();
@@ -24,6 +25,8 @@ void Demo::TutorialWorldScene::Init()
 	player->Init(game->GetGraphicsDevice(), colliderManager.get(), &camera);
 	drawBuffer = std::make_shared<DX9GF::CommandBuffer>();
 	commandBuffer = std::make_shared<DX9GF::CommandBuffer>();
+	popUpMessage = std::make_shared<PopUpMessage>(transformManager, game);
+	popUpMessage->Init(game->GetGraphicsDevice(), &this->uiCamera);
 	map = std::make_shared<DX9GF::Map>(game->GetGraphicsDevice());
 	map->Create(transformManager, colliderManager, "./assets/tutorial.tmx");
 	/*map->SetAreaUpdateHandler("triggers", GetRandomEncounterFunc(game, player, {
@@ -80,13 +83,6 @@ void Demo::TutorialWorldScene::Init()
 	npcIntroduction = std::make_shared<DauDauNPC>(transformManager, 167.0f, -18.0f);
 	npcIntroduction->AttachQuestMarker("Quest_Tutorial", Demo::QuestMarkerRole::Giver);
 	npcIntroduction->Init(game->GetGraphicsDevice(), &camera, player, colliderManager, font, drawBuffer);
-	npcIntroduction->AddLine(L"Dau Dau", L"Hello! Welcome.");
-	npcIntroduction->AddLine(L"Player", L"Where am I?");
-	npcIntroduction->AddLine(L"Dau Dau", L"This is a cyber world! You will encounter many challenges here. Like digital foes and cyber pirates!");
-	npcIntroduction->AddLine(L"Player", L"How do I get out?");
-	npcIntroduction->AddLine(L"Dau Dau", L"How to escape this world? I don't know.");
-	npcIntroduction->AddLine(L"Dau Dau", L"But I can teach you how to survive here! Explore around a bit and I'll explain further.");
-	npcIntroduction->AddLine(L"Dau Dau", L"By the way, use the floppy disk icon over there to save your progress.");
 	npcExplainingEnemyEncounters = std::make_shared<DauDauNPC>(transformManager, 544.0f, -56.0f);
 	npcExplainingEnemyEncounters->Init(game->GetGraphicsDevice(), &camera, player, colliderManager, font, drawBuffer);
 	npcExplainingEnemyEncounters->AddLine(L"Dau Dau", L"Look out ahead! See those digital creeps roaming around?");
@@ -202,9 +198,14 @@ void Demo::TutorialWorldScene::Init()
 				auto app = DX9GF::Application::GetInstance();
 				auto sceMan = this->game->GetSceneManager();
 				auto battleScene = new MapBattleScene(this->game, this->player, app->GetScreenWidth(), app->GetScreenHeight(), e->GetEncounterData());
-
-				battleScene->SetOnVictoryCallback([e]() {
+				battleScene->SetOnVictoryCallback([e, this]() {
 					e->SetDefeatedState(true, 180.f);
+					auto result = QuestManager::GetInstance()->NotifyEvent("FIRST_ENCOUNTER_DEFEATED", e->GetEnemyID(), this->GetPlayer().get());
+					if (result.hasReward) {
+						if (this->popUpMessage) {
+							this->popUpMessage->QueueMessage(this->commandBuffer.get(), L"(+) " + result.rewardMessage, 4.0f);
+						}
+					}
 					});
 
 				sceMan->InsertScene(sceMan->GetIndex() + 1, battleScene);
@@ -221,7 +222,7 @@ void Demo::TutorialWorldScene::Init()
 		};
 
 	//test kernel
-	spawn(615.f, -170.f, "tutorial_keye_01", { "KeyeEnemy"}, false, false);
+	spawn(615.f, -170.f, "tutorial_keye_01", { "KeyeEnemy" }, false, false);
 	spawn(510.f, -380.f, "tutorial_demoneye_01", { "DemonEyeEnemy" }, false, false);
 	spawn(500.f, -590.f, "tutorial_random_01", { "KeyeEnemy", "DemonEyeEnemy" }, true, false);
 	spawn(50.f, -330.f, "tutorial_random_02", { "KeyeEnemy", "DemonEyeEnemy", "MimicEnemy" }, true, false);
@@ -308,16 +309,50 @@ void Demo::TutorialWorldScene::Update(unsigned long long deltaTime)
 		isGamePaused = true;
 	}
 
+	if (popUpMessage) {
+		popUpMessage->Update(deltaTime);
+	}
+
 	if (npcIntroduction) {
 		npcIntroduction->Update(deltaTime);
 		if (!currentConversation && npcIntroduction->CanInteract() && inpMan->KeyPress(SettingsManager::GetInstance()->GetKeybind("INTERACT"))) {
-			float sw = game->GetVirtualWidth();
-			float sh = game->GetVirtualHeight();
+
+			npcIntroduction->ClearLines();
+			auto qState = QuestManager::GetInstance()->GetQuestState("Quest_Tutorial");
+
+			if (qState == Demo::QuestState::Locked) {
+				npcIntroduction->AddLine(L"Dau Dau", L"Hello! Welcome.");
+				npcIntroduction->AddLine(L"Player", L"Where am I?");
+				npcIntroduction->AddLine(L"Dau Dau", L"This is a cyber world! You will encounter many challenges here. Like digital foes and cyber pirates!");
+				npcIntroduction->AddLine(L"Player", L"How do I get out?");
+				npcIntroduction->AddLine(L"Dau Dau", L"How to escape this world? I don't know.");
+				npcIntroduction->AddLine(L"Dau Dau", L"But I can teach you how to survive here! Explore around a bit and I'll explain further.");
+				npcIntroduction->AddLine(L"Dau Dau", L"By the way, use the floppy disk icon over there to save your progress.");
+
+				//trigger popup to active quest
+				npcIntroduction->SetOnDialogueEnd([]() {
+					std::vector<std::pair<std::wstring, std::function<void()>>> buttons = {
+						{ L"Yes(Y)", []() { QuestManager::GetInstance()->AcceptQuest("Quest_Tutorial"); } },
+						{ L"No(N)", []() {} }
+					};
+					PopupManager::GetInstance()->Show("stepped_blue", L"New Quest", L"Accept Beginner's Quest?", buttons);
+					});
+			}
+			else if (qState == Demo::QuestState::Active) {
+				npcIntroduction->AddLine(L"Dau Dau", L"Explore around a bit!");
+				npcIntroduction->SetOnDialogueEnd(nullptr);
+			}
+			else {
+				npcIntroduction->AddLine(L"Dau Dau", L"Great job! You know the basics of survival now.");
+				npcIntroduction->SetOnDialogueEnd(nullptr);
+			}
+
+			activeNPC = npcIntroduction;
+			auto [sw, sh] = camera.GetScreenResolution();
 			currentConversation = std::make_shared<IConversation>(std::make_shared<DX9GF::FontSprite>(font.get()), sw, sh);
 			for (auto& line : npcIntroduction->GetDialogueLines()) {
 				currentConversation->AddLine(line);
 			}
-			QuestManager::GetInstance()->AcceptQuest("Quest_Tutorial");
 		}
 	}
 	if (npcExplainingHealingPoint) {
@@ -357,7 +392,15 @@ void Demo::TutorialWorldScene::Update(unsigned long long deltaTime)
 	if (currentConversation) {
 		isGamePaused = true;
 		currentConversation->Execute(deltaTime);
-		if (currentConversation->IsFinished()) currentConversation = nullptr;
+
+		if (currentConversation->IsFinished()) {
+			if (activeNPC && activeNPC->GetOnDialogueEnd()) {
+				activeNPC->GetOnDialogueEnd()();
+			}
+
+			currentConversation = nullptr;
+			activeNPC = nullptr;
+		}
 	}
 
 	for (auto& savePoint : savePoints) {
@@ -462,7 +505,7 @@ void Demo::TutorialWorldScene::DrawWorld(unsigned long long deltaTime)
 		for (auto& enemy : mapEnemies) {
 			depthNodes.push_back({ enemy->GetWorldY(), [&, enemy]() { enemy->Draw(&camera, deltaTime); } });
 		}
-		
+
 		if (player) depthNodes.push_back({ player->GetWorldY(), [&]() { player->Draw(deltaTime); } });
 
 		std::sort(depthNodes.begin(), depthNodes.end());
@@ -488,7 +531,6 @@ void Demo::TutorialWorldScene::DrawUI(unsigned long long deltaTime)
 		for (auto& chest : treasureChests) {
 			chest->DrawUI(&this->uiCamera, deltaTime);
 		}
-
 		if (shopPoint_Card) shopPoint_Card->DrawUI(&this->uiCamera, deltaTime);
 		if (shopPoint_BSItem) shopPoint_BSItem->DrawUI(&this->uiCamera, deltaTime);
 
@@ -519,10 +561,11 @@ void Demo::TutorialWorldScene::DrawUI(unsigned long long deltaTime)
 		if (!(inventoryMenu && inventoryMenu->IsInKeyboardMode())) {
 			DX9GF::InputManager::GetInstance()->DrawCursor(&this->uiCamera, deltaTime);
 		}
-
+		if (popUpMessage) {
+			popUpMessage->Draw(deltaTime);
+		}
 		ImGui::Render();
 		ImGui_ImplDX9_RenderDrawData(ImGui::GetDrawData());
-
 		gd->EndDraw();
 	}
 }

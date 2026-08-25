@@ -11,6 +11,7 @@
 #include "DauDauNPC.h"
 #include "IConversation.h"
 #include "TreasureChestNPC.h"
+#include "PopUpMessage.h"
 
 #include "NPC1.h"
 #include "CardShop.h"
@@ -39,12 +40,14 @@ namespace Demo {
 		std::shared_ptr<DX9GF::Map> map;
 		std::shared_ptr<DX9GF::CommandBuffer> drawBuffer;
 		std::shared_ptr<DX9GF::CommandBuffer> commandBuffer;
+		std::shared_ptr<PopUpMessage> popUpMessage;
 
 		std::shared_ptr<DauDauNPC> npcIntroduction;
 		std::shared_ptr<DauDauNPC> npcExplainingEnemyEncounters;
 		std::shared_ptr<DauDauNPC> npcExplainingHealingPoint;
 		std::shared_ptr<DauDauNPC> npcExplainingPortal;
 		std::shared_ptr<IConversation> currentConversation;	
+		std::shared_ptr<INPC> activeNPC = nullptr;
 
 		std::vector<std::shared_ptr<TreasureChestNPC>> treasureChests;
 		std::vector<std::shared_ptr<MapEnemy>> mapEnemies;

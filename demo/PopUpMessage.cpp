@@ -313,13 +313,18 @@ void Demo::PopUpMessage::RelayoutLines()
 float Demo::PopUpMessage::GetAnchorY() const
 {
 	float screenHeight = 0.f;
-	if (camera != nullptr) {
+
+	if (game != nullptr) {
+		screenHeight = static_cast<float>(game->GetVirtualHeight());
+	}
+	else if (camera != nullptr) {
 		auto [resWidth, resHeight] = camera->GetScreenResolution();
 		screenHeight = static_cast<float>(resHeight);
 	}
 	else if (auto app = DX9GF::Application::GetInstance(); app != nullptr) {
 		screenHeight = static_cast<float>(app->GetScreenHeight());
 	}
+
 	return -screenHeight / 2.f + lineHeight + ANCHOR_MARGIN;
 }
 

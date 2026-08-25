@@ -13,6 +13,8 @@ namespace Demo {
         std::string questId;
         QuestMarkerRole role;
         bool conditionMet = false;
+        float timeAccumulator = 0.0f;
+        float bobbingOffset = 0.0f;
 
         std::shared_ptr<DX9GF::Texture> uiTex;
 
@@ -27,6 +29,7 @@ namespace Demo {
         }
 
         void Init(DX9GF::GraphicsDevice* gd);
+        void Update(unsigned long long deltaTime);
         void Draw(DX9GF::Camera* uiCamera, float x, float y, float scale);
 
         void SetConditionMet(bool met) { conditionMet = met; }
