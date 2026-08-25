@@ -14,7 +14,7 @@
 #include "DauDauNPC.h"
 #include "AuthTerminal.h"
 #include "TrojanNPC.h"
-
+#include "PopUpMessage.h"
 #include "MapEnemy.h"
 
 namespace Demo {
@@ -46,6 +46,8 @@ namespace Demo {
 		std::string authPassword;
 		bool authTerminalSolved = false;
 
+		std::shared_ptr<INPC> activeNPC = nullptr;
+		std::shared_ptr<PopUpMessage> popUpMessage;
 
 		std::vector<std::shared_ptr<TreasureChestNPC>> treasureChests;
 		std::shared_ptr<IConversation> currentConversation;

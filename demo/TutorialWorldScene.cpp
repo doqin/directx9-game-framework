@@ -13,10 +13,8 @@
 #include "MapBattleScene.h"
 #include "backends/imgui_impl_dx9.h"
 #include "backends/imgui_impl_win32.h"
-#include "Debug.h"
 void Demo::TutorialWorldScene::Init()
 {
-	OutputDebugStringA("[GHOST-BUG] TutorialWorldScene::Init() vừa bị gọi!\n");
 	camera.SetZoom(2.0f);
 	transformManager = std::make_shared<DX9GF::TransformManager>();
 	colliderManager = std::make_shared<DX9GF::ColliderManager>();

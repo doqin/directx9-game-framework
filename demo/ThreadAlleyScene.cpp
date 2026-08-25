@@ -18,6 +18,7 @@
 #include "Debug.h"
 #include "imgui.h"
 #include "backends/imgui_impl_dx9.h"
+
 void Demo::ThreadAlleyScene::Init()
 {
 	camera.SetZoom(2.0f);
@@ -32,14 +33,12 @@ void Demo::ThreadAlleyScene::Init()
 	drawBuffer = std::make_shared<DX9GF::CommandBuffer>();
 	commandBuffer = std::make_shared<DX9GF::CommandBuffer>();
 
+	popUpMessage = std::make_shared<Demo::PopUpMessage>(transformManager, game);
+	popUpMessage->SetLocalPosition(0.0f, 0.0f);
+	popUpMessage->Init(game->GetGraphicsDevice(), &this->uiCamera);
+
 	map = std::make_shared<DX9GF::Map>(game->GetGraphicsDevice());
 	map->Create(transformManager, colliderManager, "./assets/ThreadAlley.tmx");
-
-	/*map->SetAreaUpdateHandler("triggers", GetRandomEncounterFunc(game, player, {
-		{"VampireBatEnemy", 40},
-		{"MimicEnemy", 25},
-		}, drawBuffer, commandBuffer, &isGamePaused, & this->uiCamera, [this](DX9GF::GraphicsDevice* gd, unsigned long long deltaTime) { DrawCheckerBackground(gd, deltaTime); }));*/
-
 	map->SetAreaUpdateHandler("trigger_p", [this](const DX9GF::Map::ObjectArea& area) {
 		isTransitioning = true;
 		auto transitionInCommand = std::make_shared<TransitionCommand>(game->GetGraphicsDevice(), &this->uiCamera, 1.f, true);
@@ -99,7 +98,6 @@ void Demo::ThreadAlleyScene::Init()
 	dauDau = std::make_shared<DauDauNPC>(transformManager, -580.f, 100.f);
 	dauDau->AttachQuestMarker("Quest_ThreadAlley_Start", Demo::QuestMarkerRole::Giver);
 	dauDau->Init(game->GetGraphicsDevice(), &camera, player, colliderManager, font, drawBuffer);
-	dauDau->AddLine(L"Dau Dau", L"This alley is full of malware. Watch out!");
 
 	// Rolled fresh for a new game; RestoreSaveData overwrites it when a save is loaded, which always
 	// happens after every scene has been Init()ed.
@@ -235,6 +233,10 @@ void Demo::ThreadAlleyScene::Init()
 	//healingPoints.push_back(std::make_shared<HealingPoint>(transformManager, 233, -297));
 	//healingPoints.back()->Init(game->GetGraphicsDevice(), &camera, player, colliderManager, font, drawBuffer);
 	//healingPoints.back()->SetVisible(true);
+
+	/*healingPoints.push_back(std::make_shared<HealingPoint>(transformManager, 984, -839));
+	healingPoints.back()->Init(game->GetGraphicsDevice(), &camera, player, colliderManager, font, drawBuffer);
+	healingPoints.back()->SetVisible(true);*/
 
 	healingPoints.push_back(std::make_shared<HealingPoint>(transformManager, 585, -539));
 	healingPoints.back()->Init(game->GetGraphicsDevice(), &camera, player, colliderManager, font, drawBuffer);
@@ -476,12 +478,23 @@ void Demo::ThreadAlleyScene::Update(unsigned long long deltaTime)
 		isGamePaused = true;
 	}
 
+	// Update PopUpMessage
+	if (popUpMessage) {
+		popUpMessage->Update(deltaTime);
+	}
+
 	if (currentConversation) {
 		isGamePaused = true;
 		currentConversation->Execute(deltaTime);
 		if (currentConversation->IsFinished()) {
 			currentConversation = nullptr;
 			// Clear before invoking: the callback may queue the next conversation.
+			if (activeNPC && activeNPC->GetOnDialogueEnd()) {
+				activeNPC->GetOnDialogueEnd()();
+			}
+			activeNPC = nullptr; // Reset
+
+			// Callback state-machine
 			if (onConversationEnd) {
 				auto callback = std::move(onConversationEnd);
 				onConversationEnd = nullptr;
@@ -492,13 +505,36 @@ void Demo::ThreadAlleyScene::Update(unsigned long long deltaTime)
 
 	if (dauDau) {
 		dauDau->Update(deltaTime);
-		if (!currentConversation && dauDau->CanInteract() && inpMan->KeyPress(SettingsManager::GetInstance()->GetKeybind("INTERACT"))) {
+		if (!currentConversation && !isTerminalMenuOpen && dauDau->CanInteract() && inpMan->KeyPress(SettingsManager::GetInstance()->GetKeybind("INTERACT"))) {
+
+			dauDau->ClearLines();
+			auto qState = QuestManager::GetInstance()->GetQuestState("Quest_ThreadAlley_Start");
+
+			if (qState == Demo::QuestState::Locked) {
+				dauDau->AddLine(L"Dau Dau", L"This alley is full of malware. Watch out!");
+				dauDau->SetOnDialogueEnd([]() {
+					std::vector<std::pair<std::wstring, std::function<void()>>> buttons = {
+						{ L"Yes(Y)", []() { QuestManager::GetInstance()->AcceptQuest("Quest_ThreadAlley_Start"); } },
+						{ L"No(N)", []() {} }
+					};
+					PopupManager::GetInstance()->Show("stepped_blue", L"New Quest", L"Help clear the alley?", buttons);
+					});
+			}
+			else if (qState == Demo::QuestState::Active) {
+				dauDau->AddLine(L"Dau Dau", L"Good luck finding the malware! It's hiding deep inside.");
+				dauDau->SetOnDialogueEnd(nullptr);
+			}
+			else {
+				dauDau->AddLine(L"Dau Dau", L"Wow, you actually cleared the alley! It's safe now.");
+				dauDau->SetOnDialogueEnd(nullptr);
+			}
+
+			activeNPC = dauDau;
 			auto [sw, sh] = camera.GetScreenResolution();
 			currentConversation = std::make_shared<IConversation>(std::make_shared<DX9GF::FontSprite>(font.get()), sw, sh);
 			for (auto& line : dauDau->GetDialogueLines()) {
 				currentConversation->AddLine(line);
 			}
-			QuestManager::GetInstance()->AcceptQuest("Quest_ThreadAlley_Start");
 		}
 	}
 
@@ -658,6 +694,10 @@ void Demo::ThreadAlleyScene::DrawUI(unsigned long long deltaTime)
 			DX9GF::InputManager::GetInstance()->DrawCursor(&this->uiCamera, deltaTime);
 		}
 
+		if (popUpMessage) {
+			popUpMessage->Draw(deltaTime);
+		}
+
 		ImGui::Render();
 		ImGui_ImplDX9_RenderDrawData(ImGui::GetDrawData());
 		gd->EndDraw();
@@ -815,7 +855,10 @@ void Demo::ThreadAlleyScene::StartTrojanBattle()
 			});
 		battleScene->SetOnVictoryCallback([this]() {
 			trojanNPC->SetPhase(TrojanNPC::Phase::Defeated);
-			QuestManager::GetInstance()->NotifyEvent("TROJAN_DEFEATED", "", player.get());
+			auto result = QuestManager::GetInstance()->NotifyEvent("TROJAN_DEFEATED", "", player.get());
+			if (result.hasReward && this->popUpMessage) {
+				this->popUpMessage->ShowMessage(L"(+) " + result.rewardMessage, 5.0f);
+			}
 			});
 
 		sceMan->InsertScene(sceMan->GetIndex() + 1, battleScene);

@@ -27,13 +27,13 @@ void Demo::SecretPuzzleScene::Init()
 	player->Init(game->GetGraphicsDevice(), colliderManager.get(), &camera);
 	drawBuffer = std::make_shared<DX9GF::CommandBuffer>();
 	commandBuffer = std::make_shared<DX9GF::CommandBuffer>();
+
+	popUpMessage = std::make_shared<Demo::PopUpMessage>(transformManager, game);
+	popUpMessage->SetLocalPosition(0.0f, 0.0f);
+	popUpMessage->Init(game->GetGraphicsDevice(), &this->uiCamera);
+
 	map = std::make_shared<DX9GF::Map>(game->GetGraphicsDevice());
 	map->Create(transformManager, colliderManager, "./assets/SecretPuzzle.tmx");
-
-	/*map->SetAreaUpdateHandler("trigger_encounter", GetRandomEncounterFunc(game, player, {
-		{"VampireBatEnemy", 40},
-		{"DemonEyeEnemy", 35},
-		}, drawBuffer, commandBuffer, &isGamePaused, &this->uiCamera, [this](DX9GF::GraphicsDevice* gd, unsigned long long deltaTime) { DrawBackground(gd, deltaTime); }));*/
 
 	map->SetAreaUpdateHandler("trigger_p_back", [this](const DX9GF::Map::ObjectArea& area) {
 		if (isTransitioning) return;
@@ -130,11 +130,9 @@ void Demo::SecretPuzzleScene::Init()
 				auto result = QuestManager::GetInstance()->NotifyEvent("ENTITY_DEAD", "SecretBoss_Pacman", this->player.get());
 
 				if (result.hasReward) {
-					auto [sw, sh] = camera.GetScreenResolution();
-					this->currentConversation = std::make_shared<IConversation>(
-						std::make_shared<DX9GF::FontSprite>(font.get()), sw, sh);
-
-					this->currentConversation->AddLine({ .name = L"Secret boss ", .content = result.rewardMessage });
+					if (this->popUpMessage) {
+						this->popUpMessage->ShowMessage(L"(+) " + result.rewardMessage, 5.0f);
+					}
 				}
 
 				markFinished();
@@ -333,12 +331,10 @@ void Demo::SecretPuzzleScene::Init()
 
 	dauDau = std::make_shared<DauDauNPC>(transformManager, 1 * 16, -31.0f * 16);
 	dauDau->Init(game->GetGraphicsDevice(), &camera, player, colliderManager, font, drawBuffer);
-	dauDau->AddLine(L"Dau Dau", L"Watch out! This portal is a one-way trip to the invisible maze! Enter if you dare!");
 
 	dauDauSpawn = std::make_shared<DauDauNPC>(transformManager, -80 * 16, -37 * 16);
 	dauDauSpawn->AttachQuestMarker("SecretBoss_Pacman", Demo::QuestMarkerRole::Giver);
 	dauDauSpawn->Init(game->GetGraphicsDevice(), &camera, player, colliderManager, font, drawBuffer);
-	dauDauSpawn->AddLine(L"Dau Dau", L"There's a hidden boss somewhere in this maze. Defeat it for a secret reward!");
 }
 
 void Demo::SecretPuzzleScene::Update(unsigned long long deltaTime)
@@ -393,10 +389,9 @@ void Demo::SecretPuzzleScene::Update(unsigned long long deltaTime)
 		isGamePaused = true;
 	}
 
-	if (currentConversation) {
-		isGamePaused = true;
-		currentConversation->Execute(deltaTime);
-		if (currentConversation->IsFinished()) currentConversation = nullptr;
+	// Update PopUpMessage
+	if (popUpMessage) {
+		popUpMessage->Update(deltaTime);
 	}
 
 	for (auto& savePoint : savePoints) {
@@ -410,24 +405,69 @@ void Demo::SecretPuzzleScene::Update(unsigned long long deltaTime)
 		healingPoint->Update(deltaTime);
 	}
 
-	dauDau->Update(deltaTime);
-	if (!currentConversation && dauDau->CanInteract() && inpMan->KeyPress(SettingsManager::GetInstance()->GetKeybind("INTERACT"))) {
-		auto [sw, sh] = camera.GetScreenResolution();
-		currentConversation = std::make_shared<IConversation>(std::make_shared<DX9GF::FontSprite>(font.get()), sw, sh);
-		for (auto& line : dauDau->GetDialogueLines()) {
-			currentConversation->AddLine(line);
+	if (dauDau) {
+		dauDau->Update(deltaTime);
+		if (!currentConversation && dauDau->CanInteract() && inpMan->KeyPress(SettingsManager::GetInstance()->GetKeybind("INTERACT"))) {
+			dauDau->ClearLines();
+			dauDau->AddLine(L"Dau Dau", L"Watch out! This portal is a one-way trip to the invisible maze! Enter if you dare!");
+			dauDau->SetOnDialogueEnd(nullptr);
+
+			activeNPC = dauDau;
+			auto [sw, sh] = camera.GetScreenResolution();
+			currentConversation = std::make_shared<IConversation>(std::make_shared<DX9GF::FontSprite>(font.get()), sw, sh);
+			for (auto& line : dauDau->GetDialogueLines()) {
+				currentConversation->AddLine(line);
+			}
 		}
 	}
 
 	if (dauDauSpawn) {
 		dauDauSpawn->Update(deltaTime);
 		if (!currentConversation && dauDauSpawn->CanInteract() && inpMan->KeyPress(SettingsManager::GetInstance()->GetKeybind("INTERACT"))) {
+
+			dauDauSpawn->ClearLines();
+			auto qState = QuestManager::GetInstance()->GetQuestState("SecretBoss_Pacman");
+
+			if (qState == Demo::QuestState::Locked) {
+				dauDauSpawn->AddLine(L"Dau Dau", L"There's a hidden boss somewhere in this maze.");
+				dauDauSpawn->AddLine(L"Dau Dau", L"Defeat it for a secret reward!");
+
+				dauDauSpawn->SetOnDialogueEnd([]() {
+					std::vector<std::pair<std::wstring, std::function<void()>>> buttons = {
+						{ L"Yes(Y)", []() { QuestManager::GetInstance()->AcceptQuest("SecretBoss_Pacman"); } },
+						{ L"No(N)", []() {} }
+					};
+					PopupManager::GetInstance()->Show("stepped_blue", L"Secret Boss", L"Accept this challenge?", buttons);
+					});
+			}
+			else if (qState == Demo::QuestState::Active) {
+				dauDauSpawn->AddLine(L"Dau Dau", L"The boss is still lurking somewhere... Find it!");
+				dauDauSpawn->SetOnDialogueEnd(nullptr);
+			}
+			else {
+				dauDauSpawn->AddLine(L"Dau Dau", L"Incredible! You actually defeated the secret boss!");
+				dauDauSpawn->SetOnDialogueEnd(nullptr);
+			}
+
+			activeNPC = dauDauSpawn;
 			auto [sw, sh] = camera.GetScreenResolution();
 			currentConversation = std::make_shared<IConversation>(std::make_shared<DX9GF::FontSprite>(font.get()), sw, sh);
 			for (auto& line : dauDauSpawn->GetDialogueLines()) {
 				currentConversation->AddLine(line);
 			}
-			QuestManager::GetInstance()->AcceptQuest("SecretBoss_Pacman");
+		}
+	}
+
+	if (currentConversation) {
+		isGamePaused = true;
+		currentConversation->Execute(deltaTime);
+
+		if (currentConversation->IsFinished()) {
+			if (activeNPC && activeNPC->GetOnDialogueEnd()) {
+				activeNPC->GetOnDialogueEnd()();
+			}
+			currentConversation = nullptr;
+			activeNPC = nullptr;
 		}
 	}
 
@@ -559,6 +599,10 @@ void Demo::SecretPuzzleScene::DrawUI(unsigned long long deltaTime)
 
 		if (!(inventoryMenu && inventoryMenu->IsInKeyboardMode())) {
 			DX9GF::InputManager::GetInstance()->DrawCursor(&this->uiCamera, deltaTime);
+		}
+
+		if (popUpMessage) {
+			popUpMessage->Draw(deltaTime);
 		}
 
 		ImGui::Render();

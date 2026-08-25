@@ -41,6 +41,7 @@ namespace Demo {
             else if (state == QuestState::Active) {
                 activeSprite = sprExclGray;
             }
+            //completed quests dont need markers
         }
         else if (role == QuestMarkerRole::Receiver) {
             if (state == QuestState::Active) {

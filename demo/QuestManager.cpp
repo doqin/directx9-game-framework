@@ -134,7 +134,7 @@ Demo::QuestEventResult Demo::QuestManager::NotifyEvent(const std::string& eventT
 		if (questStates["Quest_BossWorld"] == QuestState::Active) {
 			int step = std::stoi(targetId);
 			if (step >= 4) {
-				SetQuest(L"Quest: Defeat the malware!");
+				SetQuest(L"Quest: Defeat the Boss!");
 				// questStates["Quest_BossWorld"] = QuestState::Completed;
 			}
 			else {
@@ -165,6 +165,8 @@ Demo::QuestEventResult Demo::QuestManager::NotifyEvent(const std::string& eventT
 		if (questStates.find("Quest_ThreadAlley_Start") != questStates.end() && questStates["Quest_ThreadAlley_Start"] == QuestState::Active) {
 			questStates["Quest_ThreadAlley_Start"] = QuestState::Completed;
 			SetQuest(L"Quest: Trojan deleted. Alley is safe.");
+			player->AddGold(50);
+			return { true, L"50 Gold - Quest Completed: Defeated the Trojan" };
 		}
 	}
 
@@ -172,8 +174,8 @@ Demo::QuestEventResult Demo::QuestManager::NotifyEvent(const std::string& eventT
 		if (targetId == "tutorial_keye_01" && GetQuestState("Quest_Tutorial") == QuestState::Active) {
 			questStates["Quest_Tutorial"] = QuestState::Completed;
 			SetQuest(L"Quest: First Encounter - Completed!");
-			player->AddGold(50);
-			return { true, L"50 Gold - Quest Completed: First Encounter" };
+			player->AddGold(26);
+			return { true, L"26 Gold - Quest Completed: First Encounter" };
 		}
 	}
 	return { false, L"" };
@@ -210,7 +212,7 @@ void Demo::QuestManager::RestoreSaveData(const nlohmann::json& inData) {
 		}
 		else if (currentTrackedQuest == "Quest_BossWorld") {
 			if (questStates["Quest_BossWorld"] == QuestState::Completed) {
-				SetQuest(L"Quest: Defeat the malware!");
+				SetQuest(L"Quest: Defeat the Boss!");
 			}
 			else {
 				SetQuest(L"Quest: Activate the terminals: ?/4");

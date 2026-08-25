@@ -14,6 +14,7 @@
 #include "TreasureChestNPC.h"
 #include "PlayerHUD.h"
 #include "MapEnemy.h"
+#include "PopUpMessage.h"
 
 namespace Demo {
     class BossWorldScene : public DX9GF::IScene, public DX9GF::ISaveable {
@@ -33,8 +34,8 @@ namespace Demo {
         std::shared_ptr<DX9GF::CommandBuffer> commandBuffer;
         std::shared_ptr<DX9GF::SaveManager> saveManager;
 
-		std::shared_ptr<DX9GF::Texture> gateTexture;
-		std::shared_ptr<DX9GF::StaticSprite> gateSprite;
+        std::shared_ptr<DX9GF::Texture> gateTexture;
+        std::shared_ptr<DX9GF::StaticSprite> gateSprite;
 
         std::vector<std::shared_ptr<HackTerminal>> hackMachines;
         std::shared_ptr<HackTerminal> mainTerminal;
@@ -43,7 +44,7 @@ namespace Demo {
         int currentHackStep = 0;
         bool isBossDoorUnlocked = false;
         bool hasGottenUselessItem = false;
-		bool isTransitioning = false;
+        bool isTransitioning = false;
     public:
         BossWorldScene(Game* game, std::shared_ptr<DX9GF::SaveManager> sm, UINT sw, UINT sh) : IScene(sw, sh), game(game), saveManager(sm){}
         void Init() override;
@@ -62,6 +63,9 @@ namespace Demo {
         std::shared_ptr<DauDauNPC> npcHint;
         std::shared_ptr<DauDauNPC> dauDauSpawn;
         std::shared_ptr<IConversation> currentConversation;
+
+        std::shared_ptr<INPC> activeNPC = nullptr;
+        std::shared_ptr<PopUpMessage> popUpMessage;
 
         std::vector<std::shared_ptr<SavePoint>> savePoints;
         std::vector<std::shared_ptr<HealingPoint>> healingPoints;

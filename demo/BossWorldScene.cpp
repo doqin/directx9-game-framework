@@ -35,6 +35,10 @@ void Demo::BossWorldScene::Init() {
 	commandBuffer = std::make_shared<DX9GF::CommandBuffer>();
 	font = std::make_shared<DX9GF::Font>(game->GetGraphicsDevice(), L"StatusPlz", 16);
 
+	popUpMessage = std::make_shared<Demo::PopUpMessage>(transformManager, game);
+	popUpMessage->SetLocalPosition(0.0f, 0.0f);
+	popUpMessage->Init(game->GetGraphicsDevice(), &this->uiCamera);
+
 	map = std::make_shared<DX9GF::Map>(game->GetGraphicsDevice());
 	map->Create(transformManager, colliderManager, "./assets/BossMatrix.tmx");
 
@@ -62,7 +66,6 @@ void Demo::BossWorldScene::Init() {
 	dauDauSpawn = std::make_shared<DauDauNPC>(transformManager, 300.f, 230.f);
 	dauDauSpawn->AttachQuestMarker("Quest_BossWorld", Demo::QuestMarkerRole::Giver);
 	dauDauSpawn->Init(game->GetGraphicsDevice(), &camera, player, colliderManager, font, drawBuffer);
-	dauDauSpawn->AddLine(L"Dau Dau", L"Welcome to the boss sector. Activate all four terminals to unlock the gate.");
 
 	//hack machines
 	auto hackCallback = std::bind(&BossWorldScene::OnTerminalHacked, this, std::placeholders::_1);
@@ -513,9 +516,50 @@ void Demo::BossWorldScene::Update(unsigned long long deltaTime) {
 		isGamePaused = true;
 	}
 
+	if (popUpMessage) {
+		popUpMessage->Update(deltaTime);
+	}
+
+	if (dauDauSpawn) {
+		dauDauSpawn->Update(deltaTime);
+		if (!currentConversation && dauDauSpawn->CanInteract() && inpMan->KeyPress(SettingsManager::GetInstance()->GetKeybind("INTERACT"))) {
+
+			dauDauSpawn->ClearLines();
+			auto qState = QuestManager::GetInstance()->GetQuestState("Quest_BossWorld");
+
+			if (qState == Demo::QuestState::Locked) {
+				dauDauSpawn->AddLine(L"Dau Dau", L"Welcome to the boss sector.");
+				dauDauSpawn->AddLine(L"Dau Dau", L"Activate all four terminals to unlock the gate.");
+				dauDauSpawn->SetOnDialogueEnd([]() {
+					std::vector<std::pair<std::wstring, std::function<void()>>> buttons = {
+						{ L"Yes(Y)", []() { QuestManager::GetInstance()->AcceptQuest("Quest_BossWorld"); } },
+						{ L"No(N)", []() {} }
+					};
+					PopupManager::GetInstance()->Show("stepped_blue", L"New Quest", L"Activate terminals?", buttons);
+					});
+			}
+			else if (qState == Demo::QuestState::Active) {
+				dauDauSpawn->AddLine(L"Dau Dau", L"You need to activate the terminals to proceed.");
+				dauDauSpawn->SetOnDialogueEnd(nullptr);
+			}
+			else {
+				dauDauSpawn->AddLine(L"Dau Dau", L"The gate is open! Good luck with the malware.");
+				dauDauSpawn->SetOnDialogueEnd(nullptr);
+			}
+
+			activeNPC = dauDauSpawn;
+			auto [sw, sh] = camera.GetScreenResolution();
+			currentConversation = std::make_shared<IConversation>(std::make_shared<DX9GF::FontSprite>(font.get()), sw, sh);
+			for (auto& line : dauDauSpawn->GetDialogueLines()) {
+				currentConversation->AddLine(line);
+			}
+		}
+	}
+
 	if (npcHint) {
 		npcHint->Update(deltaTime);
 		if (!currentConversation && npcHint->CanInteract() && inpMan->KeyPress(SettingsManager::GetInstance()->GetKeybind("INTERACT"))) {
+			activeNPC = npcHint;
 			auto [sw, sh] = camera.GetScreenResolution();
 			currentConversation = std::make_shared<IConversation>(std::make_shared<DX9GF::FontSprite>(font.get()), sw, sh);
 			for (auto& line : npcHint->GetDialogueLines()) {
@@ -524,23 +568,19 @@ void Demo::BossWorldScene::Update(unsigned long long deltaTime) {
 		}
 	}
 
-	if (dauDauSpawn) {
-		dauDauSpawn->Update(deltaTime);
-		if (!currentConversation && dauDauSpawn->CanInteract() && inpMan->KeyPress(SettingsManager::GetInstance()->GetKeybind("INTERACT"))) {
-			auto [sw, sh] = camera.GetScreenResolution();
-			currentConversation = std::make_shared<IConversation>(std::make_shared<DX9GF::FontSprite>(font.get()), sw, sh);
-			for (auto& line : dauDauSpawn->GetDialogueLines()) {
-				currentConversation->AddLine(line);
-			}
-			QuestManager::GetInstance()->AcceptQuest("Quest_BossWorld");
-		}
-	}
 
 	if (currentConversation) {
 		isGamePaused = true;
 		currentConversation->Execute(deltaTime);
-		if (currentConversation->IsFinished()) currentConversation = nullptr;
+		if (currentConversation->IsFinished()) {
+			currentConversation = nullptr;
+			if (activeNPC && activeNPC->GetOnDialogueEnd()) {
+				activeNPC->GetOnDialogueEnd()();
+			}
+			activeNPC = nullptr;
+		}
 	}
+
 	if (rustyChest && !rustyChest->GetIsOpened()) {
 		rustyChest->Update(deltaTime);
 
@@ -718,6 +758,10 @@ void Demo::BossWorldScene::DrawUI(unsigned long long deltaTime)
 
 		if (!(inventoryMenu && inventoryMenu->IsInKeyboardMode())) {
 			DX9GF::InputManager::GetInstance()->DrawCursor(&this->uiCamera, deltaTime);
+		}
+
+		if (popUpMessage) {
+			popUpMessage->Draw(deltaTime);
 		}
 
 		ImGui::Render();

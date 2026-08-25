@@ -41,12 +41,11 @@ namespace Demo {
 		float uiY = (worldY - worldCamera->GetPosition().y) * zoom;
 		float scale = 1.0f * zoom;
 
-		// FIX LỘT VIỀN ĐEN: Lấy kích thước Virtual từ World Camera (vì nó không bị dãn khi Resize)
 		auto [vw, vh] = worldCamera->GetScreenResolution();
 		float halfW = vw / 2.0f;
 		float halfH = vh / 2.0f;
 
-		//culling
+		//culling the marker
 		if (uiX < -halfW || uiX > halfW ||
 			uiY < -halfH || uiY > halfH) {
 			return;

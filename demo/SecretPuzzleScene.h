@@ -17,6 +17,7 @@
 #include "TreasureChestNPC.h"
 #include "PlayerHUD.h"
 #include "MapEnemy.h"
+#include "PopUpMessage.h"
 
 namespace Demo {
 	class SecretPuzzleScene : public DX9GF::IScene, public DX9GF::ISaveable {
@@ -48,6 +49,9 @@ namespace Demo {
 
 		std::shared_ptr<DauDauNPC> dauDau;
 		std::shared_ptr<DauDauNPC> dauDauSpawn;
+
+		std::shared_ptr<INPC> activeNPC = nullptr;
+		std::shared_ptr<PopUpMessage> popUpMessage;
 
 		std::vector<std::shared_ptr<TreasureChestNPC>> treasureChests;
 
