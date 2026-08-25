@@ -16,6 +16,9 @@ void Demo::KeyeproEnemy::Init(DX9GF::GraphicsDevice* graphicsDevice, DX9GF::Came
 	projTexture = std::make_shared<DX9GF::Texture>(graphicsDevice);
 	projTexture->LoadTexture(L"assets/bossprojectile-Sheet.png");
 	projFrames = DX9GF::Utils::CreateRectsHorizontal(0, 0, 32, 32, 5);
+	shardTexture = std::make_shared<DX9GF::Texture>(graphicsDevice);
+	shardTexture->LoadTexture(L"assets/bossshard-Sheet.png");
+	shardFrames = DX9GF::Utils::CreateRectsHorizontal(0, 0, 16, 16, 6);
 
 	SetGoldReward(static_cast<int>(std::round(GetMaxHealth())));
 	InitCardSpawnTrigger(camera, 128.f, 128.f);
@@ -354,6 +357,7 @@ void Demo::KeyeproEnemy::PatternShatterVolley(float baseDamage) {
 						.SetSplitRandomAngle()
 						.SetSplitDecayTime(SHARD_DECAY)
 						.SetSplitDamage(shardDamage)
+						.SetShardTexture(shardTexture.get(), shardFrames, 12, 8, 8, 4, 4)
 						.SetVelocity(SHELL_VELOCITY)
 						.SetDelay(i * SHELL_STAGGER)
 						.SetDecayTime(4.f)

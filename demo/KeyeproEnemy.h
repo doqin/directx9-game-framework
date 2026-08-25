@@ -5,6 +5,8 @@ namespace Demo {
     class KeyeproEnemy : public EnemyBase<KeyeproEnemy> {
     private:
         std::shared_ptr<DX9GF::Texture> texture;
+        std::shared_ptr<DX9GF::Texture> shardTexture;
+		std::vector<RECT> shardFrames;
         std::shared_ptr<DX9GF::AnimatedSprite> sprite;
         std::shared_ptr<DX9GF::Texture> projTexture;
         std::vector<RECT> projFrames;

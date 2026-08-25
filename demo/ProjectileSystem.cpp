@@ -341,6 +341,28 @@ Demo::ProjectileDesc& Demo::ProjectileDesc::SetSplitGenerations(int generations)
 	return *this;
 }
 
+Demo::ProjectileDesc& Demo::ProjectileDesc::SetShardTexture(DX9GF::Texture* texture, std::vector<RECT> frames, unsigned int frameRate, float originX, float originY, float colliderWidth, float colliderHeight)
+{
+	this->shardTexture = texture;
+	this->shardFrames = std::move(frames);
+	this->shardFrameRate = frameRate;
+	this->shardOriginX = originX;
+	this->shardOriginY = originY;
+	this->shardColliderWidth = colliderWidth;
+	this->shardColliderHeight = colliderHeight;
+	return *this;
+}
+
+Demo::ProjectileDesc& Demo::ProjectileDesc::SetShardTexture(DX9GF::Texture* texture, float originX, float originY, float colliderWidth, float colliderHeight)
+{
+	this->shardTexture = texture;
+	this->shardOriginX = originX;
+	this->shardOriginY = originY;
+	this->shardColliderWidth = colliderWidth;
+	this->shardColliderHeight = colliderHeight;
+	return *this;
+}
+
 Demo::ProjectileDesc& Demo::ProjectileDesc::SetGhostSprite(DX9GF::Texture* texture, RECT srcRect, float originX, float originY)
 {
 	this->ghostTexture = texture;
@@ -455,7 +477,7 @@ Demo::LaserDesc& Demo::LaserDesc::SetRandomStatusEffect(
 	return *this;
 }
 
-unsigned int Demo::ProjectileSystem::GetOrCreateBatch(const ProjectileDesc& desc)
+unsigned int Demo::ProjectileSystem::GetOrCreateBatch(const RenderDesc& desc)
 {
 	for (unsigned int i = 0; i < batches.size(); i++) {
 		const auto& batch = batches[i];
@@ -527,7 +549,7 @@ void Demo::ProjectileSystem::Spawn(const std::shared_ptr<Player>& player, const 
 		});
 
 	RenderComponent render{};
-	render.batchIndex = GetOrCreateBatch(desc);
+	render.batchIndex = GetOrCreateBatch({ desc.texture, desc.frames, desc.frameRate, desc.spriteOriginX, desc.spriteOriginY });
 	render.frameIndex = 0;
 	render.frameDelta = 0;
 	// Spiral and boomerang projectiles stayed hidden until their delay
@@ -539,6 +561,7 @@ void Demo::ProjectileSystem::Spawn(const std::shared_ptr<Player>& player, const 
 
 	SplitComponent split{};
 	split.trigger = desc.splitCount > 0 ? desc.splitTrigger : ProjectileSplitTrigger::None;
+	split.batchIndex = desc.shardTexture != nullptr ? GetOrCreateBatch({ desc.shardTexture, desc.shardFrames, desc.shardFrameRate, desc.shardOriginX, desc.shardOriginY }) : render.batchIndex;
 	split.count = desc.splitCount;
 	split.targetX = desc.splitTargetX;
 	split.targetY = desc.splitTargetY;
@@ -549,6 +572,8 @@ void Demo::ProjectileSystem::Spawn(const std::shared_ptr<Player>& player, const 
 	split.decayTime = desc.splitDecayTime;
 	split.damage = desc.splitDamage;
 	split.generations = desc.splitGenerations;
+	split.colliderWidth = desc.shardColliderWidth;
+	split.colliderHeight = desc.shardColliderHeight;
 	splits.push_back(split);
 
 	std::unique_ptr<DX9GF::ParticleSystem> emitter;
@@ -681,7 +706,9 @@ void Demo::ProjectileSystem::QueueBurst(size_t index)
 	burst.baseAngle = transforms[index].rotation;
 	burst.split = splits[index];
 	burst.combat = combats[index];
-	burst.batchIndex = renders[index].batchIndex;
+	burst.combat.colliderWidth = splits[index].colliderWidth;
+	burst.combat.colliderHeight = splits[index].colliderHeight;
+	burst.batchIndex = splits[index].batchIndex;
 	pendingBursts.push_back(burst);
 }
 
@@ -793,6 +820,7 @@ void Demo::ProjectileSystem::Update(unsigned long long deltaTime)
 	for (size_t i = 0; i < count; i++) {
 		auto& life = lifetimes[i];
 		if (life.decayTime != UNSPECIFIED && life.elapsed >= life.decayTime) {
+			// The projectile has expired; if it has a split trigger on decay, queue the burst.
 			if (splits[i].trigger == ProjectileSplitTrigger::OnDecay) {
 				QueueBurst(i);
 			}

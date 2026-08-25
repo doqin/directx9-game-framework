@@ -36,11 +36,18 @@ namespace Demo {
 		unsigned int frameRate = 12;
 		float spriteOriginX = 0.f;
 		float spriteOriginY = 0.f;
+		DX9GF::Texture* shardTexture = nullptr; // optional override for the projectile's split children
+		std::vector<RECT> shardFrames; // empty = draw the whole shard texture
+		unsigned int shardFrameRate = 12;
+		float shardOriginX = 0.f;
+		float shardOriginY = 0.f;
 		// Placement / collision (ellipse, origin at center)
 		float x = 0.f;
 		float y = 0.f;
 		float colliderWidth = 0.f;
 		float colliderHeight = 0.f;
+		float shardColliderWidth = 0.f;
+		float shardColliderHeight = 0.f;
 		// Common
 		ProjectileBehavior behavior = ProjectileBehavior::Straight;
 		D3DXVECTOR2 trajectory{ 1.f, 0.f };
@@ -144,6 +151,8 @@ namespace Demo {
 		ProjectileDesc& SetSplitDecayTime(float decayTime);
 		ProjectileDesc& SetSplitDamage(float damage);
 		ProjectileDesc& SetSplitGenerations(int generations);
+		ProjectileDesc& SetShardTexture(DX9GF::Texture* texture, std::vector<RECT> frames, unsigned int frameRate, float originX, float originY, float colliderWidth, float colliderHeight);
+		ProjectileDesc& SetShardTexture(DX9GF::Texture* texture, float originX, float originY, float colliderWidth, float colliderHeight);
 		ProjectileDesc& SetGhostSprite(DX9GF::Texture* texture, RECT srcRect, float originX, float originY);
 		ProjectileDesc& SetStatusEffect(ModifierType type, float value, int duration);
 		ProjectileDesc& SetRandomStatusEffect(
@@ -212,6 +221,12 @@ namespace Demo {
 	// a single sprite Begin/End instead of one per projectile.
 	class ProjectileSystem {
 	private:
+		struct RenderDesc {
+			DX9GF::Texture* texture;
+			std::vector<RECT> frames;
+			unsigned int frameRate;
+			float spriteOriginX, spriteOriginY;
+		};
 		struct TransformComponent {
 			float x, y, rotation;
 		};
@@ -246,6 +261,7 @@ namespace Demo {
 		};
 		struct SplitComponent {
 			ProjectileSplitTrigger trigger;
+			unsigned int batchIndex;
 			int count;
 			float targetX, targetY;
 			float velocity;
@@ -254,6 +270,7 @@ namespace Demo {
 			float decayTime;
 			float damage;
 			int generations;
+			float colliderWidth, colliderHeight;
 		};
 		struct RenderComponent {
 			unsigned int batchIndex;
@@ -315,7 +332,8 @@ namespace Demo {
 		std::weak_ptr<Player> target;
 		std::shared_ptr<DX9GF::Texture> trailTexture; // shared 4x4 white square
 
-		unsigned int GetOrCreateBatch(const ProjectileDesc& desc);
+		// Create a new batch if no existing batch matches the projectile's texture, frames, frame rate and origin.
+		unsigned int GetOrCreateBatch(const RenderDesc& desc);
 		void ApplyHit(Player& player, CombatComponent& combat);
 		void DestroyAt(size_t index);
 		void DestroyLaserAt(size_t index);
