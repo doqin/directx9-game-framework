@@ -276,6 +276,7 @@
     <Image Include="assets\energy-token.png" />
     <Image Include="assets\gold-token.png" />
     <Image Include="assets\mine.png" />
+    <Image Include="assets\bossshard-Sheet.png" />
   </ItemGroup>
   <ItemGroup>
     <Font Include="assets\arcade-among-2-r46pv.ttf" />

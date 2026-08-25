@@ -515,6 +515,9 @@
     <Image Include="assets\bossprojectile-Sheet.png">
       <DeploymentContent>true</DeploymentContent>
     </Image>
+    <Image Include="assets\bossshard-Sheet.png">
+      <DeploymentContent>true</DeploymentContent>
+    </Image>
     <Image Include="assets\bubble-Sheet.png">
       <DeploymentContent>true</DeploymentContent>
     </Image>
