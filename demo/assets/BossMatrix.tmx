@@ -4517,9 +4517,7 @@
  <objectgroup id="21" name="trigger_battle_rusty_key">
   <object id="1731" x="-877" y="-316.5" width="41.5" height="70.75"/>
  </objectgroup>
- <objectgroup id="19" name="trigger_battle_boss">
-  <object id="1522" x="624.5" y="-384" width="255.5" height="80"/>
- </objectgroup>
+ <objectgroup id="19" name="trigger_battle_boss"/>
  <objectgroup id="20" name="trigger_spec_item">
   <object id="1525" x="747.75" y="-642.75" width="16.5" height="26.75"/>
  </objectgroup>

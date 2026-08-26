@@ -6,6 +6,7 @@
 #include "HackTerminal.h"
 #include "InventoryMenu.h"
 #include "DauDauNPC.h"
+#include "KeyeproNPC.h"
 #include "IConversation.h"
 #include "SavePoint.h"
 #include "ShopPoint.h"
@@ -64,7 +65,12 @@ namespace Demo {
     private:
         std::shared_ptr<DauDauNPC> npcHint;
         std::shared_ptr<DauDauNPC> dauDauSpawn;
+        std::shared_ptr<KeyeproNPC> keyeproNPC;
         std::shared_ptr<IConversation> currentConversation;
+        // IConversation has no completion hook, so the scene fires this when the box closes.
+        std::function<void()> onConversationEnd;
+        void StartKeyeproConversation();
+        void StartKeyeproBattle();
 
         std::vector<std::shared_ptr<SavePoint>> savePoints;
         std::vector<std::shared_ptr<HealingPoint>> healingPoints;
