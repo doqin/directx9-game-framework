@@ -19,7 +19,10 @@ namespace Demo {
 					this->player->AddCardToInventory(newCard->GetSaveID());
 				},
 				prototype.GetFaceRect(),
-				ShopIconSheet::CardFaces
+				ShopIconSheet::CardFaces,
+				prototype.IsPersistent(),
+				prototype.HasLimitedUses(),
+				prototype.HasLimitedUses() ? prototype.GetMaxUses() : 0
 				});
 		}
 	public:
