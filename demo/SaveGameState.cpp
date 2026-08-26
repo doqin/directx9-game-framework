@@ -2,6 +2,7 @@
 #include "SaveGameState.h"
 #include "Game.h"
 #include "Player.h"
+#include "PlayerGlobalData.h"
 #include "IntroScene.h"
 #include "TutorialWorldScene.h"
 #include "SecretPuzzleScene.h"
@@ -59,9 +60,6 @@ namespace Demo {
 		if (currentScene) {
 			outData["current_scene"] = currentScene->GetSaveID();
 		}
-		if (auto player = GetPlayerFromScene(sceneManager->GetCurrentScene())) {
-			player->GenerateSaveGlobalData(outData["player"]);
-		}
 		for (size_t i = 0; i < sceneManager->GetSceneCount(); i++) {
 			nlohmann::json data;
 			auto scene = dynamic_cast<DX9GF::ISaveable*>(sceneManager->GetScene(i));
@@ -96,11 +94,6 @@ namespace Demo {
 				}
 			}
 		}
-		if (inData.contains("player")) {
-			if (auto player = GetPlayerFromScene(sceneManager->GetCurrentScene())) {
-				player->RestoreSaveGlobalData(inData["player"]);
-			}
-		}
 		if (inData.contains("scene_data")) {
 			for (auto& [key, value] : inData["scene_data"].items()) {
 				auto sceneIt = sceneMap.find(key);
@@ -116,8 +109,10 @@ namespace Demo {
 
 	std::shared_ptr<SaveGameState> SaveGameState::StartNewGame(Game* game, const std::shared_ptr<DX9GF::SaveManager>& saveManager) {
 		saveManager->Clear();
+		PlayerGlobalData::GetInstance()->Reset();
 		auto saveState = std::make_shared<SaveGameState>(game, saveManager);
 		saveManager->Register(saveState.get());
+		saveManager->Register(PlayerGlobalData::GetInstance());
 		saveState->ClearScenes();
 		saveState->BuildScenes();
 		DX9GF::AudioManager::GetInstance()->StopAll();
@@ -129,6 +124,7 @@ namespace Demo {
 		saveManager->Clear();
 		auto saveState = std::make_shared<SaveGameState>(game, saveManager);
 		saveManager->Register(saveState.get());
+		saveManager->Register(PlayerGlobalData::GetInstance());
 		saveState->ClearScenes();
 		saveState->BuildScenes();
 		saveManager->Load("savegame.json");

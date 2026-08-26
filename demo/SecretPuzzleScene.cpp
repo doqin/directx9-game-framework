@@ -44,12 +44,9 @@ void Demo::SecretPuzzleScene::Init()
 			if (!transitionInCommand->IsFinished()) {
 				return;
 			}
-			nlohmann::json saveData;
-			player->GenerateSaveGlobalData(saveData["player"]);
 			auto sceMan = game->GetSceneManager();
 			auto targetScene = sceMan->GetScene(static_cast<size_t>(sceMan->GetIndex()) - 1);
 			auto targetPlayer = MainMenu::gameSaveState->GetPlayerFromScene(targetScene);
-			targetPlayer->RestoreSaveGlobalData(saveData["player"]);
 			targetPlayer->SetLocalPosition(-263.f, -295.f);
 			DX9GF::AudioManager::GetInstance()->PlayBGM_Fade("bgm_tutorial", 0.5f, 1.5f);
 			sceMan->GoToPrevious();
@@ -68,12 +65,10 @@ void Demo::SecretPuzzleScene::Init()
 			if (!transitionInCommand->IsFinished()) {
 				return;
 			}
-			nlohmann::json saveData;
-			player->GenerateSaveGlobalData(saveData["player"]);
 			auto sceMan = game->GetSceneManager();
 			auto targetScene = sceMan->GetScene(static_cast<size_t>(sceMan->GetIndex()) + 1);
 			auto targetPlayer = MainMenu::gameSaveState->GetPlayerFromScene(targetScene);
-			targetPlayer->RestoreSaveGlobalData(saveData["player"]);
+			targetPlayer->SetLocalPosition(-417.f, 144.f);
 			DX9GF::AudioManager::GetInstance()->PlayBGM_Fade("bgm_arcade", 0.2f, 1.5f);
 			sceMan->GoToNext();
 			isTransitioning = false;

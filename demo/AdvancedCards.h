@@ -269,13 +269,12 @@ namespace Demo {
 		LethalHarvestCard(std::weak_ptr<DX9GF::TransformManager> tm)
 			: IGameObject(tm, 0, 0), MultiTargetCard(tm, 1, L"Lethal Harvest", 0, 0, 192, 32) {
 			SetPersistent(false);
-			SetMaxUses(1);
 		}
 		bool Execute() override;
-		void CollectProjectedSteps(VirtualBattleState& state) override { CollectHitsOnTargets(state, 6.f, 1); }
+		void CollectProjectedSteps(VirtualBattleState& state) override { CollectHitsOnTargets(state, 12.f, 1); }
 		void DrawCardFace(unsigned long long deltaTime) override { DrawSheetFace(deltaTime, GetFaceRect()); }
 		size_t GetCost() const override { return 1; }
-		std::wstring GetDescription() const override { return L"Deal 6 DMG. If fatal, heal 8 HP."; }
+		std::wstring GetDescription() const override { return L"Deal 12 DMG. If fatal, heal 8 HP."; }
 		RECT GetFaceRect() const override { return RECT{ 80, 448, 176, 464 }; }
 	};
 

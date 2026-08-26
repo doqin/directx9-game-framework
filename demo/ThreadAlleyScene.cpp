@@ -41,6 +41,7 @@ void Demo::ThreadAlleyScene::Init()
 		}, drawBuffer, commandBuffer, &isGamePaused, & this->uiCamera, [this](DX9GF::GraphicsDevice* gd, unsigned long long deltaTime) { DrawCheckerBackground(gd, deltaTime); }));*/
 
 	map->SetAreaUpdateHandler("trigger_p", [this](const DX9GF::Map::ObjectArea& area) {
+		if (isTransitioning) return;
 		isTransitioning = true;
 		auto transitionInCommand = std::make_shared<TransitionCommand>(game->GetGraphicsDevice(), &this->uiCamera, 1.f, true);
 		drawBuffer->PushCommand(transitionInCommand);
@@ -48,17 +49,37 @@ void Demo::ThreadAlleyScene::Init()
 			if (!transitionInCommand->IsFinished()) {
 				return;
 			}
-			nlohmann::json saveData;
-			player->GenerateSaveGlobalData(saveData["player"]);
 			auto sceMan = game->GetSceneManager();
-			MainMenu::gameSaveState->GetPlayerFromScene(sceMan->GetScene(static_cast<size_t>(sceMan->GetIndex()) + 1))->RestoreSaveGlobalData(saveData["player"]);
+			auto targetScene = sceMan->GetScene(static_cast<size_t>(sceMan->GetIndex()) + 1);
+			auto targetPlayer = MainMenu::gameSaveState->GetPlayerFromScene(targetScene);
+			targetPlayer->SetLocalPosition(330.f, 263.f);
 			DX9GF::AudioManager::GetInstance()->PlayBGM_Fade("bgm_boss", 0.3f, 1.5f);
 			sceMan->GoToNext();
 			isTransitioning = false;
 			markFinished();
 			}));
 		drawBuffer->PushCommand(std::make_shared<TransitionCommand>(game->GetGraphicsDevice(), &this->uiCamera, 1.f, false));
-		});
+	});
+	map->SetAreaUpdateHandler("trigger_tutorial", [this](const DX9GF::Map::ObjectArea& area) {
+		if (isTransitioning) return;
+		isTransitioning = true;
+		auto transitionInCommand = std::make_shared<TransitionCommand>(game->GetGraphicsDevice(), &this->uiCamera, 1.f, true);
+		drawBuffer->PushCommand(transitionInCommand);
+		commandBuffer->PushCommand(std::make_shared<DX9GF::CustomCommand>([this, transitionInCommand](std::function<void(void)> markFinished) {
+			if (!transitionInCommand->IsFinished()) {
+				return;
+			}
+			auto sceMan = game->GetSceneManager();
+			auto targetScene = sceMan->GetScene(static_cast<size_t>(sceMan->GetIndex()) - 2);
+			auto targetPlayer = MainMenu::gameSaveState->GetPlayerFromScene(targetScene);
+			targetPlayer->SetLocalPosition(681.f, -584.f);
+			sceMan->GoToPrevious();
+			sceMan->GoToPrevious();
+			isTransitioning = false;
+			markFinished();
+			}));
+		drawBuffer->PushCommand(std::make_shared<TransitionCommand>(game->GetGraphicsDevice(), &this->uiCamera, 1.f, false));
+	});
 
 	font = std::make_shared<DX9GF::Font>(game->GetGraphicsDevice(), L"StatusPlz", 16);
 

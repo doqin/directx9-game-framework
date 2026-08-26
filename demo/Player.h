@@ -4,6 +4,7 @@
 #include "ICard.h"
 #include "GameItems.h"
 #include "DamageTextManager.h"
+#include "PlayerGlobalData.h"
 #include <memory>
 #include "ICombatant.h"
 namespace Demo {
@@ -66,12 +67,6 @@ namespace Demo {
 		DX9GF::ColliderManager* colliderManager = nullptr;
 		DX9GF::Camera* camera = nullptr;
 
-		int gold = 100;
-		std::vector<std::string> deck;
-
-		std::vector<std::string> inventoryCards;
-		ItemInventory inventoryItems;
-
 		//for audio
 		float stepTimer = 0.0f;
 		std::string baseSurface = "default";
@@ -99,21 +94,25 @@ namespace Demo {
 		void DealDamage(IEnemy* target, float cardBaseDamage, bool ignoreArmor = false);
 		std::weak_ptr<DX9GF::RectangleCollider> GetCollider();
 
-		int GetGold() const { return gold; }
-		void SetGold(int amount) { gold = amount; }
-		void AddGold(int amount) { gold += amount; }
-		void AddCardToDeck(const std::string& card) { deck.push_back(card); } // Should probably validate that the card exists in the game, but for now we just add it
-		const std::vector<std::string>& GetDeck() const { return deck; }
-		void ClearDeck() { deck.clear(); }
-		const std::vector<std::string>& GetInventoryCards() const { return inventoryCards; }
-		ItemInventory& GetInventoryItems() { return inventoryItems; }
-		void AddCardToInventory(const std::string& card) { inventoryCards.push_back(card); }
-		void ClearInventory() { inventoryCards.clear(); }
+		float GetHealth() const { return PlayerGlobalData::GetInstance()->GetHealth(); }
+		float GetMaxHealth() const { return PlayerGlobalData::GetInstance()->GetMaxHealth(); }
+		void SetHealth(float hp) { PlayerGlobalData::GetInstance()->SetHealth(hp); }
+		bool IsDead() const { return PlayerGlobalData::GetInstance()->IsDead(); }
+		void Heal(float value) override;
+
+		int GetGold() const { return PlayerGlobalData::GetInstance()->GetGold(); }
+		void SetGold(int amount) { PlayerGlobalData::GetInstance()->SetGold(amount); }
+		void AddGold(int amount) { PlayerGlobalData::GetInstance()->AddGold(amount); }
+		void AddCardToDeck(const std::string& card) { PlayerGlobalData::GetInstance()->AddCardToDeck(card); } // Should probably validate that the card exists in the game, but for now we just add it
+		const std::vector<std::string>& GetDeck() const { return PlayerGlobalData::GetInstance()->GetDeck(); }
+		void ClearDeck() { PlayerGlobalData::GetInstance()->ClearDeck(); }
+		const std::vector<std::string>& GetInventoryCards() const { return PlayerGlobalData::GetInstance()->GetInventoryCards(); }
+		ItemInventory& GetInventoryItems() { return PlayerGlobalData::GetInstance()->GetInventoryItems(); }
+		void AddCardToInventory(const std::string& card) { PlayerGlobalData::GetInstance()->AddCardToInventory(card); }
+		void ClearInventory() { PlayerGlobalData::GetInstance()->ClearInventory(); }
 		virtual std::string GetSaveID() const override;
 		virtual void GenerateSaveData(nlohmann::json& outData) override;
 		virtual void RestoreSaveData(const nlohmann::json& inData) override;
-		void GenerateSaveGlobalData(nlohmann::json& outData) const;
-		void RestoreSaveGlobalData(const nlohmann::json& inData);
 
 		bool IsWalking() const { return isWalking; }
 

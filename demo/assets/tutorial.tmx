@@ -1,5 +1,5 @@
 <?xml version="1.0" encoding="UTF-8"?>
-<map version="1.10" tiledversion="1.12.1" orientation="orthogonal" renderorder="right-down" width="30" height="20" tilewidth="16" tileheight="16" infinite="1" nextlayerid="14" nextobjectid="243">
+<map version="1.10" tiledversion="1.12.1" orientation="orthogonal" renderorder="right-down" width="30" height="20" tilewidth="16" tileheight="16" infinite="1" nextlayerid="14" nextobjectid="246">
  <tileset firstgid="1" source="tutorial.tsx"/>
  <tileset firstgid="457" source="bossmatrix.tsx"/>
  <tileset firstgid="673" source="threadalley.tsx"/>
@@ -1128,7 +1128,7 @@
   <object id="76" x="413.667" y="-368" width="37.3333" height="37.3333"/>
   <object id="77" x="445.667" y="-417.667" width="20" height="55"/>
   <object id="78" x="588" y="-369.333" width="20" height="67"/>
-  <object id="79" x="571.667" y="-404.667" width="19.3333" height="39.6667"/>
+  <object id="79" x="571.667" y="-404.667" width="19.3333" height="43.1667"/>
   <object id="80" x="557.333" y="-451" width="19" height="55"/>
   <object id="81" x="538" y="-468.667" width="22" height="25"/>
   <object id="82" x="412.667" y="-483.333" width="128.667" height="23.6667"/>
@@ -1193,6 +1193,9 @@
   <object id="172" x="-320" y="-336.5" width="46.5" height="16.5"/>
   <object id="173" x="-320.5" y="-272" width="48.75" height="15.75"/>
   <object id="174" x="-336.25" y="-320" width="16" height="48"/>
+  <object id="243" x="463.091" y="-366" width="2.54545" height="21.2727"/>
+  <object id="244" x="463.273" y="-345.273" width="46.7273" height="2.36364"/>
+  <object id="245" x="544.364" y="-363.636" width="31.0909" height="2.72727"/>
  </objectgroup>
  <objectgroup id="8" name="triggers">
   <object id="66" x="612.667" y="-74.6667" width="54.6667" height="21.6667"/>
