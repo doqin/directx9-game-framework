@@ -20,6 +20,8 @@
 #include "Debug.h"
 #include "imgui.h"
 #include "backends/imgui_impl_dx9.h"
+#include "MainMenu.h"
+#include "SaveGameState.h"
 
 void Demo::BossWorldScene::Init() {
 	camera.SetZoom(2.0f);
@@ -232,10 +234,35 @@ void Demo::BossWorldScene::Init() {
 	spawn(2540.f, -490.f, "bw_f_08", {}, false, true);
 
 	// link with portal triggers on map
+	map->SetAreaUpdateHandler("trigger_alley", [this](const DX9GF::Map::ObjectArea& area) {
+		if (isTransitioning) return;
+		isTransitioning = true;
+		auto transitionInCommand = std::make_shared<TransitionCommand>(game->GetGraphicsDevice(), &this->uiCamera, 1.f, true);
+		drawBuffer->PushCommand(transitionInCommand);
+		commandBuffer->PushCommand(std::make_shared<DX9GF::CustomCommand>([this, transitionInCommand](std::function<void(void)> markFinished) {
+			if (!transitionInCommand->IsFinished()) {
+				return;
+			}
+			auto sceMan = game->GetSceneManager();
+			auto targetScene = sceMan->GetScene(static_cast<size_t>(sceMan->GetIndex()) - 1);
+			auto targetPlayer = MainMenu::gameSaveState->GetPlayerFromScene(targetScene);
+			targetPlayer->SetLocalPosition(1239.f, -920.f);
+			sceMan->GoToPrevious();
+			isTransitioning = false;
+			markFinished();
+			}));
+		drawBuffer->PushCommand(std::make_shared<TransitionCommand>(game->GetGraphicsDevice(), &this->uiCamera, 1.f, false));
+	});
+
 	map->SetAreaUpdateHandler("trigger_p_1_2", [this](const DX9GF::Map::ObjectArea& area) {
 		player->SetLocalPosition(-1155, 0);
 		//camera.SetPosition(-1155, 0);
 		this->currentIslandID = 2;
+		});
+	map->SetAreaUpdateHandler("trigger_p_2_1", [this](const DX9GF::Map::ObjectArea& area) {
+		player->SetLocalPosition(48, 230);
+		//camera.SetPosition(1500, 530);
+		this->currentIslandID = 1;
 		});
 	map->SetAreaUpdateHandler("trigger_p_2_3", [this](const DX9GF::Map::ObjectArea& area) {
 		player->SetLocalPosition(1500, 530);
@@ -257,7 +284,7 @@ void Demo::BossWorldScene::Init() {
 		this->currentIslandID = 2;
 		});
 	map->SetAreaUpdateHandler("trigger_p_4_3", [this](const DX9GF::Map::ObjectArea& area) {
-		player->SetLocalPosition(1500, 530);
+		player->SetLocalPosition(2640, -620);
 		//camera.SetPosition(1500, 530);
 		this->currentIslandID = 3;
 		});

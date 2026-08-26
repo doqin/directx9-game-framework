@@ -40,10 +40,10 @@ void Demo::TutorialWorldScene::Init()
 			if (!transitionInCommand->IsFinished()) {
 				return;
 			}
-			nlohmann::json saveData;
-			player->GenerateSaveGlobalData(saveData["player"]);
 			auto sceMan = game->GetSceneManager();
-			MainMenu::gameSaveState->GetPlayerFromScene(sceMan->GetScene(static_cast<size_t>(sceMan->GetIndex()) + 2))->RestoreSaveGlobalData(saveData["player"]);
+			auto targetScene = sceMan->GetScene(static_cast<size_t>(sceMan->GetIndex()) + 2);
+			auto targetPlayer = MainMenu::gameSaveState->GetPlayerFromScene(targetScene);
+			targetPlayer->SetLocalPosition(-417.f, 144.f);
 			DX9GF::AudioManager::GetInstance()->PlayBGM_Fade("bgm_arcade", 0.2f, 1.5f);
 			sceMan->GoToScene(sceMan->GetIndex() + 2);
 			isTransitioning = false;
@@ -60,12 +60,9 @@ void Demo::TutorialWorldScene::Init()
 		if (!transitionInCommand->IsFinished()) {
 			return;
 		}
-		nlohmann::json saveData;
-		player->GenerateSaveGlobalData(saveData["player"]);
 		auto sceMan = game->GetSceneManager();
 		auto targetScene = sceMan->GetScene(static_cast<size_t>(sceMan->GetIndex()) + 1);
 		auto targetPlayer = MainMenu::gameSaveState->GetPlayerFromScene(targetScene);
-		targetPlayer->RestoreSaveGlobalData(saveData["player"]);
 		targetPlayer->SetLocalPosition(-84 * 16, -39 * 16);
 		DX9GF::AudioManager::GetInstance()->PlayBGM_Fade("bgm_secret", 0.3f, 1.5f);
 		sceMan->GoToNext();

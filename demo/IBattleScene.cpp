@@ -225,7 +225,6 @@ void Demo::IBattleScene::OnAllEnemiesDefeated()
 		if (!transitionInCommand->IsFinished()) {
 			return;
 		}
-		player->SetHealth(battlePlayer->GetHealth());
 		auto sceMan = game->GetSceneManager();
 		auto prevScene = sceMan->GetScene(sceMan->GetIndex() - 1);
 		auto audio = DX9GF::AudioManager::GetInstance();
@@ -2675,7 +2674,6 @@ void Demo::IBattleScene::Init()
 	battlePlayer->Init(game->GetGraphicsDevice(), &colliderManager, &camera, true);
 	battlePlayer->SetFollowCamera(false);
 	battlePlayer->SetVelocity(125);
-	battlePlayer->SetHealth(player->GetHealth());
 
 	// Initialize texture sheet
 	uiSheetTex = std::make_shared<DX9GF::Texture>(game->GetGraphicsDevice());
@@ -2794,7 +2792,6 @@ void Demo::IBattleScene::Init()
 					if (!transitionInCommand->IsFinished()) {
 						return;
 					}
-					player->SetHealth(battlePlayer->GetHealth());
 					auto sceMan = game->GetSceneManager();
 
 					auto prevScene = sceMan->GetScene(sceMan->GetIndex() - 1);

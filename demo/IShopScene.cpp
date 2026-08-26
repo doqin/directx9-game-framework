@@ -45,6 +45,19 @@ namespace {
 	constexpr D3DCOLOR COLOR_BTN_DISABLED = 0xFF707070;
 	constexpr D3DCOLOR COLOR_FACE_DISABLED = 0xFF808080;
 
+	// Status cover geometry, mirrored from IStatementCard's private constants of the same name
+	// so the shop's cover panel matches the one cards draw in battle pixel-for-pixel.
+	constexpr float USES_COVER_SCALE = 2.0f;
+	constexpr int USES_COVER_CAP_WIDTH = 3;
+	constexpr int USES_COVER_OVERLAP = 2;
+	constexpr int USES_COVER_PAD_LEFT = 5;
+	constexpr int USES_COVER_PAD_RIGHT = 2;
+	constexpr int USES_PIP_SIZE = 6;
+	constexpr int USES_PIP_GAP = 2;
+	constexpr int USES_PIP_TOP = 5;
+	constexpr int NON_PERSISTENT_BADGE_WIDTH = 10;
+	constexpr int NON_PERSISTENT_BADGE_TOP = 2;
+
 	// Source rects into assets/popup-borders.png, the sheet PopupManager registers its
 	// styles against. Its tiles are saturated popup colours, so the ones used as dark
 	// UI surfaces are the plain white tile modulated to this screen's palette --
@@ -199,6 +212,16 @@ void Demo::IShopScene::BuildUI()
 	cardFaceSprite = std::make_shared<DX9GF::StaticSprite>(uiSheetTex.get());
 	cardFaceSprite->SetScale(CARD_FACE_SCALE, CARD_FACE_SCALE);
 
+	// Same sheet rects as IStatementCard::DrawStatusCover.
+	coverBodySprite = std::make_shared<DX9GF::StaticSprite>(uiSheetTex.get());
+	coverBodySprite->SetSrcRect({ .left = 236, .top = 272, .right = 237, .bottom = 288 });
+	coverCapSprite = std::make_shared<DX9GF::StaticSprite>(uiSheetTex.get());
+	coverCapSprite->SetSrcRect({ .left = 253, .top = 272, .right = 256, .bottom = 288 });
+	coverPipSprite = std::make_shared<DX9GF::StaticSprite>(uiSheetTex.get());
+	coverPipSprite->SetSrcRect({ .left = 277, .top = 277, .right = 283, .bottom = 283 });
+	coverBadgeSprite = std::make_shared<DX9GF::StaticSprite>(uiSheetTex.get());
+	coverBadgeSprite->SetSrcRect({ .left = 259, .top = 290, .right = 269, .bottom = 302 });
+
 	goldIconSprite = std::make_shared<DX9GF::StaticSprite>(uiSheetTex.get());
 	goldIconSprite->SetSrcRect({ 0, 240, 32, 272 });
 	goldIconSprite->SetScale(1.0f, 1.0f);
@@ -337,6 +360,77 @@ void Demo::IShopScene::RefreshAffordability()
 		}
 		else if (btn->GetState() == IButton::ButtonState::DISABLED) {
 			btn->SetState(IButton::ButtonState::IDLE);
+		}
+	}
+}
+
+int Demo::IShopScene::GetCardCoverPanelWidth(const ShopItem& item) const
+{
+	int contentWidth = 0;
+	if (!item.isPersistent) {
+		contentWidth += NON_PERSISTENT_BADGE_WIDTH;
+	}
+	if (item.hasLimitedUses && item.maxUses > 0) {
+		if (contentWidth > 0) {
+			contentWidth += USES_PIP_GAP;
+		}
+		contentWidth += item.maxUses * USES_PIP_SIZE + (item.maxUses - 1) * USES_PIP_GAP;
+	}
+	if (contentWidth <= 0) {
+		return 0;
+	}
+	return contentWidth + USES_COVER_PAD_LEFT + USES_COVER_PAD_RIGHT + USES_COVER_CAP_WIDTH;
+}
+
+void Demo::IShopScene::DrawCardCover(const ShopItem& item, float faceX, float faceTopY, float faceWidth,
+	bool affordable, unsigned long long deltaTime)
+{
+	const int panelWidth = GetCardCoverPanelWidth(item);
+	if (panelWidth <= 0) {
+		return;
+	}
+
+	const D3DCOLOR tint = affordable ? 0xFFFFFFFF : COLOR_FACE_DISABLED;
+	const float bodyWidth = static_cast<float>(panelWidth - USES_COVER_CAP_WIDTH);
+	// Backs up over the face's right outline, same as the battle cover does against the card.
+	const float panelX = faceX + faceWidth - USES_COVER_OVERLAP * USES_COVER_SCALE;
+	const float panelY = faceTopY;
+
+	coverBodySprite->SetColor(tint);
+	coverBodySprite->Begin();
+	coverBodySprite->SetPosition(panelX, panelY);
+	coverBodySprite->SetScale(bodyWidth * USES_COVER_SCALE, USES_COVER_SCALE);
+	coverBodySprite->Draw(uiCamera, deltaTime);
+	coverBodySprite->End();
+
+	coverCapSprite->SetColor(tint);
+	coverCapSprite->Begin();
+	coverCapSprite->SetPosition(panelX + bodyWidth * USES_COVER_SCALE, panelY);
+	coverCapSprite->SetScale(USES_COVER_SCALE, USES_COVER_SCALE);
+	coverCapSprite->Draw(uiCamera, deltaTime);
+	coverCapSprite->End();
+
+	int contentOffset = USES_COVER_PAD_LEFT;
+	if (!item.isPersistent) {
+		coverBadgeSprite->SetColor(tint);
+		coverBadgeSprite->Begin();
+		coverBadgeSprite->SetPosition(panelX + contentOffset * USES_COVER_SCALE, panelY + NON_PERSISTENT_BADGE_TOP * USES_COVER_SCALE);
+		coverBadgeSprite->SetScale(USES_COVER_SCALE, USES_COVER_SCALE);
+		coverBadgeSprite->Draw(uiCamera, deltaTime);
+		coverBadgeSprite->End();
+		contentOffset += NON_PERSISTENT_BADGE_WIDTH + USES_PIP_GAP;
+	}
+
+	// Shop cards are always freshly minted, so every pip shown is full.
+	if (item.hasLimitedUses) {
+		const float pipY = panelY + USES_PIP_TOP * USES_COVER_SCALE;
+		coverPipSprite->SetColor(tint);
+		for (int i = 0; i < item.maxUses; ++i) {
+			coverPipSprite->Begin();
+			coverPipSprite->SetPosition(panelX + (contentOffset + i * (USES_PIP_SIZE + USES_PIP_GAP)) * USES_COVER_SCALE, pipY);
+			coverPipSprite->SetScale(USES_COVER_SCALE, USES_COVER_SCALE);
+			coverPipSprite->Draw(uiCamera, deltaTime);
+			coverPipSprite->End();
 		}
 	}
 }
@@ -498,17 +592,21 @@ void Demo::IShopScene::DrawUI(unsigned long long deltaTime)
 		for (int i = startIndex; i < endIndex; ++i) {
 			const auto& item = itemsForSale[i];
 			if (item.iconSheet != ShopIconSheet::CardFaces) continue;
+			const float faceW = static_cast<float>(item.iconRect.right - item.iconRect.left);
 			const float faceH = static_cast<float>(item.iconRect.bottom - item.iconRect.top);
 			if (faceH <= 0.0f) continue;
 
 			const float rowY = l.listTop + (i - startIndex) * (ROW_H + ROW_GAP);
+			const float faceX = l.rowX + ROW_INNER_PAD;
+			const float faceY = rowY + (ROW_H - faceH * CARD_FACE_SCALE) / 2.0f;
 			// Unaffordable cards get the same grey wash as their buy button.
-			cardFaceSprite->SetColor(player->GetGold() >= item.cost ? 0xFFFFFFFF : COLOR_FACE_DISABLED);
+			const bool affordable = player->GetGold() >= item.cost;
+			cardFaceSprite->SetColor(affordable ? 0xFFFFFFFF : COLOR_FACE_DISABLED);
 			cardFaceSprite->SetSrcRect(item.iconRect);
-			cardFaceSprite->SetPosition(
-				l.rowX + ROW_INNER_PAD,
-				rowY + (ROW_H - faceH * CARD_FACE_SCALE) / 2.0f);
+			cardFaceSprite->SetPosition(faceX, faceY);
 			cardFaceSprite->Draw(uiCamera, deltaTime);
+
+			DrawCardCover(item, faceX, faceY, faceW * CARD_FACE_SCALE, affordable, deltaTime);
 		}
 		cardFaceSprite->End();
 

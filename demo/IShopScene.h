@@ -27,6 +27,12 @@ namespace Demo {
 		std::function<void()> onBuyAction;
 		RECT iconRect{ 0, 0, 0, 0 };
 		ShopIconSheet iconSheet = ShopIconSheet::None;
+		// Mirrors ICard::IsPersistent/HasLimitedUses/GetMaxUses on the card this row sells, so the
+		// shop can draw the same status cover (non-persistent badge, use pips) the card shows in
+		// battle. Unused for ShopIconSheet::Items rows.
+		bool isPersistent = true;
+		bool hasLimitedUses = false;
+		int maxUses = 0;
 	};
 
 	class IShopScene : public DX9GF::IScene {
@@ -72,6 +78,22 @@ namespace Demo {
 		std::shared_ptr<DX9GF::StaticSprite> itemIconSprite;
 		std::shared_ptr<DX9GF::StaticSprite> cardFaceSprite;
 		std::shared_ptr<DX9GF::StaticSprite> goldIconSprite;
+
+		// The status cover a card shows in battle (uses cover panel, use pips, non-persistent
+		// badge), reproduced beside its face here. Same sheet (assets/ui.png) and geometry as
+		// IStatementCard::DrawStatusCover; shop cards are always freshly minted, so only the
+		// "full" pip variant is needed.
+		std::shared_ptr<DX9GF::StaticSprite> coverBodySprite;
+		std::shared_ptr<DX9GF::StaticSprite> coverCapSprite;
+		std::shared_ptr<DX9GF::StaticSprite> coverPipSprite;
+		std::shared_ptr<DX9GF::StaticSprite> coverBadgeSprite;
+		// Width, in sheet pixels, of the status cover panel for the given row - 0 when the card
+		// is persistent and unlimited, so it has nothing to show.
+		int GetCardCoverPanelWidth(const ShopItem& item) const;
+		// Draws the status cover immediately to the right of a card face already drawn at
+		// [faceX, faceTopY] with the given on-screen width.
+		void DrawCardCover(const ShopItem& item, float faceX, float faceTopY, float faceWidth,
+			bool affordable, unsigned long long deltaTime);
 
 		KeyboardNavigator keyboardNavigator;
 		std::vector<KeyboardNavigator::Candidate> CollectKeyboardCandidates();

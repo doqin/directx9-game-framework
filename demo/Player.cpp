@@ -29,49 +29,6 @@ void Demo::Player::RestoreSaveData(const nlohmann::json& inData) {
 	SetLocalPosition(savedX, savedY);
 }
 
-void Demo::Player::GenerateSaveGlobalData(nlohmann::json& outData) const {
-	outData["gold"] = gold;
-	outData["health"] = health;
-	outData["deck"] = nlohmann::json::array();
-	for (auto& card : deck) {
-		outData["deck"].push_back(card);
-	}
-	outData["inventoryCards"] = nlohmann::json::array();
-	for (auto& card : inventoryCards) {
-		outData["inventoryCards"].push_back(card);
-	}
-	auto inventorySlots = inventoryItems.GetSlots();
-	for (size_t i = 0; i < inventorySlots.size(); i++) {
-		outData["inventoryItems"][i]["id"] = inventorySlots[i].itemID;
-		outData["inventoryItems"][i]["quantity"] = inventorySlots[i].quantity;
-	}
-}
-
-void Demo::Player::RestoreSaveGlobalData(const nlohmann::json& inData) {
-	if (inData.contains("gold")) gold = inData["gold"];
-	if (inData.contains("health")) health = inData["health"];
-	if (inData.contains("deck")) {
-		deck.clear();
-		for (auto& item : inData["deck"]) {
-			deck.push_back(item.get<std::string>());
-		}
-	}
-	if (inData.contains("inventoryCards")) {
-		inventoryCards.clear();
-		for (auto& item : inData["inventoryCards"]) {
-			inventoryCards.push_back(item.get<std::string>());
-		}
-	}
-	if (inData.contains("inventoryItems")) {
-		inventoryItems.Clear();
-		for (auto& item : inData["inventoryItems"]) {
-			int id = item["id"];
-			int quantity = item["quantity"];
-			inventoryItems.AddItem(id, quantity);
-		}
-	}
-}
-
 Demo::Player::~Player() {
 	colliderManager->Remove(collider);
 }
@@ -146,9 +103,7 @@ void Demo::Player::Init(DX9GF::GraphicsDevice* graphicsDevice, DX9GF::ColliderMa
 	DX9GF::ConfigureFootprintEmitter(*footprintEmitter);
 	footprintsEnabled = !isBattling;
 	footprintEmitter->SetEnabled(footprintsEnabled);
-	deck = { "StrikeCard", "StrikeCard", "StrikeCard", "TwinStrikeCard", "TwinStrikeCard" };
 	this->colliderManager->Add(collider);
-	inventoryItems.InitFixedInventory(13);
 }
 
 void Demo::Player::Update(unsigned long long deltaTime) {
@@ -467,15 +422,15 @@ bool Demo::Player::TakeDamage(float damage, bool ignoreArmor) {
 	if (isInvincible) return IsDead();
 
 	float actualDamage = CalculateActualDamage(damage, ignoreArmor);
-	health -= actualDamage;
+	auto* globalData = PlayerGlobalData::GetInstance();
+	float healthBefore = globalData->GetHealth();
+	float healthAfter = healthBefore - actualDamage;
+	globalData->SetHealth(healthAfter);
 
 	isInvincible = true;
 	timeSinceTurnedInvincible = 0.f;
 
-	if (health <= 0) {
-		if (health + actualDamage > 0) DX9GF::AudioManager::GetInstance()->Play("player_dead", false, 0.3f);
-		health = 0;
-	}
+	if (healthAfter <= 0 && healthBefore > 0) DX9GF::AudioManager::GetInstance()->Play("player_dead", false, 0.3f);
 	if (actualDamage > 0) DX9GF::AudioManager::GetInstance()->PlayRandom("take_dmg", 0.8f);
 
 	auto [x, y] = GetWorldPosition();
@@ -484,11 +439,12 @@ bool Demo::Player::TakeDamage(float damage, bool ignoreArmor) {
 }
 
 bool Demo::Player::TakeIndirectDamage(float damage, DamageType type) {
-	health -= damage;
-	if (health < 0) {
-		if (health + damage > 0) DX9GF::AudioManager::GetInstance()->Play("player_dead", false, 0.3f);
-		health = 0;
-	}
+	auto* globalData = PlayerGlobalData::GetInstance();
+	float healthBefore = globalData->GetHealth();
+	float healthAfter = healthBefore - damage;
+	globalData->SetHealth(healthAfter);
+
+	if (healthAfter < 0 && healthBefore > 0) DX9GF::AudioManager::GetInstance()->Play("player_dead", false, 0.3f);
 
 	if (damage > 0) {
 		//TODO: change audio resource here
@@ -508,6 +464,11 @@ bool Demo::Player::TakeIndirectDamage(float damage, DamageType type) {
 	Demo::DamageTextManager::GetInstance()->Spawn(damage, x, y - 16.0f, Demo::TextType::TakeDamage);
 
 	return IsDead();
+}
+
+void Demo::Player::Heal(float value) {
+	float actualHeal = PlayerGlobalData::GetInstance()->Heal(value);
+	if (actualHeal > 0) SpawnHealText(actualHeal);
 }
 
 void Demo::Player::DealDamage(IEnemy* target, float cardBaseDamage, bool ignoreArmor) {
