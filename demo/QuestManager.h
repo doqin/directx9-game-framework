@@ -3,9 +3,11 @@
 #include "DX9GFExtras.h"
 #include "IconButton.h"
 #include "Player.h"
+#include "GameItems.h"
 #include <nlohmann/json.hpp>
 #include <string>
 #include <map>
+#include <vector>
 
 namespace Demo {
 	enum class QuestState { Locked, Active, Completed };
@@ -13,6 +15,14 @@ namespace Demo {
 	struct QuestEventResult {
 		bool hasReward = false;
 		std::wstring rewardMessage = L"";
+	};
+
+	struct QuestInfo {
+		std::string id;
+		std::wstring title;
+		std::wstring description;
+		std::wstring currentObjective;
+		std::wstring rewardText;
 	};
 
 	class QuestManager {
@@ -33,8 +43,17 @@ namespace Demo {
 		std::map<std::string, QuestState> questStates;
 		std::string currentTrackedQuest;
 
-		QuestManager() = default;
+		std::map<std::string, QuestInfo> questDatabase;
+
+		//UI anim
+		float animProgress = 1.0f;
+		float textScrollOffset = 0.0f;
+		float textScrollWaitTimer = 0.0f;
+		const float MAX_PANEL_W = 260.0f;
+
+		QuestManager() { InitQuestDatabase(); }
 		void SetQuest(const std::wstring& text) { questText = text; }
+		void InitQuestDatabase();
 
 	public:
 		static QuestManager* GetInstance() {
@@ -46,11 +65,18 @@ namespace Demo {
 			questStates.clear();
 			currentTrackedQuest = "";
 			questText = L"Quest: ???";
+			isExpanded = true;
+			animProgress = 1.0f;
+			InitQuestDatabase();
 		}
 
 		void Init(DX9GF::GraphicsDevice* gd, std::shared_ptr<DX9GF::TransformManager> tm, DX9GF::Camera* uiCamera, std::shared_ptr<DX9GF::Font> font);
 
 		const std::wstring& GetQuestText() const { return questText; }
+
+		std::vector<QuestInfo> GetActiveQuests() const;
+		std::vector<QuestInfo> GetCompletedQuests() const;
+		QuestInfo* GetQuestInfo(const std::string& questId);
 
 		void SetVisible(bool v) { isVisible = v; }
 		bool IsVisible() const { return isVisible; }
