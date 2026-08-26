@@ -9,6 +9,7 @@
 #include "ShopPoint.h"
 #include "HealingPoint.h"
 #include "DauDauNPC.h"
+#include "CupidNPC.h"
 #include "IConversation.h"
 
 #include "NPC1.h"
@@ -45,11 +46,17 @@ namespace Demo {
 		std::shared_ptr<DX9GF::CommandBuffer> drawBuffer;
 		std::shared_ptr<DX9GF::CommandBuffer> commandBuffer;
 		std::shared_ptr<IConversation> currentConversation;
+		// IConversation has no completion hook, so the scene fires this when the box closes.
+		std::function<void()> onConversationEnd;
 
 		std::shared_ptr<DauDauNPC> dauDau;
 		std::shared_ptr<DauDauNPC> dauDauSpawn;
+		std::shared_ptr<CupidNPC> cupidNPC;
 
 		std::vector<std::shared_ptr<TreasureChestNPC>> treasureChests;
+
+		void StartCupidConversation();
+		void StartCupidBattle();
 
 	public:
 		SecretPuzzleScene(Game* game, std::shared_ptr<DX9GF::SaveManager> sm, UINT sw, UINT sh) : IScene(sw, sh), game(game), saveManager(sm) {}

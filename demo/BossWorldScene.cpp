@@ -64,6 +64,17 @@ void Demo::BossWorldScene::Init() {
 	dauDauSpawn->Init(game->GetGraphicsDevice(), &camera, player, colliderManager, font, drawBuffer);
 	dauDauSpawn->AddLine(L"Dau Dau", L"Welcome to the boss sector. Activate all four terminals to unlock the gate.");
 
+	//standing guard just past the gate; talks once, then the fight starts when he's done talking
+	keyeproNPC = std::make_shared<KeyeproNPC>(transformManager, 752.f, -336.f);
+	keyeproNPC->Init(game->GetGraphicsDevice(), &camera, player, colliderManager, font, drawBuffer);
+	keyeproNPC->AddLine(L"Anonymous", L"So. You made it through the terminals.");
+	keyeproNPC->AddLine(L"Anonymous", L"You still think this is a sector. A place with walls, a gate, a way out.");
+	keyeproNPC->AddLine(L"Anonymous", L"It isn't. It's a process. Every corridor you walked, every corrupted debugger\nyou talked to - all of it running because I keep it running.");
+	keyeproNPC->AddLine(L"Anonymous", L"I hold the keys. Every one. Nothing in this system closes, resets, or lets go\nwithout my say-so.");
+	keyeproNPC->AddLine(L"Anonymous", L"Which makes me the last thing standing between you and whatever you think\nfreedom looks like on the other side of this gate.");
+	keyeproNPC->AddLine(L"Player", L"Then I guess I'm taking your keys.");
+	keyeproNPC->AddLine(L"Anonymous", L"Try.");
+
 	//hack machines
 	auto hackCallback = std::bind(&BossWorldScene::OnTerminalHacked, this, std::placeholders::_1);
 
@@ -565,10 +576,25 @@ void Demo::BossWorldScene::Update(unsigned long long deltaTime) {
 		}
 	}
 
+	if (keyeproNPC) {
+		keyeproNPC->Update(deltaTime);
+		if (!currentConversation && keyeproNPC->CanInteract() && inpMan->KeyPress(SettingsManager::GetInstance()->GetKeybind("INTERACT"))) {
+			StartKeyeproConversation();
+		}
+	}
+
 	if (currentConversation) {
 		isGamePaused = true;
 		currentConversation->Execute(deltaTime);
-		if (currentConversation->IsFinished()) currentConversation = nullptr;
+		if (currentConversation->IsFinished()) {
+			currentConversation = nullptr;
+			// Clear before invoking: the callback may queue the next conversation.
+			if (onConversationEnd) {
+				auto callback = std::move(onConversationEnd);
+				onConversationEnd = nullptr;
+				callback();
+			}
+		}
 	}
 	if (rustyChest && !rustyChest->GetIsOpened()) {
 		rustyChest->Update(deltaTime);
@@ -691,6 +717,7 @@ void Demo::BossWorldScene::DrawWorld(unsigned long long deltaTime) {
 		if (mainTerminal) depthNodes.push_back({ mainTerminal->GetWorldY(), [&]() { mainTerminal->Draw(camera, deltaTime); } });
 
 		if (dauDauSpawn) depthNodes.push_back({ dauDauSpawn->GetWorldY(), [&]() { dauDauSpawn->Draw(camera, deltaTime); } });
+		if (keyeproNPC) depthNodes.push_back({ keyeproNPC->GetWorldY(), [&]() { keyeproNPC->Draw(camera, deltaTime); } });
 		if (npcHint) depthNodes.push_back({ npcHint->GetWorldY(), [&]() { npcHint->Draw(camera, deltaTime); } });
 		if (rustyChest) depthNodes.push_back({ rustyChest->GetWorldY(), [&]() { rustyChest->Draw(camera, deltaTime); } });
 		for (auto& savePoint : savePoints) depthNodes.push_back({ savePoint->GetWorldY(), [&, savePoint]() { savePoint->Draw(camera, deltaTime); } });
@@ -732,6 +759,7 @@ void Demo::BossWorldScene::DrawUI(unsigned long long deltaTime)
 		}
 		if (inventoryMenu) inventoryMenu->DrawKeyboardReticle(gd, deltaTime);
 		if (dauDauSpawn) dauDauSpawn->DrawUI(&this->uiCamera, deltaTime);
+		if (keyeproNPC && keyeproNPC->GetPhase() != Demo::KeyeproNPC::Phase::Defeated) keyeproNPC->DrawUI(&this->uiCamera, deltaTime);
 
 		if (currentConversation) {
 			currentConversation->Draw(gd, &this->uiCamera, deltaTime);
@@ -756,6 +784,61 @@ void Demo::BossWorldScene::DrawUI(unsigned long long deltaTime)
 	}
 }
 
+void Demo::BossWorldScene::StartKeyeproConversation()
+{
+	auto [sw, sh] = camera.GetScreenResolution();
+	currentConversation = std::make_shared<IConversation>(std::make_shared<DX9GF::FontSprite>(font.get()), sw, sh);
+	for (auto& line : keyeproNPC->GetDialogueLines()) {
+		currentConversation->AddLine(line);
+	}
+
+	if (keyeproNPC->GetPhase() == KeyeproNPC::Phase::Waiting) {
+		onConversationEnd = [this]() { StartKeyeproBattle(); };
+	}
+}
+
+void Demo::BossWorldScene::StartKeyeproBattle()
+{
+	if (isTransitioning || isFinalBossDead) return;
+	isTransitioning = true;
+
+	std::map<std::string, int> forcedEnemyMap = { {"KeyeproEnemy", 100} };
+
+	auto demoGame = dynamic_cast<Demo::Game*>(this->game);
+	auto app = DX9GF::Application::GetInstance();
+	auto battleScene = new CustomBattleScene(demoGame, player, app->GetScreenWidth(), app->GetScreenHeight(), forcedEnemyMap);
+
+	battleScene->SetCustomBGM("battle_boss");
+	battleScene->SetOnVictoryCallback([this]() {
+		this->isFinalBossDead = true;
+		if (keyeproNPC) keyeproNPC->SetPhase(KeyeproNPC::Phase::Defeated);
+		});
+	battleScene->SetCustomBackgroundDraw([this](DX9GF::GraphicsDevice* gd, unsigned long long delta) { DrawBackground(gd, delta, currentIslandID); });
+
+	auto sceMan = this->game->GetSceneManager();
+	sceMan->InsertScene(sceMan->GetIndex() + 1, battleScene);
+
+	commandBuffer->PushCommand(std::make_shared<DX9GF::CustomCommand>([this](std::function<void()> markFinished) {
+		this->isGamePaused = true; markFinished();
+		}));
+
+	auto transitionInCommand = std::make_shared<TransitionCommand>(game->GetGraphicsDevice(), &this->uiCamera, 1.f, true);
+	drawBuffer->StackCommand(transitionInCommand);
+
+	commandBuffer->PushCommand(std::make_shared<DX9GF::CustomCommand>([sceMan, transitionInCommand, this](std::function<void()> markFinished) {
+		if (!transitionInCommand->IsFinished()) return;
+		sceMan->GoToNext(); markFinished();
+		}));
+
+	drawBuffer->PushCommand(std::make_shared<TransitionCommand>(game->GetGraphicsDevice(), &this->uiCamera, 1.f, false));
+
+	drawBuffer->PushCommand(std::make_shared<DX9GF::CustomCommand>([this](std::function<void()> markFinished) {
+		this->isGamePaused = false;
+		this->isTransitioning = false;
+		markFinished();
+		}));
+}
+
 std::string Demo::BossWorldScene::GetSaveID() const {
 	return "BossWorldScene";
 }
@@ -774,6 +857,8 @@ void Demo::BossWorldScene::GenerateSaveData(nlohmann::json& outData) {
 		{"isChestOpened", rustyChest ? rustyChest->GetIsOpened() : false},
 		{"questGiven", questGiven}
 	};
+
+	if (keyeproNPC) outData["keyeproNPC"] = { {"phase", static_cast<int>(keyeproNPC->GetPhase())} };
 
 	nlohmann::json chestStates = nlohmann::json::array();
 	for (auto& c : treasureChests) chestStates.push_back(c->GetIsOpened());
@@ -813,6 +898,11 @@ void Demo::BossWorldScene::RestoreSaveData(const nlohmann::json& inData) {
 			colliderManager->Remove(bossGateCollider);
 			bossGateCollider.reset();
 		}
+	}
+
+	if (inData.contains("keyeproNPC") && keyeproNPC) {
+		// SetPhase(Defeated) also drops the collider, which is what re-opens the corridor.
+		keyeproNPC->SetPhase(static_cast<KeyeproNPC::Phase>(inData["keyeproNPC"].value("phase", 0)));
 	}
 
 	for (int i = 0; i < currentHackStep; ++i) {

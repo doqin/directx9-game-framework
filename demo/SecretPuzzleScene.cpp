@@ -332,6 +332,17 @@ void Demo::SecretPuzzleScene::Init()
 	dauDauSpawn = std::make_shared<DauDauNPC>(transformManager, -80 * 16, -37 * 16);
 	dauDauSpawn->Init(game->GetGraphicsDevice(), &camera, player, colliderManager, font, drawBuffer);
 	dauDauSpawn->AddLine(L"Dau Dau", L"There's a hidden boss somewhere in this maze. Defeat it for a secret reward!");
+
+	//the hidden boss dauDauSpawn was hinting at; talks once, then the fight starts when he's done talking
+	cupidNPC = std::make_shared<CupidNPC>(transformManager, 1671.f, 792.f);
+	cupidNPC->Init(game->GetGraphicsDevice(), &camera, player, colliderManager, font, drawBuffer);
+	cupidNPC->AddLine(L"???", L"Oh? A visitor, all the way out here?");
+	cupidNPC->AddLine(L"???", L"Nobody finds this dead end unless they're looking for something they shouldn't.");
+	cupidNPC->AddLine(L"Pacman", L"Fine, fine. Pacman. Not that the name means much anymore -\nthis process got repurposed long before you wandered in.");
+	cupidNPC->AddLine(L"Pacman", L"I'm what's left guarding a rusty key to a precious treasure.\nYou must know what I'm talking about, right?");
+	cupidNPC->AddLine(L"Pacman", L"So here's the deal: beat me, take the key.\nLose, and you get to enjoy the scenic route back to the start.");
+	cupidNPC->AddLine(L"Player", L"...I've come this far. Might as well.");
+	cupidNPC->AddLine(L"Pacman", L"That's the spirit. Don't say I didn't warn you.");
 }
 
 void Demo::SecretPuzzleScene::Update(unsigned long long deltaTime)
@@ -395,7 +406,15 @@ void Demo::SecretPuzzleScene::Update(unsigned long long deltaTime)
 	if (currentConversation) {
 		isGamePaused = true;
 		currentConversation->Execute(deltaTime);
-		if (currentConversation->IsFinished()) currentConversation = nullptr;
+		if (currentConversation->IsFinished()) {
+			currentConversation = nullptr;
+			// Clear before invoking: the callback may queue the next conversation.
+			if (onConversationEnd) {
+				auto callback = std::move(onConversationEnd);
+				onConversationEnd = nullptr;
+				callback();
+			}
+		}
 	}
 
 	for (auto& savePoint : savePoints) {
@@ -430,6 +449,13 @@ void Demo::SecretPuzzleScene::Update(unsigned long long deltaTime)
 			QuestManager::GetInstance()->SetQuest(isBossDead
 				? L"Quest: Find secret boss, defeat it and get rewards: Boss defeated 1/1"
 				: L"Quest: Find secret boss, defeat it and get rewards: Boss defeated 0/1");
+		}
+	}
+
+	if (cupidNPC) {
+		cupidNPC->Update(deltaTime);
+		if (!currentConversation && cupidNPC->CanInteract() && inpMan->KeyPress(SettingsManager::GetInstance()->GetKeybind("INTERACT"))) {
+			StartCupidConversation();
 		}
 	}
 
@@ -516,6 +542,7 @@ void Demo::SecretPuzzleScene::DrawWorld(unsigned long long deltaTime)
 		
 		if (dauDauSpawn) depthNodes.push_back({ dauDauSpawn->GetWorldY(), [&]() { dauDauSpawn->Draw(camera, deltaTime); } });
 		if (dauDau) depthNodes.push_back({ dauDau->GetWorldY(), [&]() { dauDau->Draw(camera, deltaTime); } });
+		if (cupidNPC) depthNodes.push_back({ cupidNPC->GetWorldY(), [&]() { cupidNPC->Draw(camera, deltaTime); } });
 		if (player) depthNodes.push_back({ player->GetWorldY(), [&]() { player->Draw(deltaTime); } });
 
 		std::sort(depthNodes.begin(), depthNodes.end());
@@ -546,6 +573,7 @@ void Demo::SecretPuzzleScene::DrawUI(unsigned long long deltaTime)
 		}
 		if (inventoryMenu) inventoryMenu->DrawKeyboardReticle(gd, deltaTime);
 		if (dauDauSpawn) dauDauSpawn->DrawUI(&this->uiCamera, deltaTime);
+		if (cupidNPC && cupidNPC->GetPhase() != Demo::CupidNPC::Phase::Defeated) cupidNPC->DrawUI(&this->uiCamera, deltaTime);
 
 		if (currentConversation) {
 			currentConversation->Draw(gd, &this->uiCamera, deltaTime);
@@ -601,6 +629,77 @@ void Demo::SecretPuzzleScene::DrawBackground(DX9GF::GraphicsDevice* gd, unsigned
 	}
 }
 
+void Demo::SecretPuzzleScene::StartCupidConversation()
+{
+	auto [sw, sh] = camera.GetScreenResolution();
+	currentConversation = std::make_shared<IConversation>(std::make_shared<DX9GF::FontSprite>(font.get()), sw, sh);
+	for (auto& line : cupidNPC->GetDialogueLines()) {
+		currentConversation->AddLine(line);
+	}
+
+	if (cupidNPC->GetPhase() == CupidNPC::Phase::Waiting) {
+		onConversationEnd = [this]() { StartCupidBattle(); };
+	}
+}
+
+void Demo::SecretPuzzleScene::StartCupidBattle()
+{
+	if (isTransitioning || isBossDead) return;
+	isTransitioning = true;
+
+	std::map<std::string, int> forcedEnemyMap = { {"CupidEnemy", 100} };
+
+	auto demoGame = dynamic_cast<Demo::Game*>(this->game);
+	auto app = DX9GF::Application::GetInstance();
+	auto battleScene = new CustomBattleScene(demoGame, player, app->GetScreenWidth(), app->GetScreenHeight(), forcedEnemyMap);
+
+	battleScene->SetOnVictoryCallback([this]() {
+		this->isBossDead = true;
+		if (cupidNPC) cupidNPC->SetPhase(CupidNPC::Phase::Defeated);
+		});
+
+	battleScene->SetCustomBackgroundDraw([this](DX9GF::GraphicsDevice* gd, unsigned long long deltaTime) { DrawBackground(gd, deltaTime); });
+
+	auto sceMan = this->game->GetSceneManager();
+	sceMan->InsertScene(sceMan->GetIndex() + 1, battleScene);
+
+	commandBuffer->PushCommand(std::make_shared<DX9GF::CustomCommand>([this](std::function<void()> markFinished) {
+		this->isGamePaused = true;
+		markFinished();
+		}));
+
+	auto transitionInCommand = std::make_shared<TransitionCommand>(game->GetGraphicsDevice(), &this->uiCamera, 1.f, true);
+	drawBuffer->StackCommand(transitionInCommand);
+
+	commandBuffer->PushCommand(std::make_shared<DX9GF::CustomCommand>([sceMan, transitionInCommand, this](std::function<void()> markFinished) {
+		if (!transitionInCommand->IsFinished()) {
+			return;
+		}
+		sceMan->GoToNext();
+		markFinished();
+		}));
+
+	drawBuffer->PushCommand(std::make_shared<TransitionCommand>(game->GetGraphicsDevice(), &this->uiCamera, 1.f, false));
+
+	drawBuffer->PushCommand(std::make_shared<DX9GF::CustomCommand>([this](std::function<void()> markFinished) {
+		this->isGamePaused = false;
+		if (this->isBossDead) {
+			this->player->GetInventoryItems().AddItem(10, 1);
+			QuestManager::GetInstance()->SetQuest(L"Find secret boss, defeat it and get rewards: Boss defeated 1/1");
+
+			auto* bp = ItemData::GetInstance()->GetItemBlueprint(10);
+			std::wstring msg = L"You found: ";
+			if (bp) msg += bp->GetName();
+
+			auto [sw, sh] = camera.GetScreenResolution();
+			currentConversation = std::make_shared<IConversation>(
+				std::make_shared<DX9GF::FontSprite>(font.get()), sw, sh);
+			currentConversation->AddLine({ .name = L"Secret boss (Pacman)", .content = msg });
+		}
+		markFinished();
+		}));
+}
+
 std::string Demo::SecretPuzzleScene::GetSaveID() const
 {
 	return "SecretPuzzleScene";
@@ -619,6 +718,8 @@ void Demo::SecretPuzzleScene::GenerateSaveData(nlohmann::json& outData)
 		{"isBossDead", isBossDead},
 		{ "questGiven", questGiven }
 	};
+
+	if (cupidNPC) outData["cupidNPC"] = { {"phase", static_cast<int>(cupidNPC->GetPhase())} };
 
 	nlohmann::json chestStates = nlohmann::json::array();
 	for (auto& c : treasureChests) chestStates.push_back(c->GetIsOpened());
@@ -644,6 +745,11 @@ void Demo::SecretPuzzleScene::RestoreSaveData(const nlohmann::json& inData)
 		isBossDead = inData["puzzle"]["isBossDead"];
 		questGiven = inData["puzzle"].value("questGiven", false);
 		questRestoredFromSave = true;
+	}
+
+	if (inData.contains("cupidNPC") && cupidNPC) {
+		// SetPhase(Defeated) also drops the collider, which is what re-opens the path.
+		cupidNPC->SetPhase(static_cast<CupidNPC::Phase>(inData["cupidNPC"].value("phase", 0)));
 	}
 
 	if (inData.contains("treasureChests")) {

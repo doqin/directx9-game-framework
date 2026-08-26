@@ -65,6 +65,8 @@
     <ClCompile Include="AuthTerminal.cpp" />
     <ClCompile Include="PasswordMenu.cpp" />
     <ClCompile Include="TrojanNPC.cpp" />
+    <ClCompile Include="KeyeproNPC.cpp" />
+    <ClCompile Include="CupidNPC.cpp" />
     <ClCompile Include="IntroScene.cpp" />
     <ClCompile Include="OutroScene.cpp" />
     <ClCompile Include="RustyChestNPC.cpp" />
@@ -170,6 +172,8 @@
     <ClInclude Include="AuthTerminal.h" />
     <ClInclude Include="PasswordMenu.h" />
     <ClInclude Include="TrojanNPC.h" />
+    <ClInclude Include="KeyeproNPC.h" />
+    <ClInclude Include="CupidNPC.h" />
     <ClInclude Include="IntroScene.h" />
     <ClInclude Include="OutroScene.h" />
     <ClInclude Include="RustyChestNPC.h" />
