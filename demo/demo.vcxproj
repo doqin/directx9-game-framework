@@ -268,6 +268,9 @@
     <ClCompile Include="TrojanNPC.cpp" />
     <ClCompile Include="KeyeproNPC.cpp" />
     <ClCompile Include="CupidNPC.cpp" />
+    <ClCompile Include="SketchyGuyNPC.cpp" />
+    <ClCompile Include="CardCatalog.cpp" />
+    <ClCompile Include="PackOpeningScene.cpp" />
     <ClCompile Include="IntroScene.cpp" />
     <ClCompile Include="CardContainer.cpp" />
     <ClCompile Include="HealingPoint.cpp" />
@@ -386,6 +389,10 @@
     <ClInclude Include="TrojanNPC.h" />
     <ClInclude Include="KeyeproNPC.h" />
     <ClInclude Include="CupidNPC.h" />
+    <ClInclude Include="SketchyGuyNPC.h" />
+    <ClInclude Include="SketchyGuyGlobalData.h" />
+    <ClInclude Include="CardCatalog.h" />
+    <ClInclude Include="PackOpeningScene.h" />
     <ClInclude Include="IntroScene.h" />
     <ClInclude Include="CardContainer.h" />
     <ClInclude Include="HealingPoint.h" />
@@ -552,6 +559,12 @@
       <DeploymentContent>true</DeploymentContent>
     </Image>
     <Image Include="assets\daudau-Sheet.png">
+      <DeploymentContent>true</DeploymentContent>
+    </Image>
+    <Image Include="assets\sketchyguy-Sheet.png">
+      <DeploymentContent>true</DeploymentContent>
+    </Image>
+    <Image Include="assets\packopening-Sheet.png">
       <DeploymentContent>true</DeploymentContent>
     </Image>
     <Image Include="assets\department_logo.png">

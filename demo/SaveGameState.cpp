@@ -3,6 +3,7 @@
 #include "Game.h"
 #include "Player.h"
 #include "PlayerGlobalData.h"
+#include "SketchyGuyGlobalData.h"
 #include "IntroScene.h"
 #include "TutorialWorldScene.h"
 #include "SecretPuzzleScene.h"
@@ -110,9 +111,11 @@ namespace Demo {
 	std::shared_ptr<SaveGameState> SaveGameState::StartNewGame(Game* game, const std::shared_ptr<DX9GF::SaveManager>& saveManager) {
 		saveManager->Clear();
 		PlayerGlobalData::GetInstance()->Reset();
+		SketchyGuyGlobalData::GetInstance()->Reset();
 		auto saveState = std::make_shared<SaveGameState>(game, saveManager);
 		saveManager->Register(saveState.get());
 		saveManager->Register(PlayerGlobalData::GetInstance());
+		saveManager->Register(SketchyGuyGlobalData::GetInstance());
 		saveState->ClearScenes();
 		saveState->BuildScenes();
 		DX9GF::AudioManager::GetInstance()->StopAll();
@@ -125,6 +128,7 @@ namespace Demo {
 		auto saveState = std::make_shared<SaveGameState>(game, saveManager);
 		saveManager->Register(saveState.get());
 		saveManager->Register(PlayerGlobalData::GetInstance());
+		saveManager->Register(SketchyGuyGlobalData::GetInstance());
 		saveState->ClearScenes();
 		saveState->BuildScenes();
 		saveManager->Load("savegame.json");

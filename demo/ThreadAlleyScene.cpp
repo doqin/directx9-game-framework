@@ -15,6 +15,8 @@
 #include "QuestManager.h"
 #include "MapBattleScene.h"
 #include "CustomBattleScene.h"
+#include "SketchyGuyGlobalData.h"
+#include "CardCatalog.h"
 #include "Debug.h"
 #include "imgui.h"
 #include "backends/imgui_impl_dx9.h"
@@ -162,6 +164,11 @@ void Demo::ThreadAlleyScene::Init()
 	trojanNPC->AddRevealLine(L"Player", L"...No.");
 	trojanNPC->AddRevealLine(L"Player", L"You didn't trick me into anything.\nI'm taking it back - and I'm deleting you with it.");
 	trojanNPC->AddRevealLine(L"Trojan", L"Ha! Then stop talking and try.");
+
+	// The card-pack peddler. Global state (met / first pack used) lives in SketchyGuyGlobalData,
+	// so he needs no per-scene save fields and can be dropped into other scenes the same way.
+	sketchyGuy = std::make_shared<SketchyGuyNPC>(transformManager, 1024.f, -416.f);
+	sketchyGuy->Init(game->GetGraphicsDevice(), &camera, player, colliderManager, font, drawBuffer);
 
 	savePoints.push_back(std::make_shared<SavePoint>(transformManager, -710, -554));
 	savePoints.back()->Init(game->GetGraphicsDevice(), &camera, player, colliderManager, saveManager, font, drawBuffer);
@@ -522,6 +529,20 @@ void Demo::ThreadAlleyScene::Update(unsigned long long deltaTime)
 		}
 	}
 
+	if (sketchyGuy) {
+		sketchyGuy->Update(deltaTime);
+		// The scene check guards against a still-held INTERACT key re-opening the prompt on the
+		// same frame the buy popup pushed the pack-opening scene.
+		if (!currentConversation && !isTerminalMenuOpen
+			&& !PopupManager::GetInstance()->IsActive()
+			&& !(inventoryMenu && inventoryMenu->IsOpen())
+			&& game->GetSceneManager()->GetCurrentScene() == this
+			&& sketchyGuy->CanInteract()
+			&& inpMan->KeyPress(SettingsManager::GetInstance()->GetKeybind("INTERACT"))) {
+			StartSketchyGuyInteraction();
+		}
+	}
+
 	for (auto& savePoint : savePoints) {
 		savePoint->Update(deltaTime);
 	}
@@ -620,6 +641,7 @@ void Demo::ThreadAlleyScene::DrawWorld(unsigned long long deltaTime)
 		if (dauDau) depthNodes.push_back({ dauDau->GetWorldY(), [&]() { dauDau->Draw(camera, deltaTime); } });
 		if (authTerminal) depthNodes.push_back({ authTerminal->GetWorldY(), [&]() { authTerminal->Draw(camera, deltaTime); } });
 		if (trojanNPC) depthNodes.push_back({ trojanNPC->GetWorldY(), [&]() { trojanNPC->Draw(camera, deltaTime); } });
+		if (sketchyGuy) depthNodes.push_back({ sketchyGuy->GetWorldY(), [&]() { sketchyGuy->Draw(camera, deltaTime); } });
 		if (player) depthNodes.push_back({ player->GetWorldY(), [&]() { player->Draw(deltaTime); } });
 
 		std::sort(depthNodes.begin(), depthNodes.end());
@@ -644,6 +666,7 @@ void Demo::ThreadAlleyScene::DrawUI(unsigned long long deltaTime)
 
 		if (dauDau) dauDau->DrawUI(&this->uiCamera, deltaTime);
 		if (trojanNPC && trojanNPC->GetPhase() != Demo::TrojanNPC::Phase::Defeated) trojanNPC->DrawUI(&this->uiCamera, deltaTime);
+		if (sketchyGuy) sketchyGuy->DrawUI(&this->uiCamera, deltaTime);
 		if (playerHUD) playerHUD->Draw(gd, deltaTime);
 		if (inventoryMenu) inventoryMenu->Draw(gd, deltaTime);
 		if (draggableManager && inventoryMenu && inventoryMenu->IsOpen() && inventoryMenu->GetCurrentTab() == Demo::InventoryMenu::Tab::DECK) {
@@ -846,6 +869,50 @@ void Demo::ThreadAlleyScene::StartTrojanBattle()
 		}));
 
 	drawBuffer->PushCommand(std::make_shared<TransitionCommand>(game->GetGraphicsDevice(), &this->uiCamera, 1.f, false));
+}
+
+void Demo::ThreadAlleyScene::StartSketchyGuyInteraction()
+{
+	auto* npcData = SketchyGuyGlobalData::GetInstance();
+
+	// First encounter: the "you didn't see me" conversation, then he's flagged as met.
+	if (!npcData->HasMet()) {
+		auto [sw, sh] = camera.GetScreenResolution();
+		currentConversation = std::make_shared<IConversation>(std::make_shared<DX9GF::FontSprite>(font.get()), sw, sh);
+		for (auto& line : sketchyGuy->GetDialogueLines()) {
+			currentConversation->AddLine(line);
+		}
+		onConversationEnd = [npcData]() { npcData->SetMet(true); };
+		return;
+	}
+
+	// Every later encounter: the buy prompt.
+	const int cost = npcData->PackCost();
+	std::vector<std::pair<std::wstring, std::function<void()>>> buttons = {
+		{ sketchyGuy->GetBuyConfirmLabel(cost), [this, cost]() {
+			if (player->GetGold() < cost) {
+				DX9GF::AudioManager::GetInstance()->Play("error", false, 0.3f);
+				return;
+			}
+			player->AddGold(-cost);
+			SketchyGuyGlobalData::GetInstance()->SetBoughtPack(true);
+
+			auto pulled = CardCatalog::RollPack(5);
+			for (auto& id : pulled) {
+				player->AddCardToInventory(id);
+			}
+			DX9GF::AudioManager::GetInstance()->Play("shop_buy", false, 0.8f);
+
+			auto app = DX9GF::Application::GetInstance();
+			auto sceMan = game->GetSceneManager();
+			auto* packScene = new PackOpeningScene(game, app->GetScreenWidth(), app->GetScreenHeight(), pulled);
+			sceMan->InsertScene(sceMan->GetIndex() + 1, packScene);
+			sceMan->GoToNext();
+		}},
+		{ L"No(N)", nullptr }
+	};
+	PopupManager::GetInstance()->Show("stepped_gold",
+		sketchyGuy->GetBuyPromptTitle(), sketchyGuy->GetBuyPromptText(cost), buttons);
 }
 
 void Demo::ThreadAlleyScene::DrawCheckerBackground(DX9GF::GraphicsDevice* gd, unsigned long long deltaTime)

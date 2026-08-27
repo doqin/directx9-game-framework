@@ -67,6 +67,9 @@
     <ClCompile Include="TrojanNPC.cpp" />
     <ClCompile Include="KeyeproNPC.cpp" />
     <ClCompile Include="CupidNPC.cpp" />
+    <ClCompile Include="SketchyGuyNPC.cpp" />
+    <ClCompile Include="CardCatalog.cpp" />
+    <ClCompile Include="PackOpeningScene.cpp" />
     <ClCompile Include="IntroScene.cpp" />
     <ClCompile Include="OutroScene.cpp" />
     <ClCompile Include="RustyChestNPC.cpp" />
@@ -174,6 +177,10 @@
     <ClInclude Include="TrojanNPC.h" />
     <ClInclude Include="KeyeproNPC.h" />
     <ClInclude Include="CupidNPC.h" />
+    <ClInclude Include="SketchyGuyNPC.h" />
+    <ClInclude Include="SketchyGuyGlobalData.h" />
+    <ClInclude Include="CardCatalog.h" />
+    <ClInclude Include="PackOpeningScene.h" />
     <ClInclude Include="IntroScene.h" />
     <ClInclude Include="OutroScene.h" />
     <ClInclude Include="RustyChestNPC.h" />
@@ -227,6 +234,8 @@
     <Image Include="assets\crawler-Sheet.png" />
     <Image Include="assets\cursor.png" />
     <Image Include="assets\daudau-Sheet.png" />
+    <Image Include="assets\sketchyguy-Sheet.png" />
+    <Image Include="assets\packopening-Sheet.png" />
     <Image Include="assets\First Asset pack.png" />
     <Image Include="assets\gate.png" />
     <Image Include="assets\grab.png" />

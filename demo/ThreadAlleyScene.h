@@ -14,6 +14,8 @@
 #include "DauDauNPC.h"
 #include "AuthTerminal.h"
 #include "TrojanNPC.h"
+#include "SketchyGuyNPC.h"
+#include "PackOpeningScene.h"
 
 #include "MapEnemy.h"
 
@@ -44,6 +46,7 @@ namespace Demo {
 		std::shared_ptr<DauDauNPC> dauDau;
 		std::shared_ptr<AuthTerminal> authTerminal;
 		std::shared_ptr<TrojanNPC> trojanNPC;
+		std::shared_ptr<SketchyGuyNPC> sketchyGuy;
 		// Four digits, rolled once per save file and persisted so it survives a reload.
 		std::string authPassword;
 		bool authTerminalSolved = false;
@@ -71,6 +74,7 @@ namespace Demo {
 		std::wstring GetQuestText() const;
 		void StartTrojanConversation();
 		void StartTrojanBattle();
+		void StartSketchyGuyInteraction();
 
 	public:
 		ThreadAlleyScene(Game* game, std::shared_ptr<DX9GF::SaveManager> sm, UINT sw, UINT sh) : IScene(sw, sh), game(game), saveManager(sm) {}
