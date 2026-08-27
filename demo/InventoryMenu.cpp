@@ -2,6 +2,8 @@
 #include "InventoryMenu.h"
 #include "SettingsScene.h"
 #include "DX9GFAudioManager.h"
+#include <algorithm>
+#include <unordered_map>
 
 namespace {
 	constexpr float RAW_ITEM_W = 23.0f;
@@ -96,59 +98,176 @@ namespace Demo {
 		deckContainer = std::make_shared<CardContainer>(transformManager, containerW, 40.0f, leftContainerX, containerY);
 		deckContainer->Init(draggableManager, game->GetGraphicsDevice(), uiCamera);
 		deckContainer->SetMaxHeight(sh * 0.5f);
+		deckContainer->SetCulling(true);
 
 		inventoryContainer = std::make_shared<CardContainer>(transformManager, containerW, 40.0f, rightContainerX, containerY);
 		inventoryContainer->Init(draggableManager, game->GetGraphicsDevice(), uiCamera);
 		inventoryContainer->SetMaxHeight(sh * 0.5f);
+		inventoryContainer->SetCulling(true);
 	}
 
 	void InventoryMenu::Toggle()
 	{
 		isOpen = !isOpen;
 		if (isOpen) {
-			RefreshItemsUI();
 			DX9GF::AudioManager::GetInstance()->Play("open_inv");
-		
-			for (auto& cardId : player->GetDeck()) {
-				auto dragCard = std::dynamic_pointer_cast<IDraggable>(ICard::CreateCard(cardId, transformManager, draggableManager, game->GetGraphicsDevice(), uiCamera));
-				if (dragCard) deckContainer->AddChildProgrammatically(dragCard);
+			// Items rebuild lazily in Update's ITEMS branch; only mark dirty if they changed.
+			if (ItemSignatureChanged()) {
+				isItemsDirty = true;
 			}
-
-			for (auto& cardId : player->GetInventoryCards()) {
-				auto dragCard = std::dynamic_pointer_cast<IDraggable>(ICard::CreateCard(cardId, transformManager, draggableManager, game->GetGraphicsDevice(), uiCamera));
-				if (dragCard) inventoryContainer->AddChildProgrammatically(dragCard);
-			}
+			SyncCards();
 		}
 		else {
 			DX9GF::AudioManager::GetInstance()->Play("close_inv");
-			player->ClearDeck();
-			for (auto& weakChild : deckContainer->GetChildren()) {
-				if (auto child = weakChild.lock()) {
-					child->DetachParent();
-					if (auto card = std::dynamic_pointer_cast<ICard>(child)) {
-						player->AddCardToDeck(card->GetSaveID());
-					}
-					draggableManager->Remove(child);
-				}
-			}
-			deckContainer->ClearChildren();
-
-			player->ClearInventory();
-			for (auto& weakChild : inventoryContainer->GetChildren()) {
-				if (auto child = weakChild.lock()) {
-					child->DetachParent();
-					if (auto card = std::dynamic_pointer_cast<ICard>(child)) {
-						player->AddCardToInventory(card->GetSaveID());
-					}
-					draggableManager->Remove(child);
-				}
-			}
-			inventoryContainer->ClearChildren();
+			CommitCards();
+			SetCardsHidden(true);
 		}
 
 		if (transformManager) {
 			transformManager->RebuildHierarchy();
 		}
+	}
+
+	// Re-materialises the containers from the player's current deck / inventory, reusing the card
+	// objects already built. The common case - open, look, close with no change - does no
+	// structural work at all.
+	void InventoryMenu::SyncCards()
+	{
+		if (!player) return;
+
+		const std::vector<std::string>& deck = player->GetDeck();
+		const std::vector<std::string>& inventory = player->GetInventoryCards();
+
+		auto sameMultiset = [](std::vector<std::string> a, std::vector<std::string> b) {
+			if (a.size() != b.size()) return false;
+			std::sort(a.begin(), a.end());
+			std::sort(b.begin(), b.end());
+			return a == b;
+			};
+
+		if (cardsSynced && sameMultiset(deck, syncedDeck) && sameMultiset(inventory, syncedInventory)) {
+			SetCardsHidden(false);
+			return;
+		}
+
+		draggableManager->SetDeferRebuild(true);
+		ReconcileContainer(deckContainer, deck);
+		ReconcileContainer(inventoryContainer, inventory);
+		draggableManager->SetDeferRebuild(false); // one DraggableManager rebuild for the whole batch
+
+		syncedDeck.assign(deck.begin(), deck.end());
+		syncedInventory.assign(inventory.begin(), inventory.end());
+		cardsSynced = true;
+	}
+
+	void InventoryMenu::ReconcileContainer(const std::shared_ptr<CardContainer>& container, const std::vector<std::string>& targetIds)
+	{
+		std::unordered_map<std::string, int> need;
+		for (auto& id : targetIds) {
+			need[id]++;
+		}
+
+		std::vector<std::shared_ptr<IDraggable>> result;
+		result.reserve(targetIds.size());
+
+		// Keep the children still called for; return the rest to the pool.
+		for (auto& weakChild : container->GetChildren()) {
+			auto child = weakChild.lock();
+			if (!child) continue;
+			auto card = std::dynamic_pointer_cast<ICard>(child);
+			const std::string id = card ? card->GetSaveID() : std::string();
+			auto it = need.find(id);
+			if (card && it != need.end() && it->second > 0) {
+				it->second--;
+				child->SetHidden(false);
+				result.push_back(child);
+			}
+			else {
+				child->DetachParent(); // cheap: SetDeferRebuild is on
+				child->SetHidden(true);
+				// Park it far away so its trigger can't be hovered/grabbed while pooled.
+				child->SetLocalPosition(-100000.f, -100000.f);
+				if (card) cardPool[id].push_back(card);
+			}
+		}
+
+		// Fill the shortfall from the pool, or build a new card only if the pool is empty.
+		for (auto& [id, count] : need) {
+			for (int k = 0; k < count; ++k) {
+				auto card = AcquireCard(id);
+				auto dragCard = std::dynamic_pointer_cast<IDraggable>(card);
+				if (!dragCard) continue;
+				dragCard->SetHidden(false);
+				container->AdoptChild(dragCard);
+				result.push_back(dragCard);
+			}
+		}
+
+		container->SetChildList(result);
+	}
+
+	std::shared_ptr<ICard> InventoryMenu::AcquireCard(const std::string& cardId)
+	{
+		auto& pool = cardPool[cardId];
+		if (!pool.empty()) {
+			auto card = pool.back();
+			pool.pop_back();
+			return card;
+		}
+		return ICard::CreateCard(cardId, transformManager, draggableManager, game->GetGraphicsDevice(), uiCamera);
+	}
+
+	void InventoryMenu::CommitCards()
+	{
+		if (!player) return;
+
+		player->ClearDeck();
+		for (auto& weakChild : deckContainer->GetChildren()) {
+			if (auto child = weakChild.lock()) {
+				if (auto card = std::dynamic_pointer_cast<ICard>(child)) {
+					player->AddCardToDeck(card->GetSaveID());
+				}
+			}
+		}
+
+		player->ClearInventory();
+		for (auto& weakChild : inventoryContainer->GetChildren()) {
+			if (auto child = weakChild.lock()) {
+				if (auto card = std::dynamic_pointer_cast<ICard>(child)) {
+					player->AddCardToInventory(card->GetSaveID());
+				}
+			}
+		}
+
+		const std::vector<std::string>& deck = player->GetDeck();
+		const std::vector<std::string>& inventory = player->GetInventoryCards();
+		syncedDeck.assign(deck.begin(), deck.end());
+		syncedInventory.assign(inventory.begin(), inventory.end());
+	}
+
+	void InventoryMenu::SetCardsHidden(bool hidden)
+	{
+		for (auto& weakChild : deckContainer->GetChildren()) {
+			if (auto child = weakChild.lock()) child->SetHidden(hidden);
+		}
+		for (auto& weakChild : inventoryContainer->GetChildren()) {
+			if (auto child = weakChild.lock()) child->SetHidden(hidden);
+		}
+	}
+
+	bool InventoryMenu::ItemSignatureChanged()
+	{
+		std::vector<std::pair<int, int>> sig;
+		if (player) {
+			for (auto& slot : player->GetInventoryItems().GetSlots()) {
+				if (slot.quantity > 0) sig.push_back({ slot.itemID, slot.quantity });
+			}
+		}
+		if (sig != syncedItemSig) {
+			syncedItemSig = std::move(sig);
+			return true;
+		}
+		return false;
 	}
 
 	std::vector<KeyboardNavigator::Candidate> InventoryMenu::CollectKeyboardCandidates()
@@ -247,8 +366,19 @@ namespace Demo {
 		btnOptions->Update(deltaTime);
 		btnLeaveGame->Update(deltaTime);
 
+		// Navigate first so the containers can scroll to follow the keyboard target this frame.
+		keyboardNavigator.Update(deltaTime, CollectKeyboardCandidates());
+
 		if (currentTab == Tab::DECK) {
 			btnTabDeck->SetState(Demo::IButton::ButtonState::CLICKED);
+
+			if (keyboardNavigator.IsInKeyboardMode()) {
+				if (auto target = std::dynamic_pointer_cast<IDraggable>(keyboardNavigator.GetTarget())) {
+					deckContainer->ScrollChildIntoView(target);
+					inventoryContainer->ScrollChildIntoView(target);
+				}
+			}
+
 			deckContainer->Update(deltaTime);
 			inventoryContainer->Update(deltaTime);
 		}
@@ -260,8 +390,6 @@ namespace Demo {
 				btn->Update(deltaTime);
 			}
 		}
-
-		keyboardNavigator.Update(deltaTime, CollectKeyboardCandidates());
 	}
 
 	void InventoryMenu::Draw(DX9GF::GraphicsDevice* gd, unsigned long long deltaTime)

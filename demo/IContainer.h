@@ -7,6 +7,12 @@ namespace Demo {
 	private:
 		size_t maxHeight = 0;
 		float scrollOffset = 0;
+		// When on, Draw() hides children scrolled fully outside the visible band so the
+		// DraggableManager skips their draw entirely (default off: battle containers are small).
+		bool cullOffscreen = false;
+		// Re-stacks children from dragAreaHeight, applying scrollOffset. Shared by Update and
+		// ScrollChildIntoView so a programmatic scroll takes effect the same frame.
+		void LayoutChildren();
 	protected:
 		size_t GetMaxWidthOfChildren();
 		size_t GetHeightOfChildren();
@@ -51,6 +57,15 @@ namespace Demo {
 		void AddChildProgrammatically(std::shared_ptr<IDraggable> child);
 		const std::vector<std::weak_ptr<IDraggable>>& GetChildren() const { return children; }
 		void ClearChildren();
+		// Parents `child` to this container without touching the children list (caller pairs it
+		// with SetChildList). Cheap under DraggableManager::SetDeferRebuild.
+		void AdoptChild(const std::shared_ptr<IDraggable>& child);
+		// Replaces the children list wholesale with an already-parented set (see AdoptChild).
+		void SetChildList(const std::vector<std::shared_ptr<IDraggable>>& newChildren);
+		// Nudges scrollOffset so `child` sits fully inside the visible band. No-op unless
+		// maxHeight is set, the list overflows, and `child` belongs to this container.
+		void ScrollChildIntoView(const std::shared_ptr<IDraggable>& child);
+		void SetCulling(bool enabled) { cullOffscreen = enabled; }
 		void SetMaxHeight(size_t height) { maxHeight = height; }
 		size_t GetMaxHeight() const { return maxHeight; }
 	};

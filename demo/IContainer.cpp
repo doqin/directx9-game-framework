@@ -25,6 +25,17 @@ size_t Demo::IContainer::GetHeightOfChildren()
 	return height;
 }
 
+void Demo::IContainer::LayoutChildren()
+{
+	float yPos = static_cast<float>(dragAreaHeight);
+	for (auto& weakChild : children) {
+		if (auto lock = weakChild.lock()) {
+			lock->SetLocalPosition(0, yPos - scrollOffset);
+			yPos += static_cast<float>(lock->GetHeight());
+		}
+	}
+}
+
 bool Demo::IContainer::OnHover(std::shared_ptr<IDraggable> other)
 {
 	auto [thisX, thisY] = this->GetWorldPosition();
@@ -169,9 +180,24 @@ void Demo::IContainer::Draw(unsigned long long deltaTime)
 		rect.right = (long)brX;
 		rect.bottom = (long)brY;
 
+		const bool overflowing = currentHeightOfChildren > maxHeight;
+		const float bandTop = static_cast<float>(dragAreaHeight);
+		const float bandBot = static_cast<float>(dragAreaHeight) + static_cast<float>(maxHeight);
+		float localY = static_cast<float>(dragAreaHeight);
 		for (auto& child : children) {
 			if (auto lock = child.lock()) {
 				lock->SetScissorRect(rect);
+				if (cullOffscreen && !lock->IsDragging()) {
+					if (overflowing) {
+						const float top = localY - scrollOffset;
+						const float bot = top + static_cast<float>(lock->GetHeight());
+						lock->SetHidden(!(bot > bandTop && top < bandBot));
+					}
+					else {
+						lock->SetHidden(false);
+					}
+				}
+				localY += static_cast<float>(lock->GetHeight());
 			}
 		}
 
@@ -203,6 +229,54 @@ void Demo::IContainer::AddChildProgrammatically(std::shared_ptr<IDraggable> chil
 {
 	child->SetParent(shared_from_this());
 	children.push_back(child);
+}
+
+void Demo::IContainer::AdoptChild(const std::shared_ptr<IDraggable>& child)
+{
+	if (!child) return;
+	child->SetParent(shared_from_this());
+}
+
+void Demo::IContainer::SetChildList(const std::vector<std::shared_ptr<IDraggable>>& newChildren)
+{
+	children.assign(newChildren.begin(), newChildren.end());
+}
+
+void Demo::IContainer::ScrollChildIntoView(const std::shared_ptr<IDraggable>& child)
+{
+	if (!child || maxHeight == 0) return;
+
+	const float maxScroll = static_cast<float>(GetHeightOfChildren()) - static_cast<float>(maxHeight);
+	if (maxScroll <= 0.f) return; // fits; nothing to scroll
+
+	float offset = static_cast<float>(dragAreaHeight);
+	float childHeight = 0.f;
+	bool found = false;
+	for (auto& weakChild : children) {
+		auto lock = weakChild.lock();
+		if (!lock) continue;
+		if (lock.get() == child.get()) {
+			childHeight = static_cast<float>(lock->GetHeight());
+			found = true;
+			break;
+		}
+		offset += static_cast<float>(lock->GetHeight());
+	}
+	if (!found) return;
+
+	const float viewTop = scrollOffset + static_cast<float>(dragAreaHeight);
+	const float viewBot = viewTop + static_cast<float>(maxHeight);
+	if (offset < viewTop) {
+		scrollOffset = offset - static_cast<float>(dragAreaHeight);
+	}
+	else if (offset + childHeight > viewBot) {
+		scrollOffset = offset + childHeight - static_cast<float>(dragAreaHeight) - static_cast<float>(maxHeight);
+	}
+
+	if (scrollOffset < 0.f) scrollOffset = 0.f;
+	if (scrollOffset > maxScroll) scrollOffset = maxScroll;
+
+	LayoutChildren();
 }
 
 void Demo::IContainer::ClearChildren()
