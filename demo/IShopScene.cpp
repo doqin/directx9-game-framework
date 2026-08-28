@@ -165,6 +165,12 @@ void Demo::IShopScene::Init()
 	itemsTex = std::make_shared<DX9GF::Texture>(game->GetGraphicsDevice());
 	itemsTex->LoadTexture(L"assets/items.png");
 
+	buyTabTex = std::make_shared<DX9GF::Texture>(game->GetGraphicsDevice());
+	buyTabTex->LoadTexture(L"assets/buytab.png");
+
+	sellTabTex = std::make_shared<DX9GF::Texture>(game->GetGraphicsDevice());
+	sellTabTex->LoadTexture(L"assets/selltab.png");
+
 	LoadItems();
 
 	BuildUI();
@@ -226,38 +232,8 @@ void Demo::IShopScene::BuildUI()
 	goldIconSprite->SetSrcRect({ 0, 240, 32, 272 });
 	goldIconSprite->SetScale(1.0f, 1.0f);
 
-	// --- One buy button per item, across every page -----------------------------
-	// Positions are assigned by RefreshPage; only the current page's slice is ever
-	// updated or drawn.
-	for (size_t i = 0; i < itemsForSale.size(); ++i) {
-		auto item = itemsForSale[i];
-
-		auto buyBtn = std::make_shared<Demo::IconButton>(
-			transformManager,
-			0.0f, 0.0f, static_cast<int>(BUY_BTN_SIZE), static_cast<int>(BUY_BTN_SIZE),
-			uiSheetTex, 3
-		);
-		buyBtn->SetSpriteCoords(0, 240, 32, 32, 0, false);
-		buyBtn->SetSpriteScale(2, 2);
-		buyBtn->SetOnReleaseLeft([this, item](DX9GF::ITrigger* t) {
-			if (this->player->GetGold() >= item.cost) {
-				this->player->AddGold(-item.cost);
-
-				if (item.onBuyAction) {
-					item.onBuyAction();
-				}
-
-				DX9GF::AudioManager::GetInstance()->Play("shop_buy", false, 0.8f);
-				this->ShowMessage(L"Bought " + item.name + L"!");
-			}
-			else {
-				DX9GF::AudioManager::GetInstance()->Play("error", false, 0.3f);
-				this->ShowMessage(L"Not enough gold!");
-			}
-			});
-		buyBtn->Init(&uiCamera);
-		buyButtons.push_back(buyBtn);
-	}
+	// The row buttons are built by RebuildRows() at the end of this function, and again
+	// whenever the active list changes.
 
 	// --- LEAVE ------------------------------------------------------------------
 	leaveButton = std::make_shared<Demo::IconButton>(
@@ -271,6 +247,21 @@ void Demo::IShopScene::BuildUI()
 		this->shouldLeave = true;
 		});
 	leaveButton->Init(&uiCamera);
+
+	// --- BUY / SELL tabs, centred in the header (where the title used to be) ---
+	// Each tab's own texture is a 144x32 strip: three 48x32 frames (idle / hover / pressed).
+	const float tabY = l.panelY + (HEADER_H - 64.0f) / 2.0f;
+	const float tabGap = 6.0f;
+	auto makeTabButton = [&](std::shared_ptr<DX9GF::Texture> tex, float x, ShopMode target) {
+		auto btn = std::make_shared<Demo::IconButton>(transformManager, x, tabY, 96, 64, tex, 3);
+		btn->SetSpriteCoords(0, 0, 48, 32, 0, false);
+		btn->SetSpriteScale(2, 2);
+		btn->SetOnReleaseLeft([this, target](DX9GF::ITrigger* t) { this->SetMode(target); });
+		btn->Init(&uiCamera);
+		return btn;
+		};
+	btnBuyTab = makeTabButton(buyTabTex, -96.0f - tabGap * 0.5f, ShopMode::Buy);
+	btnSellTab = makeTabButton(sellTabTex, tabGap * 0.5f, ShopMode::Sell);
 
 	// --- Page arrows ------------------------------------------------------------
 	auto makePageButton = [&](const std::wstring& label, const std::function<void(DX9GF::ITrigger*)>& action) {
@@ -297,7 +288,78 @@ void Demo::IShopScene::BuildUI()
 		}
 		});
 
+	RebuildRows();
+}
+
+void Demo::IShopScene::RebuildRows()
+{
+	// Drop the previous page of row buttons. They are owned only here and through the transform
+	// hierarchy, which RefreshPage() rebuilds below - same pattern as InventoryMenu's item grid.
+	buyButtons.clear();
+
+	const auto& items = ActiveItems();
+	for (size_t i = 0; i < items.size(); ++i) {
+		auto buyBtn = std::make_shared<Demo::IconButton>(
+			transformManager,
+			0.0f, 0.0f, static_cast<int>(BUY_BTN_SIZE), static_cast<int>(BUY_BTN_SIZE),
+			uiSheetTex, 3
+		);
+		buyBtn->SetSpriteCoords(0, 240, 32, 32, 0, false);
+		buyBtn->SetSpriteScale(2, 2);
+		const int index = static_cast<int>(i);
+		buyBtn->SetOnReleaseLeft([this, index](DX9GF::ITrigger* t) { this->HandleRow(index); });
+		buyBtn->Init(&uiCamera);
+		buyButtons.push_back(buyBtn);
+	}
+
+	currentPage = 0;
 	RefreshPage();
+}
+
+void Demo::IShopScene::SetMode(ShopMode mode)
+{
+	if (mode == shopMode) return;
+	shopMode = mode;
+
+	statusMessage.clear();
+	messageTimer = 0.0f;
+	currentPage = 0;
+	// The tab button's own press already played the click sfx - don't stack a second one here.
+
+	// Same reason as the sale path: this runs inside the toggle button's callback, so the row
+	// rebuild has to wait until Update().
+	pendingRowsRebuild = true;
+}
+
+void Demo::IShopScene::HandleRow(int index)
+{
+	auto& items = ActiveItems();
+	if (index < 0 || index >= static_cast<int>(items.size())) return;
+	const ShopItem item = items[index];
+
+	if (shopMode == ShopMode::Buy) {
+		if (player->GetGold() >= item.cost) {
+			player->AddGold(-item.cost);
+			if (item.onBuyAction) item.onBuyAction();
+			DX9GF::AudioManager::GetInstance()->Play("shop_buy", false, 0.8f);
+			ShowMessage(L"Bought " + item.name + L"!");
+		}
+		else {
+			DX9GF::AudioManager::GetInstance()->Play("error", false, 0.3f);
+			ShowMessage(L"Not enough gold!");
+		}
+		return;
+	}
+
+	// Sell: the row's action removes one copy from the player's inventory; we hand back the gold.
+	if (item.onBuyAction) item.onBuyAction();
+	player->AddGold(item.cost);
+	DX9GF::AudioManager::GetInstance()->Play("shop_buy", false, 0.8f);
+	ShowMessage(L"Sold " + item.name + L" for " + std::to_wstring(item.cost) + L"G");
+
+	// The inventory just changed, but we are inside a row button's own callback right now -
+	// tearing its list down here would invalidate the button mid-click. Defer to Update().
+	pendingRowsRebuild = true;
 }
 
 void Demo::IShopScene::RefreshPage()
@@ -306,12 +368,13 @@ void Demo::IShopScene::RefreshPage()
 	const float sh = static_cast<float>(game->GetVirtualHeight());
 	const ShopLayout l = ComputeLayout(sw, sh);
 
+	const auto& items = ActiveItems();
 	rowsPerPage = ComputeRowsPerPage(l);
-	maxPage = itemsForSale.empty() ? 0 : static_cast<int>((itemsForSale.size() - 1) / rowsPerPage);
+	maxPage = items.empty() ? 0 : static_cast<int>((items.size() - 1) / rowsPerPage);
 	currentPage = std::clamp(currentPage, 0, maxPage);
 
 	const int startIndex = currentPage * rowsPerPage;
-	const int endIndex = (std::min)(static_cast<int>(itemsForSale.size()), startIndex + rowsPerPage);
+	const int endIndex = (std::min)(static_cast<int>(items.size()), startIndex + rowsPerPage);
 
 	// Clear any HOVER/CLICKED left over from the page we just navigated away from;
 	// off-page buttons stop being updated, so they would otherwise stay highlighted.
@@ -321,6 +384,8 @@ void Demo::IShopScene::RefreshPage()
 
 	activeButtons.clear();
 	activeButtons.push_back(leaveButton);
+	activeButtons.push_back(btnBuyTab);
+	activeButtons.push_back(btnSellTab);
 
 	const float buyX = l.rowX + l.rowW - ROW_INNER_PAD - BUY_BTN_SIZE;
 	for (int i = startIndex; i < endIndex; ++i) {
@@ -345,13 +410,15 @@ void Demo::IShopScene::RefreshPage()
 
 void Demo::IShopScene::RefreshAffordability()
 {
+	const auto& items = ActiveItems();
 	const int startIndex = currentPage * rowsPerPage;
-	const int endIndex = (std::min)(static_cast<int>(itemsForSale.size()), startIndex + rowsPerPage);
+	const int endIndex = (std::min)(static_cast<int>(items.size()), startIndex + rowsPerPage);
 	const int gold = player->GetGold();
 
 	for (int i = startIndex; i < endIndex; ++i) {
 		auto& btn = buyButtons[i];
-		const bool affordable = gold >= itemsForSale[i].cost;
+		// A sale never costs the player gold, so every sell row is always actionable.
+		const bool affordable = shopMode == ShopMode::Sell || gold >= items[i].cost;
 
 		btn->SetSpriteColor(affordable ? 0xFFFFFFFF : COLOR_BTN_DISABLED);
 
@@ -475,6 +542,25 @@ void Demo::IShopScene::Update(unsigned long long deltaTime)
 		btn->Update(deltaTime);
 	}
 
+	// A mode switch or a sale defers its row rebuild to here so it never runs while the button
+	// that triggered it is still mid-click.
+	if (pendingRowsRebuild) {
+		pendingRowsRebuild = false;
+		const int keepPage = currentPage;
+		if (shopMode == ShopMode::Sell) {
+			itemsToSell.clear();
+			LoadSellItems();
+		}
+		RebuildRows();
+		currentPage = std::clamp(keepPage, 0, maxPage);
+		RefreshPage();
+	}
+
+	// Hold the current mode's tab in the pressed state. The other tab is left to its own
+	// Update() - forcing its state here fights that logic and retriggers its click sfx every
+	// frame while it is held.
+	(shopMode == ShopMode::Buy ? btnBuyTab : btnSellTab)->SetState(IButton::ButtonState::CLICKED);
+
 	// Gold changes on purchase, so re-evaluate before the navigator collects candidates
 	// (it must not be able to target a button that just became unaffordable).
 	RefreshAffordability();
@@ -502,8 +588,11 @@ void Demo::IShopScene::DrawUI(unsigned long long deltaTime)
 	const float topEdge = -sh / 2.0f;
 	const ShopLayout l = ComputeLayout(sw, sh);
 
+	const auto& items = ActiveItems();
+	const bool sellMode = shopMode == ShopMode::Sell;
+
 	const int startIndex = currentPage * rowsPerPage;
-	const int endIndex = (std::min)(static_cast<int>(itemsForSale.size()), startIndex + rowsPerPage);
+	const int endIndex = (std::min)(static_cast<int>(items.size()), startIndex + rowsPerPage);
 
 	// Which row the player is inspecting: the keyboard target's row in keyboard mode,
 	// otherwise whichever row card the mouse is over. Hit-testing the whole card (rather
@@ -574,7 +663,7 @@ void Demo::IShopScene::DrawUI(unsigned long long deltaTime)
 		// --- Row artwork ---------------------------------------------------------
 		itemIconSprite->Begin();
 		for (int i = startIndex; i < endIndex; ++i) {
-			const auto& item = itemsForSale[i];
+			const auto& item = items[i];
 			if (item.iconSheet != ShopIconSheet::Items) continue;
 			const float iconH = static_cast<float>(item.iconRect.bottom - item.iconRect.top);
 			if (iconH <= 0.0f) continue;
@@ -590,7 +679,7 @@ void Demo::IShopScene::DrawUI(unsigned long long deltaTime)
 
 		cardFaceSprite->Begin();
 		for (int i = startIndex; i < endIndex; ++i) {
-			const auto& item = itemsForSale[i];
+			const auto& item = items[i];
 			if (item.iconSheet != ShopIconSheet::CardFaces) continue;
 			const float faceW = static_cast<float>(item.iconRect.right - item.iconRect.left);
 			const float faceH = static_cast<float>(item.iconRect.bottom - item.iconRect.top);
@@ -600,7 +689,7 @@ void Demo::IShopScene::DrawUI(unsigned long long deltaTime)
 			const float faceX = l.rowX + ROW_INNER_PAD;
 			const float faceY = rowY + (ROW_H - faceH * CARD_FACE_SCALE) / 2.0f;
 			// Unaffordable cards get the same grey wash as their buy button.
-			const bool affordable = player->GetGold() >= item.cost;
+			const bool affordable = sellMode || player->GetGold() >= item.cost;
 			cardFaceSprite->SetColor(affordable ? 0xFFFFFFFF : COLOR_FACE_DISABLED);
 			cardFaceSprite->SetSrcRect(item.iconRect);
 			cardFaceSprite->SetPosition(faceX, faceY);
@@ -638,15 +727,7 @@ void Demo::IShopScene::DrawUI(unsigned long long deltaTime)
 			myFontSprite->SetText(std::to_wstring(player->GetGold()) + L"G");
 			myFontSprite->Draw(uiCamera, deltaTime);
 
-			// Title, centred on the panel.
-			myFontSprite->SetScale(TITLE_SCALE, TITLE_SCALE);
-			myFontSprite->SetColor(COLOR_TEXT);
-			myFontSprite->SetText(std::wstring(shopTitle.begin(), shopTitle.end()));
-			const float titleW = static_cast<float>(myFontSprite->GetWidth()) * TITLE_SCALE;
-			const float titleH = static_cast<float>(myFontSprite->GetHeight()) * TITLE_SCALE;
-			myFontSprite->SetPosition(-titleW * 0.5f, l.panelY + (HEADER_H - titleH) / 2.0f);
-			myFontSprite->Draw(uiCamera, deltaTime);
-
+			// The shop title is gone - the BUY / SELL tabs sit centred in the header instead.
 			myFontSprite->SetScale(1.0f, 1.0f);
 
 			// Header divider.
@@ -658,8 +739,8 @@ void Demo::IShopScene::DrawUI(unsigned long long deltaTime)
 			// right-aligned just before the buy button.
 			const int gold = player->GetGold();
 			for (int i = startIndex; i < endIndex; ++i) {
-				const auto& item = itemsForSale[i];
-				const bool affordable = gold >= item.cost;
+				const auto& item = items[i];
+				const bool affordable = sellMode || gold >= item.cost;
 				const float rowY = l.listTop + (i - startIndex) * (ROW_H + ROW_GAP);
 
 				// A card face already spells out the card's name and energy cost, so drawing
@@ -680,9 +761,29 @@ void Demo::IShopScene::DrawUI(unsigned long long deltaTime)
 				myFontSprite->SetText(std::to_wstring(item.cost) + L"G");
 				const float priceW = static_cast<float>(myFontSprite->GetWidth());
 				const float priceH = static_cast<float>(myFontSprite->GetHeight());
-				myFontSprite->SetPosition(
-					l.rowX + l.rowW - ROW_INNER_PAD - BUY_BTN_SIZE - 16.0f - priceW,
-					rowY + (ROW_H - priceH) / 2.0f);
+				const float priceX = l.rowX + l.rowW - ROW_INNER_PAD - BUY_BTN_SIZE - 16.0f - priceW;
+				myFontSprite->SetPosition(priceX, rowY + (ROW_H - priceH) / 2.0f);
+				myFontSprite->Draw(uiCamera, deltaTime);
+
+				// "xN" owned count, just left of the price (sell rows only).
+				if (item.stackCount > 1) {
+					myFontSprite->SetColor(COLOR_TEXT_DIM);
+					myFontSprite->SetText(L"x" + std::to_wstring(item.stackCount));
+					const float countW = static_cast<float>(myFontSprite->GetWidth());
+					const float countH = static_cast<float>(myFontSprite->GetHeight());
+					myFontSprite->SetPosition(priceX - 16.0f - countW, rowY + (ROW_H - countH) / 2.0f);
+					myFontSprite->Draw(uiCamera, deltaTime);
+				}
+			}
+
+			// Empty sell list: tell the player why the panel is bare.
+			if (items.empty()) {
+				myFontSprite->SetColor(COLOR_TEXT_DIM);
+				myFontSprite->SetText(sellMode
+					? L"You have nothing this shop will buy."
+					: L"Nothing for sale here.");
+				const float emptyW = static_cast<float>(myFontSprite->GetWidth());
+				myFontSprite->SetPosition(-emptyW * 0.5f, l.listTop + 20.0f);
 				myFontSprite->Draw(uiCamera, deltaTime);
 			}
 
@@ -697,7 +798,7 @@ void Demo::IShopScene::DrawUI(unsigned long long deltaTime)
 				myFontSprite->Draw(uiCamera, deltaTime);
 			}
 			else if (hoveredIndex >= 0) {
-				const auto lines = WrapText(myFontSprite.get(), itemsForSale[hoveredIndex].description,
+				const auto lines = WrapText(myFontSprite.get(), items[hoveredIndex].description,
 					l.rowW - ROW_INNER_PAD * 2.0f, 2);
 				myFontSprite->SetColor(COLOR_TEXT);
 				float lineY = l.footerTop + 6.0f;

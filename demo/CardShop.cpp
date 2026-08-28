@@ -5,6 +5,32 @@
 #include "AdvancedCards.h"
 #include "UtilityCards.h"
 #include "FinisherCards.h"
+#include "ICard.h"
+#include <cctype>
+#include <map>
+
+namespace {
+	// "HeavyStrikeCard" -> "Heavy Strike". Only used for the sell row's status message; the row
+	// itself shows the card's face art, same as the buy rows.
+	std::wstring PrettyCardName(const std::string& saveId)
+	{
+		std::string s = saveId;
+		const std::string suffix = "Card";
+		if (s.size() > suffix.size() &&
+			s.compare(s.size() - suffix.size(), suffix.size(), suffix) == 0) {
+			s.erase(s.size() - suffix.size());
+		}
+		std::wstring out;
+		for (size_t i = 0; i < s.size(); ++i) {
+			const unsigned char c = static_cast<unsigned char>(s[i]);
+			if (i > 0 && std::isupper(c) && !std::isupper(static_cast<unsigned char>(s[i - 1]))) {
+				out += L' ';
+			}
+			out += static_cast<wchar_t>(c);
+		}
+		return out;
+	}
+}
 
 Demo::CardShop::CardShop(Game* game, Player* player, int sw, int sh, ShopTier tier)
 	: IShopScene(game, player, sw, sh,
@@ -64,5 +90,39 @@ void Demo::CardShop::LoadItems()
 		AddShopCard<OverloadCard>("Overload Card");
 		// AddShopCard<StunCard>("Stun Card");
 		break;
+	}
+}
+
+void Demo::CardShop::LoadSellItems()
+{
+	// Only loose cards (the inventory, not the battle deck) can be sold. Cards are grouped by
+	// type so a stack of three shows as one row with an "x3" count.
+	std::map<std::string, int> counts;
+	for (const auto& id : player->GetInventoryCards()) {
+		counts[id]++;
+	}
+
+	for (const auto& [id, count] : counts) {
+		// GetSellValue is a small fraction of the card's shop price, deliberately low so a card
+		// pack (75G for 5) can never be milked for gold by dumping its contents here.
+		const int sellValue = CardCatalog::GetSellValue(id);
+		if (sellValue <= 0) continue; // starter cards and anything with no shop price
+
+		auto proto = ICard::CreateCard(id, transformManager);
+		if (!proto) continue;
+
+		const std::string sellId = id;
+		ShopItem row;
+		row.name = PrettyCardName(id);
+		row.cost = sellValue;
+		row.description = proto->GetDescription();
+		row.iconRect = proto->GetFaceRect();
+		row.iconSheet = ShopIconSheet::CardFaces;
+		row.isPersistent = proto->IsPersistent();
+		row.hasLimitedUses = proto->HasLimitedUses();
+		row.maxUses = proto->HasLimitedUses() ? proto->GetMaxUses() : 0;
+		row.stackCount = count;
+		row.onBuyAction = [this, sellId]() { this->player->RemoveCardFromInventory(sellId); };
+		itemsToSell.push_back(std::move(row));
 	}
 }

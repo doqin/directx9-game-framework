@@ -109,6 +109,7 @@ namespace Demo {
 		const std::vector<std::string>& GetInventoryCards() const { return PlayerGlobalData::GetInstance()->GetInventoryCards(); }
 		ItemInventory& GetInventoryItems() { return PlayerGlobalData::GetInstance()->GetInventoryItems(); }
 		void AddCardToInventory(const std::string& card) { PlayerGlobalData::GetInstance()->AddCardToInventory(card); }
+		bool RemoveCardFromInventory(const std::string& card) { return PlayerGlobalData::GetInstance()->RemoveCardFromInventory(card); }
 		void ClearInventory() { PlayerGlobalData::GetInstance()->ClearInventory(); }
 		virtual std::string GetSaveID() const override;
 		virtual void GenerateSaveData(nlohmann::json& outData) override;

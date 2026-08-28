@@ -9,5 +9,6 @@ namespace Demo {
     public:
         ItemShop(Game* game, Player* player, int screenWidth, int screenHeight, ShopTier tier);
         void LoadItems() override;
+        void LoadSellItems() override;
     };
 }

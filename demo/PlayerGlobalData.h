@@ -4,6 +4,7 @@
 #include "GameItems.h"
 #include <string>
 #include <vector>
+#include <algorithm>
 
 namespace Demo {
 	// Single source of truth for save-scoped player state (health, gold, deck, inventory).
@@ -44,6 +45,14 @@ namespace Demo {
 
 		const std::vector<std::string>& GetInventoryCards() const { return inventoryCards; }
 		void AddCardToInventory(const std::string& card) { inventoryCards.push_back(card); }
+		// Removes a single copy of the named card from the inventory (not the deck). Returns
+		// true if one was found and erased. Used by the card shop's sell mode.
+		bool RemoveCardFromInventory(const std::string& card) {
+			auto it = std::find(inventoryCards.begin(), inventoryCards.end(), card);
+			if (it == inventoryCards.end()) return false;
+			inventoryCards.erase(it);
+			return true;
+		}
 		void ClearInventory() { inventoryCards.clear(); }
 
 		ItemInventory& GetInventoryItems() { return inventoryItems; }

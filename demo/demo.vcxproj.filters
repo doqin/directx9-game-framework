@@ -69,6 +69,7 @@
     <ClCompile Include="CupidNPC.cpp" />
     <ClCompile Include="SketchyGuyNPC.cpp" />
     <ClCompile Include="CardCatalog.cpp" />
+    <ClCompile Include="ItemCatalog.cpp" />
     <ClCompile Include="PackOpeningScene.cpp" />
     <ClCompile Include="IntroScene.cpp" />
     <ClCompile Include="OutroScene.cpp" />
@@ -180,6 +181,7 @@
     <ClInclude Include="SketchyGuyNPC.h" />
     <ClInclude Include="SketchyGuyGlobalData.h" />
     <ClInclude Include="CardCatalog.h" />
+    <ClInclude Include="ItemCatalog.h" />
     <ClInclude Include="PackOpeningScene.h" />
     <ClInclude Include="IntroScene.h" />
     <ClInclude Include="OutroScene.h" />
@@ -227,6 +229,8 @@
     <Image Include="assets\bubble-Sheet.png" />
     <Image Include="assets\bubbleprojectile.png" />
     <Image Include="assets\bugprojectile-Sheet.png" />
+    <Image Include="assets\buytab.png" />
+    <Image Include="assets\selltab.png" />
     <Image Include="assets\chestclosed.png" />
     <Image Include="assets\chestopened.png" />
     <Image Include="assets\click.png" />

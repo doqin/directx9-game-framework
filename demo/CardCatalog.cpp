@@ -3,6 +3,7 @@
 #include "RNG.h"
 #include <algorithm>
 #include <array>
+#include <cmath>
 #include <unordered_map>
 
 namespace Demo::CardCatalog {
@@ -54,6 +55,12 @@ namespace Demo::CardCatalog {
 		const auto& prices = PriceMap();
 		auto it = prices.find(cardSaveID);
 		return it != prices.end() ? it->second : 0;
+	}
+
+	int GetSellValue(const std::string& cardSaveID) {
+		const int price = GetPrice(cardSaveID);
+		if (price <= 0) return 0;
+		return (std::max)(1, static_cast<int>(std::lround(price * SELL_RATE)));
 	}
 
 	Rarity RarityForPrice(int price) {

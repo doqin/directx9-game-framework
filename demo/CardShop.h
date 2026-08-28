@@ -32,5 +32,6 @@ namespace Demo {
 
 
 		void LoadItems() override;
+		void LoadSellItems() override;
 	};
 }
