@@ -1,4 +1,4 @@
-#pragma once
+﻿#pragma once
 #include "DX9GF.h"
 #include "DX9GFExtras.h"
 #include "Game.h"
@@ -8,7 +8,7 @@
 #include "StrikeCard.h"
 #include "ShopPoint.h"
 #include "HealingPoint.h"
-#include "DauDauNPC.h"
+#include "NPC.h"
 #include "IConversation.h"
 
 #include "NPC1.h"
@@ -47,8 +47,7 @@ namespace Demo {
 		std::shared_ptr<DX9GF::CommandBuffer> commandBuffer;
 		std::shared_ptr<IConversation> currentConversation;
 
-		std::shared_ptr<DauDauNPC> dauDau;
-		std::shared_ptr<DauDauNPC> dauDauSpawn;
+		std::vector<std::shared_ptr<NPC>> mapNPCs;
 
 		std::shared_ptr<INPC> activeNPC = nullptr;
 		std::shared_ptr<PopUpMessage> popUpMessage;

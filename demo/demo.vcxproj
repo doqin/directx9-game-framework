@@ -264,6 +264,7 @@
     <ClCompile Include="GameItems.cpp" />
     <ClCompile Include="HackTerminal.cpp" />
     <ClCompile Include="AuthTerminal.cpp" />
+    <ClCompile Include="NPC.cpp" />
     <ClCompile Include="PasswordMenu.cpp" />
     <ClCompile Include="QuestMarker.cpp" />
     <ClCompile Include="TrojanNPC.cpp" />
@@ -380,6 +381,7 @@
     <ClInclude Include="GameItems.h" />
     <ClInclude Include="HackTerminal.h" />
     <ClInclude Include="AuthTerminal.h" />
+    <ClInclude Include="NPC.h" />
     <ClInclude Include="PasswordMenu.h" />
     <ClInclude Include="QuestMarker.h" />
     <ClInclude Include="TrojanNPC.h" />
@@ -462,6 +464,7 @@
     <None Include="assets\icon.tsx">
       <DeploymentContent>true</DeploymentContent>
     </None>
+    <None Include="assets\kako.aseprite" />
     <None Include="assets\placeholder-round-projectile.aseprite" />
     <None Include="assets\SecretPuzzle.tmx">
       <DeploymentContent>true</DeploymentContent>
@@ -578,6 +581,9 @@
       <DeploymentContent>true</DeploymentContent>
     </Image>
     <Image Include="assets\items.png">
+      <DeploymentContent>true</DeploymentContent>
+    </Image>
+    <Image Include="assets\kako-Sheet.png">
       <DeploymentContent>true</DeploymentContent>
     </Image>
     <Image Include="assets\kernel.png">

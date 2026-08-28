@@ -710,7 +710,6 @@ namespace Demo {
 			std::string prefix = isActive ? "(+) " : "(-) ";
 			std::string titleStr = std::string(q.title.begin(), q.title.end());
 
-			// ÉP KHUÔN WIDTH NÚT BẰNG CÁCH TRỪ ĐI PADDING (15.0f * 2) VÀ VIỀN (4.0f)
 			float questPadX = 15.0f;
 			float btnInnerW = containerW - 4.0f - (questPadX * 2);
 
@@ -719,7 +718,7 @@ namespace Demo {
 					this->selectedQuestId = qId;
 				});
 			btn->Init(uiCamera);
-			btn->SetPadding(questPadX, 6.0f); // 6.0f là padding Y
+			btn->SetPadding(questPadX, 6.0f);
 
 			if (isActive) btn->SetTextColors(0xFFFFFFFF, 0xFFFFD700, 0xFFFFAA00, 0xFF888888);
 			else btn->SetTextColors(0xFFAAAAAA, 0xFFCCCCCC, 0xFFFFFFFF, 0xFF888888);

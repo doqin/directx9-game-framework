@@ -95,9 +95,41 @@ void Demo::ThreadAlleyScene::Init()
 	QuestManager::GetInstance()->SetVirtualResolution(game->GetVirtualWidth(), game->GetVirtualHeight());
 	QuestManager::GetInstance()->Init(game->GetGraphicsDevice(), transformManager, &this->uiCamera, font);
 
-	dauDau = std::make_shared<DauDauNPC>(transformManager, -580.f, 100.f);
-	dauDau->AttachQuestMarker("Quest_ThreadAlley_Start", Demo::QuestMarkerRole::Giver);
-	dauDau->Init(game->GetGraphicsDevice(), &camera, player, colliderManager, font, drawBuffer);
+
+	NPCConfig hkhangConfig = { L"assets/daudau-Sheet.png", 32, 32, 5, 12, 24.f, 8.f, 12.f }; //TODO: change HKhang npc's asset here
+
+	auto hKhang = std::make_shared<NPC>(transformManager, -580.f, 100.f, hkhangConfig);
+	hKhang->AttachQuestMarker("Quest_ThreadAlley_Start", Demo::QuestMarkerRole::Giver);
+	hKhang->Init(game->GetGraphicsDevice(), &camera, player, colliderManager, font, drawBuffer);
+	hKhang->RegisterVoice(L"Huu Khang", "bleep12");
+	hKhang->SetInteractLogic([](NPC* self) -> std::function<void()> {
+		auto qState = QuestManager::GetInstance()->GetQuestState("Quest_ThreadAlley_Start");
+
+		if (qState == Demo::QuestState::Locked) {
+			self->AddLine(L"Huu Khang", L"Hey, keep your firewall up if you're heading down Thread Alley.");
+			self->AddLine(L"Huu Khang", L"It used to be a shortcut for background processes, but lately... things go in and don't come out.");
+			self->AddLine(L"Player", L"Malware?");
+			self->AddLine(L"Huu Khang", L"Worse. The sneaky kind. It mimics friendly data to bypass your antivirus.");
+			self->AddLine(L"Huu Khang", L"If you're heading that way, maybe you can flush the corruption out?");
+			return []() {
+				std::vector<std::pair<std::wstring, std::function<void()>>> buttons = {
+					{ L"Yes(Y)", []() { QuestManager::GetInstance()->AcceptQuest("Quest_ThreadAlley_Start"); } },
+					{ L"No(N)", []() {} }
+				};
+				PopupManager::GetInstance()->Show("stepped_blue", L"New Quest", L"Investigate Thread Alley?", buttons);
+				};
+		}
+		else if (qState == Demo::QuestState::Active) {
+			self->AddLine(L"Huu Khang", L"Watch your back in there. Malware down here doesn't always look like a monster...");
+			self->AddLine(L"Huu Khang", L"Sometimes it looks exactly like a friend in need.");
+		}
+		else {
+			self->AddLine(L"Huu Khang", L"You actually deleted it? And your registry is still intact?");
+			self->AddLine(L"Huu Khang", L"Not bad! Thread Alley is finally safe to route data through again.");
+		}
+		return nullptr;
+		});
+	mapNPCs.push_back(hKhang);
 
 	// Rolled fresh for a new game; RestoreSaveData overwrites it when a save is loaded, which always
 	// happens after every scene has been Init()ed.
@@ -503,38 +535,21 @@ void Demo::ThreadAlleyScene::Update(unsigned long long deltaTime)
 		}
 	}
 
-	if (dauDau) {
-		dauDau->Update(deltaTime);
-		if (!currentConversation && !isTerminalMenuOpen && dauDau->CanInteract() && inpMan->KeyPress(SettingsManager::GetInstance()->GetKeybind("INTERACT"))) {
+	for (auto& npc : mapNPCs) {
+		npc->Update(deltaTime);
+		if (!currentConversation && !isTerminalMenuOpen && npc->CanInteract() && inpMan->KeyPress(SettingsManager::GetInstance()->GetKeybind("INTERACT"))) {
+			npc->ClearLines();
+			auto onEndCallback = npc->TriggerInteract();
 
-			dauDau->ClearLines();
-			auto qState = QuestManager::GetInstance()->GetQuestState("Quest_ThreadAlley_Start");
+			activeNPC = npc;
+			activeNPC->SetOnDialogueEnd(onEndCallback);
 
-			if (qState == Demo::QuestState::Locked) {
-				dauDau->AddLine(L"Dau Dau", L"This alley is full of malware. Watch out!");
-				dauDau->SetOnDialogueEnd([]() {
-					std::vector<std::pair<std::wstring, std::function<void()>>> buttons = {
-						{ L"Yes(Y)", []() { QuestManager::GetInstance()->AcceptQuest("Quest_ThreadAlley_Start"); } },
-						{ L"No(N)", []() {} }
-					};
-					PopupManager::GetInstance()->Show("stepped_blue", L"New Quest", L"Help clear the alley?", buttons);
-					});
-			}
-			else if (qState == Demo::QuestState::Active) {
-				dauDau->AddLine(L"Dau Dau", L"Good luck finding the malware! It's hiding deep inside.");
-				dauDau->SetOnDialogueEnd(nullptr);
-			}
-			else {
-				dauDau->AddLine(L"Dau Dau", L"Wow, you actually cleared the alley! It's safe now.");
-				dauDau->SetOnDialogueEnd(nullptr);
-			}
-
-			activeNPC = dauDau;
 			auto [sw, sh] = camera.GetScreenResolution();
 			currentConversation = std::make_shared<IConversation>(std::make_shared<DX9GF::FontSprite>(font.get()), sw, sh);
-			for (auto& line : dauDau->GetDialogueLines()) {
+			for (auto& line : npc->GetDialogueLines()) {
 				currentConversation->AddLine(line);
 			}
+			break;
 		}
 	}
 
@@ -641,7 +656,10 @@ void Demo::ThreadAlleyScene::DrawWorld(unsigned long long deltaTime)
 		for (auto& chest : treasureChests) depthNodes.push_back({ chest->GetWorldY(), [&, chest]() { chest->Draw(camera, deltaTime); } });
 		for (auto& enemy : mapEnemies) depthNodes.push_back({ enemy->GetWorldY(), [&, enemy]() { enemy->Draw(&camera, deltaTime); } });
 
-		if (dauDau) depthNodes.push_back({ dauDau->GetWorldY(), [&]() { dauDau->Draw(camera, deltaTime); } });
+		for (auto& npc : mapNPCs) {
+			depthNodes.push_back({ npc->GetWorldY(), [&, npc]() { npc->Draw(camera, deltaTime); } });
+		}
+
 		if (authTerminal) depthNodes.push_back({ authTerminal->GetWorldY(), [&]() { authTerminal->Draw(camera, deltaTime); } });
 		if (trojanNPC) depthNodes.push_back({ trojanNPC->GetWorldY(), [&]() { trojanNPC->Draw(camera, deltaTime); } });
 		if (player) depthNodes.push_back({ player->GetWorldY(), [&]() { player->Draw(deltaTime); } });
@@ -666,7 +684,10 @@ void Demo::ThreadAlleyScene::DrawUI(unsigned long long deltaTime)
 		for (auto& healPoint : healingPoints) healPoint->DrawUI(&this->uiCamera, deltaTime);
 		for (auto& shopPoint : shopPoints) shopPoint->DrawUI(&this->uiCamera, deltaTime);
 
-		if (dauDau) dauDau->DrawUI(&this->uiCamera, deltaTime);
+		for (auto& npc : mapNPCs) {
+			npc->DrawUI(&this->uiCamera, deltaTime);
+		}
+
 		if (trojanNPC && trojanNPC->GetPhase() != Demo::TrojanNPC::Phase::Defeated) trojanNPC->DrawUI(&this->uiCamera, deltaTime);
 		if (playerHUD) playerHUD->Draw(gd, deltaTime);
 		if (inventoryMenu) inventoryMenu->Draw(gd, deltaTime);

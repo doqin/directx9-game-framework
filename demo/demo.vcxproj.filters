@@ -100,6 +100,7 @@
     <ClCompile Include="GoldToken.cpp" />
     <ClCompile Include="EnergyToken.cpp" />
     <ClCompile Include="QuestMarker.cpp" />
+    <ClCompile Include="NPC.cpp" />
   </ItemGroup>
   <ItemGroup>
     <ClInclude Include="AdvancedCards.h" />
@@ -206,6 +207,7 @@
     <ClInclude Include="Debug.h" />
     <ClInclude Include="misc\cpp\imgui_stdlib.h" />
     <ClInclude Include="QuestMarker.h" />
+    <ClInclude Include="NPC.h" />
   </ItemGroup>
   <ItemGroup>
     <ResourceCompile Include="demo.rc" />
@@ -223,7 +225,6 @@
     <Image Include="assets\crawler-Sheet.png" />
     <Image Include="assets\cursor.png" />
     <Image Include="assets\daudau-Sheet.png" />
-    <Image Include="assets\First Asset pack.png" />
     <Image Include="assets\gate.png" />
     <Image Include="assets\grab.png" />
     <Image Include="assets\healingpoint-Sheet.png" />
@@ -278,6 +279,8 @@
     <Image Include="assets\energy-token.png" />
     <Image Include="assets\gold-token.png" />
     <Image Include="assets\mine.png" />
+    <Image Include="assets\First Asset pack.png" />
+    <Image Include="assets\kako-Sheet.png" />
   </ItemGroup>
   <ItemGroup>
     <Font Include="assets\arcade-among-2-r46pv.ttf" />
@@ -301,6 +304,7 @@
     <None Include="assets\uiter-Sheet.aseprite" />
     <None Include="assets\uiter.aseprite" />
     <None Include="assets\XP.tsx" />
+    <None Include="assets\kako.aseprite" />
   </ItemGroup>
   <ItemGroup>
     <Media Include="assets\audio\button-click.wav" />

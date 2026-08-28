@@ -11,7 +11,7 @@
 #include "TreasureChestNPC.h"
 #include "IConversation.h"
 #include "PlayerHUD.h"
-#include "DauDauNPC.h"
+#include "NPC.h"
 #include "AuthTerminal.h"
 #include "TrojanNPC.h"
 #include "PopUpMessage.h"
@@ -39,7 +39,9 @@ namespace Demo {
 		std::shared_ptr<DX9GF::Map> map;
 		std::shared_ptr<DX9GF::CommandBuffer> drawBuffer;
 		std::shared_ptr<DX9GF::CommandBuffer> commandBuffer;
-		std::shared_ptr<DauDauNPC> dauDau;
+
+		std::vector<std::shared_ptr<NPC>> mapNPCs;
+
 		std::shared_ptr<AuthTerminal> authTerminal;
 		std::shared_ptr<TrojanNPC> trojanNPC;
 		// Four digits, rolled once per save file and persisted so it survives a reload.

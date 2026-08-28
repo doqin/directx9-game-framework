@@ -48,24 +48,63 @@ void Demo::BossWorldScene::Init() {
 	//	//i removed the mimic here
 	//	}, drawBuffer, commandBuffer, &isGamePaused, & this->uiCamera, [this](DX9GF::GraphicsDevice* gd, unsigned long long deltaTime) { DrawBackground(gd, deltaTime, currentIslandID); }));
 
+	// ==========================================
+	// DATA-DRIVEN NPCs INIT
+	// ==========================================
+	NPCConfig daudauConfig = { L"assets/daudau-Sheet.png", 32, 32, 5, 12, 24.f, 8.f, 12.f };
+
 	//dialogue with NPC, rambles about lore regarding the optional battle to get the key, and hints at the correct color sequence for hacking the terminal
-	npcHint = std::make_shared<DauDauNPC>(transformManager, -950.0f, -220.0f);
-
+	auto npcHint = std::make_shared<NPC>(transformManager, -950.0f, -220.0f, daudauConfig);
 	npcHint->Init(game->GetGraphicsDevice(), &camera, player, colliderManager, font, drawBuffer);
-	npcHint->AddLine(L"Veteran Debugger", L"Halt, traveler. You shouldn't be here.");
-	npcHint->AddLine(L"Veteran Debugger", L"This sector is deeply corrupted-a graveyard of unresolved bugs and dead code.");
-	npcHint->AddLine(L"Player", L"What exactly happened here?");
-	npcHint->AddLine(L"Veteran Debugger", L"What happened? Ambition met reality.");
-	npcHint->AddLine(L"Veteran Debugger", L"Teams of debuggers rushed in, thinking they could fix the core.");
-	npcHint->AddLine(L"Veteran Debugger", L"They couldn't agree on a protocol. The system panicked, spawned massive anomalies, \nand wiped them out.");
+	npcHint->RegisterVoice(L"Veteran Debugger", "bleep12");
+	npcHint->SetInteractLogic([](NPC* self) -> std::function<void()> {
+		self->AddLine(L"Veteran Debugger", L"Halt, traveler. You shouldn't be here.");
+		self->AddLine(L"Veteran Debugger", L"This sector is deeply corrupted-a graveyard of unresolved bugs and dead code.");
+		self->AddLine(L"Player", L"What exactly happened here?");
+		self->AddLine(L"Veteran Debugger", L"What happened? Ambition met reality.");
+		self->AddLine(L"Veteran Debugger", L"Teams of debuggers rushed in, thinking they could fix the core.");
+		self->AddLine(L"Veteran Debugger", L"They couldn't agree on a protocol. The system panicked, spawned massive anomalies, \nand wiped them out.");
 
-	npcHint->AddLine(L"Veteran Debugger", L"I keep hearing the old admin's logs echoing in my head...");
-	npcHint->AddLine(L"Veteran Debugger", L"...'The red sun sets over the blue ocean, giving life to the green earth, until it fades into\norange autumn'...");
-	npcHint->AddLine(L"Veteran Debugger", L"Bah, probably just corrupted junk data. Don't mind my rambling.");
+		self->AddLine(L"Veteran Debugger", L"I keep hearing the old admin's logs echoing in my head...");
+		self->AddLine(L"Veteran Debugger", L"...'The red sun sets over the blue ocean, giving life to the green earth, until it fades into\norange autumn'...");
+		self->AddLine(L"Veteran Debugger", L"Bah, probably just corrupted junk data. Don't mind my rambling.");
+		return nullptr;
+		});
+	mapNPCs.push_back(npcHint);
 
-	dauDauSpawn = std::make_shared<DauDauNPC>(transformManager, 300.f, 230.f);
-	dauDauSpawn->AttachQuestMarker("Quest_BossWorld", Demo::QuestMarkerRole::Giver);
-	dauDauSpawn->Init(game->GetGraphicsDevice(), &camera, player, colliderManager, font, drawBuffer);
+	NPCConfig hngocConfig = { L"assets/daudau-Sheet.png", 32, 32, 5, 12, 24.f, 8.f, 12.f }; //TODO: Change HNgoc npc's asset
+	auto hNgoc = std::make_shared<NPC>(transformManager, 300.f, 230.f, hngocConfig);
+	hNgoc->AttachQuestMarker("Quest_BossWorld", Demo::QuestMarkerRole::Giver);
+	hNgoc->Init(game->GetGraphicsDevice(), &camera, player, colliderManager, font, drawBuffer);
+	hNgoc->RegisterVoice(L"A Hai`", "bleep12");
+	hNgoc->SetInteractLogic([](NPC* self) -> std::function<void()> {
+		auto qState = QuestManager::GetInstance()->GetQuestState("Quest_BossWorld");
+
+		if (qState == Demo::QuestState::Locked) {
+			self->AddLine(L"A Hai`", L"You made it to the Core Sector! But the path ends here.");
+			self->AddLine(L"A Hai`", L"The entity behind that gate hoards all the system's root data.");
+			self->AddLine(L"A Hai`", L"If there's an exit protocol to send you back to your world, it definitely has it.");
+			self->AddLine(L"Player", L"So I just need to go in and take it?");
+			self->AddLine(L"A Hai`", L"Not so fast! It went completely paranoid and sealed itself inside a heavy quarantine zone.");
+			self->AddLine(L"A Hai`", L"To force the gate open, you must hack the four security terminals scattered around this area.");
+			return []() {
+				std::vector<std::pair<std::wstring, std::function<void()>>> buttons = {
+					{ L"Yes(Y)", []() { QuestManager::GetInstance()->AcceptQuest("Quest_BossWorld"); } },
+					{ L"No(N)", []() {} }
+				};
+				PopupManager::GetInstance()->Show("stepped_blue", L"New Quest", L"Hack the 4 Terminals?", buttons);
+				};
+		}
+		else if (qState == Demo::QuestState::Active) {
+			self->AddLine(L"A Hai`", L"The firewall is still active. Find and hack all four terminals to breach the quarantine zone!");
+		}
+		else {
+			self->AddLine(L"A Hai`", L"The gate is open! The root data is right ahead. Good luck out there, traveler!");
+		}
+		return nullptr;
+		});
+	mapNPCs.push_back(hNgoc);
+
 
 	//hack machines
 	auto hackCallback = std::bind(&BossWorldScene::OnTerminalHacked, this, std::placeholders::_1);
@@ -520,53 +559,27 @@ void Demo::BossWorldScene::Update(unsigned long long deltaTime) {
 		popUpMessage->Update(deltaTime);
 	}
 
-	if (dauDauSpawn) {
-		dauDauSpawn->Update(deltaTime);
-		if (!currentConversation && dauDauSpawn->CanInteract() && inpMan->KeyPress(SettingsManager::GetInstance()->GetKeybind("INTERACT"))) {
+	// ==========================================
+	// UPDATE DATA-DRIVEN NPCs
+	// ==========================================
+	for (auto& npc : mapNPCs) {
+		npc->Update(deltaTime);
+		if (!currentConversation && npc->CanInteract() && inpMan->KeyPress(SettingsManager::GetInstance()->GetKeybind("INTERACT"))) {
+			npc->ClearLines();
+			auto onEndCallback = npc->TriggerInteract();
 
-			dauDauSpawn->ClearLines();
-			auto qState = QuestManager::GetInstance()->GetQuestState("Quest_BossWorld");
+			activeNPC = npc;
+			activeNPC->SetOnDialogueEnd(onEndCallback);
 
-			if (qState == Demo::QuestState::Locked) {
-				dauDauSpawn->AddLine(L"Dau Dau", L"Welcome to the boss sector.");
-				dauDauSpawn->AddLine(L"Dau Dau", L"Activate all four terminals to unlock the gate.");
-				dauDauSpawn->SetOnDialogueEnd([]() {
-					std::vector<std::pair<std::wstring, std::function<void()>>> buttons = {
-						{ L"Yes(Y)", []() { QuestManager::GetInstance()->AcceptQuest("Quest_BossWorld"); } },
-						{ L"No(N)", []() {} }
-					};
-					PopupManager::GetInstance()->Show("stepped_blue", L"New Quest", L"Activate terminals?", buttons);
-					});
-			}
-			else if (qState == Demo::QuestState::Active) {
-				dauDauSpawn->AddLine(L"Dau Dau", L"You need to activate the terminals to proceed.");
-				dauDauSpawn->SetOnDialogueEnd(nullptr);
-			}
-			else {
-				dauDauSpawn->AddLine(L"Dau Dau", L"The gate is open! Good luck with the malware.");
-				dauDauSpawn->SetOnDialogueEnd(nullptr);
-			}
-
-			activeNPC = dauDauSpawn;
 			auto [sw, sh] = camera.GetScreenResolution();
 			currentConversation = std::make_shared<IConversation>(std::make_shared<DX9GF::FontSprite>(font.get()), sw, sh);
-			for (auto& line : dauDauSpawn->GetDialogueLines()) {
+			for (auto& line : npc->GetDialogueLines()) {
 				currentConversation->AddLine(line);
 			}
+			break;
 		}
 	}
-
-	if (npcHint) {
-		npcHint->Update(deltaTime);
-		if (!currentConversation && npcHint->CanInteract() && inpMan->KeyPress(SettingsManager::GetInstance()->GetKeybind("INTERACT"))) {
-			activeNPC = npcHint;
-			auto [sw, sh] = camera.GetScreenResolution();
-			currentConversation = std::make_shared<IConversation>(std::make_shared<DX9GF::FontSprite>(font.get()), sw, sh);
-			for (auto& line : npcHint->GetDialogueLines()) {
-				currentConversation->AddLine(line);
-			}
-		}
-	}
+	// ==========================================
 
 
 	if (currentConversation) {
@@ -588,7 +601,7 @@ void Demo::BossWorldScene::Update(unsigned long long deltaTime) {
 			auto [sw, sh] = camera.GetScreenResolution();
 			currentConversation = std::make_shared<IConversation>(std::make_shared<DX9GF::FontSprite>(font.get()), sw, sh);
 
-			auto dialogBuilder = std::make_shared<DauDauNPC>(transformManager, 0, 0);
+			auto dialogBuilder = std::make_shared<NPC>(transformManager, 0, 0, NPCConfig{});
 
 			if (player->GetInventoryItems().HasItem(10)) {
 				dialogBuilder->AddLine(L"Rusty Chest", L"Wait, is that the key? NOOO! YOU ROB ME!!!");
@@ -701,8 +714,10 @@ void Demo::BossWorldScene::DrawWorld(unsigned long long deltaTime) {
 		for (auto& m : hackMachines) depthNodes.push_back({ m->GetWorldY(), [&, m]() { m->Draw(camera, deltaTime); } });
 		if (mainTerminal) depthNodes.push_back({ mainTerminal->GetWorldY(), [&]() { mainTerminal->Draw(camera, deltaTime); } });
 
-		if (dauDauSpawn) depthNodes.push_back({ dauDauSpawn->GetWorldY(), [&]() { dauDauSpawn->Draw(camera, deltaTime); } });
-		if (npcHint) depthNodes.push_back({ npcHint->GetWorldY(), [&]() { npcHint->Draw(camera, deltaTime); } });
+		for (auto& npc : mapNPCs) {
+			depthNodes.push_back({ npc->GetWorldY(), [&, npc]() { npc->Draw(camera, deltaTime); } });
+		}
+
 		if (rustyChest) depthNodes.push_back({ rustyChest->GetWorldY(), [&]() { rustyChest->Draw(camera, deltaTime); } });
 		for (auto& savePoint : savePoints) depthNodes.push_back({ savePoint->GetWorldY(), [&, savePoint]() { savePoint->Draw(camera, deltaTime); } });
 		for (auto& shopPoint : shopPoints) depthNodes.push_back({ shopPoint->GetWorldY(), [&, shopPoint]() { shopPoint->Draw(camera, deltaTime); } });
@@ -726,7 +741,10 @@ void Demo::BossWorldScene::DrawUI(unsigned long long deltaTime)
 	auto gd = game->GetGraphicsDevice();
 	if (SUCCEEDED(gd->BeginDraw())) {
 
-		if (npcHint) npcHint->DrawUI(&this->uiCamera, deltaTime);
+		for (auto& npc : mapNPCs) {
+			npc->DrawUI(&this->uiCamera, deltaTime);
+		}
+
 		if (rustyChest) rustyChest->DrawUI(&this->uiCamera, deltaTime);
 		for (auto& savePoint : savePoints) savePoint->DrawUI(&this->uiCamera, deltaTime);
 		for (auto& shopPoint : shopPoints) shopPoint->DrawUI(&this->uiCamera, deltaTime);
@@ -742,7 +760,6 @@ void Demo::BossWorldScene::DrawUI(unsigned long long deltaTime)
 			draggableManager->Draw(deltaTime);
 		}
 		if (inventoryMenu) inventoryMenu->DrawKeyboardReticle(gd, deltaTime);
-		if (dauDauSpawn) dauDauSpawn->DrawUI(&this->uiCamera, deltaTime);
 
 		if (currentConversation) {
 			currentConversation->Draw(gd, &this->uiCamera, deltaTime);

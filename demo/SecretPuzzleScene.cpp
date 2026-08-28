@@ -329,12 +329,49 @@ void Demo::SecretPuzzleScene::Init()
 	transformManager->RebuildHierarchy();
 	drawBuffer->PushCommand(std::make_shared<TransitionCommand>(game->GetGraphicsDevice(), &this->uiCamera, 1.f, false));
 
-	dauDau = std::make_shared<DauDauNPC>(transformManager, 1 * 16, -31.0f * 16);
-	dauDau->Init(game->GetGraphicsDevice(), &camera, player, colliderManager, font, drawBuffer);
+	// ==========================================
+	// DATA-DRIVEN NPCs INIT
+	// ==========================================
+	NPCConfig daudauConfig = { L"assets/daudau-Sheet.png", 32, 32, 5, 12, 24.f, 8.f, 12.f };
 
-	dauDauSpawn = std::make_shared<DauDauNPC>(transformManager, -80 * 16, -37 * 16);
+	auto dauDau = std::make_shared<NPC>(transformManager, 1 * 16, -31.0f * 16, daudauConfig);
+	dauDau->Init(game->GetGraphicsDevice(), &camera, player, colliderManager, font, drawBuffer);
+	dauDau->RegisterVoice(L"Dau Dau", "bleep12");
+	dauDau->SetInteractLogic([](NPC* self) -> std::function<void()> {
+		self->AddLine(L"Dau Dau", L"Watch out! This portal is a one-way trip to the invisible maze! Enter if you dare!");
+		return nullptr;
+		});
+	mapNPCs.push_back(dauDau);
+
+	auto dauDauSpawn = std::make_shared<NPC>(transformManager, -80 * 16, -37 * 16, daudauConfig);
 	dauDauSpawn->AttachQuestMarker("SecretBoss_Pacman", Demo::QuestMarkerRole::Giver);
 	dauDauSpawn->Init(game->GetGraphicsDevice(), &camera, player, colliderManager, font, drawBuffer);
+	dauDauSpawn->RegisterVoice(L"Dau Dau", "bleep12");
+	dauDauSpawn->SetInteractLogic([](NPC* self) -> std::function<void()> {
+		auto qState = QuestManager::GetInstance()->GetQuestState("SecretBoss_Pacman");
+
+		if (qState == Demo::QuestState::Locked) {
+			self->AddLine(L"Dau Dau", L"There's a hidden boss somewhere in this maze.");
+			self->AddLine(L"Dau Dau", L"Defeat it for a secret reward!");
+
+			return []() {
+				std::vector<std::pair<std::wstring, std::function<void()>>> buttons = {
+					{ L"Yes(Y)", []() { QuestManager::GetInstance()->AcceptQuest("SecretBoss_Pacman"); } },
+					{ L"No(N)", []() {} }
+				};
+				PopupManager::GetInstance()->Show("stepped_blue", L"Secret Boss", L"Accept this challenge?", buttons);
+				};
+		}
+		else if (qState == Demo::QuestState::Active) {
+			self->AddLine(L"Dau Dau", L"The boss is still lurking somewhere... Find it!");
+		}
+		else {
+			self->AddLine(L"Dau Dau", L"Incredible! You actually defeated the secret boss!");
+		}
+		return nullptr;
+		});
+	mapNPCs.push_back(dauDauSpawn);
+	// ==========================================
 }
 
 void Demo::SecretPuzzleScene::Update(unsigned long long deltaTime)
@@ -405,58 +442,28 @@ void Demo::SecretPuzzleScene::Update(unsigned long long deltaTime)
 		healingPoint->Update(deltaTime);
 	}
 
-	if (dauDau) {
-		dauDau->Update(deltaTime);
-		if (!currentConversation && dauDau->CanInteract() && inpMan->KeyPress(SettingsManager::GetInstance()->GetKeybind("INTERACT"))) {
-			dauDau->ClearLines();
-			dauDau->AddLine(L"Dau Dau", L"Watch out! This portal is a one-way trip to the invisible maze! Enter if you dare!");
-			dauDau->SetOnDialogueEnd(nullptr);
+	// ==========================================
+	// UPDATE DATA-DRIVEN NPCs
+	// ==========================================
+	for (auto& npc : mapNPCs) {
+		npc->Update(deltaTime);
 
-			activeNPC = dauDau;
+		if (!currentConversation && npc->CanInteract() && inpMan->KeyPress(SettingsManager::GetInstance()->GetKeybind("INTERACT"))) {
+			npc->ClearLines();
+			auto onEndCallback = npc->TriggerInteract();
+
+			activeNPC = npc;
+			activeNPC->SetOnDialogueEnd(onEndCallback);
+
 			auto [sw, sh] = camera.GetScreenResolution();
 			currentConversation = std::make_shared<IConversation>(std::make_shared<DX9GF::FontSprite>(font.get()), sw, sh);
-			for (auto& line : dauDau->GetDialogueLines()) {
+			for (auto& line : npc->GetDialogueLines()) {
 				currentConversation->AddLine(line);
 			}
+			break;
 		}
 	}
-
-	if (dauDauSpawn) {
-		dauDauSpawn->Update(deltaTime);
-		if (!currentConversation && dauDauSpawn->CanInteract() && inpMan->KeyPress(SettingsManager::GetInstance()->GetKeybind("INTERACT"))) {
-
-			dauDauSpawn->ClearLines();
-			auto qState = QuestManager::GetInstance()->GetQuestState("SecretBoss_Pacman");
-
-			if (qState == Demo::QuestState::Locked) {
-				dauDauSpawn->AddLine(L"Dau Dau", L"There's a hidden boss somewhere in this maze.");
-				dauDauSpawn->AddLine(L"Dau Dau", L"Defeat it for a secret reward!");
-
-				dauDauSpawn->SetOnDialogueEnd([]() {
-					std::vector<std::pair<std::wstring, std::function<void()>>> buttons = {
-						{ L"Yes(Y)", []() { QuestManager::GetInstance()->AcceptQuest("SecretBoss_Pacman"); } },
-						{ L"No(N)", []() {} }
-					};
-					PopupManager::GetInstance()->Show("stepped_blue", L"Secret Boss", L"Accept this challenge?", buttons);
-					});
-			}
-			else if (qState == Demo::QuestState::Active) {
-				dauDauSpawn->AddLine(L"Dau Dau", L"The boss is still lurking somewhere... Find it!");
-				dauDauSpawn->SetOnDialogueEnd(nullptr);
-			}
-			else {
-				dauDauSpawn->AddLine(L"Dau Dau", L"Incredible! You actually defeated the secret boss!");
-				dauDauSpawn->SetOnDialogueEnd(nullptr);
-			}
-
-			activeNPC = dauDauSpawn;
-			auto [sw, sh] = camera.GetScreenResolution();
-			currentConversation = std::make_shared<IConversation>(std::make_shared<DX9GF::FontSprite>(font.get()), sw, sh);
-			for (auto& line : dauDauSpawn->GetDialogueLines()) {
-				currentConversation->AddLine(line);
-			}
-		}
-	}
+	// ==========================================
 
 	if (currentConversation) {
 		isGamePaused = true;
@@ -552,8 +559,10 @@ void Demo::SecretPuzzleScene::DrawWorld(unsigned long long deltaTime)
 		for (auto& chest : treasureChests) depthNodes.push_back({ chest->GetWorldY(), [&, chest]() { chest->Draw(camera, deltaTime); } });
 		for (auto& enemy : mapEnemies) depthNodes.push_back({ enemy->GetWorldY(), [&, enemy]() { enemy->Draw(&camera, deltaTime); } });
 
-		if (dauDauSpawn) depthNodes.push_back({ dauDauSpawn->GetWorldY(), [&]() { dauDauSpawn->Draw(camera, deltaTime); } });
-		if (dauDau) depthNodes.push_back({ dauDau->GetWorldY(), [&]() { dauDau->Draw(camera, deltaTime); } });
+		for (auto& npc : mapNPCs) {
+			depthNodes.push_back({ npc->GetWorldY(), [&, npc]() { npc->Draw(camera, deltaTime); } });
+		}
+
 		if (player) depthNodes.push_back({ player->GetWorldY(), [&]() { player->Draw(deltaTime); } });
 
 		std::sort(depthNodes.begin(), depthNodes.end());
@@ -575,7 +584,10 @@ void Demo::SecretPuzzleScene::DrawUI(unsigned long long deltaTime)
 		for (auto& shopPoint : shopPoints) shopPoint->DrawUI(&this->uiCamera, deltaTime);
 		for (auto& healingPoint : healingPoints) healingPoint->DrawUI(&this->uiCamera, deltaTime);
 		for (auto& chest : treasureChests) chest->DrawUI(&this->uiCamera, deltaTime);
-		dauDau->DrawUI(&this->uiCamera, deltaTime);
+
+		for (auto& npc : mapNPCs) {
+			npc->DrawUI(&this->uiCamera, deltaTime);
+		}
 
 		if (playerHUD) playerHUD->Draw(gd, deltaTime);
 		if (inventoryMenu) inventoryMenu->Draw(gd, deltaTime);
@@ -583,7 +595,6 @@ void Demo::SecretPuzzleScene::DrawUI(unsigned long long deltaTime)
 			draggableManager->Draw(deltaTime);
 		}
 		if (inventoryMenu) inventoryMenu->DrawKeyboardReticle(gd, deltaTime);
-		if (dauDauSpawn) dauDauSpawn->DrawUI(&this->uiCamera, deltaTime);
 
 		if (currentConversation) {
 			currentConversation->Draw(gd, &this->uiCamera, deltaTime);
