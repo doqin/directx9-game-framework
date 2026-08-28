@@ -18,11 +18,13 @@
 #include "PlayerHUD.h"
 #include "MapEnemy.h"
 #include "PopUpMessage.h"
+#include "ChapterTitleUI.h"
 
 namespace Demo {
 	class SecretPuzzleScene : public DX9GF::IScene, public DX9GF::ISaveable {
 		bool isGamePaused = false;
 		bool isTransitioning = false;
+		bool hasSeenChapterIntro = false;
 		bool isBossDead = false;
 		bool hasSetInitialQuest = false;
 		bool questRestoredFromSave = false;
@@ -46,9 +48,9 @@ namespace Demo {
 		std::shared_ptr<DX9GF::CommandBuffer> drawBuffer;
 		std::shared_ptr<DX9GF::CommandBuffer> commandBuffer;
 		std::shared_ptr<IConversation> currentConversation;
+		std::shared_ptr<ChapterTitleUI> chapterTitleUI;
 
 		std::vector<std::shared_ptr<NPC>> mapNPCs;
-
 		std::shared_ptr<INPC> activeNPC = nullptr;
 		std::shared_ptr<PopUpMessage> popUpMessage;
 

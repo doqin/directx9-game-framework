@@ -328,10 +328,9 @@ void Demo::SecretPuzzleScene::Init()
 
 	transformManager->RebuildHierarchy();
 	drawBuffer->PushCommand(std::make_shared<TransitionCommand>(game->GetGraphicsDevice(), &this->uiCamera, 1.f, false));
+	chapterTitleUI = std::make_shared<ChapterTitleUI>(font);
 
-	// ==========================================
-	// DATA-DRIVEN NPCs INIT
-	// ==========================================
+	//npcs init
 	NPCConfig daudauConfig = { L"assets/daudau-Sheet.png", 32, 32, 5, 12, 24.f, 8.f, 12.f };
 
 	auto dauDau = std::make_shared<NPC>(transformManager, 1 * 16, -31.0f * 16, daudauConfig);
@@ -371,7 +370,6 @@ void Demo::SecretPuzzleScene::Init()
 		return nullptr;
 		});
 	mapNPCs.push_back(dauDauSpawn);
-	// ==========================================
 }
 
 void Demo::SecretPuzzleScene::Update(unsigned long long deltaTime)
@@ -381,6 +379,15 @@ void Demo::SecretPuzzleScene::Update(unsigned long long deltaTime)
 	QuestManager::GetInstance()->SetVirtualResolution(game->GetVirtualWidth(), game->GetVirtualHeight());
 	QuestManager::GetInstance()->SetVisible(!(inventoryMenu && inventoryMenu->IsOpen()));
 	QuestManager::GetInstance()->Update(deltaTime);
+	if (!hasSeenChapterIntro && !isTransitioning) {
+		hasSeenChapterIntro = true;
+		if (chapterTitleUI) {
+			chapterTitleUI->Show(L"ANOMALY DETECTED: THE ROOT", L"< Encrypted Database >", 4.0f, 0xFFFF3333, 0xFF33FF99, 0xFF000000);
+		}
+	}
+	if (chapterTitleUI) {
+		chapterTitleUI->Update(deltaTime);
+	}
 
 	auto OpenChestWithDialog = [&](std::shared_ptr<TreasureChestNPC>& chest) {
 		auto given = chest->Open(player.get());
@@ -442,9 +449,7 @@ void Demo::SecretPuzzleScene::Update(unsigned long long deltaTime)
 		healingPoint->Update(deltaTime);
 	}
 
-	// ==========================================
-	// UPDATE DATA-DRIVEN NPCs
-	// ==========================================
+	//npcs init
 	for (auto& npc : mapNPCs) {
 		npc->Update(deltaTime);
 
@@ -463,7 +468,6 @@ void Demo::SecretPuzzleScene::Update(unsigned long long deltaTime)
 			break;
 		}
 	}
-	// ==========================================
 
 	if (currentConversation) {
 		isGamePaused = true;
@@ -616,6 +620,9 @@ void Demo::SecretPuzzleScene::DrawUI(unsigned long long deltaTime)
 			popUpMessage->Draw(deltaTime);
 		}
 
+		if (chapterTitleUI) {
+			chapterTitleUI->Draw(&this->uiCamera, deltaTime);
+		}
 		ImGui::Render();
 		ImGui_ImplDX9_RenderDrawData(ImGui::GetDrawData());
 		gd->EndDraw();
@@ -668,7 +675,7 @@ void Demo::SecretPuzzleScene::GenerateSaveData(nlohmann::json& outData)
 		{"y", pos.y},
 		{"zoom", camera.GetZoom()}
 	};
-
+	outData["hasSeenChapterIntro"] = hasSeenChapterIntro;
 	nlohmann::json chestStates = nlohmann::json::array();
 	for (auto& c : treasureChests) chestStates.push_back(c->GetIsOpened());
 	outData["treasureChests"] = chestStates;
@@ -689,7 +696,7 @@ void Demo::SecretPuzzleScene::RestoreSaveData(const nlohmann::json& inData)
 	player->RestoreSaveData(inData["player"]);
 	camera.SetPosition(inData["camera"]["x"], inData["camera"]["y"]);
 	camera.SetZoom(inData["camera"]["zoom"]);
-
+	hasSeenChapterIntro = inData.value("hasSeenChapterIntro", false);
 	if (inData.contains("treasureChests")) {
 		auto& arr = inData["treasureChests"];
 		for (size_t i = 0; i < treasureChests.size() && i < arr.size(); ++i)

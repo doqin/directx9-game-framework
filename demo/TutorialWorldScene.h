@@ -16,11 +16,13 @@
 #include "ItemShop.h"
 #include "PlayerHUD.h"
 #include "MapEnemy.h"
+#include "ChapterTitleUI.h"
 
 namespace Demo {
 	class TutorialWorldScene : public DX9GF::IScene, public DX9GF::ISaveable {
 		bool isGamePaused = false;
 		bool isTransitioning = false;
+		bool hasSeenChapterIntro = false;
 
 		Game* game;
 		std::shared_ptr<DX9GF::ColliderManager> colliderManager;
@@ -40,6 +42,7 @@ namespace Demo {
 		std::shared_ptr<DX9GF::CommandBuffer> drawBuffer;
 		std::shared_ptr<DX9GF::CommandBuffer> commandBuffer;
 		std::shared_ptr<PopUpMessage> popUpMessage;
+		std::shared_ptr<ChapterTitleUI> chapterTitleUI;
 
 		std::shared_ptr<IConversation> currentConversation;
 		std::shared_ptr<INPC> activeNPC = nullptr;

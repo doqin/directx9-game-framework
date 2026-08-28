@@ -35,6 +35,8 @@ void Demo::BossWorldScene::Init() {
 	commandBuffer = std::make_shared<DX9GF::CommandBuffer>();
 	font = std::make_shared<DX9GF::Font>(game->GetGraphicsDevice(), L"StatusPlz", 16);
 
+	chapterTitleUI = std::make_shared<ChapterTitleUI>(font);
+
 	popUpMessage = std::make_shared<Demo::PopUpMessage>(transformManager, game);
 	popUpMessage->SetLocalPosition(0.0f, 0.0f);
 	popUpMessage->Init(game->GetGraphicsDevice(), &this->uiCamera);
@@ -48,9 +50,7 @@ void Demo::BossWorldScene::Init() {
 	//	//i removed the mimic here
 	//	}, drawBuffer, commandBuffer, &isGamePaused, & this->uiCamera, [this](DX9GF::GraphicsDevice* gd, unsigned long long deltaTime) { DrawBackground(gd, deltaTime, currentIslandID); }));
 
-	// ==========================================
-	// DATA-DRIVEN NPCs INIT
-	// ==========================================
+	//nps init
 	NPCConfig daudauConfig = { L"assets/daudau-Sheet.png", 32, 32, 5, 12, 24.f, 8.f, 12.f };
 
 	//dialogue with NPC, rambles about lore regarding the optional battle to get the key, and hints at the correct color sequence for hacking the terminal
@@ -511,6 +511,15 @@ void Demo::BossWorldScene::Update(unsigned long long deltaTime) {
 	QuestManager::GetInstance()->SetVirtualResolution(game->GetVirtualWidth(), game->GetVirtualHeight());
 	QuestManager::GetInstance()->SetVisible(!(inventoryMenu && inventoryMenu->IsOpen()));
 	QuestManager::GetInstance()->Update(deltaTime);
+	if (!hasSeenChapterIntro && !isTransitioning) {
+		hasSeenChapterIntro = true;
+		if (chapterTitleUI) {
+			chapterTitleUI->Show(L"CHAPTER III: THE OVERFLOW", L"< Critical: Memory Leak >", 4.0f, 0xFFFF0000, 0xFFFFA500, 0xFFFFFFFF);
+		}
+	}
+	if (chapterTitleUI) {
+		chapterTitleUI->Update(deltaTime);
+	}
 	auto OpenChestWithDialog = [&](std::shared_ptr<TreasureChestNPC>& chest) {
 		auto given = chest->Open(player.get());
 		if (given.empty()) return;
@@ -559,9 +568,7 @@ void Demo::BossWorldScene::Update(unsigned long long deltaTime) {
 		popUpMessage->Update(deltaTime);
 	}
 
-	// ==========================================
-	// UPDATE DATA-DRIVEN NPCs
-	// ==========================================
+	//npcs init
 	for (auto& npc : mapNPCs) {
 		npc->Update(deltaTime);
 		if (!currentConversation && npc->CanInteract() && inpMan->KeyPress(SettingsManager::GetInstance()->GetKeybind("INTERACT"))) {
@@ -579,7 +586,6 @@ void Demo::BossWorldScene::Update(unsigned long long deltaTime) {
 			break;
 		}
 	}
-	// ==========================================
 
 
 	if (currentConversation) {
@@ -781,6 +787,9 @@ void Demo::BossWorldScene::DrawUI(unsigned long long deltaTime)
 			popUpMessage->Draw(deltaTime);
 		}
 
+		if (chapterTitleUI) {
+			chapterTitleUI->Draw(&this->uiCamera, deltaTime);
+		}
 		ImGui::Render();
 		ImGui_ImplDX9_RenderDrawData(ImGui::GetDrawData());
 
@@ -804,6 +813,7 @@ void Demo::BossWorldScene::GenerateSaveData(nlohmann::json& outData) {
 		{"isFinalBossDead", isFinalBossDead},
 		{"isChestOpened", rustyChest ? rustyChest->GetIsOpened() : false}
 	};
+	outData["hasSeenChapterIntro"] = hasSeenChapterIntro;
 
 	nlohmann::json chestStates = nlohmann::json::array();
 	for (auto& c : treasureChests) chestStates.push_back(c->GetIsOpened());
@@ -825,6 +835,7 @@ void Demo::BossWorldScene::RestoreSaveData(const nlohmann::json& inData) {
 	camera.SetPosition(inData["camera"]["x"], inData["camera"]["y"]);
 	camera.SetZoom(inData["camera"]["zoom"]);
 	currentIslandID = inData.value("currentIslandID", 1);
+	hasSeenChapterIntro = inData.value("hasSeenChapterIntro", false);
 
 	if (inData.contains("puzzle")) {
 		currentHackStep = inData["puzzle"]["currentHackStep"];

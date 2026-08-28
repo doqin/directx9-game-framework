@@ -15,10 +15,12 @@
 #include "PlayerHUD.h"
 #include "MapEnemy.h"
 #include "PopUpMessage.h"
+#include "ChapterTitleUI.h"
 
 namespace Demo {
 	class BossWorldScene : public DX9GF::IScene, public DX9GF::ISaveable {
 		bool isGamePaused = false;
+		bool hasSeenChapterIntro = false;
 
 		Game* game;
 		std::shared_ptr<DX9GF::ColliderManager> colliderManager;
@@ -33,6 +35,7 @@ namespace Demo {
 		std::shared_ptr<DX9GF::CommandBuffer> drawBuffer;
 		std::shared_ptr<DX9GF::CommandBuffer> commandBuffer;
 		std::shared_ptr<DX9GF::SaveManager> saveManager;
+		std::shared_ptr<ChapterTitleUI> chapterTitleUI;
 
 		std::shared_ptr<DX9GF::Texture> gateTexture;
 		std::shared_ptr<DX9GF::StaticSprite> gateSprite;

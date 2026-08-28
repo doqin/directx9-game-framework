@@ -80,6 +80,8 @@ void Demo::TutorialWorldScene::Init()
 
 	font = std::make_shared<DX9GF::Font>(game->GetGraphicsDevice(), L"StatusPlz", 16);
 
+	chapterTitleUI = std::make_shared<ChapterTitleUI>(font);
+
 	//npcs init
 	NPCConfig daudauConfig = { L"assets/daudau-Sheet.png", 32, 32, 5, 12, 24.f, 8.f, 12.f };
 	NPCConfig kakoConfig = { L"assets/kako-Sheet.png", 32, 32, 2, 6, 24.f, 8.f, 12.f };
@@ -316,6 +318,16 @@ void Demo::TutorialWorldScene::Update(unsigned long long deltaTime)
 	QuestManager::GetInstance()->SetVisible(!(inventoryMenu && inventoryMenu->IsOpen()));
 	QuestManager::GetInstance()->Update(deltaTime);
 
+	if (!hasSeenChapterIntro && !isTransitioning) {
+		hasSeenChapterIntro = true;
+		if (chapterTitleUI) {
+			chapterTitleUI->Show(L"CHAPTER I: CLOUD CANOPY", L"< System Initialized >", 4.0f, 0xFFFFFFFF, 0xFFFFF200, 0x000000);
+		}
+	}
+	if (chapterTitleUI) {
+		chapterTitleUI->Update(deltaTime);
+	}
+
 	auto OpenChestWithDialog = [&](std::shared_ptr<TreasureChestNPC>& chest) {
 		auto given = chest->Open(player.get());
 		if (given.empty()) return;
@@ -365,9 +377,7 @@ void Demo::TutorialWorldScene::Update(unsigned long long deltaTime)
 		popUpMessage->Update(deltaTime);
 	}
 
-	// ==========================================
-	// UPDATE DATA-DRIVEN NPCs
-	// ==========================================
+	//npcs init
 	for (auto& npc : mapNPCs) {
 		npc->Update(deltaTime);
 
@@ -387,7 +397,6 @@ void Demo::TutorialWorldScene::Update(unsigned long long deltaTime)
 			break;
 		}
 	}
-	// ==========================================
 
 	if (currentConversation) {
 		isGamePaused = true;
@@ -564,6 +573,11 @@ void Demo::TutorialWorldScene::DrawUI(unsigned long long deltaTime)
 		if (popUpMessage) {
 			popUpMessage->Draw(deltaTime);
 		}
+
+		if (chapterTitleUI) {
+			chapterTitleUI->Draw(&this->uiCamera, deltaTime);
+		}
+
 		ImGui::Render();
 		ImGui_ImplDX9_RenderDrawData(ImGui::GetDrawData());
 		gd->EndDraw();
@@ -619,6 +633,8 @@ void Demo::TutorialWorldScene::GenerateSaveData(nlohmann::json& outData)
 		{"zoom", camera.GetZoom()}
 	};
 
+	outData["hasSeenChapterIntro"] = hasSeenChapterIntro;
+
 	nlohmann::json chestStates = nlohmann::json::array();
 	for (auto& c : treasureChests) chestStates.push_back(c->GetIsOpened());
 	outData["treasureChests"] = chestStates;
@@ -639,6 +655,8 @@ void Demo::TutorialWorldScene::RestoreSaveData(const nlohmann::json& inData)
 	player->RestoreSaveData(inData["player"]);
 	camera.SetPosition(inData["camera"]["x"], inData["camera"]["y"]);
 	camera.SetZoom(inData["camera"]["zoom"]);
+
+	hasSeenChapterIntro = inData.value("hasSeenChapterIntro", false);
 
 	if (inData.contains("treasureChests")) {
 		auto& arr = inData["treasureChests"];

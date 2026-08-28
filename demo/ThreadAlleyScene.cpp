@@ -61,6 +61,8 @@ void Demo::ThreadAlleyScene::Init()
 
 	font = std::make_shared<DX9GF::Font>(game->GetGraphicsDevice(), L"StatusPlz", 16);
 
+	chapterTitleUI = std::make_shared<ChapterTitleUI>(font);
+
 	shopPoints.push_back(std::make_shared<ShopPoint>(transformManager, -710, -450));
 	shopPoints.back()->Init(game, game->GetGraphicsDevice(), &camera, player, colliderManager, font, drawBuffer,
 		[](Game* g, Player* p, int w, int h) { return new CardShop(g, p, w, h, ShopTier::HYBRID); }
@@ -453,7 +455,17 @@ void Demo::ThreadAlleyScene::Update(unsigned long long deltaTime)
 	QuestManager::GetInstance()->SetVirtualResolution(game->GetVirtualWidth(), game->GetVirtualHeight());
 	QuestManager::GetInstance()->SetVisible(!(inventoryMenu && inventoryMenu->IsOpen())
 		&& !(authTerminal && authTerminal->IsMenuOpen()));
+
 	QuestManager::GetInstance()->Update(deltaTime);
+	if (!hasSeenChapterIntro && !isTransitioning) {
+		hasSeenChapterIntro = true;
+		if (chapterTitleUI) {
+			chapterTitleUI->Show(L"CHAPTER II: THREAD ALLEY", L"< Data Transit Zone >", 4.0f, 0xFFFFFFFF, 0xFF00FFFF, 0xFF000000);
+		}
+	}
+	if (chapterTitleUI) {
+		chapterTitleUI->Update(deltaTime);
+	}
 
 	auto OpenChestWithDialog = [&](std::shared_ptr<TreasureChestNPC>& chest) {
 		auto given = chest->Open(player.get());
@@ -719,6 +731,9 @@ void Demo::ThreadAlleyScene::DrawUI(unsigned long long deltaTime)
 			popUpMessage->Draw(deltaTime);
 		}
 
+		if (chapterTitleUI) {
+			chapterTitleUI->Draw(&this->uiCamera, deltaTime);
+		}
 		ImGui::Render();
 		ImGui_ImplDX9_RenderDrawData(ImGui::GetDrawData());
 		gd->EndDraw();
@@ -739,6 +754,8 @@ void Demo::ThreadAlleyScene::GenerateSaveData(nlohmann::json& outData)
 		{"y", pos.y},
 		{"zoom", camera.GetZoom()}
 	};
+
+	outData["hasSeenChapterIntro"] = hasSeenChapterIntro;
 
 	outData["authTerminal"] = {
 		{"password", authPassword},
@@ -766,6 +783,8 @@ void Demo::ThreadAlleyScene::RestoreSaveData(const nlohmann::json& inData)
 	player->RestoreSaveData(inData["player"]);
 	camera.SetPosition(inData["camera"]["x"], inData["camera"]["y"]);
 	camera.SetZoom(inData["camera"]["zoom"]);
+
+	hasSeenChapterIntro = inData.value("hasSeenChapterIntro", false);
 
 	if (inData.contains("authTerminal")) {
 		authPassword = inData["authTerminal"].value("password", authPassword);

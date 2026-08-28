@@ -101,6 +101,7 @@
     <ClCompile Include="EnergyToken.cpp" />
     <ClCompile Include="QuestMarker.cpp" />
     <ClCompile Include="NPC.cpp" />
+    <ClCompile Include="ChapterTitleUI.cpp" />
   </ItemGroup>
   <ItemGroup>
     <ClInclude Include="AdvancedCards.h" />
@@ -208,6 +209,7 @@
     <ClInclude Include="misc\cpp\imgui_stdlib.h" />
     <ClInclude Include="QuestMarker.h" />
     <ClInclude Include="NPC.h" />
+    <ClInclude Include="ChapterTitleUI.h" />
   </ItemGroup>
   <ItemGroup>
     <ResourceCompile Include="demo.rc" />

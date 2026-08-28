@@ -16,11 +16,13 @@
 #include "TrojanNPC.h"
 #include "PopUpMessage.h"
 #include "MapEnemy.h"
+#include "ChapterTitleUI.h"
 
 namespace Demo {
 	class ThreadAlleyScene : public DX9GF::IScene, public DX9GF::ISaveable {
 		bool isGamePaused = false;
 		bool isTransitioning = false;
+		bool hasSeenChapterIntro = false;
 
 		Game* game;
 		std::shared_ptr<DX9GF::ColliderManager> colliderManager;
@@ -50,7 +52,7 @@ namespace Demo {
 
 		std::shared_ptr<INPC> activeNPC = nullptr;
 		std::shared_ptr<PopUpMessage> popUpMessage;
-
+		std::shared_ptr<ChapterTitleUI> chapterTitleUI;
 		std::vector<std::shared_ptr<TreasureChestNPC>> treasureChests;
 		std::shared_ptr<IConversation> currentConversation;
 		// IConversation has no completion hook, so the scene fires this when the box closes.
