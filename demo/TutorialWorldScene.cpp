@@ -142,7 +142,7 @@ void Demo::TutorialWorldScene::Init()
 
 	//TreasureChest
 	treasureChests.push_back(std::make_shared<TreasureChestNPC>(
-		transformManager, 372.f, -483.f,
+		transformManager, 174.f, -629.f,
 		std::vector<ChestReward>{
 		ChestReward::Item(0, 1),
 			ChestReward::Card("StrikeCard")
@@ -221,7 +221,7 @@ void Demo::TutorialWorldScene::Init()
 	spawn(615.f, -170.f, "tutorial_keye_01", { "KeyeEnemy"}, false, false);
 	spawn(510.f, -380.f, "tutorial_demoneye_01", { "DemonEyeEnemy" }, false, false);
 	spawn(500.f, -590.f, "tutorial_random_01", { "KeyeEnemy", "DemonEyeEnemy" }, true, false);
-	spawn(50.f, -330.f, "tutorial_random_02", { "KeyeEnemy", "DemonEyeEnemy", "MimicEnemy" }, true, false);
+	spawn(-45.f, -409.f, "tutorial_random_02", { "KeyeEnemy", "DemonEyeEnemy", "MimicEnemy" }, true, false);
 
 	draggableManager = std::make_shared<Demo::DraggableManager>();
 

@@ -92,7 +92,7 @@ namespace Demo {
 	class PoisonCard : public MultiTargetCard {
 		std::shared_ptr<DX9GF::Texture> strikeTexture;
 		std::shared_ptr<DX9GF::StaticSprite> strikeSprite;
-		const int poisonTurns = 2;
+		const int poisonTurns = 3;
 	public:
 		PoisonCard(std::weak_ptr<DX9GF::TransformManager> tm, float x = 0, float y = 0)
 			: IGameObject(tm, x, y), MultiTargetCard(tm, 1, L"Poison", x, y, 160, 32) {

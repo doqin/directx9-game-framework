@@ -16,7 +16,7 @@ namespace Demo {
 			: IGameObject(tm, x, y), MultiTargetCard(tm, 1, L"Terminate", x, y, 160, 32) {
 		}
 
-		size_t GetCost() const override { return 4; }
+		size_t GetCost() const override { return 3; }
 		std::wstring GetDescription() const override { return L"Deal 30 damage to an enemy, or 60 if it is below 40% health."; }
 		RECT GetFaceRect() const override { return RECT{ 160, 368, 240, 384 }; }
 

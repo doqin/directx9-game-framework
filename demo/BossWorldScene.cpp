@@ -123,10 +123,6 @@ void Demo::BossWorldScene::Init() {
 	addChest(94, -32, { ChestReward::Item(6,1), ChestReward::Item(7,1), ChestReward::Card("WeaknessCard") }, true);
 
 	//heal
-	healingPoints.push_back(std::make_shared<HealingPoint>(transformManager, 144.f, 320.f));
-	healingPoints.back()->Init(game->GetGraphicsDevice(), &camera, player, colliderManager, font, drawBuffer);
-	healingPoints.back()->SetVisible(true);
-
 	healingPoints.push_back(std::make_shared<HealingPoint>(transformManager, -352.f, -160.f));
 	healingPoints.back()->Init(game->GetGraphicsDevice(), &camera, player, colliderManager, font, drawBuffer);
 	healingPoints.back()->SetVisible(true);
@@ -144,10 +140,6 @@ void Demo::BossWorldScene::Init() {
 	QuestManager::GetInstance()->SetQuest(L"Quest: ???");
 
 	savePoints.push_back(std::make_shared<SavePoint>(transformManager, 192.f, 320.f));
-	savePoints.back()->Init(game->GetGraphicsDevice(), &camera, player, colliderManager, saveManager, font, drawBuffer);
-	savePoints.back()->SetVisible(true);
-
-	savePoints.push_back(std::make_shared<SavePoint>(transformManager, -304.f, -160.f));
 	savePoints.back()->Init(game->GetGraphicsDevice(), &camera, player, colliderManager, saveManager, font, drawBuffer);
 	savePoints.back()->SetVisible(true);
 
@@ -223,14 +215,9 @@ void Demo::BossWorldScene::Init() {
 		mapEnemies.push_back(enemy);
 		};
 
-	spawn(-680.f, 125.f, "bw_q_01", { "DemonEyeEnemy", "VampireBatEnemy" }, true, false);
-	spawn(-760.f, -180.f, "bw_q_02", { "KeyeEnemy", "KeyeEnemy" }, false, false);
-	spawn(-550.f, -320.f, "bw_q_03", { "WarlockEnemy" }, false, false);
-	spawn(-635.f, -600.f, "bw_q_04", { "MimicEnemy", "KernelEnemy" }, true, false);
 	spawn(1730.f, 10.f, "bw_c_01", { "VampireBatEnemy", "WarlockEnemy" }, false, false);
 	spawn(1520.f, 145.f, "bw_c_02", {}, false, true);
 	spawn(1635.f, 325.f, "bw_c_03", { "DemonEyeEnemy" }, false, false);
-	spawn(1740.f, 525.f, "bw_c_04", { "KernelEnemy" }, false, false);
 	spawn(1500.f, -360.f, "bw_c_05", { "WarlockEnemy", "KeyeEnemy" }, true, false);
 	spawn(1620.f, -625.f, "bw_c_06", { "WarlockEnemy", "KernelEnemy" }, false, false);
 	spawn(1890.f, -445.f, "bw_c_07", { "MimicEnemy" }, false, false);

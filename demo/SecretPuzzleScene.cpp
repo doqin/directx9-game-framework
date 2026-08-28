@@ -163,9 +163,6 @@ void Demo::SecretPuzzleScene::Init()
 	savePoints.push_back(std::make_shared<SavePoint>(transformManager, 31.0f * 16, 47.0f * 16));
 	savePoints.back()->Init(game->GetGraphicsDevice(), &camera, player, colliderManager, saveManager, font, drawBuffer);
 	savePoints.back()->SetVisible(true);
-	savePoints.push_back(std::make_shared<SavePoint>(transformManager, 64.0f * 16, 37.0f * 16));
-	savePoints.back()->Init(game->GetGraphicsDevice(), &camera, player, colliderManager, saveManager, font, drawBuffer);
-	savePoints.back()->SetVisible(true);
 	savePoints.push_back(std::make_shared<SavePoint>(transformManager, 86.0f * 16, 58.0f * 16));
 	savePoints.back()->Init(game->GetGraphicsDevice(), &camera, player, colliderManager, saveManager, font, drawBuffer);
 	savePoints.back()->SetVisible(true);
@@ -191,19 +188,7 @@ void Demo::SecretPuzzleScene::Init()
 	healingPoints.push_back(std::make_shared<HealingPoint>(transformManager, -71.0f * 16, -28.0f * 16));
 	healingPoints.back()->Init(game->GetGraphicsDevice(), &camera, player, colliderManager, font, drawBuffer);
 	healingPoints.back()->SetVisible(true);
-	healingPoints.push_back(std::make_shared<HealingPoint>(transformManager, -42.0f * 16, 28.0f * 16));
-	healingPoints.back()->Init(game->GetGraphicsDevice(), &camera, player, colliderManager, font, drawBuffer);
-	healingPoints.back()->SetVisible(true);
-	healingPoints.push_back(std::make_shared<HealingPoint>(transformManager, -20.0f * 16, -16.0f * 16));
-	healingPoints.back()->Init(game->GetGraphicsDevice(), &camera, player, colliderManager, font, drawBuffer);
-	healingPoints.back()->SetVisible(true);
-	healingPoints.push_back(std::make_shared<HealingPoint>(transformManager, 31.0f * 16, 53.0f * 16));
-	healingPoints.back()->Init(game->GetGraphicsDevice(), &camera, player, colliderManager, font, drawBuffer);
-	healingPoints.back()->SetVisible(true);
-	healingPoints.push_back(std::make_shared<HealingPoint>(transformManager, 68.0f * 16, 37.0f * 16));
-	healingPoints.back()->Init(game->GetGraphicsDevice(), &camera, player, colliderManager, font, drawBuffer);
-	healingPoints.back()->SetVisible(true);
-	healingPoints.push_back(std::make_shared<HealingPoint>(transformManager, 88.0f * 16, 58.0f * 16));
+	healingPoints.push_back(std::make_shared<HealingPoint>(transformManager, 1700.0f, 860.0f));
 	healingPoints.back()->Init(game->GetGraphicsDevice(), &camera, player, colliderManager, font, drawBuffer);
 	healingPoints.back()->SetVisible(true);
 
@@ -279,12 +264,10 @@ void Demo::SecretPuzzleScene::Init()
 	spawn(90.f, -340.f, "sec_rand_eye_bat_01", { "DemonEyeEnemy", "VampireBatEnemy" }, true, false);
 	spawn(765.f, 680.f, "sec_keye_01", { "KernelEnemy" }, false, false);
 	spawn(880.f, 730.f, "sec_rand_bat_mimic_01", { "VampireBatEnemy", "MimicEnemy" }, true, false);
-	spawn(840.f, 900.f, "sec_duo_eye_01", { "DemonEyeEnemy", "DemonEyeEnemy" }, false, false);
-	spawn(1070.f, 640.f, "sec_rand_3types_02", { "VampireBatEnemy", "KernelEnemy", "KeyeEnemy" }, true, false); 
+	spawn(738.f, 839.f, "sec_duo_eye_01", { "DemonEyeEnemy", "DemonEyeEnemy" }, false, false);
 	spawn(1135.f, 930.f, "sec_rand_keye_mimic_01", { "KeyeEnemy", "MimicEnemy" }, true, false);
 	spawn(1195.f, 780.f, "sec_bat_03", { "VampireBatEnemy" }, false, false);
 	spawn(1350.f, 785.f, "sec_rand_eye_bat_02", { "DemonEyeEnemy", "VampireBatEnemy" }, true, false);
-	spawn(1700.f, 860.f, "sec_rand_all_01", {}, false, true);
 
 	draggableManager = std::make_shared<Demo::DraggableManager>();
 	inventoryMenu = std::make_shared<InventoryMenu>(game, player, transformManager, draggableManager, &uiCamera, font.get());

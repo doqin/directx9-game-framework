@@ -85,13 +85,13 @@ void Demo::ThreadAlleyScene::Init()
 
 	font = std::make_shared<DX9GF::Font>(game->GetGraphicsDevice(), L"StatusPlz", 16);
 
-	shopPoints.push_back(std::make_shared<ShopPoint>(transformManager, -710, -450));
+	shopPoints.push_back(std::make_shared<ShopPoint>(transformManager, -606, -548));
 	shopPoints.back()->Init(game, game->GetGraphicsDevice(), &camera, player, colliderManager, font, drawBuffer,
 		[](Game* g, Player* p, int w, int h) { return new CardShop(g, p, w, h, ShopTier::HYBRID); }
 	);
 	shopPoints.back()->SetVisible(true);
 
-	shopPoints.push_back(std::make_shared<ShopPoint>(transformManager, -697, -1148));
+	shopPoints.push_back(std::make_shared<ShopPoint>(transformManager, -449, -1293));
 	shopPoints.back()->Init(game, game->GetGraphicsDevice(), &camera, player, colliderManager, font, drawBuffer,
 		[](Game* g, Player* p, int w, int h) { return new ItemShop(g, p, w, h, ShopTier::HYBRID); }
 	);
@@ -103,7 +103,7 @@ void Demo::ThreadAlleyScene::Init()
 	);
 	shopPoints.back()->SetVisible(true);
 
-	shopPoints.push_back(std::make_shared<ShopPoint>(transformManager, 230, -456));
+	shopPoints.push_back(std::make_shared<ShopPoint>(transformManager, 400, -594));
 	shopPoints.back()->Init(game, game->GetGraphicsDevice(), &camera, player, colliderManager, font, drawBuffer,
 		[](Game* g, Player* p, int w, int h) { return new ItemShop(g, p, w, h, ShopTier::BASIC); }
 	);
@@ -170,19 +170,7 @@ void Demo::ThreadAlleyScene::Init()
 	sketchyGuy = std::make_shared<SketchyGuyNPC>(transformManager, 1024.f, -416.f);
 	sketchyGuy->Init(game->GetGraphicsDevice(), &camera, player, colliderManager, font, drawBuffer);
 
-	savePoints.push_back(std::make_shared<SavePoint>(transformManager, -710, -554));
-	savePoints.back()->Init(game->GetGraphicsDevice(), &camera, player, colliderManager, saveManager, font, drawBuffer);
-	savePoints.back()->SetVisible(true);
-
-	savePoints.push_back(std::make_shared<SavePoint>(transformManager, -474, -137));
-	savePoints.back()->Init(game->GetGraphicsDevice(), &camera, player, colliderManager, saveManager, font, drawBuffer);
-	savePoints.back()->SetVisible(true);
-
-	savePoints.push_back(std::make_shared<SavePoint>(transformManager, -727, -1201));
-	savePoints.back()->Init(game->GetGraphicsDevice(), &camera, player, colliderManager, saveManager, font, drawBuffer);
-	savePoints.back()->SetVisible(true);
-
-	savePoints.push_back(std::make_shared<SavePoint>(transformManager, -235, -1302));
+	savePoints.push_back(std::make_shared<SavePoint>(transformManager, -488, -140));
 	savePoints.back()->Init(game->GetGraphicsDevice(), &camera, player, colliderManager, saveManager, font, drawBuffer);
 	savePoints.back()->SetVisible(true);
 
@@ -190,23 +178,7 @@ void Demo::ThreadAlleyScene::Init()
 	savePoints.back()->Init(game->GetGraphicsDevice(), &camera, player, colliderManager, saveManager, font, drawBuffer);
 	savePoints.back()->SetVisible(true);
 
-	savePoints.push_back(std::make_shared<SavePoint>(transformManager, 824, -969));
-	savePoints.back()->Init(game->GetGraphicsDevice(), &camera, player, colliderManager, saveManager, font, drawBuffer);
-	savePoints.back()->SetVisible(true);
-
-	savePoints.push_back(std::make_shared<SavePoint>(transformManager, 582, -1036));
-	savePoints.back()->Init(game->GetGraphicsDevice(), &camera, player, colliderManager, saveManager, font, drawBuffer);
-	savePoints.back()->SetVisible(true);
-
 	savePoints.push_back(std::make_shared<SavePoint>(transformManager, 230, -392));
-	savePoints.back()->Init(game->GetGraphicsDevice(), &camera, player, colliderManager, saveManager, font, drawBuffer);
-	savePoints.back()->SetVisible(true);
-
-	savePoints.push_back(std::make_shared<SavePoint>(transformManager, 968, -216));
-	savePoints.back()->Init(game->GetGraphicsDevice(), &camera, player, colliderManager, saveManager, font, drawBuffer);
-	savePoints.back()->SetVisible(true);
-
-	savePoints.push_back(std::make_shared<SavePoint>(transformManager, 1210, -91));
 	savePoints.back()->Init(game->GetGraphicsDevice(), &camera, player, colliderManager, saveManager, font, drawBuffer);
 	savePoints.back()->SetVisible(true);
 
@@ -215,71 +187,7 @@ void Demo::ThreadAlleyScene::Init()
 	healingPoints.back()->Init(game->GetGraphicsDevice(), &camera, player, colliderManager, font, drawBuffer);
 	healingPoints.back()->SetVisible(true);
 
-	healingPoints.push_back(std::make_shared<HealingPoint>(transformManager, -538, -137));
-	healingPoints.back()->Init(game->GetGraphicsDevice(), &camera, player, colliderManager, font, drawBuffer);
-	healingPoints.back()->SetVisible(true);
-
-	/*healingPoints.push_back(std::make_shared<HealingPoint>(transformManager, -456, -1016));
-	healingPoints.back()->Init(game->GetGraphicsDevice(), &camera, player, colliderManager, font, drawBuffer);
-	healingPoints.back()->SetVisible(true);*/
-
-	healingPoints.push_back(std::make_shared<HealingPoint>(transformManager, -634, -1273));
-	healingPoints.back()->Init(game->GetGraphicsDevice(), &camera, player, colliderManager, font, drawBuffer);
-	healingPoints.back()->SetVisible(true);
-
-	healingPoints.push_back(std::make_shared<HealingPoint>(transformManager, -59, -1356));
-	healingPoints.back()->Init(game->GetGraphicsDevice(), &camera, player, colliderManager, font, drawBuffer);
-	healingPoints.back()->SetVisible(true);
-
-	healingPoints.push_back(std::make_shared<HealingPoint>(transformManager, 407, -1337));
-	healingPoints.back()->Init(game->GetGraphicsDevice(), &camera, player, colliderManager, font, drawBuffer);
-	healingPoints.back()->SetVisible(true);
-
-	healingPoints.push_back(std::make_shared<HealingPoint>(transformManager, 582, -841));
-	healingPoints.back()->Init(game->GetGraphicsDevice(), &camera, player, colliderManager, font, drawBuffer);
-	healingPoints.back()->SetVisible(true);
-
-	/*healingPoints.push_back(std::make_shared<HealingPoint>(transformManager, 984, -839));
-	healingPoints.back()->Init(game->GetGraphicsDevice(), &camera, player, colliderManager, font, drawBuffer);
-	healingPoints.back()->SetVisible(true);*/
-
-	healingPoints.push_back(std::make_shared<HealingPoint>(transformManager, 767, -1041));
-	healingPoints.back()->Init(game->GetGraphicsDevice(), &camera, player, colliderManager, font, drawBuffer);
-	healingPoints.back()->SetVisible(true);
-
-	/*healingPoints.push_back(std::make_shared<HealingPoint>(transformManager, 920, -1351));
-	healingPoints.back()->Init(game->GetGraphicsDevice(), &camera, player, colliderManager, font, drawBuffer);
-	healingPoints.back()->SetVisible(true);*/
-
-	healingPoints.push_back(std::make_shared<HealingPoint>(transformManager, 1257, -1351));
-	healingPoints.back()->Init(game->GetGraphicsDevice(), &camera, player, colliderManager, font, drawBuffer);
-	healingPoints.back()->SetVisible(true);
-
-	//healingPoints.push_back(std::make_shared<HealingPoint>(transformManager, 233, -297));
-	//healingPoints.back()->Init(game->GetGraphicsDevice(), &camera, player, colliderManager, font, drawBuffer);
-	//healingPoints.back()->SetVisible(true);
-
-	healingPoints.push_back(std::make_shared<HealingPoint>(transformManager, 585, -539));
-	healingPoints.back()->Init(game->GetGraphicsDevice(), &camera, player, colliderManager, font, drawBuffer);
-	healingPoints.back()->SetVisible(true);
-
-	/*healingPoints.push_back(std::make_shared<HealingPoint>(transformManager, 584, -123));
-	healingPoints.back()->Init(game->GetGraphicsDevice(), &camera, player, colliderManager, font, drawBuffer);
-	healingPoints.back()->SetVisible(true);*/
-
-	healingPoints.push_back(std::make_shared<HealingPoint>(transformManager, 872, -262));
-	healingPoints.back()->Init(game->GetGraphicsDevice(), &camera, player, colliderManager, font, drawBuffer);
-	healingPoints.back()->SetVisible(true);
-
-	/*healingPoints.push_back(std::make_shared<HealingPoint>(transformManager, 935, -616));
-	healingPoints.back()->Init(game->GetGraphicsDevice(), &camera, player, colliderManager, font, drawBuffer);
-	healingPoints.back()->SetVisible(true);*/
-
-	healingPoints.push_back(std::make_shared<HealingPoint>(transformManager, 1174, -1143));
-	healingPoints.back()->Init(game->GetGraphicsDevice(), &camera, player, colliderManager, font, drawBuffer);
-	healingPoints.back()->SetVisible(true);
-
-	healingPoints.push_back(std::make_shared<HealingPoint>(transformManager, 1174, -441));
+	healingPoints.push_back(std::make_shared<HealingPoint>(transformManager, -230, -1148));
 	healingPoints.back()->Init(game->GetGraphicsDevice(), &camera, player, colliderManager, font, drawBuffer);
 	healingPoints.back()->SetVisible(true);
 
@@ -291,17 +199,15 @@ void Demo::ThreadAlleyScene::Init()
 	};
 
 	const std::vector<ChestDef> chestDefs = {
-		{{-411.f, -249.f}, { ChestReward::Item(0,1), ChestReward::Card("TwinStrikeCard") },              true},
-		{{-603.f, -626.f}, { ChestReward::Item(1,1), ChestReward::Card("PoisonCard") },                  true},
 		{{-474.f, -921.f}, { ChestReward::Item(2,1), ChestReward::Item(3,1) },                           true},
 		{{1016.f, -246.f}, { ChestReward::Item(3,1), ChestReward::Card("CleaveCard") },                  true},
-		{{ 821.f, -506.f}, { ChestReward::Item(4,1), ChestReward::Card("TwinStrikeCard") },              true},
-		{{1096.f,  -76.f}, { ChestReward::Item(4,1), ChestReward::Item(5,1) },                           true},
-		{{1127.f, -892.f}, { ChestReward::Item(3,1), ChestReward::Card("PoisonCard") },                  true},
+		{{ 624.f, -442.f}, { ChestReward::Item(4,1), ChestReward::Card("TwinStrikeCard") },              true},
+		{{1096.f,  -90.f}, { ChestReward::Item(4,1), ChestReward::Item(5,1) },                           true},
+		{{1152.f, -906.f}, { ChestReward::Item(3,1), ChestReward::Card("PoisonCard") },                  true},
 		{{ 983.f, -841.f}, { ChestReward::Item(2,1), ChestReward::Item(3,1), ChestReward::Card("CleaveCard") }, true},
-		{{ 982.f,-1035.f}, { ChestReward::Item(4,1), ChestReward::Card("VulnerableCard") },              true},
-		{{-102.f, -951.f}, { ChestReward::Item(5,1), ChestReward::Card("PoisonCard") },                  true},
-		{{ 408.f,-1178.f}, { ChestReward::Item(3,1), ChestReward::Card("CleaveCard") },                  true},
+		{{ 992.f,-1060.f}, { ChestReward::Item(4,1), ChestReward::Card("VulnerableCard") },              true},
+		{{ -69.f, -978.f}, { ChestReward::Item(5,1), ChestReward::Card("PoisonCard") },                  true},
+		{{ 418.f,-1208.f}, { ChestReward::Item(3,1), ChestReward::Card("CleaveCard") },                  true},
 	};
 
 	for (auto& def : chestDefs) {
@@ -362,33 +268,31 @@ void Demo::ThreadAlleyScene::Init()
 		mapEnemies.push_back(enemy);
 		};
 
-	spawn(-490.f, -50.f, "th_intro_01", { "KeyeEnemy" }, false, false);
 	spawn(-735.f, -160.f, "th_intro_02", { "VampireBatEnemy" }, false, false);
 	spawn(-210.f, -180.f, "th_intro_03", { "DemonEyeEnemy" }, false, false);
-	spawn(-40.f, -300.f, "th_intro_04", { "KeyeEnemy", "KernelEnemy" }, true, false);
-	spawn(-540.f, -370.f, "th_mid_01", { "VampireBatEnemy", "VampireBatEnemy" }, false, false);
+	spawn(-57.f, -219.f, "th_intro_04", { "KeyeEnemy", "KernelEnemy" }, true, false);
+	spawn(-572.f, -316.f, "th_mid_01", { "VampireBatEnemy", "VampireBatEnemy" }, false, false);
 	spawn(-330.f, -400.f, "th_mid_02", { "MimicEnemy" }, false, false);
-	spawn(-35.f, -470.f, "th_mid_03", { "KernelEnemy", "VampireBatEnemy" }, true, false);
+	spawn(-18.f, -536.f, "th_mid_03", { "KernelEnemy", "VampireBatEnemy" }, true, false);
 	spawn(-230.f, -550.f, "th_mid_04", { "DemonEyeEnemy", "DemonEyeEnemy" }, false, false);
 	spawn(200.f, -560.f, "th_mid_05", {}, false, true);
-	spawn(-500.f, -640.f, "th_dark_01", { "WarlockEnemy" }, false, false);
+	spawn(-610.f, -726.f, "th_dark_01", { "WarlockEnemy" }, false, false);
 	spawn(925.f, -605.f, "th_dark_02", { "WarlockEnemy", "KernelEnemy" }, false, false);
 	spawn(-370.f, -910.f, "th_dark_03", { "DemonEyeEnemy", "WarlockEnemy" }, true, false);
 	spawn(580.f, -910.f, "th_dark_04", { "KernelEnemy", "VampireBatEnemy" }, false, false);
 	spawn(920.f, -950.f, "th_dark_05", { "WarlockEnemy", "WarlockEnemy" }, false, false);
-	spawn(-730.f, -990.f, "th_dark_06", {}, false, true);
+	spawn(-552.f, -1024.f, "th_dark_06", {}, false, true);
 	spawn(-10.f, -1055.f, "th_deep_01", { "KeyeEnemy", "KernelEnemy" }, true, false);
 	spawn(280.f, -1080.f, "th_deep_02", { "DemonEyeEnemy", "MimicEnemy" }, true, false);
 	spawn(-480.f, -1110.f, "th_deep_03", { "VampireBatEnemy" }, false, false);
 	spawn(-10.f, -1200.f, "th_deep_04", { "MimicEnemy" }, false, false);
 	spawn(590.f, -1250.f, "th_deep_05", { "WarlockEnemy", "MimicEnemy" }, true, false);
 	spawn(1150.f, -1280.f, "th_deep_06", { "KeyeEnemy", "DemonEyeEnemy", "KernelEnemy" }, true, false);
-	spawn(-200.f, -1370.f, "th_end_01", { "WarlockEnemy", "DemonEyeEnemy" }, false, false);
+	spawn(-183.f, -1465.f, "th_end_01", { "WarlockEnemy", "DemonEyeEnemy" }, false, false);
 	spawn(920.f, -1380.f, "th_end_02", {}, false, true);
 	spawn(-700.f, -1430.f, "th_end_03", { "VampireBatEnemy", "VampireBatEnemy", "VampireBatEnemy" }, false, false);
 	spawn(-410.f, -1500.f, "th_end_04", { "WarlockEnemy", "KernelEnemy", "DemonEyeEnemy" }, false, false);
 	spawn(620.f, -165.f, "th_extra_01", { "KeyeEnemy" }, false, false);
-	spawn(950.f, -220.f, "th_extra_02", { "DemonEyeEnemy" }, false, false);
 	// Moved off (1160, -280): that spawn sat 32px from the AuthTerminal, so its 80px aggro bubble
 	// fired before the player could ever reach the keypad.
 	spawn(1024.f, -120.f, "th_extra_03", { "KernelEnemy" }, false, false);
