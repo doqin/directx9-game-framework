@@ -44,12 +44,9 @@ void Demo::SecretPuzzleScene::Init()
 			if (!transitionInCommand->IsFinished()) {
 				return;
 			}
-			nlohmann::json saveData;
-			player->GenerateSaveGlobalData(saveData["player"]);
 			auto sceMan = game->GetSceneManager();
 			auto targetScene = sceMan->GetScene(static_cast<size_t>(sceMan->GetIndex()) - 1);
 			auto targetPlayer = MainMenu::gameSaveState->GetPlayerFromScene(targetScene);
-			targetPlayer->RestoreSaveGlobalData(saveData["player"]);
 			targetPlayer->SetLocalPosition(-263.f, -295.f);
 			DX9GF::AudioManager::GetInstance()->PlayBGM_Fade("bgm_tutorial", 0.5f, 1.5f);
 			sceMan->GoToPrevious();
@@ -68,12 +65,10 @@ void Demo::SecretPuzzleScene::Init()
 			if (!transitionInCommand->IsFinished()) {
 				return;
 			}
-			nlohmann::json saveData;
-			player->GenerateSaveGlobalData(saveData["player"]);
 			auto sceMan = game->GetSceneManager();
 			auto targetScene = sceMan->GetScene(static_cast<size_t>(sceMan->GetIndex()) + 1);
 			auto targetPlayer = MainMenu::gameSaveState->GetPlayerFromScene(targetScene);
-			targetPlayer->RestoreSaveGlobalData(saveData["player"]);
+			targetPlayer->SetLocalPosition(-417.f, 144.f);
 			DX9GF::AudioManager::GetInstance()->PlayBGM_Fade("bgm_arcade", 0.2f, 1.5f);
 			sceMan->GoToNext();
 			isTransitioning = false;
@@ -84,60 +79,6 @@ void Demo::SecretPuzzleScene::Init()
 
 	map->SetAreaUpdateHandler("trigger_p_next", [this](const DX9GF::Map::ObjectArea& area) {
 		player->SetLocalPosition(31 * 16, 36 * 16);
-		});
-
-	map->SetAreaUpdateHandler("trigger_secretboss_encounter", [this](const DX9GF::Map::ObjectArea& area) {
-		if (!player->IsWalking()) return;
-
-		bool hasRustyKey = player->GetInventoryItems().HasItem(10);
-		bool isBossDead = QuestManager::GetInstance()->IsQuestCompleted("SecretBoss_Pacman");
-
-		if (!hasRustyKey && !isBossDead) {
-
-			std::map<std::string, int> forcedEnemyMap = { {"CupidEnemy", 100} };
-
-			auto demoGame = dynamic_cast<Demo::Game*>(this->game);
-			auto app = DX9GF::Application::GetInstance();
-
-			auto battleScene = new CustomBattleScene(demoGame, player, app->GetScreenWidth(), app->GetScreenHeight(), forcedEnemyMap);
-
-			battleScene->SetCustomBackgroundDraw([this](DX9GF::GraphicsDevice* gd, unsigned long long deltaTime) { DrawBackground(gd, deltaTime); });
-
-			auto sceMan = this->game->GetSceneManager();
-			sceMan->InsertScene(sceMan->GetIndex() + 1, battleScene);
-
-			commandBuffer->PushCommand(std::make_shared<DX9GF::CustomCommand>([this](std::function<void()> markFinished) {
-				this->isGamePaused = true;
-				markFinished();
-				}));
-
-			auto transitionInCommand = std::make_shared<TransitionCommand>(game->GetGraphicsDevice(), &this->uiCamera, 1.f, true);
-			drawBuffer->StackCommand(transitionInCommand);
-
-			commandBuffer->PushCommand(std::make_shared<DX9GF::CustomCommand>([sceMan, transitionInCommand, this](std::function<void()> markFinished) {
-				if (!transitionInCommand->IsFinished()) {
-					return;
-				}
-				sceMan->GoToNext();
-				markFinished();
-				}));
-
-			drawBuffer->PushCommand(std::make_shared<TransitionCommand>(game->GetGraphicsDevice(), &this->uiCamera, 1.f, false));
-
-			drawBuffer->PushCommand(std::make_shared<DX9GF::CustomCommand>([this](std::function<void()> markFinished) {
-				this->isGamePaused = false;
-
-				auto result = QuestManager::GetInstance()->NotifyEvent("ENTITY_DEAD", "SecretBoss_Pacman", this->player.get());
-
-				if (result.hasReward) {
-					if (this->popUpMessage) {
-						this->popUpMessage->ShowMessage(L"(+) " + result.rewardMessage, 5.0f);
-					}
-				}
-
-				markFinished();
-				}));
-		}
 		});
 
 	font = std::make_shared<DX9GF::Font>(game->GetGraphicsDevice(), L"StatusPlz", 16);
@@ -159,9 +100,6 @@ void Demo::SecretPuzzleScene::Init()
 	savePoints.back()->Init(game->GetGraphicsDevice(), &camera, player, colliderManager, saveManager, font, drawBuffer);
 	savePoints.back()->SetVisible(true);
 	savePoints.push_back(std::make_shared<SavePoint>(transformManager, 31.0f * 16, 47.0f * 16));
-	savePoints.back()->Init(game->GetGraphicsDevice(), &camera, player, colliderManager, saveManager, font, drawBuffer);
-	savePoints.back()->SetVisible(true);
-	savePoints.push_back(std::make_shared<SavePoint>(transformManager, 64.0f * 16, 37.0f * 16));
 	savePoints.back()->Init(game->GetGraphicsDevice(), &camera, player, colliderManager, saveManager, font, drawBuffer);
 	savePoints.back()->SetVisible(true);
 	savePoints.push_back(std::make_shared<SavePoint>(transformManager, 86.0f * 16, 58.0f * 16));
@@ -189,19 +127,7 @@ void Demo::SecretPuzzleScene::Init()
 	healingPoints.push_back(std::make_shared<HealingPoint>(transformManager, -71.0f * 16, -28.0f * 16));
 	healingPoints.back()->Init(game->GetGraphicsDevice(), &camera, player, colliderManager, font, drawBuffer);
 	healingPoints.back()->SetVisible(true);
-	healingPoints.push_back(std::make_shared<HealingPoint>(transformManager, -42.0f * 16, 28.0f * 16));
-	healingPoints.back()->Init(game->GetGraphicsDevice(), &camera, player, colliderManager, font, drawBuffer);
-	healingPoints.back()->SetVisible(true);
-	healingPoints.push_back(std::make_shared<HealingPoint>(transformManager, -20.0f * 16, -16.0f * 16));
-	healingPoints.back()->Init(game->GetGraphicsDevice(), &camera, player, colliderManager, font, drawBuffer);
-	healingPoints.back()->SetVisible(true);
-	healingPoints.push_back(std::make_shared<HealingPoint>(transformManager, 31.0f * 16, 53.0f * 16));
-	healingPoints.back()->Init(game->GetGraphicsDevice(), &camera, player, colliderManager, font, drawBuffer);
-	healingPoints.back()->SetVisible(true);
-	healingPoints.push_back(std::make_shared<HealingPoint>(transformManager, 68.0f * 16, 37.0f * 16));
-	healingPoints.back()->Init(game->GetGraphicsDevice(), &camera, player, colliderManager, font, drawBuffer);
-	healingPoints.back()->SetVisible(true);
-	healingPoints.push_back(std::make_shared<HealingPoint>(transformManager, 88.0f * 16, 58.0f * 16));
+	healingPoints.push_back(std::make_shared<HealingPoint>(transformManager, 1700.0f, 860.0f));
 	healingPoints.back()->Init(game->GetGraphicsDevice(), &camera, player, colliderManager, font, drawBuffer);
 	healingPoints.back()->SetVisible(true);
 
@@ -283,12 +209,10 @@ void Demo::SecretPuzzleScene::Init()
 	spawn(90.f, -340.f, "sec_rand_eye_bat_01", { "DemonEyeEnemy", "VampireBatEnemy" }, true, false);
 	spawn(765.f, 680.f, "sec_keye_01", { "KernelEnemy" }, false, false);
 	spawn(880.f, 730.f, "sec_rand_bat_mimic_01", { "VampireBatEnemy", "MimicEnemy" }, true, false);
-	spawn(840.f, 900.f, "sec_duo_eye_01", { "DemonEyeEnemy", "DemonEyeEnemy" }, false, false);
-	spawn(1070.f, 640.f, "sec_rand_3types_02", { "VampireBatEnemy", "KernelEnemy", "KeyeEnemy" }, true, false);
+	spawn(738.f, 839.f, "sec_duo_eye_01", { "DemonEyeEnemy", "DemonEyeEnemy" }, false, false);
 	spawn(1135.f, 930.f, "sec_rand_keye_mimic_01", { "KeyeEnemy", "MimicEnemy" }, true, false);
 	spawn(1195.f, 780.f, "sec_bat_03", { "VampireBatEnemy" }, false, false);
 	spawn(1350.f, 785.f, "sec_rand_eye_bat_02", { "DemonEyeEnemy", "VampireBatEnemy" }, true, false);
-	spawn(1700.f, 860.f, "sec_rand_all_01", {}, false, true);
 
 	draggableManager = std::make_shared<Demo::DraggableManager>();
 	inventoryMenu = std::make_shared<InventoryMenu>(game, player, transformManager, draggableManager, &uiCamera, font.get());
@@ -370,6 +294,17 @@ void Demo::SecretPuzzleScene::Init()
 		return nullptr;
 		});
 	mapNPCs.push_back(dauDauSpawn);
+
+	//the hidden boss dauDauSpawn was hinting at; talks once, then the fight starts when he's done talking
+	cupidNPC = std::make_shared<CupidNPC>(transformManager, 1671.f, 792.f);
+	cupidNPC->Init(game->GetGraphicsDevice(), &camera, player, colliderManager, font, drawBuffer);
+	cupidNPC->AddLine(L"???", L"Oh? A visitor, all the way out here?");
+	cupidNPC->AddLine(L"???", L"Nobody finds this dead end unless they're looking for something they shouldn't.");
+	cupidNPC->AddLine(L"Pacman", L"Fine, fine. Pacman. Not that the name means much anymore -\nthis process got repurposed long before you wandered in.");
+	cupidNPC->AddLine(L"Pacman", L"I'm what's left guarding a rusty key to a precious treasure.\nYou must know what I'm talking about, right?");
+	cupidNPC->AddLine(L"Pacman", L"So here's the deal: beat me, take the key.\nLose, and you get to enjoy the scenic route back to the start.");
+	cupidNPC->AddLine(L"Player", L"...I've come this far. Might as well.");
+	cupidNPC->AddLine(L"Pacman", L"That's the spirit. Don't say I didn't warn you.");
 }
 
 void Demo::SecretPuzzleScene::Update(unsigned long long deltaTime)
@@ -474,11 +409,26 @@ void Demo::SecretPuzzleScene::Update(unsigned long long deltaTime)
 		currentConversation->Execute(deltaTime);
 
 		if (currentConversation->IsFinished()) {
+			//call back active quest
 			if (activeNPC && activeNPC->GetOnDialogueEnd()) {
 				activeNPC->GetOnDialogueEnd()();
 			}
+
+			if (onConversationEnd) {
+				auto callback = std::move(onConversationEnd);
+				onConversationEnd = nullptr;
+				callback();
+			}
+
 			currentConversation = nullptr;
 			activeNPC = nullptr;
+		}
+	}
+
+	if (cupidNPC) {
+		cupidNPC->Update(deltaTime);
+		if (!currentConversation && cupidNPC->CanInteract() && inpMan->KeyPress(SettingsManager::GetInstance()->GetKeybind("INTERACT"))) {
+			StartCupidConversation();
 		}
 	}
 
@@ -543,6 +493,7 @@ void Demo::SecretPuzzleScene::Update(unsigned long long deltaTime)
 	commandBuffer->Update(deltaTime);
 }
 
+
 void Demo::SecretPuzzleScene::DrawWorld(unsigned long long deltaTime)
 {
 	auto gd = game->GetGraphicsDevice();
@@ -567,6 +518,7 @@ void Demo::SecretPuzzleScene::DrawWorld(unsigned long long deltaTime)
 			depthNodes.push_back({ npc->GetWorldY(), [&, npc]() { npc->Draw(camera, deltaTime); } });
 		}
 
+		if (cupidNPC) depthNodes.push_back({ cupidNPC->GetWorldY(), [&]() { cupidNPC->Draw(camera, deltaTime); } });
 		if (player) depthNodes.push_back({ player->GetWorldY(), [&]() { player->Draw(deltaTime); } });
 
 		std::sort(depthNodes.begin(), depthNodes.end());
@@ -599,6 +551,7 @@ void Demo::SecretPuzzleScene::DrawUI(unsigned long long deltaTime)
 			draggableManager->Draw(deltaTime);
 		}
 		if (inventoryMenu) inventoryMenu->DrawKeyboardReticle(gd, deltaTime);
+		if (cupidNPC && cupidNPC->GetPhase() != Demo::CupidNPC::Phase::Defeated) cupidNPC->DrawUI(&this->uiCamera, deltaTime);
 
 		if (currentConversation) {
 			currentConversation->Draw(gd, &this->uiCamera, deltaTime);
@@ -661,6 +614,72 @@ void Demo::SecretPuzzleScene::DrawBackground(DX9GF::GraphicsDevice* gd, unsigned
 	}
 }
 
+void Demo::SecretPuzzleScene::StartCupidConversation()
+{
+	auto [sw, sh] = camera.GetScreenResolution();
+	currentConversation = std::make_shared<IConversation>(std::make_shared<DX9GF::FontSprite>(font.get()), sw, sh);
+	for (auto& line : cupidNPC->GetDialogueLines()) {
+		currentConversation->AddLine(line);
+	}
+
+	if (cupidNPC->GetPhase() == CupidNPC::Phase::Waiting) {
+		onConversationEnd = [this]() { StartCupidBattle(); };
+	}
+}
+
+void Demo::SecretPuzzleScene::StartCupidBattle()
+{
+	if (isTransitioning || isBossDead) return;
+	isTransitioning = true;
+
+	std::map<std::string, int> forcedEnemyMap = { {"CupidEnemy", 100} };
+
+	auto demoGame = dynamic_cast<Demo::Game*>(this->game);
+	auto app = DX9GF::Application::GetInstance();
+	auto battleScene = new CustomBattleScene(demoGame, player, app->GetScreenWidth(), app->GetScreenHeight(), forcedEnemyMap);
+
+	battleScene->SetOnVictoryCallback([this]() {
+		this->isBossDead = true;
+		if (cupidNPC) cupidNPC->SetPhase(CupidNPC::Phase::Defeated);
+
+		auto result = QuestManager::GetInstance()->NotifyEvent("ENTITY_DEAD", "SecretBoss_Pacman", this->player.get());
+
+		if (result.hasReward) {
+			if (this->popUpMessage) {
+				this->popUpMessage->ShowMessage(L"(+) " + result.rewardMessage, 5.0f);
+			}
+		}
+		});
+
+	battleScene->SetCustomBackgroundDraw([this](DX9GF::GraphicsDevice* gd, unsigned long long deltaTime) { DrawBackground(gd, deltaTime); });
+
+	auto sceMan = this->game->GetSceneManager();
+	sceMan->InsertScene(sceMan->GetIndex() + 1, battleScene);
+
+	commandBuffer->PushCommand(std::make_shared<DX9GF::CustomCommand>([this](std::function<void()> markFinished) {
+		this->isGamePaused = true;
+		markFinished();
+		}));
+
+	auto transitionInCommand = std::make_shared<TransitionCommand>(game->GetGraphicsDevice(), &this->uiCamera, 1.f, true);
+	drawBuffer->StackCommand(transitionInCommand);
+
+	commandBuffer->PushCommand(std::make_shared<DX9GF::CustomCommand>([sceMan, transitionInCommand, this](std::function<void()> markFinished) {
+		if (!transitionInCommand->IsFinished()) {
+			return;
+		}
+		sceMan->GoToNext();
+		markFinished();
+		}));
+
+	drawBuffer->PushCommand(std::make_shared<TransitionCommand>(game->GetGraphicsDevice(), &this->uiCamera, 1.f, false));
+
+	drawBuffer->PushCommand(std::make_shared<DX9GF::CustomCommand>([this](std::function<void()> markFinished) {
+		this->isGamePaused = false;
+		markFinished();
+		}));
+}
+
 std::string Demo::SecretPuzzleScene::GetSaveID() const
 {
 	return "SecretPuzzleScene";
@@ -675,6 +694,13 @@ void Demo::SecretPuzzleScene::GenerateSaveData(nlohmann::json& outData)
 		{"y", pos.y},
 		{"zoom", camera.GetZoom()}
 	};
+	outData["puzzle"] = {
+		{"isBossDead", isBossDead},
+		{ "questGiven", questGiven }
+	};
+
+	if (cupidNPC) outData["cupidNPC"] = { {"phase", static_cast<int>(cupidNPC->GetPhase())} };
+
 	outData["hasSeenChapterIntro"] = hasSeenChapterIntro;
 	nlohmann::json chestStates = nlohmann::json::array();
 	for (auto& c : treasureChests) chestStates.push_back(c->GetIsOpened());
@@ -696,6 +722,17 @@ void Demo::SecretPuzzleScene::RestoreSaveData(const nlohmann::json& inData)
 	player->RestoreSaveData(inData["player"]);
 	camera.SetPosition(inData["camera"]["x"], inData["camera"]["y"]);
 	camera.SetZoom(inData["camera"]["zoom"]);
+	if (inData.contains("puzzle") && inData["puzzle"].contains("isBossDead")) {
+		isBossDead = inData["puzzle"]["isBossDead"];
+		questGiven = inData["puzzle"].value("questGiven", false);
+		questRestoredFromSave = true;
+	}
+
+	if (inData.contains("cupidNPC") && cupidNPC) {
+		// SetPhase(Defeated) also drops the collider, which is what re-opens the path.
+		cupidNPC->SetPhase(static_cast<CupidNPC::Phase>(inData["cupidNPC"].value("phase", 0)));
+	}
+
 	hasSeenChapterIntro = inData.value("hasSeenChapterIntro", false);
 	if (inData.contains("treasureChests")) {
 		auto& arr = inData["treasureChests"];

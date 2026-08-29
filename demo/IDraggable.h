@@ -85,8 +85,16 @@ namespace Demo {
 		std::unordered_map<std::string, std::shared_ptr<IDraggable>> objectMap;
 		std::vector<std::shared_ptr<IDraggable>> isDraggingDraggables;
 		DX9GF::CommandBuffer drawBuffer;
+		// While set, Add/Remove and IDraggable::SetParent/DetachParent skip the O(n^2)
+		// RebuildHierarchy(); the batch's owner flips it back off (which rebuilds once).
+		bool deferRebuild = false;
 	public:
 		void RebuildHierarchy();
+		// Batch structural changes: SetDeferRebuild(true) before a burst of Add/Remove/SetParent,
+		// SetDeferRebuild(false) after (it runs one RebuildHierarchy). Transform-side rebuilds are
+		// suppressed too, so the caller must run transformManager->RebuildHierarchy() once itself.
+		void SetDeferRebuild(bool defer);
+		bool IsDeferRebuild() const { return deferRebuild; }
 		void Add(std::shared_ptr<IDraggable> obj);
 		void Remove(std::shared_ptr<IDraggable> obj);
 		void HoverDroppable(std::shared_ptr<IDraggable> obj);

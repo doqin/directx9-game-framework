@@ -7,6 +7,10 @@
 #include "CardContainer.h"
 #include "IconButton.h"
 #include "KeyboardNavigator.h"
+#include <unordered_map>
+#include <vector>
+#include <string>
+#include <utility>
 #include "QuestManager.h"
 
 namespace Demo {
@@ -53,6 +57,22 @@ namespace Demo {
 		std::vector<std::shared_ptr<IconButton>> buffItems;
 		bool isItemsDirty = true;
 		std::wstring hoverDescription = L"";
+
+		// --- Card caching across toggles ------------------------------------------------
+		// Cards are built once and kept alive (hidden) between opens; the containers only
+		// restructure when the player's deck / inventory actually changed.
+		bool cardsSynced = false;
+		std::vector<std::string> syncedDeck;
+		std::vector<std::string> syncedInventory;
+		std::vector<std::pair<int, int>> syncedItemSig; // (itemID, quantity) of non-empty slots
+		std::unordered_map<std::string, std::vector<std::shared_ptr<ICard>>> cardPool;
+
+		void SyncCards();
+		void ReconcileContainer(const std::shared_ptr<CardContainer>& container, const std::vector<std::string>& targetIds);
+		void CommitCards();
+		void SetCardsHidden(bool hidden);
+		std::shared_ptr<ICard> AcquireCard(const std::string& cardId);
+		bool ItemSignatureChanged();
 
 		// Tab Quests
 		std::vector<QuestButtonData> questButtons;

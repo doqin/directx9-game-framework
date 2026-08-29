@@ -62,10 +62,10 @@ void Demo::TestBattleScene::Init()
 	//warlock->SetOnRequestEnemyCard([this](std::shared_ptr<IEnemy> enemy) { CreateEnemyCard(enemy); });
 	//enemies.push_back(warlock);
 
-	//auto keyeproEnemy = std::make_shared<KeyeproEnemy>(transformManager, 600.f);
-	//keyeproEnemy->Init(game->GetGraphicsDevice(), &camera);
-	//keyeproEnemy->SetOnRequestEnemyCard([this](std::shared_ptr<IEnemy> enemy) { CreateEnemyCard(enemy); });
-	//enemies.push_back(keyeproEnemy);
+	auto keyeproEnemy = std::make_shared<KeyeproEnemy>(transformManager, 600.f);
+	keyeproEnemy->Init(game->GetGraphicsDevice(), &camera);
+	keyeproEnemy->SetOnRequestEnemyCard([this](std::shared_ptr<IEnemy> enemy) { CreateEnemyCard(enemy); });
+	enemies.push_back(keyeproEnemy);
 
 	//auto keyeEnemy = std::make_shared<KeyeEnemy>(transformManager, 25.f);
 	//keyeEnemy->Init(game->GetGraphicsDevice(), &camera);
@@ -77,10 +77,10 @@ void Demo::TestBattleScene::Init()
 	//trojanEnemy->SetOnRequestEnemyCard([this](std::shared_ptr<IEnemy> enemy) { CreateEnemyCard(enemy); });
 	//enemies.push_back(trojanEnemy);
 
-	auto kernelEnemy = std::make_shared<KernelEnemy>(transformManager, 100.f);
-	kernelEnemy->Init(game->GetGraphicsDevice(), &camera);
-	kernelEnemy->SetOnRequestEnemyCard([this](std::shared_ptr<IEnemy> enemy) { CreateEnemyCard(enemy); });
-	enemies.push_back(kernelEnemy);
+	//auto kernelEnemy = std::make_shared<KernelEnemy>(transformManager, 100.f);
+	//kernelEnemy->Init(game->GetGraphicsDevice(), &camera);
+	//kernelEnemy->SetOnRequestEnemyCard([this](std::shared_ptr<IEnemy> enemy) { CreateEnemyCard(enemy); });
+	//enemies.push_back(kernelEnemy);
 
 	//// Heavy Strike
 	//auto heavy = std::make_shared<HeavyStrikeCard>(transformManager, -260.f, -80.f);

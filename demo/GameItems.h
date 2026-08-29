@@ -92,6 +92,9 @@ namespace Demo
 		bool HasItem(int id) const;
 		void AddItem(int id, int amount);
 		bool ConsumeItem(int id);
+		// Removes one copy of the item silently (no "item used" sound). Used by the shop's sell
+		// mode. Returns true if a copy was present and removed.
+		bool RemoveItem(int id);
 		void Clear() { for (auto& slot : slots) slot.quantity = 0; }
 	};
 }

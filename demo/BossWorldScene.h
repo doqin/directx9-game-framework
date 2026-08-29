@@ -5,6 +5,7 @@
 #include "Player.h"
 #include "HackTerminal.h"
 #include "InventoryMenu.h"
+#include "KeyeproNPC.h"
 #include "NPC.h"
 #include "IConversation.h"
 #include "SavePoint.h"
@@ -59,13 +60,19 @@ namespace Demo {
 		std::string GetSaveID() const override;
 		void GenerateSaveData(nlohmann::json& outData) override;
 		void RestoreSaveData(const nlohmann::json& inData) override;
-
-		void GiveTestItems();
 		std::shared_ptr<Player> GetPlayer() const { return player; }
+
+    private:
+        std::shared_ptr<KeyeproNPC> keyeproNPC;
+        std::shared_ptr<IConversation> currentConversation;
+		void GiveTestItems();
 	private:
 		std::vector<std::shared_ptr<NPC>> mapNPCs;
 
-		std::shared_ptr<IConversation> currentConversation;
+        // IConversation has no completion hook, so the scene fires this when the box closes.
+        std::function<void()> onConversationEnd;
+        void StartKeyeproConversation();
+        void StartKeyeproBattle();
 
 		std::shared_ptr<INPC> activeNPC = nullptr;
 		std::shared_ptr<PopUpMessage> popUpMessage;

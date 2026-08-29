@@ -2,9 +2,15 @@
 #include "PopupManager.h"
 #include "DX9GFInputManager.h"
 #include <algorithm>
+#include <cmath>
 #include "TextIconButton.h"
 
 namespace Demo {
+    // Horizontal breathing room between a popup button's label and its edge. Must match the
+    // padding handed to TextIconButton::SetAutoResize so Show()'s width estimate agrees with the
+    // size the button settles at.
+    static constexpr float BTN_TEXT_PAD_X = 16.0f;
+
     PopupManager* PopupManager::instance = nullptr;
 
     PopupManager::PopupManager() {}
@@ -70,13 +76,22 @@ namespace Demo {
         float msgH = static_cast<float>(fontSprite->GetHeight());
 
         float scale = 2.0f; //Change this value to adjust the button size
-        float baseBtnW = static_cast<float>(btnRectsMed[0].right - btnRectsMed[0].left);
         float baseBtnH = static_cast<float>(btnRectsMed[0].bottom - btnRectsMed[0].top);
-        float btnW = baseBtnW * scale;
         float btnH = baseBtnH * scale;
+        // Smallest a button is allowed to be; longer labels widen it past this instead of spilling.
+        float minBtnW = static_cast<float>(btnRectsMed[0].right - btnRectsMed[0].left) * scale;
 
         float spacing = 20.0f;
-        float totalBtnW = (buttons.size() * btnW) + (std::max(0, (int)buttons.size() - 1) * spacing);
+        // Each button fits its own label (measured with the popup font, same font the button draws).
+        std::vector<float> btnWidths;
+        float totalBtnW = 0.0f;
+        for (const auto& btnData : buttons) {
+            fontSprite->SetText(std::wstring(btnData.first));
+            float w = std::floor(std::max(fontSprite->GetWidth() + BTN_TEXT_PAD_X * 2.0f, minBtnW) + 0.5f);
+            btnWidths.push_back(w);
+            totalBtnW += w;
+        }
+        totalBtnW += std::max(0, (int)buttons.size() - 1) * spacing;
 
         float paddingX = 80.0f;
         float maxContentW = std::max({ titleW, msgW, totalBtnW });
@@ -95,12 +110,17 @@ namespace Demo {
         this->backgroundSprite->SetTargetSize(popupWidth, popupHeight);
         this->backgroundSprite->SetScale(scale);
 
-        for (const auto& btnData : buttons) {
+        for (size_t i = 0; i < buttons.size(); ++i) {
+            const auto& btnData = buttons[i];
 
-            auto textBtn = std::make_shared<TextIconButton>(internalTm, 0, 0, (int)btnW, (int)btnH, uiSheetTex, this->font.get(), btnData.first, 3);
+            auto textBtn = std::make_shared<TextIconButton>(internalTm, 0, 0, (int)btnWidths[i], (int)btnH, uiSheetTex, this->font.get(), btnData.first, 3);
             textBtn->SetSpriteRects(btnRectsMed);
             textBtn->SetSpriteScale(scale, scale);
-            textBtn->SetTextColor(0xFF111111);          
+            // Slice the frame so a widened button stretches its centre instead of smearing its caps.
+            textBtn->SetSliceMargins(6, 6);
+            textBtn->SetAutoResize(true, BTN_TEXT_PAD_X);
+            textBtn->SetMinWidth(minBtnW);
+            textBtn->SetTextColor(0xFF111111);
             textBtn->Init(this->uiCamera);
 
             auto popupBtn = std::make_shared<PopupDynamicButton>(textBtn, btnData.first, btnData.second);
@@ -146,16 +166,21 @@ namespace Demo {
 
         if (activeButtons.empty()) return;
 
-        float btnW = activeButtons[0]->backgroundBtn->GetWidth();
         float btnH = activeButtons[0]->backgroundBtn->GetHeight();
         float spacing = 20.0f;
-        float totalWidth = (activeButtons.size() * btnW) + ((activeButtons.size() - 1) * spacing);
+
+        // Buttons can each be a different width (they grow to fit their label), so sum the actual
+        // widths rather than assuming a uniform size.
+        float totalWidth = std::max(0, (int)activeButtons.size() - 1) * spacing;
+        for (auto& popupBtn : activeButtons) totalWidth += popupBtn->backgroundBtn->GetWidth();
 
         float startX = popupX + (popupWidth - totalWidth) / 2.0f;
         float startY = popupY + popupHeight - btnH - 25.0f;
 
-        for (size_t i = 0; i < activeButtons.size(); ++i) {
-            activeButtons[i]->backgroundBtn->SetLocalPosition(startX + (i * (btnW + spacing)), startY);
+        float x = startX;
+        for (auto& popupBtn : activeButtons) {
+            popupBtn->backgroundBtn->SetLocalPosition(x, startY);
+            x += popupBtn->backgroundBtn->GetWidth() + spacing;
         }
         internalTm->RebuildHierarchy();
     }
@@ -175,11 +200,15 @@ namespace Demo {
 
             if (!isActive) break;
         }
+        // Re-run the layout each frame: a button only settles on its label-fitted width after its
+        // first Update, and its position has to follow.
+        if (isActive) LayoutButtons();
         if (isActive) {
             auto inpMan = DX9GF::InputManager::GetInstance();
             for (auto& popupBtn : activeButtons) {
-                bool isYesKey = (popupBtn->label == L"Yes(Y)" && inpMan->KeyPress(DIK_Y));
-                bool isNoKey = (popupBtn->label == L"No(N)" && inpMan->KeyPress(DIK_N));
+                // Any label carrying a "(Y)" / "(N)" hotkey hint, not just "Yes(Y)" / "No(N)".
+                bool isYesKey = (popupBtn->label.find(L"(Y)") != std::wstring::npos && inpMan->KeyPress(DIK_Y));
+                bool isNoKey = (popupBtn->label.find(L"(N)") != std::wstring::npos && inpMan->KeyPress(DIK_N));
                 if (isYesKey || isNoKey) {
                     if (popupBtn->onClick) popupBtn->onClick();
                     Close();

@@ -298,7 +298,7 @@ Demo::QuestEventResult Demo::QuestManager::NotifyEvent(const std::string& eventT
 	}
 
 	if (eventType == "FIRST_ENCOUNTER_DEFEATED") {
-		if (targetId == "tutorial_keye_01" && GetQuestState("Quest_Tutorial") == QuestState::Active) {
+		if (GetQuestState("Quest_Tutorial") == QuestState::Active) {
 			questStates["Quest_Tutorial"] = QuestState::Completed;
 
 			if (questDatabase.count("Quest_Tutorial")) {

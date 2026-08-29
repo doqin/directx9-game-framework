@@ -20,6 +20,8 @@
 #include "Debug.h"
 #include "imgui.h"
 #include "backends/imgui_impl_dx9.h"
+#include "MainMenu.h"
+#include "SaveGameState.h"
 
 void Demo::BossWorldScene::Init() {
 	camera.SetZoom(2.0f);
@@ -106,6 +108,17 @@ void Demo::BossWorldScene::Init() {
 	mapNPCs.push_back(hNgoc);
 
 
+	//standing guard just past the gate; talks once, then the fight starts when he's done talking
+	keyeproNPC = std::make_shared<KeyeproNPC>(transformManager, 752.f, -336.f);
+	keyeproNPC->Init(game->GetGraphicsDevice(), &camera, player, colliderManager, font, drawBuffer);
+	keyeproNPC->AddLine(L"Anonymous", L"So. You made it through the terminals.");
+	keyeproNPC->AddLine(L"Anonymous", L"You still think this is a sector. A place with walls, a gate, a way out.");
+	keyeproNPC->AddLine(L"Anonymous", L"It isn't. It's a process. Every corridor you walked, every corrupted debugger\nyou talked to - all of it running because I keep it running.");
+	keyeproNPC->AddLine(L"Anonymous", L"I hold the keys. Every one. Nothing in this system closes, resets, or lets go\nwithout my say-so.");
+	keyeproNPC->AddLine(L"Anonymous", L"Which makes me the last thing standing between you and whatever you think\nfreedom looks like on the other side of this gate.");
+	keyeproNPC->AddLine(L"Player", L"Then I guess I'm taking your keys.");
+	keyeproNPC->AddLine(L"Anonymous", L"Try.");
+
 	//hack machines
 	auto hackCallback = std::bind(&BossWorldScene::OnTerminalHacked, this, std::placeholders::_1);
 
@@ -154,10 +167,6 @@ void Demo::BossWorldScene::Init() {
 	addChest(94, -32, { ChestReward::Item(6,1), ChestReward::Item(7,1), ChestReward::Card("WeaknessCard") }, true);
 
 	//heal
-	healingPoints.push_back(std::make_shared<HealingPoint>(transformManager, 144.f, 320.f));
-	healingPoints.back()->Init(game->GetGraphicsDevice(), &camera, player, colliderManager, font, drawBuffer);
-	healingPoints.back()->SetVisible(true);
-
 	healingPoints.push_back(std::make_shared<HealingPoint>(transformManager, -352.f, -160.f));
 	healingPoints.back()->Init(game->GetGraphicsDevice(), &camera, player, colliderManager, font, drawBuffer);
 	healingPoints.back()->SetVisible(true);
@@ -174,10 +183,6 @@ void Demo::BossWorldScene::Init() {
 	QuestManager::GetInstance()->Init(game->GetGraphicsDevice(), transformManager, &this->uiCamera, font);
 
 	savePoints.push_back(std::make_shared<SavePoint>(transformManager, 192.f, 320.f));
-	savePoints.back()->Init(game->GetGraphicsDevice(), &camera, player, colliderManager, saveManager, font, drawBuffer);
-	savePoints.back()->SetVisible(true);
-
-	savePoints.push_back(std::make_shared<SavePoint>(transformManager, -304.f, -160.f));
 	savePoints.back()->Init(game->GetGraphicsDevice(), &camera, player, colliderManager, saveManager, font, drawBuffer);
 	savePoints.back()->SetVisible(true);
 
@@ -259,14 +264,9 @@ void Demo::BossWorldScene::Init() {
 		mapEnemies.push_back(enemy);
 		};
 
-	spawn(-680.f, 125.f, "bw_q_01", { "DemonEyeEnemy", "VampireBatEnemy" }, true, false);
-	spawn(-760.f, -180.f, "bw_q_02", { "KeyeEnemy", "KeyeEnemy" }, false, false);
-	spawn(-550.f, -320.f, "bw_q_03", { "WarlockEnemy" }, false, false);
-	spawn(-635.f, -600.f, "bw_q_04", { "MimicEnemy", "KernelEnemy" }, true, false);
 	spawn(1730.f, 10.f, "bw_c_01", { "VampireBatEnemy", "WarlockEnemy" }, false, false);
 	spawn(1520.f, 145.f, "bw_c_02", {}, false, true);
 	spawn(1635.f, 325.f, "bw_c_03", { "DemonEyeEnemy" }, false, false);
-	spawn(1740.f, 525.f, "bw_c_04", { "KernelEnemy" }, false, false);
 	spawn(1500.f, -360.f, "bw_c_05", { "WarlockEnemy", "KeyeEnemy" }, true, false);
 	spawn(1620.f, -625.f, "bw_c_06", { "WarlockEnemy", "KernelEnemy" }, false, false);
 	spawn(1890.f, -445.f, "bw_c_07", { "MimicEnemy" }, false, false);
@@ -281,10 +281,35 @@ void Demo::BossWorldScene::Init() {
 	spawn(2540.f, -490.f, "bw_f_08", {}, false, true);
 
 	// link with portal triggers on map
+	map->SetAreaUpdateHandler("trigger_alley", [this](const DX9GF::Map::ObjectArea& area) {
+		if (isTransitioning) return;
+		isTransitioning = true;
+		auto transitionInCommand = std::make_shared<TransitionCommand>(game->GetGraphicsDevice(), &this->uiCamera, 1.f, true);
+		drawBuffer->PushCommand(transitionInCommand);
+		commandBuffer->PushCommand(std::make_shared<DX9GF::CustomCommand>([this, transitionInCommand](std::function<void(void)> markFinished) {
+			if (!transitionInCommand->IsFinished()) {
+				return;
+			}
+			auto sceMan = game->GetSceneManager();
+			auto targetScene = sceMan->GetScene(static_cast<size_t>(sceMan->GetIndex()) - 1);
+			auto targetPlayer = MainMenu::gameSaveState->GetPlayerFromScene(targetScene);
+			targetPlayer->SetLocalPosition(1239.f, -920.f);
+			sceMan->GoToPrevious();
+			isTransitioning = false;
+			markFinished();
+			}));
+		drawBuffer->PushCommand(std::make_shared<TransitionCommand>(game->GetGraphicsDevice(), &this->uiCamera, 1.f, false));
+	});
+
 	map->SetAreaUpdateHandler("trigger_p_1_2", [this](const DX9GF::Map::ObjectArea& area) {
 		player->SetLocalPosition(-1155, 0);
 		//camera.SetPosition(-1155, 0);
 		this->currentIslandID = 2;
+		});
+	map->SetAreaUpdateHandler("trigger_p_2_1", [this](const DX9GF::Map::ObjectArea& area) {
+		player->SetLocalPosition(48, 230);
+		//camera.SetPosition(1500, 530);
+		this->currentIslandID = 1;
 		});
 	map->SetAreaUpdateHandler("trigger_p_2_3", [this](const DX9GF::Map::ObjectArea& area) {
 		player->SetLocalPosition(1500, 530);
@@ -306,7 +331,7 @@ void Demo::BossWorldScene::Init() {
 		this->currentIslandID = 2;
 		});
 	map->SetAreaUpdateHandler("trigger_p_4_3", [this](const DX9GF::Map::ObjectArea& area) {
-		player->SetLocalPosition(1500, 530);
+		player->SetLocalPosition(2640, -620);
 		//camera.SetPosition(1500, 530);
 		this->currentIslandID = 3;
 		});
@@ -587,19 +612,33 @@ void Demo::BossWorldScene::Update(unsigned long long deltaTime) {
 		}
 	}
 
+	if (keyeproNPC) {
+		keyeproNPC->Update(deltaTime);
+		if (!currentConversation && keyeproNPC->CanInteract() && inpMan->KeyPress(SettingsManager::GetInstance()->GetKeybind("INTERACT"))) {
+			StartKeyeproConversation();
+		}
+	}
 
 	if (currentConversation) {
 		isGamePaused = true;
 		currentConversation->Execute(deltaTime);
+
 		if (currentConversation->IsFinished()) {
-			currentConversation = nullptr;
 			if (activeNPC && activeNPC->GetOnDialogueEnd()) {
 				activeNPC->GetOnDialogueEnd()();
 			}
+
+			if (onConversationEnd) {
+				auto callback = std::move(onConversationEnd);
+				onConversationEnd = nullptr;
+				callback();
+			}
+
+			currentConversation = nullptr;
 			activeNPC = nullptr;
 		}
-	}
-
+	}	
+	
 	if (rustyChest && !rustyChest->GetIsOpened()) {
 		rustyChest->Update(deltaTime);
 
@@ -724,6 +763,7 @@ void Demo::BossWorldScene::DrawWorld(unsigned long long deltaTime) {
 			depthNodes.push_back({ npc->GetWorldY(), [&, npc]() { npc->Draw(camera, deltaTime); } });
 		}
 
+		if (keyeproNPC) depthNodes.push_back({ keyeproNPC->GetWorldY(), [&]() { keyeproNPC->Draw(camera, deltaTime); } });
 		if (rustyChest) depthNodes.push_back({ rustyChest->GetWorldY(), [&]() { rustyChest->Draw(camera, deltaTime); } });
 		for (auto& savePoint : savePoints) depthNodes.push_back({ savePoint->GetWorldY(), [&, savePoint]() { savePoint->Draw(camera, deltaTime); } });
 		for (auto& shopPoint : shopPoints) depthNodes.push_back({ shopPoint->GetWorldY(), [&, shopPoint]() { shopPoint->Draw(camera, deltaTime); } });
@@ -766,6 +806,7 @@ void Demo::BossWorldScene::DrawUI(unsigned long long deltaTime)
 			draggableManager->Draw(deltaTime);
 		}
 		if (inventoryMenu) inventoryMenu->DrawKeyboardReticle(gd, deltaTime);
+		if (keyeproNPC && keyeproNPC->GetPhase() != Demo::KeyeproNPC::Phase::Defeated) keyeproNPC->DrawUI(&this->uiCamera, deltaTime);
 
 		if (currentConversation) {
 			currentConversation->Draw(gd, &this->uiCamera, deltaTime);
@@ -797,6 +838,61 @@ void Demo::BossWorldScene::DrawUI(unsigned long long deltaTime)
 	}
 }
 
+void Demo::BossWorldScene::StartKeyeproConversation()
+{
+	auto [sw, sh] = camera.GetScreenResolution();
+	currentConversation = std::make_shared<IConversation>(std::make_shared<DX9GF::FontSprite>(font.get()), sw, sh);
+	for (auto& line : keyeproNPC->GetDialogueLines()) {
+		currentConversation->AddLine(line);
+	}
+
+	if (keyeproNPC->GetPhase() == KeyeproNPC::Phase::Waiting) {
+		onConversationEnd = [this]() { StartKeyeproBattle(); };
+	}
+}
+
+void Demo::BossWorldScene::StartKeyeproBattle()
+{
+	if (isTransitioning || isFinalBossDead) return;
+	isTransitioning = true;
+
+	std::map<std::string, int> forcedEnemyMap = { {"KeyeproEnemy", 100} };
+
+	auto demoGame = dynamic_cast<Demo::Game*>(this->game);
+	auto app = DX9GF::Application::GetInstance();
+	auto battleScene = new CustomBattleScene(demoGame, player, app->GetScreenWidth(), app->GetScreenHeight(), forcedEnemyMap);
+
+	battleScene->SetCustomBGM("battle_boss");
+	battleScene->SetOnVictoryCallback([this]() {
+		this->isFinalBossDead = true;
+		if (keyeproNPC) keyeproNPC->SetPhase(KeyeproNPC::Phase::Defeated);
+		});
+	battleScene->SetCustomBackgroundDraw([this](DX9GF::GraphicsDevice* gd, unsigned long long delta) { DrawBackground(gd, delta, currentIslandID); });
+
+	auto sceMan = this->game->GetSceneManager();
+	sceMan->InsertScene(sceMan->GetIndex() + 1, battleScene);
+
+	commandBuffer->PushCommand(std::make_shared<DX9GF::CustomCommand>([this](std::function<void()> markFinished) {
+		this->isGamePaused = true; markFinished();
+		}));
+
+	auto transitionInCommand = std::make_shared<TransitionCommand>(game->GetGraphicsDevice(), &this->uiCamera, 1.f, true);
+	drawBuffer->StackCommand(transitionInCommand);
+
+	commandBuffer->PushCommand(std::make_shared<DX9GF::CustomCommand>([sceMan, transitionInCommand, this](std::function<void()> markFinished) {
+		if (!transitionInCommand->IsFinished()) return;
+		sceMan->GoToNext(); markFinished();
+		}));
+
+	drawBuffer->PushCommand(std::make_shared<TransitionCommand>(game->GetGraphicsDevice(), &this->uiCamera, 1.f, false));
+
+	drawBuffer->PushCommand(std::make_shared<DX9GF::CustomCommand>([this](std::function<void()> markFinished) {
+		this->isGamePaused = false;
+		this->isTransitioning = false;
+		markFinished();
+		}));
+}
+
 std::string Demo::BossWorldScene::GetSaveID() const {
 	return "BossWorldScene";
 }
@@ -814,6 +910,8 @@ void Demo::BossWorldScene::GenerateSaveData(nlohmann::json& outData) {
 		{"isChestOpened", rustyChest ? rustyChest->GetIsOpened() : false}
 	};
 	outData["hasSeenChapterIntro"] = hasSeenChapterIntro;
+
+	if (keyeproNPC) outData["keyeproNPC"] = { {"phase", static_cast<int>(keyeproNPC->GetPhase())} };
 
 	nlohmann::json chestStates = nlohmann::json::array();
 	for (auto& c : treasureChests) chestStates.push_back(c->GetIsOpened());
@@ -852,6 +950,11 @@ void Demo::BossWorldScene::RestoreSaveData(const nlohmann::json& inData) {
 			colliderManager->Remove(bossGateCollider);
 			bossGateCollider.reset();
 		}
+	}
+
+	if (inData.contains("keyeproNPC") && keyeproNPC) {
+		// SetPhase(Defeated) also drops the collider, which is what re-opens the corridor.
+		keyeproNPC->SetPhase(static_cast<KeyeproNPC::Phase>(inData["keyeproNPC"].value("phase", 0)));
 	}
 
 	for (int i = 0; i < currentHackStep; ++i) {

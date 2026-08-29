@@ -269,6 +269,12 @@
     <ClCompile Include="PasswordMenu.cpp" />
     <ClCompile Include="QuestMarker.cpp" />
     <ClCompile Include="TrojanNPC.cpp" />
+    <ClCompile Include="KeyeproNPC.cpp" />
+    <ClCompile Include="CupidNPC.cpp" />
+    <ClCompile Include="SketchyGuyNPC.cpp" />
+    <ClCompile Include="CardCatalog.cpp" />
+    <ClCompile Include="ItemCatalog.cpp" />
+    <ClCompile Include="PackOpeningScene.cpp" />
     <ClCompile Include="IntroScene.cpp" />
     <ClCompile Include="CardContainer.cpp" />
     <ClCompile Include="HealingPoint.cpp" />
@@ -305,6 +311,7 @@
       <PrecompiledHeader Condition="'$(Configuration)|$(Platform)'=='Release|x64'">Create</PrecompiledHeader>
     </ClCompile>
     <ClCompile Include="Player.cpp" />
+    <ClCompile Include="PlayerGlobalData.cpp" />
     <ClCompile Include="ProjectileSystem.cpp" />
     <ClCompile Include="PopupManager.cpp" />
     <ClCompile Include="QuestManager.cpp" />
@@ -387,6 +394,13 @@
     <ClInclude Include="PasswordMenu.h" />
     <ClInclude Include="QuestMarker.h" />
     <ClInclude Include="TrojanNPC.h" />
+    <ClInclude Include="KeyeproNPC.h" />
+    <ClInclude Include="CupidNPC.h" />
+    <ClInclude Include="SketchyGuyNPC.h" />
+    <ClInclude Include="SketchyGuyGlobalData.h" />
+    <ClInclude Include="CardCatalog.h" />
+    <ClInclude Include="ItemCatalog.h" />
+    <ClInclude Include="PackOpeningScene.h" />
     <ClInclude Include="IntroScene.h" />
     <ClInclude Include="CardContainer.h" />
     <ClInclude Include="HealingPoint.h" />
@@ -418,6 +432,7 @@
     <ClInclude Include="MultiTargetCard.h" />
     <ClInclude Include="NPC1.h" />
     <ClInclude Include="Player.h" />
+    <ClInclude Include="PlayerGlobalData.h" />
     <ClInclude Include="ProjectileSystem.h" />
     <ClInclude Include="PopupManager.h" />
     <ClInclude Include="PopUpMessage.h" />
@@ -522,6 +537,9 @@
     <Image Include="assets\bossprojectile-Sheet.png">
       <DeploymentContent>true</DeploymentContent>
     </Image>
+    <Image Include="assets\bossshard-Sheet.png">
+      <DeploymentContent>true</DeploymentContent>
+    </Image>
     <Image Include="assets\bubble-Sheet.png">
       <DeploymentContent>true</DeploymentContent>
     </Image>
@@ -529,6 +547,12 @@
       <DeploymentContent>true</DeploymentContent>
     </Image>
     <Image Include="assets\bugprojectile-Sheet.png">
+      <DeploymentContent>true</DeploymentContent>
+    </Image>
+    <Image Include="assets\buytab.png">
+      <DeploymentContent>true</DeploymentContent>
+    </Image>
+    <Image Include="assets\selltab.png">
       <DeploymentContent>true</DeploymentContent>
     </Image>
     <Image Include="assets\chestclosed.png">
@@ -550,6 +574,12 @@
       <DeploymentContent>true</DeploymentContent>
     </Image>
     <Image Include="assets\daudau-Sheet.png">
+      <DeploymentContent>true</DeploymentContent>
+    </Image>
+    <Image Include="assets\sketchyguy-Sheet.png">
+      <DeploymentContent>true</DeploymentContent>
+    </Image>
+    <Image Include="assets\packopening-Sheet.png">
       <DeploymentContent>true</DeploymentContent>
     </Image>
     <Image Include="assets\department_logo.png">

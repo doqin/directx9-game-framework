@@ -60,16 +60,28 @@ void Demo::DraggableManager::RebuildHierarchy()
 	levels = std::move(newLevels);
 }
 
+void Demo::DraggableManager::SetDeferRebuild(bool defer)
+{
+	deferRebuild = defer;
+	if (!defer) {
+		this->RebuildHierarchy();
+	}
+}
+
 void Demo::DraggableManager::Add(std::shared_ptr<IDraggable> obj)
 {
 	objectMap[obj->GetID()] = obj;
-	this->RebuildHierarchy();
+	if (!deferRebuild) {
+		this->RebuildHierarchy();
+	}
 }
 
 void Demo::DraggableManager::Remove(std::shared_ptr<IDraggable> obj)
 {
 	if (auto idx = objectMap.erase(obj->GetID()); idx) {
-		this->RebuildHierarchy();
+		if (!deferRebuild) {
+			this->RebuildHierarchy();
+		}
 	}
 }
 
@@ -279,20 +291,22 @@ void Demo::IDraggable::SetParent(std::weak_ptr<IGameObject> parent)
 	auto [parentX, parentY] = parent.lock()->GetWorldPosition();
 	auto [objX, objY] = this->GetWorldPosition();
 	this->SetLocalPosition(objX - parentX, objY - parentY);
-	draggableManager->RebuildHierarchy();
+	const bool defer = draggableManager && draggableManager->IsDeferRebuild();
+	if (!defer) draggableManager->RebuildHierarchy();
 	if (auto lock = GetTransformManager().lock()) {
 		lock->SetParent(transformHandle, parent.lock()->GetTransformHandle().slotIndex);
-		lock->RebuildHierarchy();
+		if (!defer) lock->RebuildHierarchy();
 	}
 }
 
 void Demo::IDraggable::DetachParent()
 {
 	this->parent.reset();
-	draggableManager->RebuildHierarchy();
+	const bool defer = draggableManager && draggableManager->IsDeferRebuild();
+	if (!defer) draggableManager->RebuildHierarchy();
 	if (auto lock = GetTransformManager().lock()) {
 		lock->SetParent(transformHandle, -1);
-		lock->RebuildHierarchy();
+		if (!defer) lock->RebuildHierarchy();
 	}
 }
 

@@ -27,7 +27,7 @@ namespace Demo {
 		float temporaryDefense = 0.f;
 		std::vector<CombatModifier> modifiers;
 
-		float CalculateActualDamage(float baseDamage);
+		float CalculateActualDamage(float baseDamage, bool ignoreArmor = false);
 		float CalculateOutgoingDamage(float baseDamage) const;
 
 	public:
@@ -51,7 +51,7 @@ namespace Demo {
 		virtual void SpawnHealText(float actualHeal);
 
 		//split take damage into 2 type: physical, indirect
-		virtual bool TakeDamage(float damage) = 0;
+		virtual bool TakeDamage(float damage, bool ignoreArmor = false) = 0;
 		virtual bool TakeIndirectDamage(float damage, DamageType type);
 
 		virtual void TriggerEffects(TickPhase phase);

@@ -92,7 +92,7 @@ namespace Demo {
 	class PoisonCard : public MultiTargetCard {
 		std::shared_ptr<DX9GF::Texture> strikeTexture;
 		std::shared_ptr<DX9GF::StaticSprite> strikeSprite;
-		const int poisonTurns = 2;
+		const int poisonTurns = 3;
 	public:
 		PoisonCard(std::weak_ptr<DX9GF::TransformManager> tm, float x = 0, float y = 0)
 			: IGameObject(tm, x, y), MultiTargetCard(tm, 1, L"Poison", x, y, 160, 32) {
@@ -269,13 +269,12 @@ namespace Demo {
 		LethalHarvestCard(std::weak_ptr<DX9GF::TransformManager> tm)
 			: IGameObject(tm, 0, 0), MultiTargetCard(tm, 1, L"Lethal Harvest", 0, 0, 192, 32) {
 			SetPersistent(false);
-			SetMaxUses(1);
 		}
 		bool Execute() override;
-		void CollectProjectedSteps(VirtualBattleState& state) override { CollectHitsOnTargets(state, 6.f, 1); }
+		void CollectProjectedSteps(VirtualBattleState& state) override { CollectHitsOnTargets(state, 12.f, 1); }
 		void DrawCardFace(unsigned long long deltaTime) override { DrawSheetFace(deltaTime, GetFaceRect()); }
 		size_t GetCost() const override { return 1; }
-		std::wstring GetDescription() const override { return L"Deal 6 DMG. If fatal, heal 8 HP."; }
+		std::wstring GetDescription() const override { return L"Deal 12 DMG. If fatal, heal 8 HP."; }
 		RECT GetFaceRect() const override { return RECT{ 80, 448, 176, 464 }; }
 	};
 
@@ -303,7 +302,7 @@ namespace Demo {
 		void CollectProjectedSteps(VirtualBattleState& state) override;
 		void DrawCardFace(unsigned long long deltaTime) override { DrawSheetFace(deltaTime, GetFaceRect()); }
 		size_t GetCost() const override { return 1; }
-		std::wstring GetDescription() const override { return L"Deal 5 DMG. Deals 2x damage to enemies with Armor."; }
+		std::wstring GetDescription() const override { return L"Deal 5 DMG. Deals 2x damage to enemies with Armor. Ignores their defense."; }
 		RECT GetFaceRect() const override { return RECT{ 0, 432, 96, 448 }; }
 	};
 

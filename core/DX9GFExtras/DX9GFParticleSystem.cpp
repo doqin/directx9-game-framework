@@ -85,10 +85,18 @@ namespace DX9GF {
 
 	bool ParticleSystem::Update(unsigned long long deltaTime, float x, float y, float rotation,
 		float scaleX, float scaleY, D3DCOLOR tint, bool active) {
+		// Per-tick velocity damping. Tuned for ~60fps ticks; particles carrying no velocity
+		// (the timer-driven emitters) are unaffected.
+		constexpr float kDrag = 0.90f;
+		const float dtSeconds = (float)deltaTime / 1000.f;
 		for (auto& particle : pool) {
 			if (!particle.isActive) continue;
 			particle.age += (float)deltaTime;
-			if (particle.age >= lifeTime) particle.isActive = false;
+			if (particle.age >= lifeTime) { particle.isActive = false; continue; }
+			particle.x += particle.vx * dtSeconds;
+			particle.y += particle.vy * dtSeconds;
+			particle.vx *= kDrag;
+			particle.vy *= kDrag;
 		}
 
 		if (enabled && active) {
@@ -102,7 +110,8 @@ namespace DX9GF {
 		return false;
 	}
 
-	void ParticleSystem::Spawn(float x, float y, float rotation, float scaleX, float scaleY, D3DCOLOR tint) {
+	void ParticleSystem::Spawn(float x, float y, float rotation, float scaleX, float scaleY, D3DCOLOR tint,
+		float vx, float vy) {
 		for (auto& particle : pool) {
 			if (particle.isActive) continue;
 			particle.isActive = true;
@@ -111,6 +120,8 @@ namespace DX9GF {
 			particle.rotation = rotation;
 			particle.scaleX = scaleX;
 			particle.scaleY = scaleY;
+			particle.vx = vx;
+			particle.vy = vy;
 			particle.age = 0.f;
 			particle.tint = tint;
 			return;
@@ -162,5 +173,13 @@ namespace DX9GF {
 		particleSystem.SetFadeOutTime(250.f);
 		particleSystem.SetScaleRange(1.f, 1.f);
 		particleSystem.SetColorRange(D3DCOLOR_ARGB(120, 200, 220, 255), D3DCOLOR_ARGB(0, 200, 220, 255));
+	}
+
+	void ConfigureExplosionEmitter(ParticleSystem& particleSystem) {
+		particleSystem.SetLifeTime(500.f);
+		particleSystem.SetFadeOutTime(500.f);
+		particleSystem.SetScaleRange(1.4f, 0.3f);
+		particleSystem.SetColorRange(0xFFFFFFFF, 0xFFFF6A00);
+		particleSystem.SetEnabled(false); // burst-only: no timer emission
 	}
 }

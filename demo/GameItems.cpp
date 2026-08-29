@@ -115,6 +115,16 @@ namespace Demo
 		}
 		return false;
 	}
+	bool ItemInventory::RemoveItem(int id)
+	{
+		if (id >= 0 && id < slots.size() && slots[id].quantity > 0)
+		{
+			slots[id].quantity--;
+			return true;
+		}
+		return false;
+	}
+
 	void ItemInventory::EnsureCapacity(int requiredID) {
 		if (requiredID >= slots.size()) {
 			int oldSize = slots.size();

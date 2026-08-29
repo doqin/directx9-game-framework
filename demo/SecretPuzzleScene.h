@@ -8,6 +8,7 @@
 #include "StrikeCard.h"
 #include "ShopPoint.h"
 #include "HealingPoint.h"
+#include "CupidNPC.h"
 #include "NPC.h"
 #include "IConversation.h"
 
@@ -49,12 +50,18 @@ namespace Demo {
 		std::shared_ptr<DX9GF::CommandBuffer> commandBuffer;
 		std::shared_ptr<IConversation> currentConversation;
 		std::shared_ptr<ChapterTitleUI> chapterTitleUI;
+		// IConversation has no completion hook, so the scene fires this when the box closes.
+		std::function<void()> onConversationEnd;
 
 		std::vector<std::shared_ptr<NPC>> mapNPCs;
 		std::shared_ptr<INPC> activeNPC = nullptr;
 		std::shared_ptr<PopUpMessage> popUpMessage;
+		std::shared_ptr<CupidNPC> cupidNPC;
 
 		std::vector<std::shared_ptr<TreasureChestNPC>> treasureChests;
+
+		void StartCupidConversation();
+		void StartCupidBattle();
 
 	public:
 		SecretPuzzleScene(Game* game, std::shared_ptr<DX9GF::SaveManager> sm, UINT sw, UINT sh) : IScene(sw, sh), game(game), saveManager(sm) {}

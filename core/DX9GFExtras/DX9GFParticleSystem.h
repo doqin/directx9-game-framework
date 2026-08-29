@@ -15,6 +15,10 @@ namespace DX9GF {
 			bool isActive = false;
 			float x = 0, y = 0, rotation = 0;
 			float scaleX = 1, scaleY = 1;
+			// Velocity in units/second. Zero for the timer-driven emitters (footprints, trails),
+			// non-zero for one-shot bursts like ConfigureExplosionEmitter. Integrated and damped
+			// in Update, so a manual burst still needs Update called every frame.
+			float vx = 0, vy = 0;
 			float age = 0; // ms since spawn
 			D3DCOLOR tint = 0xFFFFFFFF;
 		};
@@ -52,11 +56,15 @@ namespace DX9GF {
 		// Returns true if a particle was spawned this call.
 		bool Update(unsigned long long deltaTime, float x, float y, float rotation = 0.f,
 			float scaleX = 1.f, float scaleY = 1.f, D3DCOLOR tint = 0xFFFFFFFF, bool active = true);
-		void Spawn(float x, float y, float rotation, float scaleX, float scaleY, D3DCOLOR tint);
+		void Spawn(float x, float y, float rotation, float scaleX, float scaleY, D3DCOLOR tint,
+			float vx = 0.f, float vy = 0.f);
 		void Draw(const Camera& camera, unsigned long long deltaTime);
 	};
 
 	void ConfigureFootprintEmitter(ParticleSystem& particleSystem);
 	void ConfigureTrailEmitter(ParticleSystem& particleSystem);
 	void ConfigureGhostTrailEmitter(ParticleSystem& particleSystem);
+	// One-shot burst: short-lived embers that expand as they fade from white to orange.
+	// Pair with a ring of Spawn() calls that pass an outward velocity.
+	void ConfigureExplosionEmitter(ParticleSystem& particleSystem);
 }

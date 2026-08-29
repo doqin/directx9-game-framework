@@ -487,7 +487,7 @@ bool Demo::LethalHarvestCard::Execute() {
 
 	auto enemy = target->GetValue().get();
 	if (owner) {
-		owner->DealDamage(enemy, 6.f);
+		owner->DealDamage(enemy, 12.f);
 		if (enemy->IsDead()) {
 			owner->Heal(8.f);
 		}
@@ -527,7 +527,7 @@ bool Demo::ArmorPiercerCard::Execute() {
 	}
 
 	if (owner) {
-		owner->DealDamage(enemy, finalDamage);
+		owner->DealDamage(enemy, finalDamage, true);
 	}
 	isDone = true;
 	return true;

@@ -2,6 +2,8 @@
 #include "SaveGameState.h"
 #include "Game.h"
 #include "Player.h"
+#include "PlayerGlobalData.h"
+#include "SketchyGuyGlobalData.h"
 #include "IntroScene.h"
 #include "TutorialWorldScene.h"
 #include "SecretPuzzleScene.h"
@@ -61,9 +63,6 @@ namespace Demo {
 		if (currentScene) {
 			outData["current_scene"] = currentScene->GetSaveID();
 		}
-		if (auto player = GetPlayerFromScene(sceneManager->GetCurrentScene())) {
-			player->GenerateSaveGlobalData(outData["player"]);
-		}
 
 		QuestManager::GetInstance()->GenerateSaveData(outData["quest_manager"]);
 
@@ -101,11 +100,6 @@ namespace Demo {
 				}
 			}
 		}
-		if (inData.contains("player")) {
-			if (auto player = GetPlayerFromScene(sceneManager->GetCurrentScene())) {
-				player->RestoreSaveGlobalData(inData["player"]);
-			}
-		}
 		if (inData.contains("quest_manager")) {
 			QuestManager::GetInstance()->RestoreSaveData(inData["quest_manager"]);
 		}
@@ -124,8 +118,12 @@ namespace Demo {
 
 	std::shared_ptr<SaveGameState> SaveGameState::StartNewGame(Game* game, const std::shared_ptr<DX9GF::SaveManager>& saveManager) {
 		saveManager->Clear();
+		PlayerGlobalData::GetInstance()->Reset();
+		SketchyGuyGlobalData::GetInstance()->Reset();
 		auto saveState = std::make_shared<SaveGameState>(game, saveManager);
 		saveManager->Register(saveState.get());
+		saveManager->Register(PlayerGlobalData::GetInstance());
+		saveManager->Register(SketchyGuyGlobalData::GetInstance());
 		saveState->ClearScenes();
 		saveState->BuildScenes();
 		QuestManager::GetInstance()->Reset();
@@ -138,6 +136,8 @@ namespace Demo {
 		saveManager->Clear();
 		auto saveState = std::make_shared<SaveGameState>(game, saveManager);
 		saveManager->Register(saveState.get());
+		saveManager->Register(PlayerGlobalData::GetInstance());
+		saveManager->Register(SketchyGuyGlobalData::GetInstance());
 		saveState->ClearScenes();
 		saveState->BuildScenes();
 		QuestManager::GetInstance()->Reset();
