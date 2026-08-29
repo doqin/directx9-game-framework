@@ -49,7 +49,7 @@ void Demo::TrojanEnemy::OnTurnBegin(std::shared_ptr<Player> player, std::shared_
 		else {
 			// Counter physical attack
 			CastAbility([this]() {
-				this->AddModifier(ModifierType::BuffDefense, 4, 75.f, true);
+				this->AddModifier(ModifierType::BuffDefense, 2, 60.f, true);
 				}, popUpMessage, L"Trojan fortifies its defenses!");
 		}
 	}
@@ -66,7 +66,7 @@ void Demo::TrojanEnemy::StartAttack(std::shared_ptr<Player> player, std::vector<
 
 void Demo::TrojanEnemy::PatternTrojanBolt(float projDamage) {
 	const int WAVES = 30;
-	const int BULLET_PER_BURST = 8;
+	const int BULLET_PER_BURST = 5;
 	const float BURST_DELAY = 0.01f;
 	const float DELAY_BETWEEN_WAVES = 0.02f;
 	const float DISTANCE_FROM_PLAYER = 300.f;
@@ -127,8 +127,8 @@ void Demo::TrojanEnemy::PatternVirusSpread(float projDamage) {
 		for (int i = 0; i < BULLET_COUNT; i++) {
 			float angle = baseAngleOffset + (2.0f * 3.14159265f / BULLET_COUNT) * i;
 			D3DXVECTOR2 dir{ std::cos(angle), std::sin(angle) };
-			float waveAmp = RNG::Range(20.f, 40.f);
-			float waveFreq = RNG::Range(3.f, 5.f);
+			float waveAmp = 4.0f;
+			float waveFreq = 0.5f;
 
 			float jitterAngle = RNG::Range(0.f, 360.f) * (3.14159265f / 180.f);
 			float jitterDist = std::sqrt(RNG::Range(0.f, 1.f)) * JITTER_RADIUS;
@@ -144,9 +144,9 @@ void Demo::TrojanEnemy::PatternVirusSpread(float projDamage) {
 
 					auto desc = ProjectileDesc(projTexture.get(), projFrames, 12, 8, 8, 16, 16, spawnX, spawnY)
 						.SetTrajectory(dir)
-						.SetVelocity(150.f)
+						.SetVelocity(100.f)
 						.SetWave(waveAmp, waveFreq)
-						.SetDecayTime(5.5f)
+						.SetDecayTime(8.5f)
 						.SetDamage(projDamage);
 					desc.SetRandomStatusEffect(
 						ModifierType::Freeze, FREEZE_VALUE, FREEZE_DURATION,

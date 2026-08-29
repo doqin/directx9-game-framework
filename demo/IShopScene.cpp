@@ -543,8 +543,11 @@ void Demo::IShopScene::Update(unsigned long long deltaTime)
 	}
 
 	// A mode switch or a sale defers its row rebuild to here so it never runs while the button
-	// that triggered it is still mid-click.
-	if (pendingRowsRebuild) {
+	// that triggered it is still mid-click. SetMode() flips shopMode (and therefore which list
+	// ActiveItems() returns) straight away, so this has to catch up buyButtons before anything
+	// indexes it against the new list - otherwise DrawUI() walks buyButtons past its end.
+	auto consumePendingRowsRebuild = [this]() {
+		if (!pendingRowsRebuild) return;
 		pendingRowsRebuild = false;
 		const int keepPage = currentPage;
 		if (shopMode == ShopMode::Sell) {
@@ -554,7 +557,8 @@ void Demo::IShopScene::Update(unsigned long long deltaTime)
 		RebuildRows();
 		currentPage = std::clamp(keepPage, 0, maxPage);
 		RefreshPage();
-	}
+	};
+	consumePendingRowsRebuild();
 
 	// Hold the current mode's tab in the pressed state. The other tab is left to its own
 	// Update() - forcing its state here fights that logic and retriggers its click sfx every
@@ -566,6 +570,11 @@ void Demo::IShopScene::Update(unsigned long long deltaTime)
 	RefreshAffordability();
 
 	keyboardNavigator.Update(deltaTime, CollectKeyboardCandidates());
+
+	// The navigator activates its target here, so a keyboard/controller press on the BUY/SELL
+	// tab (or a sell row) only sets pendingRowsRebuild now - after the check above. Consume it
+	// again so buyButtons matches ActiveItems() before this frame's DrawUI() runs.
+	consumePendingRowsRebuild();
 
 	if (shouldLeave) {
 		auto sceMan = this->game->GetSceneManager();
@@ -601,7 +610,8 @@ void Demo::IShopScene::DrawUI(unsigned long long deltaTime)
 	int hoveredIndex = -1;
 	if (keyboardNavigator.IsInKeyboardMode()) {
 		auto target = keyboardNavigator.GetTarget();
-		for (int i = startIndex; i < endIndex && target; ++i) {
+		const int rowLimit = (std::min)(endIndex, static_cast<int>(buyButtons.size()));
+		for (int i = startIndex; i < rowLimit && target; ++i) {
 			if (buyButtons[i] == target) {
 				hoveredIndex = i;
 				break;

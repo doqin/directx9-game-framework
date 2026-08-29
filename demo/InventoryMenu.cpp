@@ -456,8 +456,6 @@ namespace Demo {
 				}
 			}
 		}
-
-		keyboardNavigator.Update(deltaTime, CollectKeyboardCandidates());
 	}
 
 	void InventoryMenu::Draw(DX9GF::GraphicsDevice* gd, unsigned long long deltaTime)

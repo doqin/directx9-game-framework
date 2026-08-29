@@ -676,6 +676,9 @@ void Demo::SecretPuzzleScene::StartCupidBattle()
 
 	drawBuffer->PushCommand(std::make_shared<DX9GF::CustomCommand>([this](std::function<void()> markFinished) {
 		this->isGamePaused = false;
+		// Cleared here (not right after the fight) so it only frees up once we're back in this scene.
+		// Without this, trigger_p_next_world stays blocked until a save/reload resets the flag.
+		this->isTransitioning = false;
 		markFinished();
 		}));
 }

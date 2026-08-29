@@ -86,7 +86,7 @@ void Demo::TutorialWorldScene::Init()
 	auto npcIntroduction = std::make_shared<NPC>(transformManager, 167.0f, -18.0f, kakoConfig);
 	npcIntroduction->AttachQuestMarker("Quest_Tutorial", Demo::QuestMarkerRole::Giver);
 	npcIntroduction->Init(game->GetGraphicsDevice(), &camera, player, colliderManager, font, drawBuffer);
-	npcIntroduction->RegisterVoice(L"Kako", "bleep12");
+	npcIntroduction->RegisterVoice(L"Kako", "bleep28");
 	npcIntroduction->SetInteractLogic([](NPC* self) -> std::function<void()> {
 		auto qState = QuestManager::GetInstance()->GetQuestState("Quest_Tutorial");
 		if (qState == Demo::QuestState::Locked) {
