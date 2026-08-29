@@ -132,10 +132,10 @@ void Demo::ThreadAlleyScene::Init()
 
 		if (qState == Demo::QuestState::Locked) {
 			self->AddLine(L"Huu Khang", L"Hey, keep your firewall up if you're heading down Thread Alley.");
-			self->AddLine(L"Huu Khang", L"It used to be a shortcut for background processes, but lately... things go in and don't come out.");
+			self->AddLine(L"Huu Khang", L"I wrote the routing logic for this sector. It was supposed to be a clean shortcut\nfor background processes, but lately... things go in and don't come out.");
 			self->AddLine(L"Player", L"Malware?");
-			self->AddLine(L"Huu Khang", L"Worse. The sneaky kind. It mimics friendly data to bypass your antivirus.");
-			self->AddLine(L"Huu Khang", L"If you're heading that way, maybe you can flush the corruption out?");
+			self->AddLine(L"Huu Khang", L"Worse. The sneaky kind. It mimics friendly data to bypass the very antivirus protocols\nI implemented.");
+			self->AddLine(L"Huu Khang", L"My admin privileges are locked out until the zone is cleared. If you're heading that way,\nmaybe you can flush the corruption out for me?");
 			return []() {
 				std::vector<std::pair<std::wstring, std::function<void()>>> buttons = {
 					{ L"Yes(Y)", []() { QuestManager::GetInstance()->AcceptQuest("Quest_ThreadAlley_Start"); } },
@@ -146,11 +146,11 @@ void Demo::ThreadAlleyScene::Init()
 		}
 		else if (qState == Demo::QuestState::Active) {
 			self->AddLine(L"Huu Khang", L"Watch your back in there. Malware down here doesn't always look like a monster...");
-			self->AddLine(L"Huu Khang", L"Sometimes it looks exactly like a friend in need.");
+			self->AddLine(L"Huu Khang", L"Sometimes it uses the exact same asset ID as a friend in need. Trust no one's metadata.");
 		}
 		else {
 			self->AddLine(L"Huu Khang", L"You actually deleted it? And your registry is still intact?");
-			self->AddLine(L"Huu Khang", L"Not bad! Thread Alley is finally safe to route data through again.");
+			self->AddLine(L"Huu Khang", L"Not bad! My admin dashboard just lit back up. Thread Alley is finally safe to route\ndata through again. I owe you a code review sometime.");
 		}
 		return nullptr;
 		});
@@ -838,11 +838,14 @@ void Demo::ThreadAlleyScene::StartTrojanBattle()
 			DrawCheckerBackground(gd, dt);
 			});
 		battleScene->SetOnVictoryCallback([this]() {
-			trojanNPC->SetPhase(TrojanNPC::Phase::Defeated);
-			auto result = QuestManager::GetInstance()->NotifyEvent("TROJAN_DEFEATED", "", player.get());
-			if (result.hasReward && this->popUpMessage) {
-				this->popUpMessage->ShowMessage(L"(+) " + result.rewardMessage, 5.0f);
-			}
+			this->commandBuffer->PushCommand(std::make_shared<DX9GF::CustomCommand>([this](std::function<void()> markFinished) {
+				this->trojanNPC->SetPhase(TrojanNPC::Phase::Defeated);
+				auto result = QuestManager::GetInstance()->NotifyEvent("TROJAN_DEFEATED", "", this->player.get());
+				if (result.hasReward && this->popUpMessage) {
+					this->popUpMessage->ShowMessage(L"(+) " + result.rewardMessage, 5.0f);
+				}
+				markFinished();
+				}));
 			});
 
 		sceMan->InsertScene(sceMan->GetIndex() + 1, battleScene);

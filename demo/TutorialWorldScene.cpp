@@ -251,12 +251,16 @@ void Demo::TutorialWorldScene::Init()
 				auto battleScene = new MapBattleScene(this->game, this->player, app->GetScreenWidth(), app->GetScreenHeight(), e->GetEncounterData());
 				battleScene->SetOnVictoryCallback([e, this]() {
 					e->SetDefeatedState(true, 180.f);
-					auto result = QuestManager::GetInstance()->NotifyEvent("FIRST_ENCOUNTER_DEFEATED", e->GetEnemyID(), this->GetPlayer().get());
-					if (result.hasReward) {
-						if (this->popUpMessage) {
-							this->popUpMessage->QueueMessage(this->commandBuffer.get(), L"(+) " + result.rewardMessage, 4.0f);
+					this->commandBuffer->PushCommand(std::make_shared<DX9GF::CustomCommand>([this, e](std::function<void()> markFinished) {
+						auto result = QuestManager::GetInstance()->NotifyEvent("FIRST_ENCOUNTER_DEFEATED", e->GetEnemyID(), this->GetPlayer().get());
+
+						if (result.hasReward) {
+							if (this->popUpMessage) {
+								this->popUpMessage->QueueMessage(this->commandBuffer.get(), L"(+) " + result.rewardMessage, 4.0f);
+							}
 						}
-					}
+						markFinished();
+						}));
 					});
 
 				sceMan->InsertScene(sceMan->GetIndex() + 1, battleScene);

@@ -285,6 +285,10 @@ IDR_BLEEP29             WAVE                    "assets\\audio\\bleeps\\bleep029
 
 IDR_BLEEP30             WAVE                    "assets\\audio\\bleeps\\bleep030.wav"
 
+IDR_QUEST_ACTIVE               WAVE                    "assets\\audio\\quest_active.wav"
+
+IDR_QUEST_COMPLETED               WAVE                    "assets\\audio\\quest_completed.wav"
+
 #endif    // English (United States) resources
 /////////////////////////////////////////////////////////////////////////////
 

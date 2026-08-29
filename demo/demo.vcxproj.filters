@@ -339,6 +339,8 @@
     <Media Include="assets\audio\token-spawn-04.wav" />
     <Media Include="assets\audio\tutorial-loop.wav" />
     <Media Include="Sounds\button-hover.wav" />
+    <Media Include="assets\audio\quest_active.wav" />
+    <Media Include="assets\audio\quest_completed.wav" />
   </ItemGroup>
   <ItemGroup>
     <Image Include="assets\All-borders.png" />

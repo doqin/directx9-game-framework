@@ -83,12 +83,14 @@ void Demo::BossWorldScene::Init() {
 		auto qState = QuestManager::GetInstance()->GetQuestState("Quest_BossWorld");
 
 		if (qState == Demo::QuestState::Locked) {
-			self->AddLine(L"A Hai`", L"You made it to the Core Sector! But the path ends here.");
-			self->AddLine(L"A Hai`", L"The entity behind that gate hoards all the system's root data.");
-			self->AddLine(L"A Hai`", L"If there's an exit protocol to send you back to your world, it definitely has it.");
-			self->AddLine(L"Player", L"So I just need to go in and take it?");
-			self->AddLine(L"A Hai`", L"Not so fast! It went completely paranoid and sealed itself inside a heavy quarantine zone.");
-			self->AddLine(L"A Hai`", L"To force the gate open, you must hack the four security terminals scattered around this area.");
+			self->AddLine(L"A Hai`", L"You made it to the Core Sector! Wait... you're not a compiled asset. Are you a player?");
+			self->AddLine(L"Player", L"Who are you?");
+			self->AddLine(L"A Hai`", L"Just a dev who flew too close to the sun. I coded the entity behind that gate to manage root data,\nbut my logic was flawed.");
+			self->AddLine(L"A Hai`", L"It gained sentience, went rogue, and trapped me in my own system.");
+			self->AddLine(L"Player", L"So I just need to go in and delete it to get us out?");
+			self->AddLine(L"A Hai`", L"If only it were that simple! It went completely paranoid and sealed itself inside a heavy quarantine zone.");
+			self->AddLine(L"A Hai`", L"To force the gate open, you must hack the four security terminals scattered around this area.\nPlease, clean up my mess!");
+
 			return []() {
 				std::vector<std::pair<std::wstring, std::function<void()>>> buttons = {
 					{ L"Yes(Y)", []() { QuestManager::GetInstance()->AcceptQuest("Quest_BossWorld"); } },
@@ -98,10 +100,10 @@ void Demo::BossWorldScene::Init() {
 				};
 		}
 		else if (qState == Demo::QuestState::Active) {
-			self->AddLine(L"A Hai`", L"The firewall is still active. Find and hack all four terminals to breach the quarantine zone!");
+			self->AddLine(L"A Hai`", L"The firewall is still active. Hack all four terminals to breach the quarantine zone.\nDon't let my buggy code beat you!");
 		}
 		else {
-			self->AddLine(L"A Hai`", L"The gate is open! The root data is right ahead. Good luck out there, traveler!");
+			self->AddLine(L"A Hai`", L"The gate is open! The root data is right ahead.\nEnd that rogue process and get us out of here!");
 		}
 		return nullptr;
 		});
@@ -482,7 +484,10 @@ void Demo::BossWorldScene::OnTerminalHacked(int terminalID) {
 			mainTerminal->SetHackedStatus(true);
 			mainTerminal->ShowStatusMessage("Access granted. Core unlocked.", 3.0f);
 
-			QuestManager::GetInstance()->NotifyEvent("TERMINAL_HACKED", "4", this->player.get());
+			auto result = QuestManager::GetInstance()->NotifyEvent("TERMINAL_HACKED", "4", this->player.get());
+			if (result.hasReward && this->popUpMessage) {
+				this->popUpMessage->ShowMessage(L"(+) " + result.rewardMessage, 5.0f);
+			}
 
 			audio->Play("hack_success");
 			if (bossGateCollider) {
@@ -512,7 +517,10 @@ void Demo::BossWorldScene::OnTerminalHacked(int terminalID) {
 		hackMachines[currentHackStep]->ShowStatusMessage(msg, 3.0f);
 		currentHackStep++;
 		audio->Play("hack_success");
-		QuestManager::GetInstance()->NotifyEvent("TERMINAL_HACKED", std::to_string(currentHackStep), this->player.get());
+		auto result = QuestManager::GetInstance()->NotifyEvent("TERMINAL_HACKED", std::to_string(currentHackStep), this->player.get());
+		if (result.hasReward && this->popUpMessage) {
+			this->popUpMessage->ShowMessage(L"(+) " + result.rewardMessage, 5.0f);
+		}
 	}
 	else {
 		currentHackStep = 0;

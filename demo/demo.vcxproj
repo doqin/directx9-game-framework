@@ -837,6 +837,8 @@
     <Media Include="assets\audio\power_up1.wav" />
     <Media Include="assets\audio\power_up2.wav" />
     <Media Include="assets\audio\power_up3.wav" />
+    <Media Include="assets\audio\quest_active.wav" />
+    <Media Include="assets\audio\quest_completed.wav" />
     <Media Include="assets\audio\secret-loop.wav" />
     <Media Include="assets\audio\sky-loop.wav" />
     <Media Include="assets\audio\step_concrete1.wav" />

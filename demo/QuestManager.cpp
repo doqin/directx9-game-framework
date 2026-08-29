@@ -96,7 +96,7 @@ void Demo::QuestManager::Init(DX9GF::GraphicsDevice* gd, std::shared_ptr<DX9GF::
 	if (!btnToggle) {
 		btnToggle = std::make_shared<IconButton>(uiTransformManager, 0, 0,
 			static_cast<int>(ARROW_SIZE), static_cast<int>(ARROW_SIZE), uiTex, 3);
-		btnToggle->SetSpriteCoords(240, 96, 16, 16, 0);
+		btnToggle->SetSpriteCoords(240, 96, 16, 16, 0); //TODO: Change this button
 		btnToggle->SetSpriteScale(ARROW_SIZE / 16.0f, ARROW_SIZE / 16.0f);
 		btnToggle->SetOnReleaseLeft([this](DX9GF::ITrigger*) {
 			isExpanded = !isExpanded;
@@ -226,6 +226,7 @@ void Demo::QuestManager::AcceptQuest(const std::string& questId) {
 	if (questDatabase.count(questId)) {
 		SetQuest(L"Quest: " + questDatabase[questId].currentObjective);
 	}
+	DX9GF::AudioManager::GetInstance()->Play("quest_active", false, 0.5f);
 }
 
 Demo::QuestEventResult Demo::QuestManager::NotifyEvent(const std::string& eventType, const std::string& targetId, Player* player) {
@@ -243,7 +244,7 @@ Demo::QuestEventResult Demo::QuestManager::NotifyEvent(const std::string& eventT
 			auto* bp = ItemData::GetInstance()->GetItemBlueprint(10);
 			std::wstring msg = L"You found: ";
 			if (bp) msg += bp->GetName();
-
+			DX9GF::AudioManager::GetInstance()->Play("quest_completed", false, 0.8f);
 			return { true, msg };
 		}
 	}
@@ -253,12 +254,16 @@ Demo::QuestEventResult Demo::QuestManager::NotifyEvent(const std::string& eventT
 			int step = std::stoi(targetId);
 			if (questDatabase.count("Quest_BossWorld")) {
 				if (step >= 4) {
-					questDatabase["Quest_BossWorld"].currentObjective = L"Defeat the Boss!";
+					questStates["Quest_BossWorld"] = QuestState::Completed;
+					questDatabase["Quest_BossWorld"].currentObjective = L"Terminals Hacked! The Gate is open.";
+					SetQuest(L"Quest: " + questDatabase["Quest_BossWorld"].currentObjective);
+					DX9GF::AudioManager::GetInstance()->Play("quest_completed", false, 0.8f);
+					return { true, L"Quest Completed: System Override" };
 				}
 				else {
 					questDatabase["Quest_BossWorld"].currentObjective = L"Activate terminals: " + std::to_wstring(step) + L"/4";
+					SetQuest(L"Quest: " + questDatabase["Quest_BossWorld"].currentObjective);
 				}
-				SetQuest(L"Quest: " + questDatabase["Quest_BossWorld"].currentObjective);
 			}
 		}
 	}
@@ -292,7 +297,7 @@ Demo::QuestEventResult Demo::QuestManager::NotifyEvent(const std::string& eventT
 				questDatabase["Quest_ThreadAlley_Start"].currentObjective = L"Alley is safe.";
 				SetQuest(L"Quest: " + questDatabase["Quest_ThreadAlley_Start"].currentObjective);
 			}
-
+			DX9GF::AudioManager::GetInstance()->Play("quest_completed", false, 0.8f);
 			return { true, L"50 Gold - Quest Completed: Defeated the Trojan" };
 		}
 	}
@@ -305,7 +310,7 @@ Demo::QuestEventResult Demo::QuestManager::NotifyEvent(const std::string& eventT
 				questDatabase["Quest_Tutorial"].currentObjective = L"First Encounter - Completed!";
 				SetQuest(L"Quest: " + questDatabase["Quest_Tutorial"].currentObjective);
 			}
-
+			DX9GF::AudioManager::GetInstance()->Play("quest_completed", false, 0.8f);
 			player->AddGold(26);
 			return { true, L"26 Gold - Quest Completed: First Encounter" };
 		}

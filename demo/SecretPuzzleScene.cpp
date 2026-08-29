@@ -639,16 +639,18 @@ void Demo::SecretPuzzleScene::StartCupidBattle()
 	auto battleScene = new CustomBattleScene(demoGame, player, app->GetScreenWidth(), app->GetScreenHeight(), forcedEnemyMap);
 
 	battleScene->SetOnVictoryCallback([this]() {
-		this->isBossDead = true;
-		if (cupidNPC) cupidNPC->SetPhase(CupidNPC::Phase::Defeated);
+		this->commandBuffer->PushCommand(std::make_shared<DX9GF::CustomCommand>([this](std::function<void()> markFinished) {
+			this->isBossDead = true;
+			if (this->cupidNPC) this->cupidNPC->SetPhase(CupidNPC::Phase::Defeated);
 
-		auto result = QuestManager::GetInstance()->NotifyEvent("ENTITY_DEAD", "SecretBoss_Pacman", this->player.get());
+			auto result = QuestManager::GetInstance()->NotifyEvent("ENTITY_DEAD", "SecretBoss_Pacman", this->player.get());
 
-		if (result.hasReward) {
-			if (this->popUpMessage) {
+			if (result.hasReward && this->popUpMessage) {
 				this->popUpMessage->ShowMessage(L"(+) " + result.rewardMessage, 5.0f);
 			}
-		}
+
+			markFinished();
+			}));
 		});
 
 	battleScene->SetCustomBackgroundDraw([this](DX9GF::GraphicsDevice* gd, unsigned long long deltaTime) { DrawBackground(gd, deltaTime); });

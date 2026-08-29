@@ -117,6 +117,8 @@ void Demo::Game::Init()
 	audio->RegisterBank("power_up", { "power_up1", "power_up2", "power_up3" });
 
 	audio->Load("checkpoint", IDR_CHECKPOINT);
+	audio->Load("quest_active", IDR_QUEST_ACTIVE);
+	audio->Load("quest_completed", IDR_QUEST_COMPLETED);
 
 	//load maps bgm
 	audio->Load("bgm_tutorial", IDR_BGM_TUTORIAL);
