@@ -20,6 +20,8 @@ namespace Demo {
 		std::shared_ptr<DX9GF::CommandBuffer> drawBuffer)
 	{
 		INPC::Init(gd, camera, p, cm, font, drawBuffer);
+		this->uiOffsetY = 70.0f;
+		this->markerOffsetY = 55.0f;
 		this->gd = gd;
 		this->colliderManager = cm;
 

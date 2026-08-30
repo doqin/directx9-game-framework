@@ -217,6 +217,7 @@
     </ClCompile>
     <ClCompile Include="BossWorldScene.cpp" />
     <ClCompile Include="CardShop.cpp" />
+    <ClCompile Include="ChapterTitleUI.cpp" />
     <ClCompile Include="CreditsScene.cpp" />
     <ClCompile Include="CupidEnemy.cpp" />
     <ClCompile Include="CustomBattleScene.cpp" />
@@ -264,7 +265,9 @@
     <ClCompile Include="GameItems.cpp" />
     <ClCompile Include="HackTerminal.cpp" />
     <ClCompile Include="AuthTerminal.cpp" />
+    <ClCompile Include="NPC.cpp" />
     <ClCompile Include="PasswordMenu.cpp" />
+    <ClCompile Include="QuestMarker.cpp" />
     <ClCompile Include="TrojanNPC.cpp" />
     <ClCompile Include="KeyeproNPC.cpp" />
     <ClCompile Include="CupidNPC.cpp" />
@@ -353,6 +356,7 @@
     <ClInclude Include="BattleEncounter.h" />
     <ClInclude Include="BossWorldScene.h" />
     <ClInclude Include="CardShop.h" />
+    <ClInclude Include="ChapterTitleUI.h" />
     <ClInclude Include="CreditsScene.h" />
     <ClInclude Include="CupidEnemy.h" />
     <ClInclude Include="CustomBattleScene.h" />
@@ -386,7 +390,9 @@
     <ClInclude Include="GameItems.h" />
     <ClInclude Include="HackTerminal.h" />
     <ClInclude Include="AuthTerminal.h" />
+    <ClInclude Include="NPC.h" />
     <ClInclude Include="PasswordMenu.h" />
+    <ClInclude Include="QuestMarker.h" />
     <ClInclude Include="TrojanNPC.h" />
     <ClInclude Include="KeyeproNPC.h" />
     <ClInclude Include="CupidNPC.h" />
@@ -475,6 +481,7 @@
     <None Include="assets\icon.tsx">
       <DeploymentContent>true</DeploymentContent>
     </None>
+    <None Include="assets\kako.aseprite" />
     <None Include="assets\placeholder-round-projectile.aseprite" />
     <None Include="assets\SecretPuzzle.tmx">
       <DeploymentContent>true</DeploymentContent>
@@ -606,6 +613,9 @@
       <DeploymentContent>true</DeploymentContent>
     </Image>
     <Image Include="assets\items.png">
+      <DeploymentContent>true</DeploymentContent>
+    </Image>
+    <Image Include="assets\kako-Sheet.png">
       <DeploymentContent>true</DeploymentContent>
     </Image>
     <Image Include="assets\kernel.png">
@@ -827,6 +837,8 @@
     <Media Include="assets\audio\power_up1.wav" />
     <Media Include="assets\audio\power_up2.wav" />
     <Media Include="assets\audio\power_up3.wav" />
+    <Media Include="assets\audio\quest_active.wav" />
+    <Media Include="assets\audio\quest_completed.wav" />
     <Media Include="assets\audio\secret-loop.wav" />
     <Media Include="assets\audio\sky-loop.wav" />
     <Media Include="assets\audio\step_concrete1.wav" />

@@ -37,6 +37,12 @@ void Demo::BossWorldScene::Init() {
 	commandBuffer = std::make_shared<DX9GF::CommandBuffer>();
 	font = std::make_shared<DX9GF::Font>(game->GetGraphicsDevice(), L"StatusPlz", 16);
 
+	chapterTitleUI = std::make_shared<ChapterTitleUI>(font);
+
+	popUpMessage = std::make_shared<Demo::PopUpMessage>(transformManager, game);
+	popUpMessage->SetLocalPosition(0.0f, 0.0f);
+	popUpMessage->Init(game->GetGraphicsDevice(), &this->uiCamera);
+
 	map = std::make_shared<DX9GF::Map>(game->GetGraphicsDevice());
 	map->Create(transformManager, colliderManager, "./assets/BossMatrix.tmx");
 
@@ -46,23 +52,63 @@ void Demo::BossWorldScene::Init() {
 	//	//i removed the mimic here
 	//	}, drawBuffer, commandBuffer, &isGamePaused, & this->uiCamera, [this](DX9GF::GraphicsDevice* gd, unsigned long long deltaTime) { DrawBackground(gd, deltaTime, currentIslandID); }));
 
+	//nps init
+	NPCConfig daudauConfig = { L"assets/daudau-Sheet.png", 32, 32, 5, 12, 24.f, 8.f, 12.f };
+
 	//dialogue with NPC, rambles about lore regarding the optional battle to get the key, and hints at the correct color sequence for hacking the terminal
-	npcHint = std::make_shared<DauDauNPC>(transformManager, -950.0f, -220.0f);
+	auto npcHint = std::make_shared<NPC>(transformManager, -950.0f, -220.0f, daudauConfig);
 	npcHint->Init(game->GetGraphicsDevice(), &camera, player, colliderManager, font, drawBuffer);
-	npcHint->AddLine(L"Veteran Debugger", L"Halt, traveler. You shouldn't be here.");
-	npcHint->AddLine(L"Veteran Debugger", L"This sector is deeply corrupted-a graveyard of unresolved bugs and dead code.");
-	npcHint->AddLine(L"Player", L"What exactly happened here?");
-	npcHint->AddLine(L"Veteran Debugger", L"What happened? Ambition met reality.");
-	npcHint->AddLine(L"Veteran Debugger", L"Teams of debuggers rushed in, thinking they could fix the core.");
-	npcHint->AddLine(L"Veteran Debugger", L"They couldn't agree on a protocol. The system panicked, spawned massive anomalies, \nand wiped them out.");
+	npcHint->RegisterVoice(L"Veteran Debugger", "bleep12");
+	npcHint->SetInteractLogic([](NPC* self) -> std::function<void()> {
+		self->AddLine(L"Veteran Debugger", L"Halt, traveler. You shouldn't be here.");
+		self->AddLine(L"Veteran Debugger", L"This sector is deeply corrupted-a graveyard of unresolved bugs and dead code.");
+		self->AddLine(L"Player", L"What exactly happened here?");
+		self->AddLine(L"Veteran Debugger", L"What happened? Ambition met reality.");
+		self->AddLine(L"Veteran Debugger", L"Teams of debuggers rushed in, thinking they could fix the core.");
+		self->AddLine(L"Veteran Debugger", L"They couldn't agree on a protocol. The system panicked, spawned massive anomalies, \nand wiped them out.");
 
-	npcHint->AddLine(L"Veteran Debugger", L"I keep hearing the old admin's logs echoing in my head...");
-	npcHint->AddLine(L"Veteran Debugger", L"...'The red sun sets over the blue ocean, giving life to the green earth, until it fades into\norange autumn'...");
-	npcHint->AddLine(L"Veteran Debugger", L"Bah, probably just corrupted junk data. Don't mind my rambling.");
+		self->AddLine(L"Veteran Debugger", L"I keep hearing the old admin's logs echoing in my head...");
+		self->AddLine(L"Veteran Debugger", L"...'The red sun sets over the blue ocean, giving life to the green earth, until it fades into\norange autumn'...");
+		self->AddLine(L"Veteran Debugger", L"Bah, probably just corrupted junk data. Don't mind my rambling.");
+		return nullptr;
+		});
+	mapNPCs.push_back(npcHint);
 
-	dauDauSpawn = std::make_shared<DauDauNPC>(transformManager, 300.f, 230.f);
-	dauDauSpawn->Init(game->GetGraphicsDevice(), &camera, player, colliderManager, font, drawBuffer);
-	dauDauSpawn->AddLine(L"Dau Dau", L"Welcome to the boss sector. Activate all four terminals to unlock the gate.");
+	NPCConfig hngocConfig = { L"assets/daudau-Sheet.png", 32, 32, 5, 12, 24.f, 8.f, 12.f }; //TODO: Change HNgoc npc's asset
+	auto hNgoc = std::make_shared<NPC>(transformManager, 300.f, 230.f, hngocConfig);
+	hNgoc->AttachQuestMarker("Quest_BossWorld", Demo::QuestMarkerRole::Giver);
+	hNgoc->Init(game->GetGraphicsDevice(), &camera, player, colliderManager, font, drawBuffer);
+	hNgoc->RegisterVoice(L"A Hai`", "bleep12");
+	hNgoc->SetInteractLogic([](NPC* self) -> std::function<void()> {
+		auto qState = QuestManager::GetInstance()->GetQuestState("Quest_BossWorld");
+
+		if (qState == Demo::QuestState::Locked) {
+			self->AddLine(L"A Hai`", L"You made it to the Core Sector! Wait... you're not a compiled asset. Are you a player?");
+			self->AddLine(L"Player", L"Who are you?");
+			self->AddLine(L"A Hai`", L"Just a dev who flew too close to the sun. I coded the entity behind that gate to manage root data,\nbut my logic was flawed.");
+			self->AddLine(L"A Hai`", L"It gained sentience, went rogue, and trapped me in my own system.");
+			self->AddLine(L"Player", L"So I just need to go in and delete it to get us out?");
+			self->AddLine(L"A Hai`", L"If only it were that simple! It went completely paranoid and sealed itself inside a heavy quarantine zone.");
+			self->AddLine(L"A Hai`", L"To force the gate open, you must hack the four security terminals scattered around this area.\nPlease, clean up my mess!");
+
+			return []() {
+				std::vector<std::pair<std::wstring, std::function<void()>>> buttons = {
+					{ L"Yes(Y)", []() { QuestManager::GetInstance()->AcceptQuest("Quest_BossWorld"); } },
+					{ L"No(N)", []() {} }
+				};
+				PopupManager::GetInstance()->Show("stepped_blue", L"New Quest", L"Hack the 4 Terminals?", buttons);
+				};
+		}
+		else if (qState == Demo::QuestState::Active) {
+			self->AddLine(L"A Hai`", L"The firewall is still active. Hack all four terminals to breach the quarantine zone.\nDon't let my buggy code beat you!");
+		}
+		else {
+			self->AddLine(L"A Hai`", L"The gate is open! The root data is right ahead.\nEnd that rogue process and get us out of here!");
+		}
+		return nullptr;
+		});
+	mapNPCs.push_back(hNgoc);
+
 
 	//standing guard just past the gate; talks once, then the fight starts when he's done talking
 	keyeproNPC = std::make_shared<KeyeproNPC>(transformManager, 752.f, -336.f);
@@ -137,7 +183,6 @@ void Demo::BossWorldScene::Init() {
 	PopupManager::GetInstance()->Init(game->GetGraphicsDevice(), borderTex, uiTex, font);
 	QuestManager::GetInstance()->SetVirtualResolution(game->GetVirtualWidth(), game->GetVirtualHeight());
 	QuestManager::GetInstance()->Init(game->GetGraphicsDevice(), transformManager, &this->uiCamera, font);
-	QuestManager::GetInstance()->SetQuest(L"Quest: ???");
 
 	savePoints.push_back(std::make_shared<SavePoint>(transformManager, 192.f, 320.f));
 	savePoints.back()->Init(game->GetGraphicsDevice(), &camera, player, colliderManager, saveManager, font, drawBuffer);
@@ -179,8 +224,14 @@ void Demo::BossWorldScene::Init() {
 
 		//token spawning area
 		Demo::EventType generatedEvent = Demo::EventType::None;
-		if (enemy->GetEncounterData().enemyTypes.size() >= 2 && Demo::RNG::Range(1, 100) <= 30) {
-			generatedEvent = (Demo::RNG::Range(1, 100) <= 50) ? Demo::EventType::Gold : Demo::EventType::Energy;
+
+		if (Demo::RNG::Range(1, 100) <= 50) {
+			if (enemy->GetEncounterData().enemyTypes.size() >= 2) {
+				generatedEvent = (Demo::RNG::Range(1, 100) <= 50) ? Demo::EventType::Gold : Demo::EventType::Energy;
+			}
+			else {
+				generatedEvent = Demo::EventType::Gold;
+			}
 		}
 		enemy->SetEventState(generatedEvent);
 
@@ -432,10 +483,13 @@ void Demo::BossWorldScene::OnTerminalHacked(int terminalID) {
 			isBossDoorUnlocked = true;
 			mainTerminal->SetHackedStatus(true);
 			mainTerminal->ShowStatusMessage("Access granted. Core unlocked.", 3.0f);
-			QuestManager::GetInstance()->SetQuest(L"Quest: Defeat the malware!");
+
+			auto result = QuestManager::GetInstance()->NotifyEvent("TERMINAL_HACKED", "4", this->player.get());
+			if (result.hasReward && this->popUpMessage) {
+				this->popUpMessage->ShowMessage(L"(+) " + result.rewardMessage, 5.0f);
+			}
 
 			audio->Play("hack_success");
-
 			if (bossGateCollider) {
 				colliderManager->Remove(bossGateCollider);
 				bossGateCollider.reset();
@@ -463,7 +517,10 @@ void Demo::BossWorldScene::OnTerminalHacked(int terminalID) {
 		hackMachines[currentHackStep]->ShowStatusMessage(msg, 3.0f);
 		currentHackStep++;
 		audio->Play("hack_success");
-		QuestManager::GetInstance()->SetQuest(L"Quest: Activate the terminals: " + std::to_wstring(currentHackStep) + L"/4");
+		auto result = QuestManager::GetInstance()->NotifyEvent("TERMINAL_HACKED", std::to_string(currentHackStep), this->player.get());
+		if (result.hasReward && this->popUpMessage) {
+			this->popUpMessage->ShowMessage(L"(+) " + result.rewardMessage, 5.0f);
+		}
 	}
 	else {
 		currentHackStep = 0;
@@ -477,22 +534,25 @@ void Demo::BossWorldScene::OnTerminalHacked(int terminalID) {
 			}
 		}
 		audio->Play("hack_fail");
-		QuestManager::GetInstance()->SetQuest(L"Quest: Activate the terminals: " + std::to_wstring(currentHackStep) + L"/4");
+		QuestManager::GetInstance()->NotifyEvent("TERMINAL_HACKED", "0", this->player.get());
 	}
 }
 
 void Demo::BossWorldScene::Update(unsigned long long deltaTime) {
 	PopupManager::GetInstance()->SetUICamera(&this->uiCamera);
 	QuestManager::GetInstance()->SetUICamera(&this->uiCamera);
-	QuestManager::GetInstance()->SetQuest(
-		!questGiven ? L"Quest: ???"
-		: (isBossDoorUnlocked
-			? L"Quest: Defeat the malware!"
-			: L"Quest: Activate the terminals: " + std::to_wstring(currentHackStep) + L"/4")
-	);
 	QuestManager::GetInstance()->SetVirtualResolution(game->GetVirtualWidth(), game->GetVirtualHeight());
 	QuestManager::GetInstance()->SetVisible(!(inventoryMenu && inventoryMenu->IsOpen()));
 	QuestManager::GetInstance()->Update(deltaTime);
+	if (!hasSeenChapterIntro && !isTransitioning) {
+		hasSeenChapterIntro = true;
+		if (chapterTitleUI) {
+			chapterTitleUI->Show(L"CHAPTER III: THE OVERFLOW", L"< Critical: Memory Leak >", 4.0f, 0xFFFF0000, 0xFFFFA500, 0xFFFFFFFF);
+		}
+	}
+	if (chapterTitleUI) {
+		chapterTitleUI->Update(deltaTime);
+	}
 	auto OpenChestWithDialog = [&](std::shared_ptr<TreasureChestNPC>& chest) {
 		auto given = chest->Open(player.get());
 		if (given.empty()) return;
@@ -537,29 +597,26 @@ void Demo::BossWorldScene::Update(unsigned long long deltaTime) {
 		isGamePaused = true;
 	}
 
-	if (npcHint) {
-		npcHint->Update(deltaTime);
-		if (!currentConversation && npcHint->CanInteract() && inpMan->KeyPress(SettingsManager::GetInstance()->GetKeybind("INTERACT"))) {
-			auto [sw, sh] = camera.GetScreenResolution();
-			currentConversation = std::make_shared<IConversation>(std::make_shared<DX9GF::FontSprite>(font.get()), sw, sh);
-			for (auto& line : npcHint->GetDialogueLines()) {
-				currentConversation->AddLine(line);
-			}
-		}
+	if (popUpMessage) {
+		popUpMessage->Update(deltaTime);
 	}
 
-	if (dauDauSpawn) {
-		dauDauSpawn->Update(deltaTime);
-		if (!currentConversation && dauDauSpawn->CanInteract() && inpMan->KeyPress(SettingsManager::GetInstance()->GetKeybind("INTERACT"))) {
+	//npcs init
+	for (auto& npc : mapNPCs) {
+		npc->Update(deltaTime);
+		if (!currentConversation && npc->CanInteract() && inpMan->KeyPress(SettingsManager::GetInstance()->GetKeybind("INTERACT"))) {
+			npc->ClearLines();
+			auto onEndCallback = npc->TriggerInteract();
+
+			activeNPC = npc;
+			activeNPC->SetOnDialogueEnd(onEndCallback);
+
 			auto [sw, sh] = camera.GetScreenResolution();
 			currentConversation = std::make_shared<IConversation>(std::make_shared<DX9GF::FontSprite>(font.get()), sw, sh);
-			for (auto& line : dauDauSpawn->GetDialogueLines()) {
+			for (auto& line : npc->GetDialogueLines()) {
 				currentConversation->AddLine(line);
 			}
-			questGiven = true;
-			QuestManager::GetInstance()->SetQuest(isBossDoorUnlocked
-				? L"Quest: Defeat the malware!"
-				: L"Quest: Activate the terminals: " + std::to_wstring(currentHackStep) + L"/4");
+			break;
 		}
 	}
 
@@ -573,16 +630,23 @@ void Demo::BossWorldScene::Update(unsigned long long deltaTime) {
 	if (currentConversation) {
 		isGamePaused = true;
 		currentConversation->Execute(deltaTime);
+
 		if (currentConversation->IsFinished()) {
-			currentConversation = nullptr;
-			// Clear before invoking: the callback may queue the next conversation.
+			if (activeNPC && activeNPC->GetOnDialogueEnd()) {
+				activeNPC->GetOnDialogueEnd()();
+			}
+
 			if (onConversationEnd) {
 				auto callback = std::move(onConversationEnd);
 				onConversationEnd = nullptr;
 				callback();
 			}
+
+			currentConversation = nullptr;
+			activeNPC = nullptr;
 		}
-	}
+	}	
+	
 	if (rustyChest && !rustyChest->GetIsOpened()) {
 		rustyChest->Update(deltaTime);
 
@@ -590,7 +654,7 @@ void Demo::BossWorldScene::Update(unsigned long long deltaTime) {
 			auto [sw, sh] = camera.GetScreenResolution();
 			currentConversation = std::make_shared<IConversation>(std::make_shared<DX9GF::FontSprite>(font.get()), sw, sh);
 
-			auto dialogBuilder = std::make_shared<DauDauNPC>(transformManager, 0, 0);
+			auto dialogBuilder = std::make_shared<NPC>(transformManager, 0, 0, NPCConfig{});
 
 			if (player->GetInventoryItems().HasItem(10)) {
 				dialogBuilder->AddLine(L"Rusty Chest", L"Wait, is that the key? NOOO! YOU ROB ME!!!");
@@ -703,9 +767,11 @@ void Demo::BossWorldScene::DrawWorld(unsigned long long deltaTime) {
 		for (auto& m : hackMachines) depthNodes.push_back({ m->GetWorldY(), [&, m]() { m->Draw(camera, deltaTime); } });
 		if (mainTerminal) depthNodes.push_back({ mainTerminal->GetWorldY(), [&]() { mainTerminal->Draw(camera, deltaTime); } });
 
-		if (dauDauSpawn) depthNodes.push_back({ dauDauSpawn->GetWorldY(), [&]() { dauDauSpawn->Draw(camera, deltaTime); } });
+		for (auto& npc : mapNPCs) {
+			depthNodes.push_back({ npc->GetWorldY(), [&, npc]() { npc->Draw(camera, deltaTime); } });
+		}
+
 		if (keyeproNPC) depthNodes.push_back({ keyeproNPC->GetWorldY(), [&]() { keyeproNPC->Draw(camera, deltaTime); } });
-		if (npcHint) depthNodes.push_back({ npcHint->GetWorldY(), [&]() { npcHint->Draw(camera, deltaTime); } });
 		if (rustyChest) depthNodes.push_back({ rustyChest->GetWorldY(), [&]() { rustyChest->Draw(camera, deltaTime); } });
 		for (auto& savePoint : savePoints) depthNodes.push_back({ savePoint->GetWorldY(), [&, savePoint]() { savePoint->Draw(camera, deltaTime); } });
 		for (auto& shopPoint : shopPoints) depthNodes.push_back({ shopPoint->GetWorldY(), [&, shopPoint]() { shopPoint->Draw(camera, deltaTime); } });
@@ -729,7 +795,10 @@ void Demo::BossWorldScene::DrawUI(unsigned long long deltaTime)
 	auto gd = game->GetGraphicsDevice();
 	if (SUCCEEDED(gd->BeginDraw())) {
 
-		if (npcHint) npcHint->DrawUI(&this->uiCamera, deltaTime);
+		for (auto& npc : mapNPCs) {
+			npc->DrawUI(&this->uiCamera, deltaTime);
+		}
+
 		if (rustyChest) rustyChest->DrawUI(&this->uiCamera, deltaTime);
 		for (auto& savePoint : savePoints) savePoint->DrawUI(&this->uiCamera, deltaTime);
 		for (auto& shopPoint : shopPoints) shopPoint->DrawUI(&this->uiCamera, deltaTime);
@@ -745,7 +814,6 @@ void Demo::BossWorldScene::DrawUI(unsigned long long deltaTime)
 			draggableManager->Draw(deltaTime);
 		}
 		if (inventoryMenu) inventoryMenu->DrawKeyboardReticle(gd, deltaTime);
-		if (dauDauSpawn) dauDauSpawn->DrawUI(&this->uiCamera, deltaTime);
 		if (keyeproNPC && keyeproNPC->GetPhase() != Demo::KeyeproNPC::Phase::Defeated) keyeproNPC->DrawUI(&this->uiCamera, deltaTime);
 
 		if (currentConversation) {
@@ -764,6 +832,13 @@ void Demo::BossWorldScene::DrawUI(unsigned long long deltaTime)
 			DX9GF::InputManager::GetInstance()->DrawCursor(&this->uiCamera, deltaTime);
 		}
 
+		if (popUpMessage) {
+			popUpMessage->Draw(deltaTime);
+		}
+
+		if (chapterTitleUI) {
+			chapterTitleUI->Draw(&this->uiCamera, deltaTime);
+		}
 		ImGui::Render();
 		ImGui_ImplDX9_RenderDrawData(ImGui::GetDrawData());
 
@@ -839,11 +914,10 @@ void Demo::BossWorldScene::GenerateSaveData(nlohmann::json& outData) {
 		{"currentHackStep", currentHackStep},
 		{"isBossDoorUnlocked", isBossDoorUnlocked},
 		{"hasGottenUselessItem", hasGottenUselessItem},
-		{"isMimicDead", isMimicDead},
 		{"isFinalBossDead", isFinalBossDead},
-		{"isChestOpened", rustyChest ? rustyChest->GetIsOpened() : false},
-		{"questGiven", questGiven}
+		{"isChestOpened", rustyChest ? rustyChest->GetIsOpened() : false}
 	};
+	outData["hasSeenChapterIntro"] = hasSeenChapterIntro;
 
 	if (keyeproNPC) outData["keyeproNPC"] = { {"phase", static_cast<int>(keyeproNPC->GetPhase())} };
 
@@ -867,18 +941,17 @@ void Demo::BossWorldScene::RestoreSaveData(const nlohmann::json& inData) {
 	camera.SetPosition(inData["camera"]["x"], inData["camera"]["y"]);
 	camera.SetZoom(inData["camera"]["zoom"]);
 	currentIslandID = inData.value("currentIslandID", 1);
+	hasSeenChapterIntro = inData.value("hasSeenChapterIntro", false);
 
 	if (inData.contains("puzzle")) {
 		currentHackStep = inData["puzzle"]["currentHackStep"];
 		isBossDoorUnlocked = inData["puzzle"]["isBossDoorUnlocked"];
-		questRestoredFromSave = true;
 		hasGottenUselessItem = inData["puzzle"]["hasGottenUselessItem"];
-		isMimicDead = inData.value("puzzle", nlohmann::json::object()).value("isMimicDead", false);
 		isFinalBossDead = inData.value("puzzle", nlohmann::json::object()).value("isFinalBossDead", false);
-		questGiven = inData["puzzle"].value("questGiven", false);
 		if (rustyChest) rustyChest->SetOpened(inData.value("puzzle", nlohmann::json::object()).value("isChestOpened", false));
 	}
 
+	QuestManager::GetInstance()->NotifyEvent("TERMINAL_HACKED", std::to_string(currentHackStep), player.get());
 	if (isBossDoorUnlocked) {
 		mainTerminal->SetHackedStatus(true);
 		if (bossGateCollider) {
@@ -1051,6 +1124,7 @@ void Demo::BossWorldScene::DrawBackground(DX9GF::GraphicsDevice* gd, unsigned lo
 			}
 
 			if (static_cast<int>(timeAcc * 2.0f + i) % 7 == 0) {
+
 				float crackX = bx + (rand() % static_cast<int>(size)) - size / 2.0f;
 				float crackY = by + (rand() % static_cast<int>(size)) - size / 2.0f;
 				gd->DrawLine(crackX - 20, crackY - 20, crackX + 20, crackY + 20, crackColor);

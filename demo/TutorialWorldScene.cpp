@@ -13,7 +13,7 @@
 #include "MapBattleScene.h"
 #include "backends/imgui_impl_dx9.h"
 #include "backends/imgui_impl_win32.h"
-#include "Debug.h"
+
 void Demo::TutorialWorldScene::Init()
 {
 	camera.SetZoom(2.0f);
@@ -24,8 +24,11 @@ void Demo::TutorialWorldScene::Init()
 	player->Init(game->GetGraphicsDevice(), colliderManager.get(), &camera);
 	drawBuffer = std::make_shared<DX9GF::CommandBuffer>();
 	commandBuffer = std::make_shared<DX9GF::CommandBuffer>();
+	popUpMessage = std::make_shared<PopUpMessage>(transformManager, game);
+	popUpMessage->Init(game->GetGraphicsDevice(), &this->uiCamera);
 	map = std::make_shared<DX9GF::Map>(game->GetGraphicsDevice());
 	map->Create(transformManager, colliderManager, "./assets/tutorial.tmx");
+
 	/*map->SetAreaUpdateHandler("triggers", GetRandomEncounterFunc(game, player, {
 		{"DemonEyeEnemy", 40},
 		{"MimicEnemy", 20},
@@ -74,32 +77,80 @@ void Demo::TutorialWorldScene::Init()
 
 	font = std::make_shared<DX9GF::Font>(game->GetGraphicsDevice(), L"StatusPlz", 16);
 
-	npcIntroduction = std::make_shared<DauDauNPC>(transformManager, 167.0f, -18.0f);
+	chapterTitleUI = std::make_shared<ChapterTitleUI>(font);
+
+	//npcs init
+	NPCConfig daudauConfig = { L"assets/daudau-Sheet.png", 32, 32, 5, 12, 24.f, 8.f, 12.f };
+	NPCConfig kakoConfig = { L"assets/kako-Sheet.png", 32, 32, 2, 6, 24.f, 8.f, 12.f };
+
+	auto npcIntroduction = std::make_shared<NPC>(transformManager, 167.0f, -18.0f, kakoConfig);
+	npcIntroduction->AttachQuestMarker("Quest_Tutorial", Demo::QuestMarkerRole::Giver);
 	npcIntroduction->Init(game->GetGraphicsDevice(), &camera, player, colliderManager, font, drawBuffer);
-	npcIntroduction->AddLine(L"Dau Dau", L"Hello! Welcome.");
-	npcIntroduction->AddLine(L"Player", L"Where am I?");
-	npcIntroduction->AddLine(L"Dau Dau", L"This is a cyber world! You will encounter many challenges here. Like digital foes and cyber pirates!");
-	npcIntroduction->AddLine(L"Player", L"How do I get out?");
-	npcIntroduction->AddLine(L"Dau Dau", L"How to escape this world? I don't know.");
-	npcIntroduction->AddLine(L"Dau Dau", L"But I can teach you how to survive here! Explore around a bit and I'll explain further.");
-	npcIntroduction->AddLine(L"Dau Dau", L"By the way, use the floppy disk icon over there to save your progress.");
-	npcExplainingEnemyEncounters = std::make_shared<DauDauNPC>(transformManager, 544.0f, -56.0f);
+	npcIntroduction->RegisterVoice(L"Kako", "bleep28");
+	npcIntroduction->SetInteractLogic([](NPC* self) -> std::function<void()> {
+		auto qState = QuestManager::GetInstance()->GetQuestState("Quest_Tutorial");
+		if (qState == Demo::QuestState::Locked) {
+			self->AddLine(L"Kako", L"Hello! Welcome.");
+			self->AddLine(L"Player", L"Where am I?");
+			self->AddLine(L"Kako", L"This is a cyber world! You will encounter many challenges here. Like digital foes and cyber pirates!");
+			self->AddLine(L"Player", L"How do I get out?");
+			self->AddLine(L"Kako", L"How to escape this world? I don't know.");
+			self->AddLine(L"Kako", L"But I can teach you how to survive here! Explore around a bit and I'll explain further.");
+			self->AddLine(L"Kako", L"By the way, use the floppy disk icon over there to save your progress.");
+
+			//trigger popup to active quest
+			return []() {
+				std::vector<std::pair<std::wstring, std::function<void()>>> buttons = {
+					{ L"Yes(Y)", []() { QuestManager::GetInstance()->AcceptQuest("Quest_Tutorial"); } },
+					{ L"No(N)", []() {} }
+				};
+				PopupManager::GetInstance()->Show("stepped_blue", L"New Quest", L"Accept Beginner's Quest?", buttons);
+				};
+		}
+		else if (qState == Demo::QuestState::Active) {
+			self->AddLine(L"Kako", L"Explore around a bit!");
+		}
+		else {
+			self->AddLine(L"Kako", L"Great job! You know the basics of survival now.");
+		}
+		return nullptr;
+		});
+	mapNPCs.push_back(npcIntroduction);
+
+	auto npcExplainingEnemyEncounters = std::make_shared<NPC>(transformManager, 544.0f, -56.0f, daudauConfig);
 	npcExplainingEnemyEncounters->Init(game->GetGraphicsDevice(), &camera, player, colliderManager, font, drawBuffer);
-	npcExplainingEnemyEncounters->AddLine(L"Dau Dau", L"Look out ahead! See those digital creeps roaming around?");
-	npcExplainingEnemyEncounters->AddLine(L"Dau Dau", L"If they spot you, they will chase you down! Touching them will drag you into a battle.");
-	npcExplainingEnemyEncounters->AddLine(L"Dau Dau", L"You can try to outrun them or hide behind walls to break their line of sight.");
-	npcExplainingEnemyEncounters->AddLine(L"Dau Dau", L"Don't worry, you can run away from battles if you want.\n But you won't get any rewards if you do that!");
-	npcExplainingHealingPoint = std::make_shared<DauDauNPC>(transformManager, 289.0f, -496.0f);
+	npcExplainingEnemyEncounters->RegisterVoice(L"Dau Dau", "bleep12");
+	npcExplainingEnemyEncounters->SetInteractLogic([](NPC* self) -> std::function<void()> {
+		self->AddLine(L"Dau Dau", L"Look out ahead! See those digital creeps roaming around?");
+		self->AddLine(L"Dau Dau", L"If they spot you, they will chase you down! Touching them will drag you into a battle.");
+		self->AddLine(L"Dau Dau", L"You can try to outrun them or hide behind walls to break their line of sight.");
+		self->AddLine(L"Dau Dau", L"Don't worry, you can run away from battles if you want.\n But you won't get any rewards if you do that!");
+		return nullptr;
+		});
+	mapNPCs.push_back(npcExplainingEnemyEncounters);
+
+	auto npcExplainingHealingPoint = std::make_shared<NPC>(transformManager, 289.0f, -496.0f, daudauConfig);
 	npcExplainingHealingPoint->Init(game->GetGraphicsDevice(), &camera, player, colliderManager, font, drawBuffer);
-	npcExplainingHealingPoint->AddLine(L"Dau Dau", L"Hey, you look hurt.");
-	npcExplainingHealingPoint->AddLine(L"Player", L"Yeah, I feel dizzy...");
-	npcExplainingHealingPoint->AddLine(L"Dau Dau", L"This is a healing point. You can use it to restore your health. Just interact with it like you do with me.");
-	npcExplainingHealingPoint->AddLine(L"Dau Dau", L"If you want to heal in combat, you can use healing items! Check out my shop up ahead for some.");
-	npcExplainingPortal = std::make_shared<DauDauNPC>(transformManager, 630.f, -639.f);
+	npcExplainingHealingPoint->RegisterVoice(L"Dau Dau", "bleep12");
+	npcExplainingHealingPoint->SetInteractLogic([](NPC* self) -> std::function<void()> {
+		self->AddLine(L"Dau Dau", L"Hey, you look hurt.");
+		self->AddLine(L"Player", L"Yeah, I feel dizzy...");
+		self->AddLine(L"Dau Dau", L"This is a healing point. You can use it to restore your health. Just interact with it like you do with me.");
+		self->AddLine(L"Dau Dau", L"If you want to heal in combat, you can use healing items! Check out my shop up ahead for some.");
+		return nullptr;
+		});
+	mapNPCs.push_back(npcExplainingHealingPoint);
+
+	auto npcExplainingPortal = std::make_shared<NPC>(transformManager, 630.f, -639.f, daudauConfig);
 	npcExplainingPortal->Init(game->GetGraphicsDevice(), &camera, player, colliderManager, font, drawBuffer);
-	npcExplainingPortal->AddLine(L"Dau Dau", L"This is a portal. It will take you to the next area.");
-	npcExplainingPortal->AddLine(L"Dau Dau", L"Just step on it and you'll be teleported. It's that simple!");
-	npcExplainingPortal->AddLine(L"Dau Dau", L"Beware that portals can be a one way trip!");
+	npcExplainingPortal->RegisterVoice(L"Dau Dau", "bleep12");
+	npcExplainingPortal->SetInteractLogic([](NPC* self) -> std::function<void()> {
+		self->AddLine(L"Dau Dau", L"This is a portal. It will take you to the next area.");
+		self->AddLine(L"Dau Dau", L"Just step on it and you'll be teleported. It's that simple!");
+		self->AddLine(L"Dau Dau", L"Beware that portals can be a one way trip!");
+		return nullptr;
+		});
+	mapNPCs.push_back(npcExplainingPortal);
 
 	auto borderTex = std::make_shared<DX9GF::Texture>(game->GetGraphicsDevice());
 	borderTex->LoadTexture(L"assets/popup-borders.png");
@@ -110,7 +161,6 @@ void Demo::TutorialWorldScene::Init()
 	PopupManager::GetInstance()->Init(game->GetGraphicsDevice(), borderTex, uiTex, font);
 	QuestManager::GetInstance()->SetVirtualResolution(game->GetVirtualWidth(), game->GetVirtualHeight());
 	QuestManager::GetInstance()->Init(game->GetGraphicsDevice(), transformManager, &this->uiCamera, font);
-	QuestManager::GetInstance()->SetQuest(L"Quest: ???");
 
 	savePoints.push_back(std::make_shared<SavePoint>(transformManager, 248.0f, -70.0f));
 	savePoints.back()->Init(game->GetGraphicsDevice(), &camera, player, colliderManager, saveManager, font, drawBuffer);
@@ -199,9 +249,18 @@ void Demo::TutorialWorldScene::Init()
 				auto app = DX9GF::Application::GetInstance();
 				auto sceMan = this->game->GetSceneManager();
 				auto battleScene = new MapBattleScene(this->game, this->player, app->GetScreenWidth(), app->GetScreenHeight(), e->GetEncounterData());
-
-				battleScene->SetOnVictoryCallback([e]() {
+				battleScene->SetOnVictoryCallback([e, this]() {
 					e->SetDefeatedState(true, 180.f);
+					this->commandBuffer->PushCommand(std::make_shared<DX9GF::CustomCommand>([this, e](std::function<void()> markFinished) {
+						auto result = QuestManager::GetInstance()->NotifyEvent("FIRST_ENCOUNTER_DEFEATED", e->GetEnemyID(), this->GetPlayer().get());
+
+						if (result.hasReward) {
+							if (this->popUpMessage) {
+								this->popUpMessage->QueueMessage(this->commandBuffer.get(), L"(+) " + result.rewardMessage, 4.0f);
+							}
+						}
+						markFinished();
+						}));
 					});
 
 				sceMan->InsertScene(sceMan->GetIndex() + 1, battleScene);
@@ -218,7 +277,7 @@ void Demo::TutorialWorldScene::Init()
 		};
 
 	//test kernel
-	spawn(615.f, -170.f, "tutorial_keye_01", { "KeyeEnemy"}, false, false);
+	spawn(615.f, -170.f, "tutorial_keye_01", { "KeyeEnemy" }, false, false);
 	spawn(510.f, -380.f, "tutorial_demoneye_01", { "DemonEyeEnemy" }, false, false);
 	spawn(500.f, -590.f, "tutorial_random_01", { "KeyeEnemy", "DemonEyeEnemy" }, true, false);
 	spawn(-45.f, -409.f, "tutorial_random_02", { "KeyeEnemy", "DemonEyeEnemy", "MimicEnemy" }, true, false);
@@ -256,12 +315,19 @@ void Demo::TutorialWorldScene::Update(unsigned long long deltaTime)
 {
 	PopupManager::GetInstance()->SetUICamera(&this->uiCamera);
 	QuestManager::GetInstance()->SetUICamera(&this->uiCamera);
-	QuestManager::GetInstance()->SetQuest(
-		questStarted ? L"Quest: Fint a way out of this place!" : L"Quest: ???"
-	);
 	QuestManager::GetInstance()->SetVirtualResolution(game->GetVirtualWidth(), game->GetVirtualHeight());
 	QuestManager::GetInstance()->SetVisible(!(inventoryMenu && inventoryMenu->IsOpen()));
 	QuestManager::GetInstance()->Update(deltaTime);
+
+	if (!hasSeenChapterIntro && !isTransitioning) {
+		hasSeenChapterIntro = true;
+		if (chapterTitleUI) {
+			chapterTitleUI->Show(L"CHAPTER I: CLOUD CANOPY", L"< System Initialized >", 4.0f, 0xFFFFFFFF, 0xFFFFF200, 0x000000);
+		}
+	}
+	if (chapterTitleUI) {
+		chapterTitleUI->Update(deltaTime);
+	}
 
 	auto OpenChestWithDialog = [&](std::shared_ptr<TreasureChestNPC>& chest) {
 		auto given = chest->Open(player.get());
@@ -308,57 +374,43 @@ void Demo::TutorialWorldScene::Update(unsigned long long deltaTime)
 		isGamePaused = true;
 	}
 
-	if (npcIntroduction) {
-		npcIntroduction->Update(deltaTime);
-		if (!currentConversation && npcIntroduction->CanInteract() && inpMan->KeyPress(SettingsManager::GetInstance()->GetKeybind("INTERACT"))) {
-			float sw = game->GetVirtualWidth();
-			float sh = game->GetVirtualHeight();
-			currentConversation = std::make_shared<IConversation>(std::make_shared<DX9GF::FontSprite>(font.get()), sw, sh);
-			for (auto& line : npcIntroduction->GetDialogueLines()) {
-				currentConversation->AddLine(line);
-			}
-			QuestManager::GetInstance()->SetQuest(L"Quest: Fint a way out of this place!");
-			questStarted = true;
-		}
+	if (popUpMessage) {
+		popUpMessage->Update(deltaTime);
 	}
-	if (npcExplainingHealingPoint) {
-		npcExplainingHealingPoint->Update(deltaTime);
-		if (!currentConversation && npcExplainingHealingPoint->CanInteract() && inpMan->KeyPress(SettingsManager::GetInstance()->GetKeybind("INTERACT"))) {
+
+	//npcs init
+	for (auto& npc : mapNPCs) {
+		npc->Update(deltaTime);
+
+		if (!currentConversation && npc->CanInteract() && inpMan->KeyPress(SettingsManager::GetInstance()->GetKeybind("INTERACT"))) {
+			npc->ClearLines();
+			auto onEndCallback = npc->TriggerInteract();
+
+			activeNPC = npc;
+			activeNPC->SetOnDialogueEnd(onEndCallback);
+
 			float sw = game->GetVirtualWidth();
 			float sh = game->GetVirtualHeight();
 			currentConversation = std::make_shared<IConversation>(std::make_shared<DX9GF::FontSprite>(font.get()), sw, sh);
-			for (auto& line : npcExplainingHealingPoint->GetDialogueLines()) {
+			for (auto& line : npc->GetDialogueLines()) {
 				currentConversation->AddLine(line);
 			}
-		}
-	}
-	if (npcExplainingEnemyEncounters) {
-		npcExplainingEnemyEncounters->Update(deltaTime);
-		if (!currentConversation && npcExplainingEnemyEncounters->CanInteract() && inpMan->KeyPress(SettingsManager::GetInstance()->GetKeybind("INTERACT"))) {
-			float sw = game->GetVirtualWidth();
-			float sh = game->GetVirtualHeight();
-			currentConversation = std::make_shared<IConversation>(std::make_shared<DX9GF::FontSprite>(font.get()), sw, sh);
-			for (auto& line : npcExplainingEnemyEncounters->GetDialogueLines()) {
-				currentConversation->AddLine(line);
-			}
-		}
-	}
-	if (npcExplainingPortal) {
-		npcExplainingPortal->Update(deltaTime);
-		if (!currentConversation && npcExplainingPortal->CanInteract() && inpMan->KeyPress(SettingsManager::GetInstance()->GetKeybind("INTERACT"))) {
-			float sw = game->GetVirtualWidth();
-			float sh = game->GetVirtualHeight();
-			currentConversation = std::make_shared<IConversation>(std::make_shared<DX9GF::FontSprite>(font.get()), sw, sh);
-			for (auto& line : npcExplainingPortal->GetDialogueLines()) {
-				currentConversation->AddLine(line);
-			}
+			break;
 		}
 	}
 
 	if (currentConversation) {
 		isGamePaused = true;
 		currentConversation->Execute(deltaTime);
-		if (currentConversation->IsFinished()) currentConversation = nullptr;
+
+		if (currentConversation->IsFinished()) {
+			if (activeNPC && activeNPC->GetOnDialogueEnd()) {
+				activeNPC->GetOnDialogueEnd()();
+			}
+
+			currentConversation = nullptr;
+			activeNPC = nullptr;
+		}
 	}
 
 	for (auto& savePoint : savePoints) {
@@ -446,10 +498,10 @@ void Demo::TutorialWorldScene::DrawWorld(unsigned long long deltaTime)
 		};
 		std::vector<DepthNode> depthNodes;
 
-		if (npcIntroduction) depthNodes.push_back({ npcIntroduction->GetWorldY(), [&]() { npcIntroduction->Draw(camera, deltaTime); } });
-		if (npcExplainingHealingPoint) depthNodes.push_back({ npcExplainingHealingPoint->GetWorldY(), [&]() { npcExplainingHealingPoint->Draw(camera, deltaTime); } });
-		if (npcExplainingEnemyEncounters) depthNodes.push_back({ npcExplainingEnemyEncounters->GetWorldY(), [&]() { npcExplainingEnemyEncounters->Draw(camera, deltaTime); } });
-		if (npcExplainingPortal) depthNodes.push_back({ npcExplainingPortal->GetWorldY(), [&]() { npcExplainingPortal->Draw(camera, deltaTime); } });
+		for (auto& npc : mapNPCs) {
+			depthNodes.push_back({ npc->GetWorldY(), [&, npc]() { npc->Draw(camera, deltaTime); } });
+		}
+
 		if (shopPoint_Card) depthNodes.push_back({ shopPoint_Card->GetWorldY(), [&]() { shopPoint_Card->Draw(camera, deltaTime); } });
 		if (shopPoint_BSItem) depthNodes.push_back({ shopPoint_BSItem->GetWorldY(), [&]() { shopPoint_BSItem->Draw(camera, deltaTime); } });
 		if (healingPoint) depthNodes.push_back({ healingPoint->GetWorldY(), [&]() { healingPoint->Draw(camera, deltaTime); } });
@@ -463,7 +515,7 @@ void Demo::TutorialWorldScene::DrawWorld(unsigned long long deltaTime)
 		for (auto& enemy : mapEnemies) {
 			depthNodes.push_back({ enemy->GetWorldY(), [&, enemy]() { enemy->Draw(&camera, deltaTime); } });
 		}
-		
+
 		if (player) depthNodes.push_back({ player->GetWorldY(), [&]() { player->Draw(deltaTime); } });
 
 		std::sort(depthNodes.begin(), depthNodes.end());
@@ -489,14 +541,13 @@ void Demo::TutorialWorldScene::DrawUI(unsigned long long deltaTime)
 		for (auto& chest : treasureChests) {
 			chest->DrawUI(&this->uiCamera, deltaTime);
 		}
-
 		if (shopPoint_Card) shopPoint_Card->DrawUI(&this->uiCamera, deltaTime);
 		if (shopPoint_BSItem) shopPoint_BSItem->DrawUI(&this->uiCamera, deltaTime);
 
-		if (npcIntroduction) npcIntroduction->DrawUI(&this->uiCamera, deltaTime);
-		if (npcExplainingHealingPoint) npcExplainingHealingPoint->DrawUI(&this->uiCamera, deltaTime);
-		if (npcExplainingEnemyEncounters) npcExplainingEnemyEncounters->DrawUI(&this->uiCamera, deltaTime);
-		if (npcExplainingPortal) npcExplainingPortal->DrawUI(&this->uiCamera, deltaTime);
+		for (auto& npc : mapNPCs) {
+			npc->DrawUI(&this->uiCamera, deltaTime);
+		}
+
 		if (playerHUD) playerHUD->Draw(gd, deltaTime);
 		if (inventoryMenu) inventoryMenu->Draw(gd, deltaTime);
 		if (draggableManager && inventoryMenu && inventoryMenu->IsOpen() && inventoryMenu->GetCurrentTab() == Demo::InventoryMenu::Tab::DECK) {
@@ -520,10 +571,16 @@ void Demo::TutorialWorldScene::DrawUI(unsigned long long deltaTime)
 		if (!(inventoryMenu && inventoryMenu->IsInKeyboardMode())) {
 			DX9GF::InputManager::GetInstance()->DrawCursor(&this->uiCamera, deltaTime);
 		}
+		if (popUpMessage) {
+			popUpMessage->Draw(deltaTime);
+		}
+
+		if (chapterTitleUI) {
+			chapterTitleUI->Draw(&this->uiCamera, deltaTime);
+		}
 
 		ImGui::Render();
 		ImGui_ImplDX9_RenderDrawData(ImGui::GetDrawData());
-
 		gd->EndDraw();
 	}
 }
@@ -577,7 +634,7 @@ void Demo::TutorialWorldScene::GenerateSaveData(nlohmann::json& outData)
 		{"zoom", camera.GetZoom()}
 	};
 
-	outData["quest"] = { {"questStarted", questStarted} };
+	outData["hasSeenChapterIntro"] = hasSeenChapterIntro;
 
 	nlohmann::json chestStates = nlohmann::json::array();
 	for (auto& c : treasureChests) chestStates.push_back(c->GetIsOpened());
@@ -600,10 +657,7 @@ void Demo::TutorialWorldScene::RestoreSaveData(const nlohmann::json& inData)
 	camera.SetPosition(inData["camera"]["x"], inData["camera"]["y"]);
 	camera.SetZoom(inData["camera"]["zoom"]);
 
-	if (inData.contains("quest")) {
-		questStarted = inData["quest"].value("questStarted", false);
-		questRestoredFromSave = true;
-	}
+	hasSeenChapterIntro = inData.value("hasSeenChapterIntro", false);
 
 	if (inData.contains("treasureChests")) {
 		auto& arr = inData["treasureChests"];

@@ -1,4 +1,4 @@
-#pragma once
+﻿#pragma once
 #include "DX9GF.h"
 #include "DX9GFExtras.h"
 #include "Game.h"
@@ -8,8 +8,8 @@
 #include "StrikeCard.h"
 #include "ShopPoint.h"
 #include "HealingPoint.h"
-#include "DauDauNPC.h"
 #include "CupidNPC.h"
+#include "NPC.h"
 #include "IConversation.h"
 
 #include "NPC1.h"
@@ -18,11 +18,14 @@
 #include "TreasureChestNPC.h"
 #include "PlayerHUD.h"
 #include "MapEnemy.h"
+#include "PopUpMessage.h"
+#include "ChapterTitleUI.h"
 
 namespace Demo {
 	class SecretPuzzleScene : public DX9GF::IScene, public DX9GF::ISaveable {
 		bool isGamePaused = false;
 		bool isTransitioning = false;
+		bool hasSeenChapterIntro = false;
 		bool isBossDead = false;
 		bool hasSetInitialQuest = false;
 		bool questRestoredFromSave = false;
@@ -46,11 +49,13 @@ namespace Demo {
 		std::shared_ptr<DX9GF::CommandBuffer> drawBuffer;
 		std::shared_ptr<DX9GF::CommandBuffer> commandBuffer;
 		std::shared_ptr<IConversation> currentConversation;
+		std::shared_ptr<ChapterTitleUI> chapterTitleUI;
 		// IConversation has no completion hook, so the scene fires this when the box closes.
 		std::function<void()> onConversationEnd;
 
-		std::shared_ptr<DauDauNPC> dauDau;
-		std::shared_ptr<DauDauNPC> dauDauSpawn;
+		std::vector<std::shared_ptr<NPC>> mapNPCs;
+		std::shared_ptr<INPC> activeNPC = nullptr;
+		std::shared_ptr<PopUpMessage> popUpMessage;
 		std::shared_ptr<CupidNPC> cupidNPC;
 
 		std::vector<std::shared_ptr<TreasureChestNPC>> treasureChests;

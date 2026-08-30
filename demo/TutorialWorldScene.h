@@ -8,22 +8,22 @@
 #include "StrikeCard.h"
 #include "ShopPoint.h"
 #include "HealingPoint.h"
-#include "DauDauNPC.h"
+#include "NPC.h"
 #include "IConversation.h"
 #include "TreasureChestNPC.h"
-
-#include "NPC1.h"
+#include "PopUpMessage.h"
 #include "CardShop.h"
 #include "ItemShop.h"
 #include "PlayerHUD.h"
 #include "MapEnemy.h"
+#include "ChapterTitleUI.h"
+
 namespace Demo {
 	class TutorialWorldScene : public DX9GF::IScene, public DX9GF::ISaveable {
 		bool isGamePaused = false;
 		bool isTransitioning = false;
-		bool questStarted = false;
-		bool hasSetInitialQuest = false;
-		bool questRestoredFromSave = false;
+		bool hasSeenChapterIntro = false;
+
 		Game* game;
 		std::shared_ptr<DX9GF::ColliderManager> colliderManager;
 		std::shared_ptr<DX9GF::TransformManager> transformManager;
@@ -41,12 +41,13 @@ namespace Demo {
 		std::shared_ptr<DX9GF::Map> map;
 		std::shared_ptr<DX9GF::CommandBuffer> drawBuffer;
 		std::shared_ptr<DX9GF::CommandBuffer> commandBuffer;
+		std::shared_ptr<PopUpMessage> popUpMessage;
+		std::shared_ptr<ChapterTitleUI> chapterTitleUI;
 
-		std::shared_ptr<DauDauNPC> npcIntroduction;
-		std::shared_ptr<DauDauNPC> npcExplainingEnemyEncounters;
-		std::shared_ptr<DauDauNPC> npcExplainingHealingPoint;
-		std::shared_ptr<DauDauNPC> npcExplainingPortal;
-		std::shared_ptr<IConversation> currentConversation;	
+		std::shared_ptr<IConversation> currentConversation;
+		std::shared_ptr<INPC> activeNPC = nullptr;
+
+		std::vector<std::shared_ptr<NPC>> mapNPCs;
 
 		std::vector<std::shared_ptr<TreasureChestNPC>> treasureChests;
 		std::vector<std::shared_ptr<MapEnemy>> mapEnemies;
@@ -60,12 +61,11 @@ namespace Demo {
 		void DrawUI(unsigned long long deltaTime) override;
 		void DrawBackground(DX9GF::GraphicsDevice* gd, unsigned long long deltaTime);
 
-		// Inherited via ISaveable
 		std::string GetSaveID() const override;
 		void GenerateSaveData(nlohmann::json& outData) override;
 		void RestoreSaveData(const nlohmann::json& inData) override;
 
 		void GiveTestItems();
-      std::shared_ptr<Player> GetPlayer() const { return player; }
+		std::shared_ptr<Player> GetPlayer() const { return player; }
 	};
 }

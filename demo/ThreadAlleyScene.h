@@ -11,21 +11,22 @@
 #include "TreasureChestNPC.h"
 #include "IConversation.h"
 #include "PlayerHUD.h"
-#include "DauDauNPC.h"
+#include "NPC.h"
 #include "AuthTerminal.h"
 #include "TrojanNPC.h"
 #include "SketchyGuyNPC.h"
 #include "PackOpeningScene.h"
 
+#include "PopUpMessage.h"
 #include "MapEnemy.h"
+#include "ChapterTitleUI.h"
 
 namespace Demo {
 	class ThreadAlleyScene : public DX9GF::IScene, public DX9GF::ISaveable {
 		bool isGamePaused = false;
 		bool isTransitioning = false;
-		bool questStarted = false;
-		bool questRestoredFromSave = false;
-		bool hasSetInitialQuest = false;
+		bool hasSeenChapterIntro = false;
+
 		Game* game;
 		std::shared_ptr<DX9GF::ColliderManager> colliderManager;
 		std::shared_ptr<DX9GF::TransformManager> transformManager;
@@ -43,7 +44,9 @@ namespace Demo {
 		std::shared_ptr<DX9GF::Map> map;
 		std::shared_ptr<DX9GF::CommandBuffer> drawBuffer;
 		std::shared_ptr<DX9GF::CommandBuffer> commandBuffer;
-		std::shared_ptr<DauDauNPC> dauDau;
+
+		std::vector<std::shared_ptr<NPC>> mapNPCs;
+
 		std::shared_ptr<AuthTerminal> authTerminal;
 		std::shared_ptr<TrojanNPC> trojanNPC;
 		std::shared_ptr<SketchyGuyNPC> sketchyGuy;
@@ -51,7 +54,9 @@ namespace Demo {
 		std::string authPassword;
 		bool authTerminalSolved = false;
 
-
+		std::shared_ptr<INPC> activeNPC = nullptr;
+		std::shared_ptr<PopUpMessage> popUpMessage;
+		std::shared_ptr<ChapterTitleUI> chapterTitleUI;
 		std::vector<std::shared_ptr<TreasureChestNPC>> treasureChests;
 		std::shared_ptr<IConversation> currentConversation;
 		// IConversation has no completion hook, so the scene fires this when the box closes.
@@ -71,7 +76,6 @@ namespace Demo {
 		D3DCOLOR bgBaseColor2 = 0xFF793a80;
 
 		void DrawCheckerBackground(DX9GF::GraphicsDevice* gd, unsigned long long deltaTime);
-		std::wstring GetQuestText() const;
 		void StartTrojanConversation();
 		void StartTrojanBattle();
 		void StartSketchyGuyInteraction();
@@ -87,6 +91,6 @@ namespace Demo {
 		void RestoreSaveData(const nlohmann::json& inData) override;
 
 		void GiveTestItems();
-      std::shared_ptr<Player> GetPlayer() const { return player; }
+		std::shared_ptr<Player> GetPlayer() const { return player; }
 	};
 }

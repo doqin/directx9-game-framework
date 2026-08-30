@@ -1,4 +1,4 @@
-#pragma once
+﻿#pragma once
 #include "DX9GF.h"
 #include "DX9GFExtras.h"
 #include "Game.h"
@@ -11,10 +11,20 @@
 #include <vector>
 #include <string>
 #include <utility>
+#include "QuestManager.h"
+
 namespace Demo {
+
+	//manage quests to scroll
+	struct QuestButtonData {
+		std::shared_ptr<TextButton> btn;
+		float originalY;
+		std::string questId;
+	};
+
 	class InventoryMenu {
 	public:
-		enum class Tab { ITEMS, DECK };
+		enum class Tab { ITEMS, DECK, QUEST };
 
 	private:
 		Game* game;
@@ -30,6 +40,7 @@ namespace Demo {
 		// UI Buttons
 		std::shared_ptr<IconButton> btnTabItems;
 		std::shared_ptr<IconButton> btnTabDeck;
+		std::shared_ptr<IconButton> btnTabQuest;
 		std::shared_ptr<IconButton> btnResume;
 		std::shared_ptr<IconButton> btnOptions;
 		std::shared_ptr<IconButton> btnLeaveGame;
@@ -40,7 +51,7 @@ namespace Demo {
 		std::shared_ptr<CardContainer> deckContainer;
 		std::shared_ptr<CardContainer> inventoryContainer;
 
-		//Tab Items
+		// Tab Items
 		std::shared_ptr<DX9GF::Texture> itemSheetTex;
 		std::shared_ptr<DX9GF::Texture> uiTex;
 		std::vector<std::shared_ptr<IconButton>> buffItems;
@@ -63,6 +74,13 @@ namespace Demo {
 		std::shared_ptr<ICard> AcquireCard(const std::string& cardId);
 		bool ItemSignatureChanged();
 
+		// Tab Quests
+		std::vector<QuestButtonData> questButtons;
+		std::string selectedQuestId;
+		float questScrollY = 0.0f;
+		float questListTotalHeight = 0.0f;
+		bool isQuestsDirty = true;
+
 		std::shared_ptr<DX9GF::Texture> backBufferTexture;
 		std::shared_ptr<DX9GF::StaticSprite> backBufferSprite;
 
@@ -83,9 +101,16 @@ namespace Demo {
 		void Toggle();
 		bool IsOpen() const { return isOpen; }
 		bool IsInKeyboardMode() const { return isOpen && keyboardNavigator.IsInKeyboardMode(); }
-		void SetTab(Tab tab) { currentTab = tab; }
+		void SetTab(Tab tab) {
+			currentTab = tab;
+			if (tab == Tab::QUEST) isQuestsDirty = true;
+		}
 		bool IsPendingLeave() const { return pendingLeave; }
 		Tab GetCurrentTab() const { return currentTab; }
+
 		void RefreshItemsUI();
+		void RefreshQuestUI();
+		//utils wraptext
+		std::vector<std::wstring> WrapText(const std::wstring& text, float maxWidth, float scale);
 	};
 }

@@ -20,6 +20,7 @@
 #include "Debug.h"
 #include "imgui.h"
 #include "backends/imgui_impl_dx9.h"
+
 void Demo::ThreadAlleyScene::Init()
 {
 	camera.SetZoom(2.0f);
@@ -34,14 +35,12 @@ void Demo::ThreadAlleyScene::Init()
 	drawBuffer = std::make_shared<DX9GF::CommandBuffer>();
 	commandBuffer = std::make_shared<DX9GF::CommandBuffer>();
 
+	popUpMessage = std::make_shared<Demo::PopUpMessage>(transformManager, game);
+	popUpMessage->SetLocalPosition(0.0f, 0.0f);
+	popUpMessage->Init(game->GetGraphicsDevice(), &this->uiCamera);
+
 	map = std::make_shared<DX9GF::Map>(game->GetGraphicsDevice());
 	map->Create(transformManager, colliderManager, "./assets/ThreadAlley.tmx");
-
-	/*map->SetAreaUpdateHandler("triggers", GetRandomEncounterFunc(game, player, {
-		{"VampireBatEnemy", 40},
-		{"MimicEnemy", 25},
-		}, drawBuffer, commandBuffer, &isGamePaused, & this->uiCamera, [this](DX9GF::GraphicsDevice* gd, unsigned long long deltaTime) { DrawCheckerBackground(gd, deltaTime); }));*/
-
 	map->SetAreaUpdateHandler("trigger_p", [this](const DX9GF::Map::ObjectArea& area) {
 		if (isTransitioning) return;
 		isTransitioning = true;
@@ -86,6 +85,8 @@ void Demo::ThreadAlleyScene::Init()
 	font = std::make_shared<DX9GF::Font>(game->GetGraphicsDevice(), L"StatusPlz", 16);
 
 	shopPoints.push_back(std::make_shared<ShopPoint>(transformManager, -606, -548));
+
+	chapterTitleUI = std::make_shared<ChapterTitleUI>(font);
 	shopPoints.back()->Init(game, game->GetGraphicsDevice(), &camera, player, colliderManager, font, drawBuffer,
 		[](Game* g, Player* p, int w, int h) { return new CardShop(g, p, w, h, ShopTier::HYBRID); }
 	);
@@ -118,11 +119,42 @@ void Demo::ThreadAlleyScene::Init()
 	PopupManager::GetInstance()->Init(game->GetGraphicsDevice(), borderTex, uiTex, font);
 	QuestManager::GetInstance()->SetVirtualResolution(game->GetVirtualWidth(), game->GetVirtualHeight());
 	QuestManager::GetInstance()->Init(game->GetGraphicsDevice(), transformManager, &this->uiCamera, font);
-	QuestManager::GetInstance()->SetQuest(L"???");
 
-	dauDau = std::make_shared<DauDauNPC>(transformManager, -580.f, 100.f);
-	dauDau->Init(game->GetGraphicsDevice(), &camera, player, colliderManager, font, drawBuffer);
-	dauDau->AddLine(L"Dau Dau", L"This alley is full of malware. Watch out!");
+
+	NPCConfig hkhangConfig = { L"assets/daudau-Sheet.png", 32, 32, 5, 12, 24.f, 8.f, 12.f }; //TODO: change HKhang npc's asset here
+
+	auto hKhang = std::make_shared<NPC>(transformManager, -580.f, 100.f, hkhangConfig);
+	hKhang->AttachQuestMarker("Quest_ThreadAlley_Start", Demo::QuestMarkerRole::Giver);
+	hKhang->Init(game->GetGraphicsDevice(), &camera, player, colliderManager, font, drawBuffer);
+	hKhang->RegisterVoice(L"Huu Khang", "bleep12");
+	hKhang->SetInteractLogic([](NPC* self) -> std::function<void()> {
+		auto qState = QuestManager::GetInstance()->GetQuestState("Quest_ThreadAlley_Start");
+
+		if (qState == Demo::QuestState::Locked) {
+			self->AddLine(L"Huu Khang", L"Hey, keep your firewall up if you're heading down Thread Alley.");
+			self->AddLine(L"Huu Khang", L"I wrote the routing logic for this sector. It was supposed to be a clean shortcut\nfor background processes, but lately... things go in and don't come out.");
+			self->AddLine(L"Player", L"Malware?");
+			self->AddLine(L"Huu Khang", L"Worse. The sneaky kind. It mimics friendly data to bypass the very antivirus protocols\nI implemented.");
+			self->AddLine(L"Huu Khang", L"My admin privileges are locked out until the zone is cleared. If you're heading that way,\nmaybe you can flush the corruption out for me?");
+			return []() {
+				std::vector<std::pair<std::wstring, std::function<void()>>> buttons = {
+					{ L"Yes(Y)", []() { QuestManager::GetInstance()->AcceptQuest("Quest_ThreadAlley_Start"); } },
+					{ L"No(N)", []() {} }
+				};
+				PopupManager::GetInstance()->Show("stepped_blue", L"New Quest", L"Investigate Thread Alley?", buttons);
+				};
+		}
+		else if (qState == Demo::QuestState::Active) {
+			self->AddLine(L"Huu Khang", L"Watch your back in there. Malware down here doesn't always look like a monster...");
+			self->AddLine(L"Huu Khang", L"Sometimes it uses the exact same asset ID as a friend in need. Trust no one's metadata.");
+		}
+		else {
+			self->AddLine(L"Huu Khang", L"You actually deleted it? And your registry is still intact?");
+			self->AddLine(L"Huu Khang", L"Not bad! My admin dashboard just lit back up. Thread Alley is finally safe to route\ndata through again. I owe you a code review sometime.");
+		}
+		return nullptr;
+		});
+	mapNPCs.push_back(hKhang);
 
 	// Rolled fresh for a new game; RestoreSaveData overwrites it when a save is loaded, which always
 	// happens after every scene has been Init()ed.
@@ -139,12 +171,17 @@ void Demo::ThreadAlleyScene::Init()
 	authTerminal->SetOnSolved([this]() {
 		authTerminalSolved = true;
 		player->GetInventoryItems().AddItem(ITEM_AUTH_TOKEN, 1);
+		QuestManager::GetInstance()->NotifyEvent("TROJAN_HAS_TOKEN", "", player.get());
+		if (trojanNPC && trojanNPC->GetQuestMarker()) {
+			trojanNPC->GetQuestMarker()->SetConditionMet(true);
+		}
 		auto [sw, sh] = camera.GetScreenResolution();
 		currentConversation = std::make_shared<IConversation>(std::make_shared<DX9GF::FontSprite>(font.get()), sw, sh);
 		currentConversation->AddLine({ .name = L"Terminal", .content = L"ACCESS GRANTED.\nYou obtained the Authentication Token." });
 		});
 
 	trojanNPC = std::make_shared<TrojanNPC>(transformManager, 224.f, -832.f);
+	trojanNPC->AttachQuestMarker("Quest_ThreadAlley_Start", Demo::QuestMarkerRole::Receiver);
 	trojanNPC->Init(game->GetGraphicsDevice(), &camera, player, colliderManager, font, drawBuffer);
 
 	trojanNPC->AddFriendlyLine(L"???", L"Oh thank the kernel, a live process!\nI was starting to think nobody came down this alley any more.");
@@ -232,8 +269,14 @@ void Demo::ThreadAlleyScene::Init()
 
 		//token spawning area
 		Demo::EventType generatedEvent = Demo::EventType::None;
-		if (enemy->GetEncounterData().enemyTypes.size() >= 2 && Demo::RNG::Range(1, 100) <= 30) {
-			generatedEvent = (Demo::RNG::Range(1, 100) <= 50) ? Demo::EventType::Gold : Demo::EventType::Energy;
+
+		if (Demo::RNG::Range(1, 100) <= 38) {
+			if (enemy->GetEncounterData().enemyTypes.size() >= 2) {
+				generatedEvent = (Demo::RNG::Range(1, 100) <= 50) ? Demo::EventType::Gold : Demo::EventType::Energy;
+			}
+			else {
+				generatedEvent = Demo::EventType::Gold;
+			}
 		}
 		enemy->SetEventState(generatedEvent);
 
@@ -337,11 +380,20 @@ void Demo::ThreadAlleyScene::Update(unsigned long long deltaTime)
 {
 	PopupManager::GetInstance()->SetUICamera(&this->uiCamera);
 	QuestManager::GetInstance()->SetUICamera(&this->uiCamera);
-	QuestManager::GetInstance()->SetQuest(GetQuestText());
 	QuestManager::GetInstance()->SetVirtualResolution(game->GetVirtualWidth(), game->GetVirtualHeight());
 	QuestManager::GetInstance()->SetVisible(!(inventoryMenu && inventoryMenu->IsOpen())
 		&& !(authTerminal && authTerminal->IsMenuOpen()));
+
 	QuestManager::GetInstance()->Update(deltaTime);
+	if (!hasSeenChapterIntro && !isTransitioning) {
+		hasSeenChapterIntro = true;
+		if (chapterTitleUI) {
+			chapterTitleUI->Show(L"CHAPTER II: THREAD ALLEY", L"< Data Transit Zone >", 4.0f, 0xFFFFFFFF, 0xFF00FFFF, 0xFF000000);
+		}
+	}
+	if (chapterTitleUI) {
+		chapterTitleUI->Update(deltaTime);
+	}
 
 	auto OpenChestWithDialog = [&](std::shared_ptr<TreasureChestNPC>& chest) {
 		auto given = chest->Open(player.get());
@@ -398,12 +450,23 @@ void Demo::ThreadAlleyScene::Update(unsigned long long deltaTime)
 		isGamePaused = true;
 	}
 
+	// Update PopUpMessage
+	if (popUpMessage) {
+		popUpMessage->Update(deltaTime);
+	}
+
 	if (currentConversation) {
 		isGamePaused = true;
 		currentConversation->Execute(deltaTime);
 		if (currentConversation->IsFinished()) {
 			currentConversation = nullptr;
 			// Clear before invoking: the callback may queue the next conversation.
+			if (activeNPC && activeNPC->GetOnDialogueEnd()) {
+				activeNPC->GetOnDialogueEnd()();
+			}
+			activeNPC = nullptr; // Reset
+
+			// Callback state-machine
 			if (onConversationEnd) {
 				auto callback = std::move(onConversationEnd);
 				onConversationEnd = nullptr;
@@ -412,16 +475,21 @@ void Demo::ThreadAlleyScene::Update(unsigned long long deltaTime)
 		}
 	}
 
-	if (dauDau) {
-		dauDau->Update(deltaTime);
-		if (!currentConversation && dauDau->CanInteract() && inpMan->KeyPress(SettingsManager::GetInstance()->GetKeybind("INTERACT"))) {
+	for (auto& npc : mapNPCs) {
+		npc->Update(deltaTime);
+		if (!currentConversation && !isTerminalMenuOpen && npc->CanInteract() && inpMan->KeyPress(SettingsManager::GetInstance()->GetKeybind("INTERACT"))) {
+			npc->ClearLines();
+			auto onEndCallback = npc->TriggerInteract();
+
+			activeNPC = npc;
+			activeNPC->SetOnDialogueEnd(onEndCallback);
+
 			auto [sw, sh] = camera.GetScreenResolution();
 			currentConversation = std::make_shared<IConversation>(std::make_shared<DX9GF::FontSprite>(font.get()), sw, sh);
-			for (auto& line : dauDau->GetDialogueLines()) {
+			for (auto& line : npc->GetDialogueLines()) {
 				currentConversation->AddLine(line);
 			}
-			QuestManager::GetInstance()->SetQuest(L"Quest: Find the malware through this alley!");
-			questStarted = true;
+			break;
 		}
 	}
 
@@ -542,7 +610,10 @@ void Demo::ThreadAlleyScene::DrawWorld(unsigned long long deltaTime)
 		for (auto& chest : treasureChests) depthNodes.push_back({ chest->GetWorldY(), [&, chest]() { chest->Draw(camera, deltaTime); } });
 		for (auto& enemy : mapEnemies) depthNodes.push_back({ enemy->GetWorldY(), [&, enemy]() { enemy->Draw(&camera, deltaTime); } });
 
-		if (dauDau) depthNodes.push_back({ dauDau->GetWorldY(), [&]() { dauDau->Draw(camera, deltaTime); } });
+		for (auto& npc : mapNPCs) {
+			depthNodes.push_back({ npc->GetWorldY(), [&, npc]() { npc->Draw(camera, deltaTime); } });
+		}
+
 		if (authTerminal) depthNodes.push_back({ authTerminal->GetWorldY(), [&]() { authTerminal->Draw(camera, deltaTime); } });
 		if (trojanNPC) depthNodes.push_back({ trojanNPC->GetWorldY(), [&]() { trojanNPC->Draw(camera, deltaTime); } });
 		if (sketchyGuy) depthNodes.push_back({ sketchyGuy->GetWorldY(), [&]() { sketchyGuy->Draw(camera, deltaTime); } });
@@ -568,7 +639,10 @@ void Demo::ThreadAlleyScene::DrawUI(unsigned long long deltaTime)
 		for (auto& healPoint : healingPoints) healPoint->DrawUI(&this->uiCamera, deltaTime);
 		for (auto& shopPoint : shopPoints) shopPoint->DrawUI(&this->uiCamera, deltaTime);
 
-		if (dauDau) dauDau->DrawUI(&this->uiCamera, deltaTime);
+		for (auto& npc : mapNPCs) {
+			npc->DrawUI(&this->uiCamera, deltaTime);
+		}
+
 		if (trojanNPC && trojanNPC->GetPhase() != Demo::TrojanNPC::Phase::Defeated) trojanNPC->DrawUI(&this->uiCamera, deltaTime);
 		if (sketchyGuy) sketchyGuy->DrawUI(&this->uiCamera, deltaTime);
 		if (playerHUD) playerHUD->Draw(gd, deltaTime);
@@ -597,6 +671,13 @@ void Demo::ThreadAlleyScene::DrawUI(unsigned long long deltaTime)
 			DX9GF::InputManager::GetInstance()->DrawCursor(&this->uiCamera, deltaTime);
 		}
 
+		if (popUpMessage) {
+			popUpMessage->Draw(deltaTime);
+		}
+
+		if (chapterTitleUI) {
+			chapterTitleUI->Draw(&this->uiCamera, deltaTime);
+		}
 		ImGui::Render();
 		ImGui_ImplDX9_RenderDrawData(ImGui::GetDrawData());
 		gd->EndDraw();
@@ -618,7 +699,7 @@ void Demo::ThreadAlleyScene::GenerateSaveData(nlohmann::json& outData)
 		{"zoom", camera.GetZoom()}
 	};
 
-	outData["quest"] = { {"questStarted", questStarted} };
+	outData["hasSeenChapterIntro"] = hasSeenChapterIntro;
 
 	outData["authTerminal"] = {
 		{"password", authPassword},
@@ -647,10 +728,7 @@ void Demo::ThreadAlleyScene::RestoreSaveData(const nlohmann::json& inData)
 	camera.SetPosition(inData["camera"]["x"], inData["camera"]["y"]);
 	camera.SetZoom(inData["camera"]["zoom"]);
 
-	if (inData.contains("quest")) {
-		questStarted = inData["quest"].value("questStarted", false);
-		questRestoredFromSave = true;
-	}
+	hasSeenChapterIntro = inData.value("hasSeenChapterIntro", false);
 
 	if (inData.contains("authTerminal")) {
 		authPassword = inData["authTerminal"].value("password", authPassword);
@@ -660,10 +738,22 @@ void Demo::ThreadAlleyScene::RestoreSaveData(const nlohmann::json& inData)
 			authTerminal->SetSolved(authTerminalSolved);
 		}
 	}
-
 	if (inData.contains("trojanNPC") && trojanNPC) {
-		// SetPhase(Defeated) also drops the collider, which is what re-opens the corridor.
-		trojanNPC->SetPhase(static_cast<TrojanNPC::Phase>(inData["trojanNPC"].value("phase", 0)));
+		auto savedPhase = static_cast<TrojanNPC::Phase>(inData["trojanNPC"].value("phase", 0));
+		trojanNPC->SetPhase(savedPhase);
+
+		if (savedPhase == TrojanNPC::Phase::AwaitingToken) {
+			if (player->GetInventoryItems().HasItem(ITEM_AUTH_TOKEN)) {
+				QuestManager::GetInstance()->NotifyEvent("TROJAN_HAS_TOKEN", "", player.get());
+				if (trojanNPC && trojanNPC->GetQuestMarker()) trojanNPC->GetQuestMarker()->SetConditionMet(true);
+			}
+			else {
+				QuestManager::GetInstance()->NotifyEvent("TROJAN_TALKED", "", player.get());
+			}
+		}
+		else if (savedPhase == TrojanNPC::Phase::Revealed) {
+			QuestManager::GetInstance()->NotifyEvent("TROJAN_REVEALED", "", player.get());
+		}
 	}
 
 	if (inData.contains("treasureChests")) {
@@ -693,24 +783,6 @@ void Demo::ThreadAlleyScene::GiveTestItems()
 
 }
 
-std::wstring Demo::ThreadAlleyScene::GetQuestText() const
-{
-	// The Trojan's questline takes over the single quest slot while it is running.
-	if (trojanNPC) {
-		switch (trojanNPC->GetPhase()) {
-		case TrojanNPC::Phase::AwaitingToken:
-			return player->GetInventoryItems().HasItem(ITEM_AUTH_TOKEN)
-				? L"Quest: Bring the auth token back to the stranger"
-				: L"Quest: Find an auth token somewhere in the alley";
-		case TrojanNPC::Phase::Revealed:
-			return L"Quest: Delete the Trojan!";
-		default:
-			break;
-		}
-	}
-	return questStarted ? L"Quest: Find the malware through this alley!" : L"Quest: ???";
-}
-
 void Demo::ThreadAlleyScene::StartTrojanConversation()
 {
 	auto phase = trojanNPC->GetPhase();
@@ -731,10 +803,14 @@ void Demo::ThreadAlleyScene::StartTrojanConversation()
 	switch (phase) {
 	case TrojanNPC::Phase::Friendly:
 		onConversationEnd = [this]() { trojanNPC->SetPhase(TrojanNPC::Phase::AwaitingToken); };
+		QuestManager::GetInstance()->NotifyEvent("TROJAN_TALKED", "", player.get());
 		break;
 	case TrojanNPC::Phase::Revealed:
 		// Losing the fight leaves the NPC in Revealed, so talking again replays the taunt and rematches.
-		onConversationEnd = [this]() { StartTrojanBattle(); };
+		onConversationEnd = [this]() {
+			StartTrojanBattle();
+			QuestManager::GetInstance()->NotifyEvent("TROJAN_REVEALED", "", player.get());
+			};
 		break;
 	default:
 		onConversationEnd = nullptr;
@@ -762,7 +838,14 @@ void Demo::ThreadAlleyScene::StartTrojanBattle()
 			DrawCheckerBackground(gd, dt);
 			});
 		battleScene->SetOnVictoryCallback([this]() {
-			trojanNPC->SetPhase(TrojanNPC::Phase::Defeated);
+			this->commandBuffer->PushCommand(std::make_shared<DX9GF::CustomCommand>([this](std::function<void()> markFinished) {
+				this->trojanNPC->SetPhase(TrojanNPC::Phase::Defeated);
+				auto result = QuestManager::GetInstance()->NotifyEvent("TROJAN_DEFEATED", "", this->player.get());
+				if (result.hasReward && this->popUpMessage) {
+					this->popUpMessage->ShowMessage(L"(+) " + result.rewardMessage, 5.0f);
+				}
+				markFinished();
+				}));
 			});
 
 		sceMan->InsertScene(sceMan->GetIndex() + 1, battleScene);
