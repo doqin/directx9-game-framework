@@ -87,12 +87,16 @@ void Demo::TutorialWorldScene::Init()
 	npcIntroduction->AttachQuestMarker("Quest_Tutorial", Demo::QuestMarkerRole::Giver);
 	npcIntroduction->Init(game->GetGraphicsDevice(), &camera, player, colliderManager, font, drawBuffer);
 	npcIntroduction->RegisterVoice(L"Kako", "bleep28");
+	npcIntroduction->RegisterVoice(L"???", "bleep28");
 	npcIntroduction->SetInteractLogic([](NPC* self) -> std::function<void()> {
 		auto qState = QuestManager::GetInstance()->GetQuestState("Quest_Tutorial");
 		if (qState == Demo::QuestState::Locked) {
-			self->AddLine(L"Kako", L"Hello! Welcome.");
+			self->AddLine(L"???", L"Hello! Welcome.");
+			self->AddLine(L"Player", L"Who are you?");
+			self->AddLine(L"Kako", L"My name is Kako. I am a digital entity that exists in this world. Created by the developers as a guide.");
 			self->AddLine(L"Player", L"Where am I?");
-			self->AddLine(L"Kako", L"This is a cyber world! You will encounter many challenges here. Like digital foes and cyber pirates!");
+			self->AddLine(L"Kako", L"This is a cyber world! An abandoned project made by a bunch of UIT students.");
+			self->AddLine(L"Kako", L"Unfortunately, this world is not safe for humans. You are trapped here now.");
 			self->AddLine(L"Player", L"How do I get out?");
 			self->AddLine(L"Kako", L"How to escape this world? I don't know.");
 			self->AddLine(L"Kako", L"But I can teach you how to survive here! Explore around a bit and I'll explain further.");

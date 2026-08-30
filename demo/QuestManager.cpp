@@ -226,7 +226,7 @@ void Demo::QuestManager::AcceptQuest(const std::string& questId) {
 	if (questDatabase.count(questId)) {
 		SetQuest(L"Quest: " + questDatabase[questId].currentObjective);
 	}
-	DX9GF::AudioManager::GetInstance()->Play("quest_active", false, 0.5f);
+	DX9GF::AudioManager::GetInstance()->Play("quest_active", false, 0.05f);
 }
 
 Demo::QuestEventResult Demo::QuestManager::NotifyEvent(const std::string& eventType, const std::string& targetId, Player* player) {
