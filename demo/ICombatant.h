@@ -67,5 +67,6 @@ namespace Demo {
 		const std::vector<CombatModifier>& GetModifiers() const { return modifiers; }
 		float ConsumeModifier(ModifierType type);
 		float ConsumeAllArmor();
+		void ClearBuffs();
 	};
 }

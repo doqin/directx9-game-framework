@@ -333,6 +333,7 @@
     <ClCompile Include="TransitionCommand.cpp" />
     <ClCompile Include="TreasureChestNPC.cpp" />
     <ClCompile Include="TrojanEnemy.cpp" />
+    <ClCompile Include="TuitionFeeEnemy.cpp" />
     <ClCompile Include="TutorialWorldScene.cpp" />
     <ClCompile Include="VampireBatEnemy.cpp" />
     <ClCompile Include="VirtualBattleState.cpp" />
@@ -454,6 +455,7 @@
     <ClInclude Include="StrikeCard.h" />
     <ClInclude Include="EnergyCard.h" />
     <ClInclude Include="TrojanEnemy.h" />
+    <ClInclude Include="TuitionFeeEnemy.h" />
     <ClInclude Include="UtilityCards.h" />
     <ClInclude Include="InitBlockCard.h" />
     <ClInclude Include="FinisherCards.h" />

@@ -27,6 +27,7 @@ namespace Demo {
 		// directly. Spawns run from deferred commands inside the scene's enemy update loop, so
 		// inserting straight into that vector would reallocate it mid-iteration.
 		std::function<void(std::shared_ptr<IEnemy>)> onRequestSpawnEnemy = nullptr;
+		std::function<void(int)> onRequestVisionDebuff = nullptr;
 		std::shared_ptr<DX9GF::RectangleTrigger> cardSpawnTrigger;
 		std::function<void(std::shared_ptr<IEnemy>)> onRequestEnemyCard = [](std::shared_ptr<IEnemy>) {};
 		std::vector<DamageIndicator> damageIndicators;
@@ -70,6 +71,7 @@ namespace Demo {
 		std::weak_ptr<DX9GF::RectangleTrigger> GetCardSpawnTrigger() const { return cardSpawnTrigger; }
 		void SetOnRequestLockCard(std::function<void(int)> callback) { onRequestLockCard = callback; }
 		void SetOnRequestSpawnEnemy(std::function<void(std::shared_ptr<IEnemy>)> callback) { onRequestSpawnEnemy = callback; }
+		void SetOnRequestVisionDebuff(std::function<void(int)> callback) { onRequestVisionDebuff = callback; }
 		virtual void OnTurnBegin(std::shared_ptr<Player> player, std::shared_ptr<PopUpMessage> popUpMessage, int currentTurn) {}
 		virtual void OnTurnBegin(std::shared_ptr<Player> player, std::shared_ptr<PopUpMessage> popUpMessage, int currentTurn, std::vector<std::shared_ptr<IEnemy>>* enemies, DX9GF::GraphicsDevice* graphicsDevice, DX9GF::Camera* camera) {
 			OnTurnBegin(player, popUpMessage, currentTurn);

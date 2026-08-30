@@ -1,5 +1,6 @@
 ﻿#pragma once
 #include "DX9GF.h"
+#include <unordered_map>
 namespace Demo
 {
 
@@ -85,6 +86,7 @@ namespace Demo
 	{
 	private:
 		std::vector <ItemInventorySlot> slots;
+		std::unordered_map<int, int> lockedItems;
 	public:
 		const std::vector<ItemInventorySlot>& GetSlots() const { return slots; }
 		void InitFixedInventory(int maxItemTypes);
@@ -96,6 +98,10 @@ namespace Demo
 		// mode. Returns true if a copy was present and removed.
 		bool RemoveItem(int id);
 		void Clear() { for (auto& slot : slots) slot.quantity = 0; }
+		void LockItem(int id, int turns);
+		bool IsItemLocked(int id) const;
+		int GetItemLockedTurns(int id) const;
+		void TickLocks();
 	};
 }
 
