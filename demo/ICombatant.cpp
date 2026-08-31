@@ -196,4 +196,11 @@ namespace Demo {
 	float ICombatant::ConsumeAllArmor() {
 		return ConsumeModifier(ModifierType::BuffDefense);
 	}
+
+	void ICombatant::ClearBuffs() {
+		modifiers.erase(
+			std::remove_if(modifiers.begin(), modifiers.end(),
+				[](const CombatModifier& mod) { return mod.isBuff; }),
+			modifiers.end());
+	}
 }

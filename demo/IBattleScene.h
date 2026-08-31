@@ -229,6 +229,9 @@ namespace Demo {
 		EventType battleEventType = EventType::None;
 		int targetTokenTurn = -1;
 
+		bool visionDebuffActive = false;
+		int visionDebuffTurnsRemaining = 0;
+
 		bool isFlawlessChallengeActive = false;
 		bool isFlawlessCompleted = false;
 		float startingHealthForFlawless = 0.f;
@@ -271,6 +274,7 @@ namespace Demo {
 		int GetActiveItemTurnsLeft(const ActiveItemEffect& entry) const;
 		// Ages the entries alongside the player's modifiers and drops the spent ones.
 		void TickActiveItems();
+		void DrawVisionDebuffOverlay(unsigned long long deltaTime);
 		void CollectDeadEnemies();
 		// Moves anything queued by onRequestSpawnEnemy into `enemies`. Safe to call between
 		// iterations, never during one.
@@ -370,6 +374,10 @@ namespace Demo {
 		const std::vector<std::shared_ptr<IEnemy>>& GetEnemies() const { return enemies; }
 		// Pending resources: applied at the start of the next turn.
 		void QueueBonusEnergy(int amount) { pendingBonusEnergy += amount; }
+		void ApplyVisionDebuff(int turns) {
+			visionDebuffTurnsRemaining = (std::max)(visionDebuffTurnsRemaining, turns);
+			visionDebuffActive = true;
+		}
 		void QueueBonusDraw(int amount) { pendingBonusDraw += amount; }
 		// Instant resources: applied immediately. Only meaningful from the Init block - the main
 		// block executes as the turn ends, so anything gained there is never spent.

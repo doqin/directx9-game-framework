@@ -164,6 +164,7 @@ void Demo::IBattleScene::WireEnemyCallbacks(const std::shared_ptr<IEnemy>& enemy
 			this->pendingEnemies.push_back(std::move(spawned));
 		}
 		});
+	enemy->SetOnRequestVisionDebuff([this](int turns) { this->ApplyVisionDebuff(turns); });
 }
 
 void Demo::IBattleScene::FlushPendingEnemies()
@@ -628,6 +629,12 @@ void Demo::IBattleScene::BeginNextTurn()
 
 	battlePlayer->TickDurations(TickPhase::EndOfRound);
 	TickActiveItems();
+	if (visionDebuffTurnsRemaining > 0) {
+		--visionDebuffTurnsRemaining;
+		if (visionDebuffTurnsRemaining <= 0) {
+			visionDebuffActive = false;
+		}
+	}
 	for (size_t i = 0; i < enemies.size(); ++i) {
 		auto enemy = enemies[i];
 		enemy->TickDurations(TickPhase::EndOfRound);
@@ -927,7 +934,12 @@ void Demo::IBattleScene::RefreshItemMenu()
 
 		btn->SetOnReleaseLeft([this, slot, blueprint](DX9GF::ITrigger* thisObj) {
 			commandBuffer.PushCommand(std::make_shared<DX9GF::CustomCommand>([this, slot, blueprint](std::function<void(void)> markFinished) {
-				if (player->GetInventoryItems().ConsumeItem(slot.itemID)) {
+				if (player->GetInventoryItems().IsItemLocked(slot.itemID)) {
+					int turnsLeft = player->GetInventoryItems().GetItemLockedTurns(slot.itemID);
+					popUpMessage->ShowMessage(L"This item is banned for " + std::to_wstring(turnsLeft) + L" more turn(s)!");
+					DX9GF::AudioManager::GetInstance()->Play("error", false, 0.8f);
+				}
+				else if (player->GetInventoryItems().ConsumeItem(slot.itemID)) {
 					for (auto& mod : blueprint->GetModifiers()) {
 						if (mod.type == Demo::ModifierType::HealHP) {
 							battlePlayer->Heal(mod.value);
@@ -1200,6 +1212,72 @@ void Demo::IBattleScene::DrawAttackCountdown(unsigned long long deltaTime)
 	fontSprite->SetScale(1.f);
 	fontSprite->SetOutline(false);
 	fontSprite->End();
+}
+
+void Demo::IBattleScene::DrawVisionDebuffOverlay(unsigned long long deltaTime)
+{
+	if (!visionDebuffActive || !battlePlayer) {
+		return;
+	}
+	auto gd = game->GetGraphicsDevice();
+	auto [px, py] = battlePlayer->GetWorldPosition();
+
+	const float finalClearRadius = 100.f;
+	const float outerRadius = battleBoxSize * 3.f;
+
+	float clearRadius = finalClearRadius;
+	if (isAttackCountdownActive) {
+		const float totalCountdownDuration = 3.f * ATTACK_COUNTDOWN_STEP_SECONDS;
+		const float elapsed = static_cast<float>(3 - attackCountdownNumber) * ATTACK_COUNTDOWN_STEP_SECONDS
+			+ (ATTACK_COUNTDOWN_STEP_SECONDS - attackCountdownTimer);
+		float progress = totalCountdownDuration > 0.f ? elapsed / totalCountdownDuration : 1.f;
+		progress = (std::max)(0.f, (std::min)(1.f, progress));
+		clearRadius = outerRadius + (finalClearRadius - outerRadius) * progress;
+	}
+
+	constexpr int WEDGE_COUNT = 128;
+	constexpr float PI_LOCAL = 3.14159265359f;
+	const D3DCOLOR overlayColor = D3DCOLOR_ARGB(200, 5, 5, 10);
+
+	gd->SetAlphaBlending(true);
+
+	const float wedgeLength = outerRadius - clearRadius;
+	if (wedgeLength > 0.01f) {
+		const float wedgeCenterDist = clearRadius + wedgeLength * 0.5f;
+		const float wedgeWidth = 2.f * outerRadius * std::sin(PI_LOCAL / WEDGE_COUNT) * 1.15f;
+		for (int i = 0; i < WEDGE_COUNT; ++i) {
+			const float angle = (2.f * PI_LOCAL / WEDGE_COUNT) * static_cast<float>(i);
+			const float cx = px + std::cos(angle) * wedgeCenterDist;
+			const float cy = py + std::sin(angle) * wedgeCenterDist;
+			gd->DrawRectangle(camera, cx, cy, wedgeLength, wedgeWidth, angle,
+				1.f, 1.f, wedgeLength * 0.5f, wedgeWidth * 0.5f, overlayColor, true);
+		}
+	}
+
+	constexpr int GRADIENT_RINGS = 10;
+	constexpr int MAX_RING_ALPHA = 140;
+	for (int ring = 0; ring < GRADIENT_RINGS; ++ring) {
+		const float innerR = clearRadius * static_cast<float>(ring) / GRADIENT_RINGS;
+		const float outerR = clearRadius * static_cast<float>(ring + 1) / GRADIENT_RINGS;
+		const float bandLength = outerR - innerR;
+		if (bandLength <= 0.01f) continue;
+		const float bandCenterDist = (innerR + outerR) * 0.5f;
+
+		const float t = static_cast<float>(ring + 1) / GRADIENT_RINGS;
+		const int alpha = static_cast<int>(MAX_RING_ALPHA * (t * t));
+		const D3DCOLOR bandColor = D3DCOLOR_ARGB(alpha, 5, 5, 10);
+
+		const float bandWidth = 2.f * outerR * std::sin(PI_LOCAL / WEDGE_COUNT) * 1.15f;
+		for (int i = 0; i < WEDGE_COUNT; ++i) {
+			const float angle = (2.f * PI_LOCAL / WEDGE_COUNT) * static_cast<float>(i);
+			const float cx = px + std::cos(angle) * bandCenterDist;
+			const float cy = py + std::sin(angle) * bandCenterDist;
+			gd->DrawRectangle(camera, cx, cy, bandLength, bandWidth, angle,
+				1.f, 1.f, bandLength * 0.5f, bandWidth * 0.5f, bandColor, true);
+		}
+	}
+
+	gd->SetAlphaBlending(false);
 }
 
 std::vector<std::shared_ptr<Demo::IBlockCard>> Demo::IBattleScene::GetBlockCards() const
@@ -2093,6 +2171,7 @@ void Demo::IBattleScene::PlayerOpenItemsDraw(unsigned long long deltaTime)
 
 	auto& inventory = player->GetInventoryItems().GetSlots();
 	std::wstring hoverDescription = L"";
+	std::wstring hoverBannedText = L"";
 
 	std::vector<int> validIndices;
 
@@ -2148,10 +2227,23 @@ void Demo::IBattleScene::PlayerOpenItemsDraw(unsigned long long deltaTime)
 		fontSprite->SetPosition(textX, textY);
 		fontSprite->Draw(this->uiCamera, deltaTime);
 
+		int lockedTurns = player->GetInventoryItems().GetItemLockedTurns(slot.itemID);
+		if (lockedTurns > 0) {
+			fontSprite->SetColor(0xFFFF4444);
+			fontSprite->SetText(L"BANNED");
+			float lockW = fontSprite->GetWidth();
+			fontSprite->SetPosition(btn->GetWorldX() + (ITEM_W / 2.0f) - (lockW / 2.0f), btn->GetWorldY() - 16.0f);
+			fontSprite->Draw(this->uiCamera, deltaTime);
+			fontSprite->SetColor(0xFFFFFFFF);
+		}
+
 		if (btn->GetTrigger()->IsHovering(deltaTime)) {
 			auto blueprint = Demo::ItemData::GetInstance()->GetItemBlueprint(slot.itemID);
 			if (blueprint) {
 				hoverDescription = blueprint->GetDescription();
+			}
+			if (lockedTurns > 0) {
+				hoverBannedText = L"Banned for " + std::to_wstring(lockedTurns) + L" more turn(s)";
 			}
 		}
 		displayIndex++;
@@ -2175,6 +2267,15 @@ void Demo::IBattleScene::PlayerOpenItemsDraw(unsigned long long deltaTime)
 		fontSprite->SetPosition(descX, descY);
 		fontSprite->SetText(std::move(hoverDescription));
 		fontSprite->Draw(this->uiCamera, deltaTime);
+
+		if (!hoverBannedText.empty()) {
+			fontSprite->SetColor(0xFFFF4444);
+			fontSprite->SetOutline(true, 0xFF000000, 3.f);
+			fontSprite->SetPosition(descX, descY + 20.0f);
+			fontSprite->SetText(std::move(hoverBannedText));
+			fontSprite->Draw(this->uiCamera, deltaTime);
+			fontSprite->SetColor(0xFFFFFFFF);
+		}
 	}
 
 	fontSprite->End();
@@ -3523,6 +3624,7 @@ void Demo::IBattleScene::DrawWorld(unsigned long long deltaTime)
 			for (auto& enemy : enemies) {
 				enemy->Draw(gd, &camera, deltaTime);
 			}
+			DrawVisionDebuffOverlay(deltaTime);
 			break;
 		}
 

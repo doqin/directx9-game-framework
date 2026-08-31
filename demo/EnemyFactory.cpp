@@ -11,6 +11,7 @@
 #include "KeyeproEnemy.h"
 #include "KernelEnemy.h"
 #include "TrojanEnemy.h"
+#include "TuitionFeeEnemy.h"
 #include "RNG.h"
 
 namespace Demo {
@@ -24,7 +25,7 @@ namespace Demo {
 		if (enemyType == "WarlockEnemy")    return { L"assets/crawler-Sheet.png", 64.f, 64.f, 12, 38.f, 45.f };
 		if (enemyType == "KernelEnemy")      return { L"assets/kernel_2.png", 64.f, 64.f, 12, 38.f, 45.f };
 		if (enemyType == "TrojanEnemy")     return { L"assets/Trojan_outside.png", 64.f, 64.f, 12, 38.f, 45.f };
-
+		if (enemyType == "TuitionFeeEnemy") return { L"assets/placeholder.png", 64.f, 64.f, 8, 38.f, 45.f }; // TODO: change to the real asset path
 		return { L"assets/random-Sheet.png", 64.f, 64.f,8, 38.f, 45.f };
 	}
 
@@ -76,6 +77,11 @@ namespace Demo {
 		}
 		else if (type == "TrojanEnemy") {
 			auto enemy = std::make_shared<TrojanEnemy>(tm, RNG::Range(40.0f, 60.0f));
+			enemy->Init(gd, cam);
+			return enemy;
+		}
+		else if (type == "TuitionFeeEnemy") {
+			auto enemy = std::make_shared<TuitionFeeEnemy>(tm, RNG::Range(140.0f, 140.0f));
 			enemy->Init(gd, cam);
 			return enemy;
 		}

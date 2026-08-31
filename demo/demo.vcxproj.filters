@@ -107,6 +107,7 @@
     <ClCompile Include="UtilityCards.cpp" />
     <ClCompile Include="FinisherCards.cpp" />
     <ClCompile Include="TestEnemy.cpp" />
+    <ClCompile Include="TuitionFeeEnemy.cpp" />
   </ItemGroup>
   <ItemGroup>
     <ClInclude Include="AdvancedCards.h" />
@@ -223,6 +224,7 @@
     <ClInclude Include="WarlockEnemy.h" />
     <ClInclude Include="World1Scene.h" />
     <ClInclude Include="TextButton.h" />
+    <ClInclude Include="TuitionFeeEnemy.h" />
   </ItemGroup>
   <ItemGroup>
     <ResourceCompile Include="demo.rc" />

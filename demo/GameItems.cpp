@@ -107,7 +107,7 @@ namespace Demo
 
 	bool ItemInventory::ConsumeItem(int id)
 	{
-		if (id >= 0 && id < slots.size() && slots[id].quantity > 0)
+		if (id >= 0 && id < slots.size() && slots[id].quantity > 0 && !IsItemLocked(id))
 		{
 			slots[id].quantity--;
 			DX9GF::AudioManager::GetInstance()->PlayRandom("power_up", 0.2f);
@@ -139,5 +139,33 @@ namespace Demo
 			return slots[id].quantity > 0;
 		}
 		return false;
+	}
+
+	void ItemInventory::LockItem(int id, int turns)
+	{
+		if (turns <= 0) return;
+		auto it = lockedItems.find(id);
+		if (it == lockedItems.end() || it->second < turns) {
+			lockedItems[id] = turns;
+		}
+	}
+
+	bool ItemInventory::IsItemLocked(int id) const
+	{
+		return GetItemLockedTurns(id) > 0;
+	}
+
+	int ItemInventory::GetItemLockedTurns(int id) const
+	{
+		auto it = lockedItems.find(id);
+		return (it != lockedItems.end()) ? it->second : 0;
+	}
+
+	void ItemInventory::TickLocks()
+	{
+		for (auto it = lockedItems.begin(); it != lockedItems.end(); ) {
+			if (--(it->second) <= 0) it = lockedItems.erase(it);
+			else ++it;
+		}
 	}
 }
