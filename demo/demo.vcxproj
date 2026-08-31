@@ -482,6 +482,9 @@
       <DeploymentContent>true</DeploymentContent>
     </None>
     <None Include="assets\kako.aseprite" />
+    <None Include="assets\lab.tsx">
+      <DeploymentContent>true</DeploymentContent>
+    </None>
     <None Include="assets\placeholder-round-projectile.aseprite" />
     <None Include="assets\SecretPuzzle.tmx">
       <DeploymentContent>true</DeploymentContent>
@@ -550,6 +553,9 @@
       <DeploymentContent>true</DeploymentContent>
     </Image>
     <Image Include="assets\buytab.png">
+      <DeploymentContent>true</DeploymentContent>
+    </Image>
+    <Image Include="assets\lab.png">
       <DeploymentContent>true</DeploymentContent>
     </Image>
     <Image Include="assets\selltab.png">

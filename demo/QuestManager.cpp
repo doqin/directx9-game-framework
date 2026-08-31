@@ -42,6 +42,14 @@ void Demo::QuestManager::InitQuestDatabase() {
 		L"26 Gold"
 	};
 
+	questDatabase["Quest_KakosLab"] = {
+		"Quest_KakosLab",
+		L"Kako's Lab",
+		L"Kako needs your help to clean up the lab.",
+		L"Investigate the lab",
+		L"100 Gold"
+	};
+
 	questDatabase["Quest_ThreadAlley_Start"] = {
 		"Quest_ThreadAlley_Start",
 		L"Thread Alley Cleanup",

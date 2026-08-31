@@ -120,6 +120,43 @@ void Demo::TutorialWorldScene::Init()
 		return nullptr;
 		});
 	mapNPCs.push_back(npcIntroduction);
+	auto npcKako = std::make_shared<NPC>(transformManager, 592.0f, -912.0f, kakoConfig);
+	npcKako->Init(game->GetGraphicsDevice(), &camera, player, colliderManager, font, drawBuffer);
+	npcKako->RegisterVoice(L"Kako", "bleep28");
+	npcKako->SetInteractLogic([](NPC* self) -> std::function<void()> {
+		auto prevQuestState = QuestManager::GetInstance()->GetQuestState("Quest_Tutorial");
+		auto questState = QuestManager::GetInstance()->GetQuestState("Quest_KakosLab");
+		if (questState == Demo::QuestState::Locked) {
+			if (prevQuestState == Demo::QuestState::Active || prevQuestState == Demo::QuestState::Completed) {
+				self->AddLine(L"Kako", L"Oh hi again!");
+				self->AddLine(L"Player", L"Hi Kako! What are you doing here?");
+			}
+			else {
+				self->AddLine(L"Player", L"Hello! Who are you?");
+				self->AddLine(L"Kako", L"Hi! I am Kako, a digital entity that exists in this world.");
+				self->AddLine(L"Player", L"Hi Kako! What are you doing here?");
+			}
+			self->AddLine(L"Kako", L"Hm.. I was doing some research inside the lab right there until a monster appeared!");
+			self->AddLine(L"Kako", L"Luckily, I managed to escape. But I think the lab is not safe anymore.");
+			self->AddLine(L"Kako", L"If you can clear the area for me, I'll pay a handsome reward :).");
+			return []() {
+				std::vector<std::pair<std::wstring, std::function<void()>>> buttons = {
+					{ L"Yes(Y)", []() { QuestManager::GetInstance()->AcceptQuest("Quest_KakosLab"); } },
+					{ L"No(N)", []() {} }
+				};
+				PopupManager::GetInstance()->Show("stepped_blue", L"New Quest", L"Accept Kako's Request?", buttons);
+			};
+		}
+		else if (questState == Demo::QuestState::Active) {
+			self->AddLine(L"Kako", L"I'll be waiting for you to clear the lab!");
+		}
+		else {
+			self->AddLine(L"Kako", L"Thanks for helping me clear the lab!");
+		}
+
+		return nullptr;
+		});
+	mapNPCs.push_back(npcKako);
 
 	auto npcExplainingEnemyEncounters = std::make_shared<NPC>(transformManager, 544.0f, -56.0f, daudauConfig);
 	npcExplainingEnemyEncounters->Init(game->GetGraphicsDevice(), &camera, player, colliderManager, font, drawBuffer);
@@ -136,7 +173,13 @@ void Demo::TutorialWorldScene::Init()
 	auto npcExplainingHealingPoint = std::make_shared<NPC>(transformManager, 289.0f, -496.0f, daudauConfig);
 	npcExplainingHealingPoint->Init(game->GetGraphicsDevice(), &camera, player, colliderManager, font, drawBuffer);
 	npcExplainingHealingPoint->RegisterVoice(L"Dau Dau", "bleep12");
-	npcExplainingHealingPoint->SetInteractLogic([](NPC* self) -> std::function<void()> {
+	npcExplainingHealingPoint->SetInteractLogic([this](NPC* self) -> std::function<void()> {
+		if (player->GetHealth() == player->GetMaxHealth()) {
+			self->AddLine(L"Dau Dau", L"Hey, you look healthy!");
+			self->AddLine(L"Dau Dau", L"Remember, you can use healing points to restore your health.");
+			self->AddLine(L"Dau Dau", L"If you want to heal in combat, you can use healing items! Check out my shop up ahead for some.");
+			return nullptr;
+		}
 		self->AddLine(L"Dau Dau", L"Hey, you look hurt.");
 		self->AddLine(L"Player", L"Yeah, I feel dizzy...");
 		self->AddLine(L"Dau Dau", L"This is a healing point. You can use it to restore your health. Just interact with it like you do with me.");
@@ -149,9 +192,8 @@ void Demo::TutorialWorldScene::Init()
 	npcExplainingPortal->Init(game->GetGraphicsDevice(), &camera, player, colliderManager, font, drawBuffer);
 	npcExplainingPortal->RegisterVoice(L"Dau Dau", "bleep12");
 	npcExplainingPortal->SetInteractLogic([](NPC* self) -> std::function<void()> {
-		self->AddLine(L"Dau Dau", L"This is a portal. It will take you to the next area.");
-		self->AddLine(L"Dau Dau", L"Just step on it and you'll be teleported. It's that simple!");
-		self->AddLine(L"Dau Dau", L"Beware that portals can be a one way trip!");
+		self->AddLine(L"Dau Dau", L"Up this hill, there will be a foe waiting for you. It's guarding a portal that'll take you to the next area.");
+		self->AddLine(L"Dau Dau", L"Good luck!");
 		return nullptr;
 		});
 	mapNPCs.push_back(npcExplainingPortal);
@@ -167,12 +209,12 @@ void Demo::TutorialWorldScene::Init()
 	QuestManager::GetInstance()->Init(game->GetGraphicsDevice(), transformManager, &this->uiCamera, font);
 
 	savePoints.push_back(std::make_shared<SavePoint>(transformManager, 248.0f, -70.0f));
-	savePoints.back()->Init(game->GetGraphicsDevice(), &camera, player, colliderManager, saveManager, font, drawBuffer);
-	savePoints.back()->SetVisible(true);
-
 	savePoints.push_back(std::make_shared<SavePoint>(transformManager, -64.0f, -592.0f));
-	savePoints.back()->Init(game->GetGraphicsDevice(), &camera, player, colliderManager, saveManager, font, drawBuffer);
-	savePoints.back()->SetVisible(true);
+	savePoints.push_back(std::make_shared<SavePoint>(transformManager, 456.0f, -903.0f));
+	for (auto& sp : savePoints) {
+		sp->Init(game->GetGraphicsDevice(), &camera, player, colliderManager, saveManager, font, drawBuffer);
+		sp->SetVisible(true);
+	}
 
 	shopPoint_Card = std::make_shared<ShopPoint>(transformManager, 183.0f, -460.0f);
 	shopPoint_Card->Init(game, game->GetGraphicsDevice(), &camera, player, colliderManager, font, drawBuffer,
