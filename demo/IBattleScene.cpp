@@ -1222,24 +1222,61 @@ void Demo::IBattleScene::DrawVisionDebuffOverlay(unsigned long long deltaTime)
 	auto gd = game->GetGraphicsDevice();
 	auto [px, py] = battlePlayer->GetWorldPosition();
 
-	const float clearRadius = battleBoxSize * 0.5f;
+	const float finalClearRadius = 100.f;
 	const float outerRadius = battleBoxSize * 3.f;
 
-	constexpr int WEDGE_COUNT = 64;
+	float clearRadius = finalClearRadius;
+	if (isAttackCountdownActive) {
+		const float totalCountdownDuration = 3.f * ATTACK_COUNTDOWN_STEP_SECONDS;
+		const float elapsed = static_cast<float>(3 - attackCountdownNumber) * ATTACK_COUNTDOWN_STEP_SECONDS
+			+ (ATTACK_COUNTDOWN_STEP_SECONDS - attackCountdownTimer);
+		float progress = totalCountdownDuration > 0.f ? elapsed / totalCountdownDuration : 1.f;
+		progress = (std::max)(0.f, (std::min)(1.f, progress));
+		clearRadius = outerRadius + (finalClearRadius - outerRadius) * progress;
+	}
+
+	constexpr int WEDGE_COUNT = 128;
 	constexpr float PI_LOCAL = 3.14159265359f;
-	const float wedgeLength = outerRadius - clearRadius;
-	const float wedgeCenterDist = clearRadius + wedgeLength * 0.5f;
-	const float wedgeWidth = 2.f * outerRadius * std::sin(PI_LOCAL / WEDGE_COUNT) * 1.15f;
 	const D3DCOLOR overlayColor = D3DCOLOR_ARGB(200, 5, 5, 10);
 
 	gd->SetAlphaBlending(true);
-	for (int i = 0; i < WEDGE_COUNT; ++i) {
-		const float angle = (2.f * PI_LOCAL / WEDGE_COUNT) * static_cast<float>(i);
-		const float cx = px + std::cos(angle) * wedgeCenterDist;
-		const float cy = py + std::sin(angle) * wedgeCenterDist;
-		gd->DrawRectangle(camera, cx, cy, wedgeLength, wedgeWidth, angle,
-			1.f, 1.f, wedgeLength * 0.5f, wedgeWidth * 0.5f, overlayColor, true);
+
+	const float wedgeLength = outerRadius - clearRadius;
+	if (wedgeLength > 0.01f) {
+		const float wedgeCenterDist = clearRadius + wedgeLength * 0.5f;
+		const float wedgeWidth = 2.f * outerRadius * std::sin(PI_LOCAL / WEDGE_COUNT) * 1.15f;
+		for (int i = 0; i < WEDGE_COUNT; ++i) {
+			const float angle = (2.f * PI_LOCAL / WEDGE_COUNT) * static_cast<float>(i);
+			const float cx = px + std::cos(angle) * wedgeCenterDist;
+			const float cy = py + std::sin(angle) * wedgeCenterDist;
+			gd->DrawRectangle(camera, cx, cy, wedgeLength, wedgeWidth, angle,
+				1.f, 1.f, wedgeLength * 0.5f, wedgeWidth * 0.5f, overlayColor, true);
+		}
 	}
+
+	constexpr int GRADIENT_RINGS = 10;
+	constexpr int MAX_RING_ALPHA = 140;
+	for (int ring = 0; ring < GRADIENT_RINGS; ++ring) {
+		const float innerR = clearRadius * static_cast<float>(ring) / GRADIENT_RINGS;
+		const float outerR = clearRadius * static_cast<float>(ring + 1) / GRADIENT_RINGS;
+		const float bandLength = outerR - innerR;
+		if (bandLength <= 0.01f) continue;
+		const float bandCenterDist = (innerR + outerR) * 0.5f;
+
+		const float t = static_cast<float>(ring + 1) / GRADIENT_RINGS;
+		const int alpha = static_cast<int>(MAX_RING_ALPHA * (t * t));
+		const D3DCOLOR bandColor = D3DCOLOR_ARGB(alpha, 5, 5, 10);
+
+		const float bandWidth = 2.f * outerR * std::sin(PI_LOCAL / WEDGE_COUNT) * 1.15f;
+		for (int i = 0; i < WEDGE_COUNT; ++i) {
+			const float angle = (2.f * PI_LOCAL / WEDGE_COUNT) * static_cast<float>(i);
+			const float cx = px + std::cos(angle) * bandCenterDist;
+			const float cy = py + std::sin(angle) * bandCenterDist;
+			gd->DrawRectangle(camera, cx, cy, bandLength, bandWidth, angle,
+				1.f, 1.f, bandLength * 0.5f, bandWidth * 0.5f, bandColor, true);
+		}
+	}
+
 	gd->SetAlphaBlending(false);
 }
 

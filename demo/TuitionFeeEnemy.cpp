@@ -165,30 +165,29 @@ void Demo::TuitionFeeEnemy::PatternSideWall(float baseDamage, std::vector<std::s
 void Demo::TuitionFeeEnemy::PatternDualSpiral(float baseDamage, std::vector<std::shared_ptr<IEnemy>>* enemies)
 {
 	bool isAlone = !enemies || enemies->size() == 1;
-	const int ATTACK_COUNT = isAlone ? 10 : 5;
-	const float RADIAL_SPEED = isAlone ? 100.f : 150.f;
-	const float ANGULAR_SPEED = isAlone ? 1.2f : 0.6f;
+	const int ATTACK_COUNT = isAlone ? 8 : 4;             
+	const float RADIAL_SPEED = isAlone ? 70.f : 80.f;      
+	const float ANGULAR_SPEED = isAlone ? 0.8f : 0.35f;    
 	const float SPAWN_DIST = 220.f;
+	const int BULLETS_PER_RING = 8;
 
-	auto attack = std::make_shared<DX9GF::CustomCommand>([this, baseDamage, RADIAL_SPEED, ANGULAR_SPEED, SPAWN_DIST](std::function<void(void)> markFinished) {
+	auto attack = std::make_shared<DX9GF::CustomCommand>([this, baseDamage, RADIAL_SPEED, ANGULAR_SPEED, SPAWN_DIST, BULLETS_PER_RING](std::function<void(void)> markFinished) {
 		if (auto lock = this->player.lock()) {
 			float finalDamage = this->CalculateOutgoingDamage(baseDamage);
-
 			struct SpawnPoint { float x, y; float spinDir; };
 			SpawnPoint points[2] = {
-				{ 0.f, -SPAWN_DIST,  1.f }, 
-				{ 0.f,  SPAWN_DIST, -1.f } 
+				{ 0.f, -SPAWN_DIST,  1.f },
+				{ 0.f,  SPAWN_DIST, -1.f }
 			};
-
 			for (auto& sp : points) {
-				for (int i = 0; i < 12; i++) {
-					float angle = i * (3.14159f * 2.f / 12.f);
+				for (int i = 0; i < BULLETS_PER_RING; i++) {
+					float angle = i * (3.14159f * 2.f / BULLETS_PER_RING);
 					projectiles.Spawn(
 						lock,
 						ProjectileDesc(bulletTexture.get(), bulletFrames, 12, 8, 8, 16, 16, sp.x, sp.y)
 						.SetSpiralParams(angle, RADIAL_SPEED, ANGULAR_SPEED * sp.spinDir)
-						.SetDelay(i * 0.05f)
-						.SetDecayTime(6.f)
+						.SetDelay(i * 0.07f)     
+						.SetDecayTime(4.5f)  
 						.SetDamage(finalDamage)
 					);
 				}
@@ -196,10 +195,9 @@ void Demo::TuitionFeeEnemy::PatternDualSpiral(float baseDamage, std::vector<std:
 		}
 		markFinished();
 		});
-
 	for (int i = 0; i < ATTACK_COUNT; i++) {
 		commandBuffer.PushCommand(std::make_shared<DX9GF::CustomCommand>(*attack));
-		commandBuffer.PushCommand(std::make_shared<DX9GF::DelayCommand>(1.f));
+		commandBuffer.PushCommand(std::make_shared<DX9GF::DelayCommand>(1.2f));
 	}
 }
 
