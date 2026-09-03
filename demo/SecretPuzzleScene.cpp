@@ -23,8 +23,9 @@ void Demo::SecretPuzzleScene::OnInit()
 {
 	InitCore(-84 * 16, -39 * 16, L"./assets/SecretPuzzle.tmx");
 
+	SetChapterTitle(L"ANOMALY DETECTED: THE ROOT", L"< Encrypted Database >");
 	map->SetAreaUpdateHandler("trigger_p_back", [this](const DX9GF::Map::ObjectArea& area) {
-		CreatePortalTransition(-1, -263.f, -295.f, "bgm_tutorial", 0.5f);
+		CreatePortalTransition(-2, -263.f, -295.f, "bgm_tutorial", 0.5f);
 	});
 
 	map->SetAreaUpdateHandler("trigger_p_next_world", [this](const DX9GF::Map::ObjectArea& area) {

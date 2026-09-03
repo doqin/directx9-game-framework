@@ -1,5 +1,5 @@
 <?xml version="1.0" encoding="UTF-8"?>
-<map version="1.10" tiledversion="1.12.1" orientation="orthogonal" renderorder="right-down" width="30" height="20" tilewidth="16" tileheight="16" infinite="1" nextlayerid="14" nextobjectid="324">
+<map version="1.10" tiledversion="1.12.1" orientation="orthogonal" renderorder="right-down" width="30" height="20" tilewidth="16" tileheight="16" infinite="1" nextlayerid="15" nextobjectid="325">
  <tileset firstgid="1" source="tutorial.tsx"/>
  <tileset firstgid="457" source="bossmatrix.tsx"/>
  <tileset firstgid="673" source="threadalley.tsx"/>
@@ -1734,6 +1734,9 @@
   <object id="321" x="500.909" y="-954" width="26.7273" height="19.2727"/>
   <object id="322" x="560.364" y="-952.909" width="29.0909" height="17.8182"/>
   <object id="323" x="496" y="-992" width="96" height="48"/>
+ </objectgroup>
+ <objectgroup id="14" name="trigger_lab">
+  <object id="324" x="528" y="-944" width="32" height="4.36364"/>
  </objectgroup>
  <objectgroup id="8" name="triggers">
   <object id="66" x="612.667" y="-74.6667" width="54.6667" height="21.6667"/>

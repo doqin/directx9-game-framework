@@ -80,7 +80,7 @@ void Demo::WorldSceneBase::Update(unsigned long long deltaTime)
 	if (!hasSeenChapterIntro && !isTransitioning) {
 		hasSeenChapterIntro = true;
 		if (chapterTitleUI) {
-			chapterTitleUI->Show(L"CHAPTER", L"< Subtitle >", 4.0f, 0xFFFFFFFF, 0xFFFFF200, 0x000000);
+			chapterTitleUI->Show(chapterTitle, chapterSubtitle, 4.0f, 0xFFFFFFFF, 0xFFFFF200, 0x000000);
 		}
 	}
 	if (chapterTitleUI) {
@@ -364,6 +364,11 @@ void Demo::WorldSceneBase::OpenChestWithDialog(std::shared_ptr<TreasureChestNPC>
 	currentConversation->AddLine({ .name = L"Treasure Chest", .content = msg, .voiceClip = std::optional<std::string>("bleep20") });
 }
 
+void Demo::WorldSceneBase::SetChapterTitle(const std::wstring& title, const std::wstring& subtitle) {
+	chapterTitle = title;
+	chapterSubtitle = subtitle;
+}
+
 void Demo::WorldSceneBase::AddDepthNode(std::vector<DepthNode>& nodes, float y, std::function<void()> drawCall)
 {
 	nodes.push_back({ y, std::move(drawCall) });
@@ -387,18 +392,16 @@ void Demo::WorldSceneBase::CreatePortalTransition(int sceneOffset, float targetX
 		if (bgm) {
 			DX9GF::AudioManager::GetInstance()->PlayBGM_Fade(bgm, bgmVol, 1.5f);
 		}
-		if (sceneOffset > 0) sceMan->GoToNext();
-		else if (sceneOffset < 0) sceMan->GoToPrevious();
-		else sceMan->GoToScene(sceMan->GetIndex() + sceneOffset);
+		sceMan->GoToScene(sceMan->GetIndex() + sceneOffset);
 		isTransitioning = false;
 		markFinished();
 	}));
 	drawBuffer->PushCommand(std::make_shared<TransitionCommand>(game->GetGraphicsDevice(), &this->uiCamera, 1.f, false));
 }
-
-void Demo::WorldSceneBase::SpawnMapEnemy(float x, float y, std::string id, std::vector<std::string> types,
-	bool isRand, bool isGlobal, std::function<void(DX9GF::GraphicsDevice*, unsigned long long)> bgDraw,
-	int tokenChance)
+void Demo::WorldSceneBase::SpawnMapEnemy(float x, float y, std::string id,
+	std::vector<std::string> types, bool isRand, bool isGlobal,
+	std::function<void(DX9GF::GraphicsDevice*, unsigned long long)> bgDraw,
+	int tokenChance, const std::string& questEvent, const std::string& questId)
 {
 	auto enemy = EnemyFactory::CreateMapEnemy(
 		x, y, id, types, isRand, isGlobal, "battle_loop", bgDraw,
@@ -416,22 +419,28 @@ void Demo::WorldSceneBase::SpawnMapEnemy(float x, float y, std::string id, std::
 	}
 	enemy->SetEventState(generatedEvent);
 
-	enemy->SetOnEncounterTriggered([this](std::shared_ptr<MapEnemy> e) {
+	enemy->SetOnEncounterTriggered([this, questEvent, questId](std::shared_ptr<MapEnemy> e) {
 		if (this->isTransitioning) return;
 		this->isTransitioning = true;
 
 		auto transitionIn = std::make_shared<TransitionCommand>(game->GetGraphicsDevice(), &this->uiCamera, 1.f, true);
 		this->drawBuffer->PushCommand(transitionIn);
 
-		this->commandBuffer->PushCommand(std::make_shared<DX9GF::CustomCommand>([this, transitionIn, e](std::function<void(void)> markFinished) {
+		this->commandBuffer->PushCommand(std::make_shared<DX9GF::CustomCommand>([this, transitionIn, e, questEvent, questId](std::function<void(void)> markFinished) {
 			if (!transitionIn->IsFinished()) return;
 
 			auto app = DX9GF::Application::GetInstance();
 			auto sceMan = this->game->GetSceneManager();
 			auto battleScene = new MapBattleScene(this->game, this->player, app->GetScreenWidth(), app->GetScreenHeight(), e->GetEncounterData());
 
-			battleScene->SetOnVictoryCallback([e]() {
+			battleScene->SetOnVictoryCallback([e, questEvent, questId, this]() {
 				e->SetDefeatedState(true, 180.f);
+				if (!questEvent.empty()) {
+					auto result = QuestManager::GetInstance()->NotifyEvent(questEvent, questId, this->player.get());
+					if (result.hasReward && this->popUpMessage) {
+						this->popUpMessage->ShowMessage(L"(+) " + result.rewardMessage, 5.0f);
+					}
+				}
 			});
 
 			sceMan->InsertScene(sceMan->GetIndex() + 1, battleScene);

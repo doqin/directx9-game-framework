@@ -39,6 +39,8 @@ namespace Demo {
 		std::shared_ptr<DX9GF::CommandBuffer> drawBuffer;
 		std::shared_ptr<DX9GF::CommandBuffer> commandBuffer;
 		std::shared_ptr<PopUpMessage> popUpMessage;
+		std::wstring chapterTitle = L"Unnamed";
+		std::wstring chapterSubtitle = L"< No Subtitle >";
 		std::shared_ptr<ChapterTitleUI> chapterTitleUI;
 		std::shared_ptr<IConversation> currentConversation;
 		std::shared_ptr<INPC> activeNPC = nullptr;
@@ -61,6 +63,8 @@ namespace Demo {
 
 		void OpenChestWithDialog(std::shared_ptr<TreasureChestNPC>& chest);
 
+		void SetChapterTitle(const std::wstring& title, const std::wstring& subtitle);
+
 		struct DepthNode {
 			float y;
 			std::function<void()> drawCall;
@@ -73,7 +77,7 @@ namespace Demo {
 
 		void SpawnMapEnemy(float x, float y, std::string id, std::vector<std::string> types,
 			bool isRand, bool isGlobal, std::function<void(DX9GF::GraphicsDevice*, unsigned long long)> bgDraw,
-			int tokenChance = 30);
+			int tokenChance = 30, const std::string& questEvent = "", const std::string& questId = "");
 
 		virtual void OnInit() = 0;
 		virtual void OnUpdate(unsigned long long deltaTime) {}

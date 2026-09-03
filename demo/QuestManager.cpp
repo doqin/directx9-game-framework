@@ -323,6 +323,21 @@ Demo::QuestEventResult Demo::QuestManager::NotifyEvent(const std::string& eventT
 			return { true, L"26 Gold - Quest Completed: First Encounter" };
 		}
 	}
+
+	if (eventType == "KAKOS_LAB_CLEARED") {
+		if (questStates["Quest_KakosLab"] == QuestState::Active) {
+			questStates["Quest_KakosLab"] = QuestState::Completed;
+
+			if (questDatabase.count("Quest_KakosLab")) {
+				questDatabase["Quest_KakosLab"].currentObjective = L"Lab Cleared!";
+				SetQuest(L"Quest: " + questDatabase["Quest_KakosLab"].currentObjective);
+			}
+			DX9GF::AudioManager::GetInstance()->Play("quest_completed", false, 0.8f);
+			player->AddGold(100);
+			return { true, L"100 Gold - Quest Completed: Kako's Lab" };
+		}
+	}
+
 	return { false, L"" };
 }
 

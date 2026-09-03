@@ -20,12 +20,15 @@ void Demo::TutorialWorldScene::OnInit()
 {
 	InitCore(248, 184, L"./assets/tutorial.tmx");
 
+	SetChapterTitle(L"CHAPTER I: CLOUD CANOPY", L"< System Initialized >");
 	map->SetAreaUpdateHandler("trigger_p", [this](const DX9GF::Map::ObjectArea& area) {
-		CreatePortalTransition(2, -417.f, 144.f, "bgm_arcade", 0.2f);
+		CreatePortalTransition(3, -417.f, 144.f, "bgm_arcade", 0.2f);
 	});
-
+	map->SetAreaUpdateHandler("trigger_lab", [this](const DX9GF::Map::ObjectArea& area) {
+		CreatePortalTransition(1, 64.f, -1.f, "bgm_secret", 0.3f);
+	});
 	map->SetAreaUpdateHandler("trigger_secret", [this](const DX9GF::Map::ObjectArea& area) {
-		CreatePortalTransition(1, -84 * 16, -39 * 16, "bgm_secret", 0.3f);
+		CreatePortalTransition(2, -84 * 16, -39 * 16, "bgm_secret", 0.3f);
 	});
 
 	NPCConfig daudauConfig = { L"assets/daudau-Sheet.png", 32, 32, 5, 12, 24.f, 8.f, 12.f };

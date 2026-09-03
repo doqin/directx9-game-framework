@@ -27,6 +27,8 @@ void Demo::BossWorldScene::OnInit()
 {
 	InitCore(360.f, 190.f, L"./assets/BossMatrix.tmx");
 
+	SetChapterTitle(L"CHAPTER III: THE OVERFLOW", L"< Critical: Memory Leak >");
+
 	NPCConfig daudauConfig = { L"assets/daudau-Sheet.png", 32, 32, 5, 12, 24.f, 8.f, 12.f };
 
 	auto npcHint = std::make_shared<NPC>(transformManager, -950.0f, -220.0f, daudauConfig);
