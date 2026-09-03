@@ -259,7 +259,7 @@ void Demo::ThreadAlleyScene::OnInit()
 	spawnThreadAlley(1024.f, -120.f, "th_extra_03", { "KernelEnemy" }, false, false);
 	spawnThreadAlley(1135.f, -525.f, "th_extra_04", {}, false, true);
 
-	player->SetBaseSurface("concrete");
+	player->SetBaseSurface("default");
 
 	transformManager->RebuildHierarchy();
 	this->GiveTestItems();

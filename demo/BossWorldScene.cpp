@@ -283,7 +283,7 @@ void Demo::BossWorldScene::OnInit()
 	gateSprite = std::make_shared<DX9GF::StaticSprite>(gateTexture.get());
 	gateSprite->SetPosition(46 * 16, -15 * 16);
 
-	player->SetBaseSurface("vinyl");
+	player->SetBaseSurface("default");
 
 	transformManager->RebuildHierarchy();
 	this->GiveTestItems();
