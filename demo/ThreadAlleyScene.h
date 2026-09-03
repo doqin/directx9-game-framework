@@ -34,12 +34,12 @@ namespace Demo {
 			: WorldSceneBase(game, sm, sw, sh) {
 		}
 		std::string GetSaveID() const override;
-		void Update(unsigned long long deltaTime) override;
 		void GiveTestItems();
 
 	protected:
 		void OnInit() override;
 		void OnUpdate(unsigned long long deltaTime) override;
+		bool IsSubsceneModalActive() const override { return authTerminal && authTerminal->IsMenuOpen(); }
 		void OnDrawWorld(std::vector<DepthNode>& depthNodes, unsigned long long deltaTime) override;
 		void OnDrawUI(unsigned long long deltaTime) override;
 		void OnGenerateSaveData(nlohmann::json& outData) override;

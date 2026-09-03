@@ -25,6 +25,8 @@ void Demo::ThreadAlleyScene::OnInit()
 {
 	InitCore(-544.5f, 128.5f, L"./assets/ThreadAlley.tmx");
 
+	SetChapterTitle(L"CHAPTER II: THREAD ALLEY", L"< Data Transit Zone >");
+
 	map->SetAreaUpdateHandler("trigger_p", [this](const DX9GF::Map::ObjectArea& area) {
 		CreatePortalTransition(1, 330.f, 263.f, "bgm_boss", 0.3f);
 	});
@@ -266,164 +268,41 @@ void Demo::ThreadAlleyScene::OnInit()
 	drawBuffer->PushCommand(std::make_shared<TransitionCommand>(game->GetGraphicsDevice(), &this->uiCamera, 1.f, false));
 }
 
-void Demo::ThreadAlleyScene::Update(unsigned long long deltaTime)
+void Demo::ThreadAlleyScene::OnUpdate(unsigned long long deltaTime)
 {
-	PopupManager::GetInstance()->SetUICamera(&this->uiCamera);
-	QuestManager::GetInstance()->SetUICamera(&this->uiCamera);
-	QuestManager::GetInstance()->SetVirtualResolution(game->GetVirtualWidth(), game->GetVirtualHeight());
-	QuestManager::GetInstance()->SetVisible(!(inventoryMenu && inventoryMenu->IsOpen())
-		&& !(authTerminal && authTerminal->IsMenuOpen()));
-	QuestManager::GetInstance()->Update(deltaTime);
-
-	if (!hasSeenChapterIntro && !isTransitioning) {
-		hasSeenChapterIntro = true;
-		if (chapterTitleUI) {
-			chapterTitleUI->Show(L"CHAPTER II: THREAD ALLEY", L"< Data Transit Zone >", 4.0f, 0xFFFFFFFF, 0xFF00FFFF, 0xFF000000);
-		}
-	}
-	if (chapterTitleUI) {
-		chapterTitleUI->Update(deltaTime);
-	}
-
 	auto inpMan = DX9GF::InputManager::GetInstance();
-	inpMan->ReadMouse(deltaTime);
-	inpMan->ReadKeyboard(deltaTime);
+	auto* settings = SettingsManager::GetInstance();
 
-	bool wasTerminalMenuOpen = authTerminal && authTerminal->IsMenuOpen();
-	if (authTerminal && (wasTerminalMenuOpen
+	// The auth terminal owns its own modal PasswordMenu. Pump it while the menu is
+	// open, or while the player is free to open it (no dialogue / popup in the way).
+	// IsSubsceneModalActive() reports the menu state back to WorldSceneBase::Update
+	// so the shared world/input handling freezes while it is up.
+	bool terminalMenuOpen = authTerminal && authTerminal->IsMenuOpen();
+	if (authTerminal && (terminalMenuOpen
 		|| (!currentConversation && !PopupManager::GetInstance()->IsActive()))) {
 		authTerminal->Update(deltaTime);
 	}
-	bool isTerminalMenuOpen = authTerminal && authTerminal->IsMenuOpen();
-
-	static float escCooldown = 0.0f;
-	if (escCooldown > 0) escCooldown -= deltaTime;
-	if (wasTerminalMenuOpen && !isTerminalMenuOpen) escCooldown = 300.0f;
-
-	if (!isTerminalMenuOpen && inpMan->KeyPress(SettingsManager::GetInstance()->GetKeybind("OPEN_INVENTORY")) && escCooldown <= 0) {
-		if (inventoryMenu) inventoryMenu->Toggle();
-		escCooldown = 300.0f;
-	}
-
-	bool isGamePaused = this->isGamePaused || isTerminalMenuOpen;
-
-	if (PopupManager::GetInstance()->IsActive()) {
-		PopupManager::GetInstance()->Update(deltaTime, &this->uiCamera);
-		isGamePaused = true;
-	}
-
-	if (popUpMessage) {
-		popUpMessage->Update(deltaTime);
-	}
-
-	if (currentConversation) {
-		isGamePaused = true;
-		currentConversation->Execute(deltaTime);
-		if (currentConversation->IsFinished()) {
-			currentConversation = nullptr;
-			if (activeNPC && activeNPC->GetOnDialogueEnd()) {
-				activeNPC->GetOnDialogueEnd()();
-			}
-			activeNPC = nullptr;
-
-			if (onConversationEnd) {
-				auto callback = std::move(onConversationEnd);
-				onConversationEnd = nullptr;
-				callback();
-			}
-		}
-	}
-
-	for (auto& npc : mapNPCs) {
-		npc->Update(deltaTime);
-		if (!currentConversation && !isTerminalMenuOpen && npc->CanInteract() && inpMan->KeyPress(SettingsManager::GetInstance()->GetKeybind("INTERACT"))) {
-			npc->ClearLines();
-			auto onEndCallback = npc->TriggerInteract();
-
-			activeNPC = npc;
-			activeNPC->SetOnDialogueEnd(onEndCallback);
-
-			auto [sw, sh] = camera.GetScreenResolution();
-			currentConversation = std::make_shared<IConversation>(std::make_shared<DX9GF::FontSprite>(font.get()), sw, sh);
-			for (auto& line : npc->GetDialogueLines()) {
-				currentConversation->AddLine(line);
-			}
-			break;
-		}
-	}
+	terminalMenuOpen = authTerminal && authTerminal->IsMenuOpen();
 
 	if (trojanNPC) {
 		trojanNPC->Update(deltaTime);
-		if (!currentConversation && !isTerminalMenuOpen && trojanNPC->CanInteract()
-			&& inpMan->KeyPress(SettingsManager::GetInstance()->GetKeybind("INTERACT"))) {
+		if (!currentConversation && !terminalMenuOpen && trojanNPC->CanInteract()
+			&& inpMan->KeyPress(settings->GetKeybind("INTERACT"))) {
 			StartTrojanConversation();
 		}
 	}
 
 	if (sketchyGuy) {
 		sketchyGuy->Update(deltaTime);
-		if (!currentConversation && !isTerminalMenuOpen
+		if (!currentConversation && !terminalMenuOpen
 			&& !PopupManager::GetInstance()->IsActive()
 			&& !(inventoryMenu && inventoryMenu->IsOpen())
 			&& game->GetSceneManager()->GetCurrentScene() == this
 			&& sketchyGuy->CanInteract()
-			&& inpMan->KeyPress(SettingsManager::GetInstance()->GetKeybind("INTERACT"))) {
+			&& inpMan->KeyPress(settings->GetKeybind("INTERACT"))) {
 			StartSketchyGuyInteraction();
 		}
 	}
-
-	for (auto& savePoint : savePoints) {
-		savePoint->Update(deltaTime);
-	}
-	for (auto& shopPoint : shopPoints) {
-		shopPoint->Update(deltaTime);
-	}
-	for (auto& healPoint : healingPoints) {
-		healPoint->Update(deltaTime);
-	}
-
-	for (auto& chest : treasureChests) {
-		chest->Update(deltaTime);
-		if (!currentConversation && chest->CanInteract() && inpMan->KeyPress(SettingsManager::GetInstance()->GetKeybind("INTERACT"))) {
-			OpenChestWithDialog(chest);
-		}
-	}
-
-	if (inventoryMenu && inventoryMenu->IsOpen()) {
-		isGamePaused = true;
-		inventoryMenu->Update(deltaTime);
-	}
-
-	if (playerHUD && !isGamePaused) playerHUD->Update(deltaTime);
-
-	if (!isGamePaused) {
-		for (auto& enemy : mapEnemies) {
-			enemy->Update(deltaTime);
-		}
-		player->Update(deltaTime);
-		camera.Update();
-	}
-
-	this->uiCamera.Update();
-	transformManager->UpdateAll();
-	if (!isGamePaused) map->UpdateAreas(player->GetCollider().lock()->GetWorldX(), player->GetCollider().lock()->GetWorldY());
-
-	if (draggableManager && inventoryMenu && inventoryMenu->IsOpen() && inventoryMenu->GetCurrentTab() == Demo::InventoryMenu::Tab::DECK) {
-		draggableManager->Update(deltaTime);
-	}
-
-	if (inventoryMenu && inventoryMenu->IsPendingLeave()) {
-		auto sceMan = game->GetSceneManager();
-		sceMan->GoToScene(0);
-		auto audio = DX9GF::AudioManager::GetInstance();
-		audio->PlayBGM_Fade("bgm_sky", 0.9f, 1.5f);
-		return;
-	}
-	commandBuffer->Update(deltaTime);
-}
-
-void Demo::ThreadAlleyScene::OnUpdate(unsigned long long deltaTime)
-{
 }
 
 void Demo::ThreadAlleyScene::OnDrawWorld(std::vector<DepthNode>& depthNodes, unsigned long long deltaTime)

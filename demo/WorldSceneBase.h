@@ -81,6 +81,9 @@ namespace Demo {
 
 		virtual void OnInit() = 0;
 		virtual void OnUpdate(unsigned long long deltaTime) {}
+		// Hook: a subclass-owned modal (e.g. a terminal UI) that should freeze the
+		// world and suppress the shared inventory / interaction input while it is up.
+		virtual bool IsSubsceneModalActive() const { return false; }
 		virtual void OnDrawWorld(std::vector<DepthNode>& depthNodes, unsigned long long deltaTime) {}
 		virtual void OnDrawUI(unsigned long long deltaTime) {}
 		virtual void OnGenerateSaveData(nlohmann::json& outData) {}

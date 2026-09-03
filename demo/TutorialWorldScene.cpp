@@ -72,6 +72,7 @@ void Demo::TutorialWorldScene::OnInit()
 	mapNPCs.push_back(npcIntroduction);
 
 	auto npcKako = std::make_shared<NPC>(transformManager, 592.0f, -912.0f, kakoConfig);
+	npcKako->AttachQuestMarker("Quest_KakosLab", Demo::QuestMarkerRole::Giver);
 	npcKako->Init(game->GetGraphicsDevice(), &camera, player, colliderManager, font, drawBuffer);
 	npcKako->RegisterVoice(L"Kako", "bleep28");
 	npcKako->SetInteractLogic([](NPC* self) -> std::function<void()> {

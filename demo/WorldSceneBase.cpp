@@ -74,7 +74,7 @@ void Demo::WorldSceneBase::Update(unsigned long long deltaTime)
 	PopupManager::GetInstance()->SetUICamera(&this->uiCamera);
 	QuestManager::GetInstance()->SetUICamera(&this->uiCamera);
 	QuestManager::GetInstance()->SetVirtualResolution(game->GetVirtualWidth(), game->GetVirtualHeight());
-	QuestManager::GetInstance()->SetVisible(!(inventoryMenu && inventoryMenu->IsOpen()));
+	QuestManager::GetInstance()->SetVisible(!(inventoryMenu && inventoryMenu->IsOpen()) && !IsSubsceneModalActive());
 	QuestManager::GetInstance()->Update(deltaTime);
 
 	if (!hasSeenChapterIntro && !isTransitioning) {
@@ -118,12 +118,12 @@ void Demo::WorldSceneBase::Update(unsigned long long deltaTime)
 	static float escCooldown = 0.0f;
 	if (escCooldown > 0) escCooldown -= deltaTime;
 
-	if (inpMan->KeyPress(SettingsManager::GetInstance()->GetKeybind("OPEN_INVENTORY")) && escCooldown <= 0) {
+	if (!IsSubsceneModalActive() && inpMan->KeyPress(SettingsManager::GetInstance()->GetKeybind("OPEN_INVENTORY")) && escCooldown <= 0) {
 		if (inventoryMenu) inventoryMenu->Toggle();
 		escCooldown = 300.0f;
 	}
 
-	bool isGamePaused = this->isGamePaused;
+	bool isGamePaused = this->isGamePaused || IsSubsceneModalActive();
 
 	if (PopupManager::GetInstance()->IsActive()) {
 		PopupManager::GetInstance()->Update(deltaTime, &this->uiCamera);
@@ -137,7 +137,7 @@ void Demo::WorldSceneBase::Update(unsigned long long deltaTime)
 	for (auto& npc : mapNPCs) {
 		npc->Update(deltaTime);
 
-		if (!currentConversation && npc->CanInteract() && inpMan->KeyPress(SettingsManager::GetInstance()->GetKeybind("INTERACT"))) {
+		if (!currentConversation && !IsSubsceneModalActive() && npc->CanInteract() && inpMan->KeyPress(SettingsManager::GetInstance()->GetKeybind("INTERACT"))) {
 			npc->ClearLines();
 			auto onEndCallback = npc->TriggerInteract();
 
@@ -185,7 +185,7 @@ void Demo::WorldSceneBase::Update(unsigned long long deltaTime)
 
 	for (auto& chest : treasureChests) {
 		chest->Update(deltaTime);
-		if (!currentConversation && chest->CanInteract() && inpMan->KeyPress(SettingsManager::GetInstance()->GetKeybind("INTERACT"))) {
+		if (!currentConversation && !IsSubsceneModalActive() && chest->CanInteract() && inpMan->KeyPress(SettingsManager::GetInstance()->GetKeybind("INTERACT"))) {
 			auto given = chest->Open(player.get());
 			if (!given.empty()) {
 				std::wstring msg = L"You found: ";
