@@ -417,6 +417,7 @@
     <Image Include="assets\xprojectile.png" />
     <Image Include="assets\ui-pack.png" />
     <Image Include="assets\lab.png" />
+    <Image Include="assets\labinside.png" />
   </ItemGroup>
   <ItemGroup>
     <Font Include="assets\arcade-among-2-r46pv.ttf" />
@@ -442,5 +443,7 @@
     <None Include="wave1.bin" />
     <None Include="assets\XP.tsx" />
     <None Include="assets\lab.tsx" />
+    <None Include="assets\labinside.tsx" />
+    <None Include="assets\labinside.tmx" />
   </ItemGroup>
 </Project>

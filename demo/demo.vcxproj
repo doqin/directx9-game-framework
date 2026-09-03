@@ -485,6 +485,10 @@
     <None Include="assets\lab.tsx">
       <DeploymentContent>true</DeploymentContent>
     </None>
+    <None Include="assets\labinside.tmx" />
+    <None Include="assets\labinside.tsx">
+      <DeploymentContent>true</DeploymentContent>
+    </None>
     <None Include="assets\placeholder-round-projectile.aseprite" />
     <None Include="assets\SecretPuzzle.tmx">
       <DeploymentContent>true</DeploymentContent>
@@ -556,6 +560,9 @@
       <DeploymentContent>true</DeploymentContent>
     </Image>
     <Image Include="assets\lab.png">
+      <DeploymentContent>true</DeploymentContent>
+    </Image>
+    <Image Include="assets\labinside.png">
       <DeploymentContent>true</DeploymentContent>
     </Image>
     <Image Include="assets\selltab.png">
