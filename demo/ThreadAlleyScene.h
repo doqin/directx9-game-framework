@@ -1,67 +1,17 @@
 #pragma once
-#include "DX9GF.h"
-#include "DX9GFExtras.h"
-#include "Game.h"
-#include "Player.h"
-#include "SavePoint.h"
-#include "InventoryMenu.h"
-#include "StrikeCard.h"
-#include "ShopPoint.h"
-#include "HealingPoint.h"
-#include "TreasureChestNPC.h"
-#include "IConversation.h"
-#include "PlayerHUD.h"
-#include "NPC.h"
+#include "WorldSceneBase.h"
 #include "AuthTerminal.h"
 #include "TrojanNPC.h"
 #include "SketchyGuyNPC.h"
 #include "PackOpeningScene.h"
 
-#include "PopUpMessage.h"
-#include "MapEnemy.h"
-#include "ChapterTitleUI.h"
-
 namespace Demo {
-	class ThreadAlleyScene : public DX9GF::IScene, public DX9GF::ISaveable {
-		bool isGamePaused = false;
-		bool isTransitioning = false;
-		bool hasSeenChapterIntro = false;
-
-		Game* game;
-		std::shared_ptr<DX9GF::ColliderManager> colliderManager;
-		std::shared_ptr<DX9GF::TransformManager> transformManager;
-		std::shared_ptr<Demo::DraggableManager> draggableManager;
-		std::shared_ptr<InventoryMenu> inventoryMenu;
-		std::shared_ptr<PlayerHUD> playerHUD;
-		std::shared_ptr<DX9GF::SaveManager> saveManager;
-
-		std::vector<std::shared_ptr<SavePoint>> savePoints;
-		std::vector<std::shared_ptr<ShopPoint>> shopPoints;
-		std::vector<std::shared_ptr<HealingPoint>> healingPoints;
-
-		std::shared_ptr<DX9GF::Font> font;
-		std::shared_ptr<Player> player;
-		std::shared_ptr<DX9GF::Map> map;
-		std::shared_ptr<DX9GF::CommandBuffer> drawBuffer;
-		std::shared_ptr<DX9GF::CommandBuffer> commandBuffer;
-
-		std::vector<std::shared_ptr<NPC>> mapNPCs;
-
+	class ThreadAlleyScene : public WorldSceneBase {
 		std::shared_ptr<AuthTerminal> authTerminal;
 		std::shared_ptr<TrojanNPC> trojanNPC;
 		std::shared_ptr<SketchyGuyNPC> sketchyGuy;
-		// Four digits, rolled once per save file and persisted so it survives a reload.
 		std::string authPassword;
 		bool authTerminalSolved = false;
-
-		std::shared_ptr<INPC> activeNPC = nullptr;
-		std::shared_ptr<PopUpMessage> popUpMessage;
-		std::shared_ptr<ChapterTitleUI> chapterTitleUI;
-		std::vector<std::shared_ptr<TreasureChestNPC>> treasureChests;
-		std::shared_ptr<IConversation> currentConversation;
-		// IConversation has no completion hook, so the scene fires this when the box closes.
-		std::function<void()> onConversationEnd;
-		std::vector<std::shared_ptr<MapEnemy>> mapEnemies;
 
 		float bgBaseScrollX = 0;
 		float bgBaseScrollY = 0;
@@ -69,8 +19,7 @@ namespace Demo {
 		float bgEaseProgress = 0;
 		float bgOddRowShift = 0;
 		float bgEvenRowShift = 0;
-
-		int bgAnimPhase = 0; // Tracks which square shift we are on
+		int bgAnimPhase = 0;
 		D3DCOLOR bgBlinkColor = D3DCOLOR_XRGB(80, 80, 80);
 		D3DCOLOR bgBaseColor1 = D3DCOLOR_ARGB(0, 20, 20, 20);
 		D3DCOLOR bgBaseColor2 = 0xFF793a80;
@@ -81,16 +30,20 @@ namespace Demo {
 		void StartSketchyGuyInteraction();
 
 	public:
-		ThreadAlleyScene(Game* game, std::shared_ptr<DX9GF::SaveManager> sm, UINT sw, UINT sh) : IScene(sw, sh), game(game), saveManager(sm) {}
-		void Init() override;
-		void Update(unsigned long long deltaTime) override;
-		void DrawWorld(unsigned long long deltaTime) override;
-		void DrawUI(unsigned long long deltaTime) override;
+		ThreadAlleyScene(Game* game, std::shared_ptr<DX9GF::SaveManager> sm, UINT sw, UINT sh)
+			: WorldSceneBase(game, sm, sw, sh) {
+		}
 		std::string GetSaveID() const override;
-		void GenerateSaveData(nlohmann::json& outData) override;
-		void RestoreSaveData(const nlohmann::json& inData) override;
-
+		void Update(unsigned long long deltaTime) override;
 		void GiveTestItems();
-		std::shared_ptr<Player> GetPlayer() const { return player; }
+
+	protected:
+		void OnInit() override;
+		void OnUpdate(unsigned long long deltaTime) override;
+		void OnDrawWorld(std::vector<DepthNode>& depthNodes, unsigned long long deltaTime) override;
+		void OnDrawUI(unsigned long long deltaTime) override;
+		void OnGenerateSaveData(nlohmann::json& outData) override;
+		void OnRestoreSaveData(const nlohmann::json& inData) override;
+		void DrawBackground(DX9GF::GraphicsDevice* gd, unsigned long long deltaTime) override;
 	};
 }

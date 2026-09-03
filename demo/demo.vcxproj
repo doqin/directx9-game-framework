@@ -338,6 +338,7 @@
     <ClCompile Include="VirtualBattleState.cpp" />
     <ClCompile Include="WarlockEnemy.cpp" />
     <ClCompile Include="World1Scene.cpp" />
+    <ClCompile Include="WorldSceneBase.cpp" />
     <ClCompile Include="TextButton.cpp" />
     <ClCompile Include="EnemyCard.cpp" />
     <ClCompile Include="IBlockCard.cpp" />
@@ -467,6 +468,7 @@
     <ClInclude Include="VirtualBattleState.h" />
     <ClInclude Include="WarlockEnemy.h" />
     <ClInclude Include="World1Scene.h" />
+    <ClInclude Include="WorldSceneBase.h" />
   </ItemGroup>
   <ItemGroup>
     <None Include="assets\BossMatrix.tmx">

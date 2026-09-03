@@ -11,75 +11,23 @@
 #include "EnemyFactory.h"
 #include "QuestManager.h"
 #include "MapBattleScene.h"
+#include "CardShop.h"
+#include "ItemShop.h"
 #include "backends/imgui_impl_dx9.h"
 #include "backends/imgui_impl_win32.h"
 
-void Demo::TutorialWorldScene::Init()
+void Demo::TutorialWorldScene::OnInit()
 {
-	camera.SetZoom(2.0f);
-	transformManager = std::make_shared<DX9GF::TransformManager>();
-	colliderManager = std::make_shared<DX9GF::ColliderManager>();
-	player = std::make_shared<Player>(transformManager, 248, 184);
-	camera.SetPosition(248, 184);
-	player->Init(game->GetGraphicsDevice(), colliderManager.get(), &camera);
-	drawBuffer = std::make_shared<DX9GF::CommandBuffer>();
-	commandBuffer = std::make_shared<DX9GF::CommandBuffer>();
-	popUpMessage = std::make_shared<PopUpMessage>(transformManager, game);
-	popUpMessage->Init(game->GetGraphicsDevice(), &this->uiCamera);
-	map = std::make_shared<DX9GF::Map>(game->GetGraphicsDevice());
-	map->Create(transformManager, colliderManager, "./assets/tutorial.tmx");
-
-	/*map->SetAreaUpdateHandler("triggers", GetRandomEncounterFunc(game, player, {
-		{"DemonEyeEnemy", 40},
-		{"MimicEnemy", 20},
-		}, drawBuffer, commandBuffer, &isGamePaused, & this->uiCamera, [this](DX9GF::GraphicsDevice* gd, unsigned long long deltaTime) { DrawBackground(gd, deltaTime); }));*/
+	InitCore(248, 184, L"./assets/tutorial.tmx");
 
 	map->SetAreaUpdateHandler("trigger_p", [this](const DX9GF::Map::ObjectArea& area) {
-		if (isTransitioning) return;
-		isTransitioning = true;
-		auto transitionInCommand = std::make_shared<TransitionCommand>(game->GetGraphicsDevice(), &this->uiCamera, 1.f, true);
-		drawBuffer->PushCommand(transitionInCommand);
-		commandBuffer->PushCommand(std::make_shared<DX9GF::CustomCommand>([this, transitionInCommand](std::function<void(void)> markFinished) {
-			if (!transitionInCommand->IsFinished()) {
-				return;
-			}
-			auto sceMan = game->GetSceneManager();
-			auto targetScene = sceMan->GetScene(static_cast<size_t>(sceMan->GetIndex()) + 2);
-			auto targetPlayer = MainMenu::gameSaveState->GetPlayerFromScene(targetScene);
-			targetPlayer->SetLocalPosition(-417.f, 144.f);
-			DX9GF::AudioManager::GetInstance()->PlayBGM_Fade("bgm_arcade", 0.2f, 1.5f);
-			sceMan->GoToScene(sceMan->GetIndex() + 2);
-			isTransitioning = false;
-			markFinished();
-			}));
-		drawBuffer->PushCommand(std::make_shared<TransitionCommand>(game->GetGraphicsDevice(), &this->uiCamera, 1.f, false));
-		});
+		CreatePortalTransition(2, -417.f, 144.f, "bgm_arcade", 0.2f);
+	});
 
-	map->SetAreaUpdateHandler("trigger_secret", [this](const DX9GF::Map::ObjectArea& area) {if (isTransitioning) return;
-	isTransitioning = true;
-	auto transitionInCommand = std::make_shared<TransitionCommand>(game->GetGraphicsDevice(), &this->uiCamera, 1.f, true);
-	drawBuffer->PushCommand(transitionInCommand);
-	commandBuffer->PushCommand(std::make_shared<DX9GF::CustomCommand>([this, transitionInCommand](std::function<void(void)> markFinished) {
-		if (!transitionInCommand->IsFinished()) {
-			return;
-		}
-		auto sceMan = game->GetSceneManager();
-		auto targetScene = sceMan->GetScene(static_cast<size_t>(sceMan->GetIndex()) + 1);
-		auto targetPlayer = MainMenu::gameSaveState->GetPlayerFromScene(targetScene);
-		targetPlayer->SetLocalPosition(-84 * 16, -39 * 16);
-		DX9GF::AudioManager::GetInstance()->PlayBGM_Fade("bgm_secret", 0.3f, 1.5f);
-		sceMan->GoToNext();
-		isTransitioning = false;
-		markFinished();
-		}));
-	drawBuffer->PushCommand(std::make_shared<TransitionCommand>(game->GetGraphicsDevice(), &this->uiCamera, 1.f, false));
-		});
+	map->SetAreaUpdateHandler("trigger_secret", [this](const DX9GF::Map::ObjectArea& area) {
+		CreatePortalTransition(1, -84 * 16, -39 * 16, "bgm_secret", 0.3f);
+	});
 
-	font = std::make_shared<DX9GF::Font>(game->GetGraphicsDevice(), L"StatusPlz", 16);
-
-	chapterTitleUI = std::make_shared<ChapterTitleUI>(font);
-
-	//npcs init
 	NPCConfig daudauConfig = { L"assets/daudau-Sheet.png", 32, 32, 5, 12, 24.f, 8.f, 12.f };
 	NPCConfig kakoConfig = { L"assets/kako-Sheet.png", 32, 32, 2, 6, 24.f, 8.f, 12.f };
 
@@ -102,14 +50,13 @@ void Demo::TutorialWorldScene::Init()
 			self->AddLine(L"Kako", L"But I can teach you how to survive here! Explore around a bit and I'll explain further.");
 			self->AddLine(L"Kako", L"By the way, use the floppy disk icon over there to save your progress.");
 
-			//trigger popup to active quest
 			return []() {
 				std::vector<std::pair<std::wstring, std::function<void()>>> buttons = {
 					{ L"Yes(Y)", []() { QuestManager::GetInstance()->AcceptQuest("Quest_Tutorial"); } },
 					{ L"No(N)", []() {} }
 				};
 				PopupManager::GetInstance()->Show("stepped_blue", L"New Quest", L"Accept Beginner's Quest?", buttons);
-				};
+			};
 		}
 		else if (qState == Demo::QuestState::Active) {
 			self->AddLine(L"Kako", L"Explore around a bit!");
@@ -118,8 +65,9 @@ void Demo::TutorialWorldScene::Init()
 			self->AddLine(L"Kako", L"Great job! You know the basics of survival now.");
 		}
 		return nullptr;
-		});
+	});
 	mapNPCs.push_back(npcIntroduction);
+
 	auto npcKako = std::make_shared<NPC>(transformManager, 592.0f, -912.0f, kakoConfig);
 	npcKako->Init(game->GetGraphicsDevice(), &camera, player, colliderManager, font, drawBuffer);
 	npcKako->RegisterVoice(L"Kako", "bleep28");
@@ -153,9 +101,8 @@ void Demo::TutorialWorldScene::Init()
 		else {
 			self->AddLine(L"Kako", L"Thanks for helping me clear the lab!");
 		}
-
 		return nullptr;
-		});
+	});
 	mapNPCs.push_back(npcKako);
 
 	auto npcExplainingEnemyEncounters = std::make_shared<NPC>(transformManager, 544.0f, -56.0f, daudauConfig);
@@ -167,7 +114,7 @@ void Demo::TutorialWorldScene::Init()
 		self->AddLine(L"Dau Dau", L"You can try to outrun them or hide behind walls to break their line of sight.");
 		self->AddLine(L"Dau Dau", L"Don't worry, you can run away from battles if you want.\n But you won't get any rewards if you do that!");
 		return nullptr;
-		});
+	});
 	mapNPCs.push_back(npcExplainingEnemyEncounters);
 
 	auto npcExplainingHealingPoint = std::make_shared<NPC>(transformManager, 289.0f, -496.0f, daudauConfig);
@@ -185,7 +132,7 @@ void Demo::TutorialWorldScene::Init()
 		self->AddLine(L"Dau Dau", L"This is a healing point. You can use it to restore your health. Just interact with it like you do with me.");
 		self->AddLine(L"Dau Dau", L"If you want to heal in combat, you can use healing items! Check out my shop up ahead for some.");
 		return nullptr;
-		});
+	});
 	mapNPCs.push_back(npcExplainingHealingPoint);
 
 	auto npcExplainingPortal = std::make_shared<NPC>(transformManager, 630.f, -639.f, daudauConfig);
@@ -195,18 +142,8 @@ void Demo::TutorialWorldScene::Init()
 		self->AddLine(L"Dau Dau", L"Up this hill, there will be a foe waiting for you. It's guarding a portal that'll take you to the next area.");
 		self->AddLine(L"Dau Dau", L"Good luck!");
 		return nullptr;
-		});
+	});
 	mapNPCs.push_back(npcExplainingPortal);
-
-	auto borderTex = std::make_shared<DX9GF::Texture>(game->GetGraphicsDevice());
-	borderTex->LoadTexture(L"assets/popup-borders.png");
-
-	auto uiTex = std::make_shared<DX9GF::Texture>(game->GetGraphicsDevice());
-	uiTex->LoadTexture(L"assets/ui.png");
-
-	PopupManager::GetInstance()->Init(game->GetGraphicsDevice(), borderTex, uiTex, font);
-	QuestManager::GetInstance()->SetVirtualResolution(game->GetVirtualWidth(), game->GetVirtualHeight());
-	QuestManager::GetInstance()->Init(game->GetGraphicsDevice(), transformManager, &this->uiCamera, font);
 
 	savePoints.push_back(std::make_shared<SavePoint>(transformManager, 248.0f, -70.0f));
 	savePoints.push_back(std::make_shared<SavePoint>(transformManager, -64.0f, -592.0f));
@@ -216,27 +153,29 @@ void Demo::TutorialWorldScene::Init()
 		sp->SetVisible(true);
 	}
 
-	shopPoint_Card = std::make_shared<ShopPoint>(transformManager, 183.0f, -460.0f);
-	shopPoint_Card->Init(game, game->GetGraphicsDevice(), &camera, player, colliderManager, font, drawBuffer,
+	auto shopCard = std::make_shared<ShopPoint>(transformManager, 183.0f, -460.0f);
+	shopCard->Init(game, game->GetGraphicsDevice(), &camera, player, colliderManager, font, drawBuffer,
 		[](Game* g, Player* p, int w, int h) {
 			return new CardShop(g, p, w, h, ShopTier::BASIC);
 		}
 	);
-	shopPoint_Card->SetVisible(true);
+	shopCard->SetVisible(true);
+	shopPoints.push_back(shopCard);
 
-	shopPoint_BSItem = std::make_shared<ShopPoint>(transformManager, 320.0f, -660.0f);
-	shopPoint_BSItem->Init(game, game->GetGraphicsDevice(), &camera, player, colliderManager, font, drawBuffer,
+	auto shopItem = std::make_shared<ShopPoint>(transformManager, 320.0f, -660.0f);
+	shopItem->Init(game, game->GetGraphicsDevice(), &camera, player, colliderManager, font, drawBuffer,
 		[](Game* g, Player* p, int w, int h) {
 			return new ItemShop(g, p, w, h, ShopTier::BASIC);
 		}
 	);
-	shopPoint_BSItem->SetVisible(true);
+	shopItem->SetVisible(true);
+	shopPoints.push_back(shopItem);
 
-	healingPoint = std::make_shared<HealingPoint>(transformManager, 368.0f, -400.0f);
-	healingPoint->Init(game->GetGraphicsDevice(), &camera, player, colliderManager, font, drawBuffer);
-	healingPoint->SetVisible(true);
+	auto healPt = std::make_shared<HealingPoint>(transformManager, 368.0f, -400.0f);
+	healPt->Init(game->GetGraphicsDevice(), &camera, player, colliderManager, font, drawBuffer);
+	healPt->SetVisible(true);
+	healingPoints.push_back(healPt);
 
-	//TreasureChest
 	treasureChests.push_back(std::make_shared<TreasureChestNPC>(
 		transformManager, 174.f, -629.f,
 		std::vector<ChestReward>{
@@ -253,382 +192,25 @@ void Demo::TutorialWorldScene::Init()
 	}, true));
 	treasureChests.back()->Init(game->GetGraphicsDevice(), &camera, player, colliderManager, font, drawBuffer);
 
-	BattleEncounter testEncounter;
-	testEncounter.mapEnemyID = "tutorial_mimic_01";
-	testEncounter.enemyTypes = { "MimicEnemy" };
-	testEncounter.bgmName = "battle_loop1";
-	testEncounter.bgDrawFunc = [this](DX9GF::GraphicsDevice* gd, unsigned long long deltaTime) {
+	auto bgDraw = [this](DX9GF::GraphicsDevice* gd, unsigned long long deltaTime) {
 		DrawBackground(gd, deltaTime);
-		};
-	testEncounter.mapTexturePath = L"assets/notresponding-Sheet.png";
-	testEncounter.spriteWidth = 64;
-	testEncounter.spriteHeight = 64;
+	};
 
-	//map enemies
-	auto spawn = [&](float x, float y, std::string id, std::vector<std::string> types, bool isRand, bool isGlobal) {
-		auto bgDraw = [this](DX9GF::GraphicsDevice* gd, unsigned long long deltaTime) {
-			DrawBackground(gd, deltaTime);
-			};
-
-		auto enemy = EnemyFactory::CreateMapEnemy(
-			x, y, id, types, isRand, isGlobal, "battle_loop", bgDraw,
-			transformManager, game, colliderManager.get(), player
-		);
-
-		//token spawning area
-		Demo::EventType generatedEvent = Demo::EventType::None;
-		if (enemy->GetEncounterData().enemyTypes.size() >= 2 && Demo::RNG::Range(1, 100) <= 30) {
-			generatedEvent = (Demo::RNG::Range(1, 100) <= 50) ? Demo::EventType::Gold : Demo::EventType::Energy;
-		}
-		enemy->SetEventState(generatedEvent);
-
-		enemy->SetOnEncounterTriggered([this](std::shared_ptr<MapEnemy> e) {
-			if (this->isTransitioning) return;
-			this->isTransitioning = true;
-
-			auto transitionIn = std::make_shared<TransitionCommand>(game->GetGraphicsDevice(), &this->uiCamera, 1.f, true);
-			this->drawBuffer->PushCommand(transitionIn);
-
-			this->commandBuffer->PushCommand(std::make_shared<DX9GF::CustomCommand>([this, transitionIn, e](std::function<void(void)> markFinished) {
-				if (!transitionIn->IsFinished()) return;
-
-				auto app = DX9GF::Application::GetInstance();
-				auto sceMan = this->game->GetSceneManager();
-				auto battleScene = new MapBattleScene(this->game, this->player, app->GetScreenWidth(), app->GetScreenHeight(), e->GetEncounterData());
-				battleScene->SetOnVictoryCallback([e, this]() {
-					e->SetDefeatedState(true, 180.f);
-					this->commandBuffer->PushCommand(std::make_shared<DX9GF::CustomCommand>([this, e](std::function<void()> markFinished) {
-						auto result = QuestManager::GetInstance()->NotifyEvent("FIRST_ENCOUNTER_DEFEATED", e->GetEnemyID(), this->GetPlayer().get());
-
-						if (result.hasReward) {
-							if (this->popUpMessage) {
-								this->popUpMessage->QueueMessage(this->commandBuffer.get(), L"(+) " + result.rewardMessage, 4.0f);
-							}
-						}
-						markFinished();
-						}));
-					});
-
-				sceMan->InsertScene(sceMan->GetIndex() + 1, battleScene);
-				sceMan->GoToNext();
-
-				this->isTransitioning = false;
-				markFinished();
-				}));
-
-			this->drawBuffer->PushCommand(std::make_shared<TransitionCommand>(game->GetGraphicsDevice(), &this->uiCamera, 1.f, false));
-			});
-
-		mapEnemies.push_back(enemy);
-		};
-
-	//test kernel
-	spawn(615.f, -170.f, "tutorial_keye_01", { "KeyeEnemy" }, false, false);
-	spawn(510.f, -380.f, "tutorial_demoneye_01", { "DemonEyeEnemy" }, false, false);
-	spawn(500.f, -590.f, "tutorial_random_01", { "KeyeEnemy", "DemonEyeEnemy" }, true, false);
-	spawn(-45.f, -409.f, "tutorial_random_02", { "KeyeEnemy", "DemonEyeEnemy", "MimicEnemy" }, true, false);
-
-	draggableManager = std::make_shared<Demo::DraggableManager>();
-
-	inventoryMenu = std::make_shared<InventoryMenu>(game, player, transformManager, draggableManager, &this->uiCamera, font.get());
-	inventoryMenu->Init();
-
-	playerHUD = std::make_shared<PlayerHUD>(game, player, transformManager, &this->uiCamera, font.get());
-	playerHUD->SetOnInventoryOpen([this]() {
-		if (inventoryMenu && !inventoryMenu->IsOpen()) inventoryMenu->Toggle();
-		});
-	playerHUD->Init();
+	SpawnMapEnemy(615.f, -170.f, "tutorial_keye_01", { "KeyeEnemy" }, false, false, bgDraw);
+	SpawnMapEnemy(510.f, -380.f, "tutorial_demoneye_01", { "DemonEyeEnemy" }, false, false, bgDraw);
+	SpawnMapEnemy(500.f, -590.f, "tutorial_random_01", { "KeyeEnemy", "DemonEyeEnemy" }, true, false, bgDraw, 30);
+	SpawnMapEnemy(-45.f, -409.f, "tutorial_random_02", { "KeyeEnemy", "DemonEyeEnemy", "MimicEnemy" }, true, false, bgDraw, 30);
 
 	player->SetBaseSurface("default");
 
-	map->SetAreaUpdateHandler("audio_zone_leaves", [this](const DX9GF::Map::ObjectArea&) {
-		GetPlayer()->SetSurface("leaves");
-		});
-
-	map->SetAreaUpdateHandler("audio_zone_metal", [this](const DX9GF::Map::ObjectArea&) {
-		GetPlayer()->SetSurface("metal");
-		});
-
-	ItemData::GetInstance()->LoadData();
-	this->GiveTestItems();
-
 	transformManager->RebuildHierarchy();
-
+	this->GiveTestItems();
 	drawBuffer->PushCommand(std::make_shared<TransitionCommand>(game->GetGraphicsDevice(), &this->uiCamera, 1.f, false));
 }
 
-void Demo::TutorialWorldScene::Update(unsigned long long deltaTime)
+std::string Demo::TutorialWorldScene::GetSaveID() const
 {
-	PopupManager::GetInstance()->SetUICamera(&this->uiCamera);
-	QuestManager::GetInstance()->SetUICamera(&this->uiCamera);
-	QuestManager::GetInstance()->SetVirtualResolution(game->GetVirtualWidth(), game->GetVirtualHeight());
-	QuestManager::GetInstance()->SetVisible(!(inventoryMenu && inventoryMenu->IsOpen()));
-	QuestManager::GetInstance()->Update(deltaTime);
-
-	if (!hasSeenChapterIntro && !isTransitioning) {
-		hasSeenChapterIntro = true;
-		if (chapterTitleUI) {
-			chapterTitleUI->Show(L"CHAPTER I: CLOUD CANOPY", L"< System Initialized >", 4.0f, 0xFFFFFFFF, 0xFFFFF200, 0x000000);
-		}
-	}
-	if (chapterTitleUI) {
-		chapterTitleUI->Update(deltaTime);
-	}
-
-	auto OpenChestWithDialog = [&](std::shared_ptr<TreasureChestNPC>& chest) {
-		auto given = chest->Open(player.get());
-		if (given.empty()) return;
-
-		std::wstring msg = L"You found: ";
-		for (auto& r : given) {
-			if (r.type == ChestRewardType::ITEM) {
-				auto* bp = ItemData::GetInstance()->GetItemBlueprint(r.itemID);
-				if (bp) {
-					msg += bp->GetName();
-					if (r.quantity > 1) msg += L" x" + std::to_wstring(r.quantity);
-					msg += L"  ";
-				}
-			}
-			else if (r.type == ChestRewardType::CARD) {
-				std::wstring wid(r.cardSaveID.begin(), r.cardSaveID.end());
-				msg += wid + L"  ";
-			}
-		}
-		float sw = game->GetVirtualWidth();
-		float sh = game->GetVirtualHeight();
-		currentConversation = std::make_shared<IConversation>(
-			std::make_shared<DX9GF::FontSprite>(font.get()), sw, sh);
-		currentConversation->AddLine({ .name = L"Treasure Chest", .content = msg, .voiceClip = std::optional<std::string>("bleep20") });
-		};
-
-	auto inpMan = DX9GF::InputManager::GetInstance();
-	inpMan->ReadMouse(deltaTime);
-	inpMan->ReadKeyboard(deltaTime);
-
-	static float escCooldown = 0.0f;
-	if (escCooldown > 0) escCooldown -= deltaTime;
-
-	if (inpMan->KeyPress(SettingsManager::GetInstance()->GetKeybind("OPEN_INVENTORY")) && escCooldown <= 0) {
-		if (inventoryMenu) inventoryMenu->Toggle();
-		escCooldown = 300.0f;
-	}
-
-	bool isGamePaused = this->isGamePaused;
-
-	if (PopupManager::GetInstance()->IsActive()) {
-		PopupManager::GetInstance()->Update(deltaTime, &this->uiCamera);
-		isGamePaused = true;
-	}
-
-	if (popUpMessage) {
-		popUpMessage->Update(deltaTime);
-	}
-
-	//npcs init
-	for (auto& npc : mapNPCs) {
-		npc->Update(deltaTime);
-
-		if (!currentConversation && npc->CanInteract() && inpMan->KeyPress(SettingsManager::GetInstance()->GetKeybind("INTERACT"))) {
-			npc->ClearLines();
-			auto onEndCallback = npc->TriggerInteract();
-
-			activeNPC = npc;
-			activeNPC->SetOnDialogueEnd(onEndCallback);
-
-			float sw = game->GetVirtualWidth();
-			float sh = game->GetVirtualHeight();
-			currentConversation = std::make_shared<IConversation>(std::make_shared<DX9GF::FontSprite>(font.get()), sw, sh);
-			for (auto& line : npc->GetDialogueLines()) {
-				currentConversation->AddLine(line);
-			}
-			break;
-		}
-	}
-
-	if (currentConversation) {
-		isGamePaused = true;
-		currentConversation->Execute(deltaTime);
-
-		if (currentConversation->IsFinished()) {
-			if (activeNPC && activeNPC->GetOnDialogueEnd()) {
-				activeNPC->GetOnDialogueEnd()();
-			}
-
-			currentConversation = nullptr;
-			activeNPC = nullptr;
-		}
-	}
-
-	for (auto& savePoint : savePoints) {
-		savePoint->Update(deltaTime);
-	}
-
-	if (shopPoint_Card) shopPoint_Card->Update(deltaTime);
-	if (shopPoint_BSItem) shopPoint_BSItem->Update(deltaTime);
-
-	if (healingPoint) healingPoint->Update(deltaTime);
-
-	for (auto& chest : treasureChests) {
-		chest->Update(deltaTime);
-		if (!currentConversation && chest->CanInteract() && inpMan->KeyPress(SettingsManager::GetInstance()->GetKeybind("INTERACT"))) {
-			auto given = chest->Open(player.get());
-			if (!given.empty()) {
-				std::wstring msg = L"You found: ";
-				for (auto& r : given) {
-					if (r.type == ChestRewardType::ITEM) {
-						auto* bp = ItemData::GetInstance()->GetItemBlueprint(r.itemID);
-						if (bp) {
-							msg += bp->GetName();
-							if (r.quantity > 1) msg += L" x" + std::to_wstring(r.quantity);
-							msg += L"  ";
-						}
-					}
-					else if (r.type == ChestRewardType::CARD) {
-						std::wstring wid(r.cardSaveID.begin(), r.cardSaveID.end());
-						msg += wid + L"  ";
-					}
-				}
-				float sw = game->GetVirtualWidth();
-				float sh = game->GetVirtualHeight();
-				currentConversation = std::make_shared<IConversation>(
-					std::make_shared<DX9GF::FontSprite>(font.get()), sw, sh);
-				currentConversation->AddLine({ .name = L"Treasure Chest", .content = msg, .voiceClip = std::optional<std::string>("bleep20") });
-			}
-		}
-	}
-
-	if (inventoryMenu && inventoryMenu->IsOpen()) {
-		isGamePaused = true;
-		inventoryMenu->Update(deltaTime);
-	}
-
-	if (playerHUD && !isGamePaused) playerHUD->Update(deltaTime);
-
-	if (!isGamePaused) {
-		for (auto& enemy : mapEnemies) {
-			enemy->Update(deltaTime);
-		}
-		player->Update(deltaTime);
-		camera.Update();
-	}
-
-	transformManager->UpdateAll();
-	if (!isGamePaused) map->UpdateAreas(player->GetCollider().lock()->GetWorldX(), player->GetCollider().lock()->GetWorldY());
-
-
-	if (draggableManager && inventoryMenu && inventoryMenu->IsOpen() && inventoryMenu->GetCurrentTab() == Demo::InventoryMenu::Tab::DECK) {
-		draggableManager->Update(deltaTime);
-	}
-
-	if (inventoryMenu && inventoryMenu->IsPendingLeave()) {
-		auto sceMan = game->GetSceneManager();
-		sceMan->GoToScene(0);
-		auto audio = DX9GF::AudioManager::GetInstance();
-		audio->PlayBGM_Fade("bgm_sky", 0.9f, 1.5f);
-		return;
-	}
-	commandBuffer->Update(deltaTime);
-}
-
-void Demo::TutorialWorldScene::DrawWorld(unsigned long long deltaTime)
-{
-	auto gd = game->GetGraphicsDevice();
-	if (SUCCEEDED(gd->BeginDraw())) {
-
-		DrawBackground(gd, deltaTime);
-		map->Draw(camera);
-		struct DepthNode {
-			float y;
-			std::function<void()> drawCall;
-			bool operator<(const DepthNode& other) const { return y < other.y; }
-		};
-		std::vector<DepthNode> depthNodes;
-
-		for (auto& npc : mapNPCs) {
-			depthNodes.push_back({ npc->GetWorldY(), [&, npc]() { npc->Draw(camera, deltaTime); } });
-		}
-
-		if (shopPoint_Card) depthNodes.push_back({ shopPoint_Card->GetWorldY(), [&]() { shopPoint_Card->Draw(camera, deltaTime); } });
-		if (shopPoint_BSItem) depthNodes.push_back({ shopPoint_BSItem->GetWorldY(), [&]() { shopPoint_BSItem->Draw(camera, deltaTime); } });
-		if (healingPoint) depthNodes.push_back({ healingPoint->GetWorldY(), [&]() { healingPoint->Draw(camera, deltaTime); } });
-
-		for (auto& savePoint : savePoints) {
-			depthNodes.push_back({ savePoint->GetWorldY(), [&, savePoint]() { savePoint->Draw(camera, deltaTime); } });
-		}
-		for (auto& chest : treasureChests) {
-			depthNodes.push_back({ chest->GetWorldY(), [&, chest]() { chest->Draw(camera, deltaTime); } });
-		}
-		for (auto& enemy : mapEnemies) {
-			depthNodes.push_back({ enemy->GetWorldY(), [&, enemy]() { enemy->Draw(&camera, deltaTime); } });
-		}
-
-		if (player) depthNodes.push_back({ player->GetWorldY(), [&]() { player->Draw(deltaTime); } });
-
-		std::sort(depthNodes.begin(), depthNodes.end());
-		for (auto& node : depthNodes) {
-			node.drawCall();
-		}
-
-		gd->EndDraw();
-	}
-}
-
-void Demo::TutorialWorldScene::DrawUI(unsigned long long deltaTime)
-{
-	CreateImGuiDebugFrame(player, game);
-	auto gd = game->GetGraphicsDevice();
-
-	if (SUCCEEDED(gd->BeginDraw())) {
-
-		if (healingPoint) healingPoint->DrawUI(&this->uiCamera, deltaTime);
-		for (auto& savePoint : savePoints) {
-			savePoint->DrawUI(&this->uiCamera, deltaTime);
-		}
-		for (auto& chest : treasureChests) {
-			chest->DrawUI(&this->uiCamera, deltaTime);
-		}
-		if (shopPoint_Card) shopPoint_Card->DrawUI(&this->uiCamera, deltaTime);
-		if (shopPoint_BSItem) shopPoint_BSItem->DrawUI(&this->uiCamera, deltaTime);
-
-		for (auto& npc : mapNPCs) {
-			npc->DrawUI(&this->uiCamera, deltaTime);
-		}
-
-		if (playerHUD) playerHUD->Draw(gd, deltaTime);
-		if (inventoryMenu) inventoryMenu->Draw(gd, deltaTime);
-		if (draggableManager && inventoryMenu && inventoryMenu->IsOpen() && inventoryMenu->GetCurrentTab() == Demo::InventoryMenu::Tab::DECK) {
-			draggableManager->Draw(deltaTime);
-		}
-		if (inventoryMenu) inventoryMenu->DrawKeyboardReticle(gd, deltaTime);
-
-		if (currentConversation) {
-			currentConversation->Draw(gd, &this->uiCamera, deltaTime);
-		}
-
-		QuestManager::GetInstance()->Draw(gd, &this->uiCamera, deltaTime);
-
-		if (drawBuffer) {
-			drawBuffer->Update(deltaTime);
-		}
-
-		PopupManager::GetInstance()->DrawUI(deltaTime, &this->uiCamera);
-
-
-		if (!(inventoryMenu && inventoryMenu->IsInKeyboardMode())) {
-			DX9GF::InputManager::GetInstance()->DrawCursor(&this->uiCamera, deltaTime);
-		}
-		if (popUpMessage) {
-			popUpMessage->Draw(deltaTime);
-		}
-
-		if (chapterTitleUI) {
-			chapterTitleUI->Draw(&this->uiCamera, deltaTime);
-		}
-
-		ImGui::Render();
-		ImGui_ImplDX9_RenderDrawData(ImGui::GetDrawData());
-		gd->EndDraw();
-	}
+	return "TutorialWorldScene";
 }
 
 void Demo::TutorialWorldScene::DrawBackground(DX9GF::GraphicsDevice* gd, unsigned long long deltaTime)
@@ -661,68 +243,6 @@ void Demo::TutorialWorldScene::DrawBackground(DX9GF::GraphicsDevice* gd, unsigne
 			gd->DrawLine(prevX, prevY, offsetX, y, gridColor);
 			prevX = offsetX;
 			prevY = y;
-		}
-	}
-}
-
-std::string Demo::TutorialWorldScene::GetSaveID() const
-{
-	return "TutorialWorldScene";
-}
-
-void Demo::TutorialWorldScene::GenerateSaveData(nlohmann::json& outData)
-{
-	player->GenerateSaveData(outData["player"]);
-	auto pos = camera.GetPosition();
-	outData["camera"] = {
-		{"x", pos.x},
-		{"y", pos.y},
-		{"zoom", camera.GetZoom()}
-	};
-
-	outData["hasSeenChapterIntro"] = hasSeenChapterIntro;
-
-	nlohmann::json chestStates = nlohmann::json::array();
-	for (auto& c : treasureChests) chestStates.push_back(c->GetIsOpened());
-	outData["treasureChests"] = chestStates;
-
-	nlohmann::json enemiesState = nlohmann::json::object();
-	for (auto& enemy : mapEnemies) {
-		enemiesState[enemy->GetEnemyID()] = {
-			{"isDefeated", enemy->IsDefeated()},
-			{"respawnTimer", enemy->GetRespawnTimer()},
-			{ "eventType", static_cast<int>(enemy->GetEncounterData().eventType) }
-		};
-	}
-	outData["mapEnemies"] = enemiesState;
-}
-
-void Demo::TutorialWorldScene::RestoreSaveData(const nlohmann::json& inData)
-{
-	player->RestoreSaveData(inData["player"]);
-	camera.SetPosition(inData["camera"]["x"], inData["camera"]["y"]);
-	camera.SetZoom(inData["camera"]["zoom"]);
-
-	hasSeenChapterIntro = inData.value("hasSeenChapterIntro", false);
-
-	if (inData.contains("treasureChests")) {
-		auto& arr = inData["treasureChests"];
-		for (size_t i = 0; i < treasureChests.size() && i < arr.size(); ++i)
-			treasureChests[i]->SetOpened(arr[i].get<bool>());
-	}
-
-	if (inData.contains("mapEnemies")) {
-		auto& enemiesState = inData["mapEnemies"];
-		for (auto& enemy : mapEnemies) {
-			std::string id = enemy->GetEnemyID();
-			if (enemiesState.contains(id)) {
-				bool def = enemiesState[id]["isDefeated"].get<bool>();
-				float timer = enemiesState[id]["respawnTimer"].get<float>();
-				EventType savedEvent = static_cast<EventType>(enemiesState[id].value("eventType", 0));
-
-				enemy->SetDefeatedState(def, timer);
-				enemy->SetEventState(savedEvent);
-			}
 		}
 	}
 }
