@@ -186,7 +186,7 @@ void Demo::TutorialWorldScene::OnInit()
 		transformManager, 174.f, -629.f,
 		std::vector<ChestReward>{
 		ChestReward::Item(0, 1),
-			ChestReward::Card("StrikeCard")
+			ChestReward::Card("TwinStrikeCard")
 	}, true));
 	treasureChests.back()->Init(game->GetGraphicsDevice(), &camera, player, colliderManager, font, drawBuffer);
 
@@ -198,6 +198,14 @@ void Demo::TutorialWorldScene::OnInit()
 	}, true));
 	treasureChests.back()->Init(game->GetGraphicsDevice(), &camera, player, colliderManager, font, drawBuffer);
 
+	treasureChests.push_back(std::make_shared<TreasureChestNPC>(
+		transformManager, 197.f, -772.f,
+		std::vector<ChestReward>{
+		ChestReward::Item(1, 1),
+			ChestReward::Card("PoisonCard")
+	}, true));
+	treasureChests.back()->Init(game->GetGraphicsDevice(), &camera, player, colliderManager, font, drawBuffer);
+
 	auto bgDraw = [this](DX9GF::GraphicsDevice* gd, unsigned long long deltaTime) {
 		DrawBackground(gd, deltaTime);
 	};
@@ -206,6 +214,8 @@ void Demo::TutorialWorldScene::OnInit()
 	SpawnMapEnemy(510.f, -380.f, "tutorial_demoneye_01", { "DemonEyeEnemy" }, false, false, bgDraw);
 	SpawnMapEnemy(500.f, -590.f, "tutorial_random_01", { "KeyeEnemy", "DemonEyeEnemy" }, true, false, bgDraw, 30);
 	SpawnMapEnemy(-45.f, -409.f, "tutorial_random_02", { "KeyeEnemy", "DemonEyeEnemy", "MimicEnemy" }, true, false, bgDraw, 30);
+	SpawnMapEnemy(750.f, -784.f, "tutorial_random_03", { "KeyeEnemy", "DemonEyeEnemy" }, true, false, bgDraw, 30);
+	SpawnMapEnemy(726.f, -954.f, "tutorial_random_04", { "KeyeEnemy", "DemonEyeEnemy" }, true, false, bgDraw, 30);
 
 	player->SetBaseSurface("default");
 

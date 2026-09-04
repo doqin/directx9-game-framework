@@ -31,7 +31,7 @@ void Demo::ThreadAlleyScene::OnInit()
 		CreatePortalTransition(1, 330.f, 263.f, "bgm_boss", 0.3f);
 	});
 	map->SetAreaUpdateHandler("trigger_tutorial", [this](const DX9GF::Map::ObjectArea& area) {
-		CreatePortalTransition(-3, 681.f, -584.f);
+		CreatePortalTransition(-3, 840.f, -1144.f);
 	});
 
 	shopPoints.push_back(std::make_shared<ShopPoint>(transformManager, -606, -548));
