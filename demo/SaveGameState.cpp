@@ -6,6 +6,7 @@
 #include "SketchyGuyGlobalData.h"
 #include "IntroScene.h"
 #include "TutorialWorldScene.h"
+#include "LabInsideScene.h"
 #include "SecretPuzzleScene.h"
 #include "ThreadAlleyScene.h"
 #include "BossWorldScene.h"
@@ -22,6 +23,8 @@ namespace Demo {
 		sceneManager->PushScene(new IntroScene(game, app->GetScreenWidth(), app->GetScreenHeight()));
 		sceneManager->PushScene(new TutorialWorldScene(game, saveManager, app->GetScreenWidth(), app->GetScreenHeight()));
 		sceneMap["TutorialWorldScene"] = sceneManager->GetSceneCount() - 1;
+		sceneManager->PushScene(new LabInsideScene(game, saveManager, app->GetScreenWidth(), app->GetScreenHeight()));
+		sceneMap["LabInsideScene"] = sceneManager->GetSceneCount() - 1;
 		sceneManager->PushScene(new SecretPuzzleScene(game, saveManager, app->GetScreenWidth(), app->GetScreenHeight()));
 		sceneMap["SecretPuzzleScene"] = sceneManager->GetSceneCount() - 1;
 		sceneManager->PushScene(new ThreadAlleyScene(game, saveManager, app->GetScreenWidth(), app->GetScreenHeight()));
@@ -49,6 +52,9 @@ namespace Demo {
 		}
 		if (auto threadScene = dynamic_cast<Demo::BossWorldScene*>(scene)) {
 			return threadScene->GetPlayer();
+		}
+		if (auto labInsideScene = dynamic_cast<Demo::LabInsideScene*>(scene)) {
+			return labInsideScene->GetPlayer();
 		}
 		return nullptr;
 	}

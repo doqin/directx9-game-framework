@@ -21,72 +21,20 @@
 #include "imgui.h"
 #include "backends/imgui_impl_dx9.h"
 
-void Demo::ThreadAlleyScene::Init()
+void Demo::ThreadAlleyScene::OnInit()
 {
-	camera.SetZoom(2.0f);
-	transformManager = std::make_shared<DX9GF::TransformManager>();
-	colliderManager = std::make_shared<DX9GF::ColliderManager>();
+	InitCore(-544.5f, 128.5f, L"./assets/ThreadAlley.tmx");
 
-	player = std::make_shared<Player>(transformManager, -544.5f, 128.5f);
-	camera.SetPosition(-544.5f, 128.5f);
+	SetChapterTitle(L"CHAPTER II: THREAD ALLEY", L"< Data Transit Zone >");
 
-	player->Init(game->GetGraphicsDevice(), colliderManager.get(), &camera);
-
-	drawBuffer = std::make_shared<DX9GF::CommandBuffer>();
-	commandBuffer = std::make_shared<DX9GF::CommandBuffer>();
-
-	popUpMessage = std::make_shared<Demo::PopUpMessage>(transformManager, game);
-	popUpMessage->SetLocalPosition(0.0f, 0.0f);
-	popUpMessage->Init(game->GetGraphicsDevice(), &this->uiCamera);
-
-	map = std::make_shared<DX9GF::Map>(game->GetGraphicsDevice());
-	map->Create(transformManager, colliderManager, "./assets/ThreadAlley.tmx");
 	map->SetAreaUpdateHandler("trigger_p", [this](const DX9GF::Map::ObjectArea& area) {
-		if (isTransitioning) return;
-		isTransitioning = true;
-		auto transitionInCommand = std::make_shared<TransitionCommand>(game->GetGraphicsDevice(), &this->uiCamera, 1.f, true);
-		drawBuffer->PushCommand(transitionInCommand);
-		commandBuffer->PushCommand(std::make_shared<DX9GF::CustomCommand>([this, transitionInCommand](std::function<void(void)> markFinished) {
-			if (!transitionInCommand->IsFinished()) {
-				return;
-			}
-			auto sceMan = game->GetSceneManager();
-			auto targetScene = sceMan->GetScene(static_cast<size_t>(sceMan->GetIndex()) + 1);
-			auto targetPlayer = MainMenu::gameSaveState->GetPlayerFromScene(targetScene);
-			targetPlayer->SetLocalPosition(330.f, 263.f);
-			DX9GF::AudioManager::GetInstance()->PlayBGM_Fade("bgm_boss", 0.3f, 1.5f);
-			sceMan->GoToNext();
-			isTransitioning = false;
-			markFinished();
-			}));
-		drawBuffer->PushCommand(std::make_shared<TransitionCommand>(game->GetGraphicsDevice(), &this->uiCamera, 1.f, false));
+		CreatePortalTransition(1, 330.f, 263.f, "bgm_boss", 0.3f);
 	});
 	map->SetAreaUpdateHandler("trigger_tutorial", [this](const DX9GF::Map::ObjectArea& area) {
-		if (isTransitioning) return;
-		isTransitioning = true;
-		auto transitionInCommand = std::make_shared<TransitionCommand>(game->GetGraphicsDevice(), &this->uiCamera, 1.f, true);
-		drawBuffer->PushCommand(transitionInCommand);
-		commandBuffer->PushCommand(std::make_shared<DX9GF::CustomCommand>([this, transitionInCommand](std::function<void(void)> markFinished) {
-			if (!transitionInCommand->IsFinished()) {
-				return;
-			}
-			auto sceMan = game->GetSceneManager();
-			auto targetScene = sceMan->GetScene(static_cast<size_t>(sceMan->GetIndex()) - 2);
-			auto targetPlayer = MainMenu::gameSaveState->GetPlayerFromScene(targetScene);
-			targetPlayer->SetLocalPosition(681.f, -584.f);
-			sceMan->GoToPrevious();
-			sceMan->GoToPrevious();
-			isTransitioning = false;
-			markFinished();
-			}));
-		drawBuffer->PushCommand(std::make_shared<TransitionCommand>(game->GetGraphicsDevice(), &this->uiCamera, 1.f, false));
+		CreatePortalTransition(-3, 840.f, -1144.f);
 	});
 
-	font = std::make_shared<DX9GF::Font>(game->GetGraphicsDevice(), L"StatusPlz", 16);
-
 	shopPoints.push_back(std::make_shared<ShopPoint>(transformManager, -606, -548));
-
-	chapterTitleUI = std::make_shared<ChapterTitleUI>(font);
 	shopPoints.back()->Init(game, game->GetGraphicsDevice(), &camera, player, colliderManager, font, drawBuffer,
 		[](Game* g, Player* p, int w, int h) { return new CardShop(g, p, w, h, ShopTier::HYBRID); }
 	);
@@ -110,18 +58,7 @@ void Demo::ThreadAlleyScene::Init()
 	);
 	shopPoints.back()->SetVisible(true);
 
-	auto borderTex = std::make_shared<DX9GF::Texture>(game->GetGraphicsDevice());
-	borderTex->LoadTexture(L"assets/popup-borders.png");
-
-	auto uiTex = std::make_shared<DX9GF::Texture>(game->GetGraphicsDevice());
-	uiTex->LoadTexture(L"assets/ui.png");
-
-	PopupManager::GetInstance()->Init(game->GetGraphicsDevice(), borderTex, uiTex, font);
-	QuestManager::GetInstance()->SetVirtualResolution(game->GetVirtualWidth(), game->GetVirtualHeight());
-	QuestManager::GetInstance()->Init(game->GetGraphicsDevice(), transformManager, &this->uiCamera, font);
-
-
-	NPCConfig hkhangConfig = { L"assets/daudau-Sheet.png", 32, 32, 5, 12, 24.f, 8.f, 12.f }; //TODO: change HKhang npc's asset here
+	NPCConfig hkhangConfig = { L"assets/daudau-Sheet.png", 32, 32, 5, 12, 24.f, 8.f, 12.f };
 
 	auto hKhang = std::make_shared<NPC>(transformManager, -580.f, 100.f, hkhangConfig);
 	hKhang->AttachQuestMarker("Quest_ThreadAlley_Start", Demo::QuestMarkerRole::Giver);
@@ -129,7 +66,6 @@ void Demo::ThreadAlleyScene::Init()
 	hKhang->RegisterVoice(L"Huu Khang", "bleep12");
 	hKhang->SetInteractLogic([](NPC* self) -> std::function<void()> {
 		auto qState = QuestManager::GetInstance()->GetQuestState("Quest_ThreadAlley_Start");
-
 		if (qState == Demo::QuestState::Locked) {
 			self->AddLine(L"Huu Khang", L"Hey, keep your firewall up if you're heading down Thread Alley.");
 			self->AddLine(L"Huu Khang", L"I wrote the routing logic for this sector. It was supposed to be a clean shortcut\nfor background processes, but lately... things go in and don't come out.");
@@ -142,7 +78,7 @@ void Demo::ThreadAlleyScene::Init()
 					{ L"No(N)", []() {} }
 				};
 				PopupManager::GetInstance()->Show("stepped_blue", L"New Quest", L"Investigate Thread Alley?", buttons);
-				};
+			};
 		}
 		else if (qState == Demo::QuestState::Active) {
 			self->AddLine(L"Huu Khang", L"Watch your back in there. Malware down here doesn't always look like a monster...");
@@ -153,11 +89,9 @@ void Demo::ThreadAlleyScene::Init()
 			self->AddLine(L"Huu Khang", L"Not bad! My admin dashboard just lit back up. Thread Alley is finally safe to route\ndata through again. I owe you a code review sometime.");
 		}
 		return nullptr;
-		});
+	});
 	mapNPCs.push_back(hKhang);
 
-	// Rolled fresh for a new game; RestoreSaveData overwrites it when a save is loaded, which always
-	// happens after every scene has been Init()ed.
 	{
 		char codeBuf[8];
 		sprintf_s(codeBuf, "%04d", RNG::Range(0, 9999));
@@ -178,7 +112,7 @@ void Demo::ThreadAlleyScene::Init()
 		auto [sw, sh] = camera.GetScreenResolution();
 		currentConversation = std::make_shared<IConversation>(std::make_shared<DX9GF::FontSprite>(font.get()), sw, sh);
 		currentConversation->AddLine({ .name = L"Terminal", .content = L"ACCESS GRANTED.\nYou obtained the Authentication Token." });
-		});
+	});
 
 	trojanNPC = std::make_shared<TrojanNPC>(transformManager, 224.f, -832.f);
 	trojanNPC->AttachQuestMarker("Quest_ThreadAlley_Start", Demo::QuestMarkerRole::Receiver);
@@ -202,39 +136,31 @@ void Demo::ThreadAlleyScene::Init()
 	trojanNPC->AddRevealLine(L"Player", L"You didn't trick me into anything.\nI'm taking it back - and I'm deleting you with it.");
 	trojanNPC->AddRevealLine(L"Trojan", L"Ha! Then stop talking and try.");
 
-	// The card-pack peddler. Global state (met / first pack used) lives in SketchyGuyGlobalData,
-	// so he needs no per-scene save fields and can be dropped into other scenes the same way.
 	sketchyGuy = std::make_shared<SketchyGuyNPC>(transformManager, 1024.f, -416.f);
 	sketchyGuy->Init(game->GetGraphicsDevice(), &camera, player, colliderManager, font, drawBuffer);
 
 	savePoints.push_back(std::make_shared<SavePoint>(transformManager, -488, -140));
 	savePoints.back()->Init(game->GetGraphicsDevice(), &camera, player, colliderManager, saveManager, font, drawBuffer);
 	savePoints.back()->SetVisible(true);
-
 	savePoints.push_back(std::make_shared<SavePoint>(transformManager, 134, -1129));
 	savePoints.back()->Init(game->GetGraphicsDevice(), &camera, player, colliderManager, saveManager, font, drawBuffer);
 	savePoints.back()->SetVisible(true);
-
 	savePoints.push_back(std::make_shared<SavePoint>(transformManager, 230, -392));
 	savePoints.back()->Init(game->GetGraphicsDevice(), &camera, player, colliderManager, saveManager, font, drawBuffer);
 	savePoints.back()->SetVisible(true);
 
-
 	healingPoints.push_back(std::make_shared<HealingPoint>(transformManager, -328, -537));
 	healingPoints.back()->Init(game->GetGraphicsDevice(), &camera, player, colliderManager, font, drawBuffer);
 	healingPoints.back()->SetVisible(true);
-
 	healingPoints.push_back(std::make_shared<HealingPoint>(transformManager, -230, -1148));
 	healingPoints.back()->Init(game->GetGraphicsDevice(), &camera, player, colliderManager, font, drawBuffer);
 	healingPoints.back()->SetVisible(true);
 
-	//TreasureChest
 	struct ChestDef {
 		std::pair<float, float> pos;
 		std::vector<ChestReward> rewards;
 		bool randomPick = false;
 	};
-
 	const std::vector<ChestDef> chestDefs = {
 		{{-474.f, -921.f}, { ChestReward::Item(2,1), ChestReward::Item(3,1) },                           true},
 		{{1016.f, -246.f}, { ChestReward::Item(3,1), ChestReward::Card("CleaveCard") },                  true},
@@ -246,7 +172,6 @@ void Demo::ThreadAlleyScene::Init()
 		{{ -69.f, -978.f}, { ChestReward::Item(5,1), ChestReward::Card("PoisonCard") },                  true},
 		{{ 418.f,-1208.f}, { ChestReward::Item(3,1), ChestReward::Card("CleaveCard") },                  true},
 	};
-
 	for (auto& def : chestDefs) {
 		treasureChests.push_back(std::make_shared<TreasureChestNPC>(
 			transformManager, def.pos.first, def.pos.second,
@@ -254,12 +179,11 @@ void Demo::ThreadAlleyScene::Init()
 		treasureChests.back()->Init(game->GetGraphicsDevice(), &camera, player, colliderManager, font, drawBuffer);
 	}
 
-	//map enemies
-	auto spawn = [&](float x, float y, std::string id, std::vector<std::string> types, bool isRand, bool isGlobal) {
-		auto bgDraw = [this](DX9GF::GraphicsDevice* gd, unsigned long long deltaTime) {
-			DrawCheckerBackground(gd, deltaTime);
-			};
+	auto bgDraw = [this](DX9GF::GraphicsDevice* gd, unsigned long long deltaTime) {
+		DrawCheckerBackground(gd, deltaTime);
+	};
 
+	auto spawnThreadAlley = [&](float x, float y, std::string id, std::vector<std::string> types, bool isRand, bool isGlobal) {
 		std::string bgm = (id == "sec_miniboss_01") ? "bgm_boss" : "battle_loop";
 
 		auto enemy = EnemyFactory::CreateMapEnemy(
@@ -267,9 +191,7 @@ void Demo::ThreadAlleyScene::Init()
 			transformManager, game, colliderManager.get(), player
 		);
 
-		//token spawning area
 		Demo::EventType generatedEvent = Demo::EventType::None;
-
 		if (Demo::RNG::Range(1, 100) <= 38) {
 			if (enemy->GetEncounterData().enemyTypes.size() >= 2) {
 				generatedEvent = (Demo::RNG::Range(1, 100) <= 50) ? Demo::EventType::Gold : Demo::EventType::Energy;
@@ -296,392 +218,105 @@ void Demo::ThreadAlleyScene::Init()
 
 				battleScene->SetOnVictoryCallback([e]() {
 					e->SetDefeatedState(true, 180.f);
-					});
+				});
 
 				sceMan->InsertScene(sceMan->GetIndex() + 1, battleScene);
 				sceMan->GoToNext();
 
 				this->isTransitioning = false;
 				markFinished();
-				}));
+			}));
 
 			this->drawBuffer->PushCommand(std::make_shared<TransitionCommand>(game->GetGraphicsDevice(), &this->uiCamera, 1.f, false));
-			});
+		});
 
 		mapEnemies.push_back(enemy);
-		};
+	};
 
-	spawn(-735.f, -160.f, "th_intro_02", { "VampireBatEnemy" }, false, false);
-	spawn(-210.f, -180.f, "th_intro_03", { "DemonEyeEnemy" }, false, false);
-	spawn(-57.f, -219.f, "th_intro_04", { "KeyeEnemy", "KernelEnemy" }, true, false);
-	spawn(-572.f, -316.f, "th_mid_01", { "VampireBatEnemy", "VampireBatEnemy" }, false, false);
-	spawn(-330.f, -400.f, "th_mid_02", { "MimicEnemy" }, false, false);
-	spawn(-18.f, -536.f, "th_mid_03", { "KernelEnemy", "VampireBatEnemy" }, true, false);
-	spawn(-230.f, -550.f, "th_mid_04", { "DemonEyeEnemy", "DemonEyeEnemy" }, false, false);
-	spawn(200.f, -560.f, "th_mid_05", {}, false, true);
-	spawn(-610.f, -726.f, "th_dark_01", { "WarlockEnemy" }, false, false);
-	spawn(925.f, -605.f, "th_dark_02", { "WarlockEnemy", "KernelEnemy" }, false, false);
-	spawn(-370.f, -910.f, "th_dark_03", { "DemonEyeEnemy", "WarlockEnemy" }, true, false);
-	spawn(580.f, -910.f, "th_dark_04", { "KernelEnemy", "VampireBatEnemy" }, false, false);
-	spawn(920.f, -950.f, "th_dark_05", { "WarlockEnemy", "WarlockEnemy" }, false, false);
-	spawn(-552.f, -1024.f, "th_dark_06", {}, false, true);
-	spawn(-10.f, -1055.f, "th_deep_01", { "KeyeEnemy", "KernelEnemy" }, true, false);
-	spawn(280.f, -1080.f, "th_deep_02", { "DemonEyeEnemy", "MimicEnemy" }, true, false);
-	spawn(-480.f, -1110.f, "th_deep_03", { "VampireBatEnemy" }, false, false);
-	spawn(-10.f, -1200.f, "th_deep_04", { "MimicEnemy" }, false, false);
-	spawn(590.f, -1250.f, "th_deep_05", { "WarlockEnemy", "MimicEnemy" }, true, false);
-	spawn(1150.f, -1280.f, "th_deep_06", { "KeyeEnemy", "DemonEyeEnemy", "KernelEnemy" }, true, false);
-	spawn(-183.f, -1465.f, "th_end_01", { "WarlockEnemy", "DemonEyeEnemy" }, false, false);
-	spawn(920.f, -1380.f, "th_end_02", {}, false, true);
-	spawn(-700.f, -1430.f, "th_end_03", { "VampireBatEnemy", "VampireBatEnemy", "VampireBatEnemy" }, false, false);
-	spawn(-410.f, -1500.f, "th_end_04", { "WarlockEnemy", "KernelEnemy", "DemonEyeEnemy" }, false, false);
-	spawn(620.f, -165.f, "th_extra_01", { "KeyeEnemy" }, false, false);
-	// Moved off (1160, -280): that spawn sat 32px from the AuthTerminal, so its 80px aggro bubble
-	// fired before the player could ever reach the keypad.
-	spawn(1024.f, -120.f, "th_extra_03", { "KernelEnemy" }, false, false);
-	spawn(1135.f, -525.f, "th_extra_04", {}, false, true);
+	spawnThreadAlley(-735.f, -160.f, "th_intro_02", { "VampireBatEnemy" }, false, false);
+	spawnThreadAlley(-210.f, -180.f, "th_intro_03", { "DemonEyeEnemy" }, false, false);
+	spawnThreadAlley(-57.f, -219.f, "th_intro_04", { "KeyeEnemy", "KernelEnemy" }, true, false);
+	spawnThreadAlley(-572.f, -316.f, "th_mid_01", { "VampireBatEnemy", "VampireBatEnemy" }, false, false);
+	spawnThreadAlley(-330.f, -400.f, "th_mid_02", { "MimicEnemy" }, false, false);
+	spawnThreadAlley(-18.f, -536.f, "th_mid_03", { "KernelEnemy", "VampireBatEnemy" }, true, false);
+	spawnThreadAlley(-230.f, -550.f, "th_mid_04", { "DemonEyeEnemy", "DemonEyeEnemy" }, false, false);
+	spawnThreadAlley(200.f, -560.f, "th_mid_05", {}, false, true);
+	spawnThreadAlley(-610.f, -726.f, "th_dark_01", { "WarlockEnemy" }, false, false);
+	spawnThreadAlley(925.f, -605.f, "th_dark_02", { "WarlockEnemy", "KernelEnemy" }, false, false);
+	spawnThreadAlley(-370.f, -910.f, "th_dark_03", { "DemonEyeEnemy", "WarlockEnemy" }, true, false);
+	spawnThreadAlley(580.f, -910.f, "th_dark_04", { "KernelEnemy", "VampireBatEnemy" }, false, false);
+	spawnThreadAlley(920.f, -950.f, "th_dark_05", { "WarlockEnemy", "WarlockEnemy" }, false, false);
+	spawnThreadAlley(-552.f, -1024.f, "th_dark_06", {}, false, true);
+	spawnThreadAlley(-10.f, -1055.f, "th_deep_01", { "KeyeEnemy", "KernelEnemy" }, true, false);
+	spawnThreadAlley(280.f, -1080.f, "th_deep_02", { "DemonEyeEnemy", "MimicEnemy" }, true, false);
+	spawnThreadAlley(-480.f, -1110.f, "th_deep_03", { "VampireBatEnemy" }, false, false);
+	spawnThreadAlley(-10.f, -1200.f, "th_deep_04", { "MimicEnemy" }, false, false);
+	spawnThreadAlley(590.f, -1250.f, "th_deep_05", { "WarlockEnemy", "MimicEnemy" }, true, false);
+	spawnThreadAlley(1150.f, -1280.f, "th_deep_06", { "KeyeEnemy", "DemonEyeEnemy", "KernelEnemy" }, true, false);
+	spawnThreadAlley(-183.f, -1465.f, "th_end_01", { "WarlockEnemy", "DemonEyeEnemy" }, false, false);
+	spawnThreadAlley(920.f, -1380.f, "th_end_02", {}, false, true);
+	spawnThreadAlley(-700.f, -1430.f, "th_end_03", { "VampireBatEnemy", "VampireBatEnemy", "VampireBatEnemy" }, false, false);
+	spawnThreadAlley(-410.f, -1500.f, "th_end_04", { "WarlockEnemy", "KernelEnemy", "DemonEyeEnemy" }, false, false);
+	spawnThreadAlley(620.f, -165.f, "th_extra_01", { "KeyeEnemy" }, false, false);
+	spawnThreadAlley(1024.f, -120.f, "th_extra_03", { "KernelEnemy" }, false, false);
+	spawnThreadAlley(1135.f, -525.f, "th_extra_04", {}, false, true);
 
-	draggableManager = std::make_shared<Demo::DraggableManager>();
-	inventoryMenu = std::make_shared<InventoryMenu>(game, player, transformManager, draggableManager, &uiCamera, font.get());
-	inventoryMenu->Init();
-
-	playerHUD = std::make_shared<PlayerHUD>(game, player, transformManager, &this->uiCamera, font.get());
-	playerHUD->SetOnInventoryOpen([this]() {
-		if (inventoryMenu && !inventoryMenu->IsOpen()) inventoryMenu->Toggle();
-		});
-	playerHUD->Init();
-
-	auto audio = DX9GF::AudioManager::GetInstance();
-
-	audio->Load("step_c1", IDR_STEP_C1);
-	audio->Load("step_c2", IDR_STEP_C2);
-	audio->Load("step_c3", IDR_STEP_C3);
-	audio->Load("step_c4", IDR_STEP_C4);
-
-	audio->RegisterBank("step_concrete", { "step_c1", "step_c2", "step_c3", "step_c4" });
-	player->SetBaseSurface("concrete");
-
-	map->SetAreaUpdateHandler("audio_zone_leaves", [this](const DX9GF::Map::ObjectArea&) {
-		GetPlayer()->SetSurface("leaves");
-		});
-
-	map->SetAreaUpdateHandler("audio_zone_metal", [this](const DX9GF::Map::ObjectArea&) {
-		GetPlayer()->SetSurface("metal");
-		});
-
-	ItemData::GetInstance()->LoadData();
-	this->GiveTestItems();
+	player->SetBaseSurface("default");
 
 	transformManager->RebuildHierarchy();
+	this->GiveTestItems();
 	drawBuffer->PushCommand(std::make_shared<TransitionCommand>(game->GetGraphicsDevice(), &this->uiCamera, 1.f, false));
 }
 
-void Demo::ThreadAlleyScene::Update(unsigned long long deltaTime)
+void Demo::ThreadAlleyScene::OnUpdate(unsigned long long deltaTime)
 {
-	PopupManager::GetInstance()->SetUICamera(&this->uiCamera);
-	QuestManager::GetInstance()->SetUICamera(&this->uiCamera);
-	QuestManager::GetInstance()->SetVirtualResolution(game->GetVirtualWidth(), game->GetVirtualHeight());
-	QuestManager::GetInstance()->SetVisible(!(inventoryMenu && inventoryMenu->IsOpen())
-		&& !(authTerminal && authTerminal->IsMenuOpen()));
-
-	QuestManager::GetInstance()->Update(deltaTime);
-	if (!hasSeenChapterIntro && !isTransitioning) {
-		hasSeenChapterIntro = true;
-		if (chapterTitleUI) {
-			chapterTitleUI->Show(L"CHAPTER II: THREAD ALLEY", L"< Data Transit Zone >", 4.0f, 0xFFFFFFFF, 0xFF00FFFF, 0xFF000000);
-		}
-	}
-	if (chapterTitleUI) {
-		chapterTitleUI->Update(deltaTime);
-	}
-
-	auto OpenChestWithDialog = [&](std::shared_ptr<TreasureChestNPC>& chest) {
-		auto given = chest->Open(player.get());
-		if (given.empty()) return;
-
-		std::wstring msg = L"You found: ";
-		for (auto& r : given) {
-			if (r.type == ChestRewardType::ITEM) {
-				auto* bp = ItemData::GetInstance()->GetItemBlueprint(r.itemID);
-				if (bp) {
-					msg += bp->GetName();
-					if (r.quantity > 1) msg += L" x" + std::to_wstring(r.quantity);
-					msg += L"  ";
-				}
-			}
-			else if (r.type == ChestRewardType::CARD) {
-				std::wstring wid(r.cardSaveID.begin(), r.cardSaveID.end());
-				msg += wid + L"  ";
-			}
-		}
-		auto [sw, sh] = camera.GetScreenResolution();
-		currentConversation = std::make_shared<IConversation>(
-			std::make_shared<DX9GF::FontSprite>(font.get()), sw, sh);
-		currentConversation->AddLine({ .name = L"Treasure Chest", .content = msg, .voiceClip = std::optional<std::string>("bleep20") });
-		};
-
 	auto inpMan = DX9GF::InputManager::GetInstance();
-	inpMan->ReadMouse(deltaTime);
-	inpMan->ReadKeyboard(deltaTime);
+	auto* settings = SettingsManager::GetInstance();
 
-	// The password menu owns the keyboard while it is up. It runs before anything else and consumes
-	// its own close key; the cooldown below stops a still-held ESC from opening the inventory on the
-	// frame after it closes.
-	bool wasTerminalMenuOpen = authTerminal && authTerminal->IsMenuOpen();
-	if (authTerminal && (wasTerminalMenuOpen
+	// The auth terminal owns its own modal PasswordMenu. Pump it while the menu is
+	// open, or while the player is free to open it (no dialogue / popup in the way).
+	// IsSubsceneModalActive() reports the menu state back to WorldSceneBase::Update
+	// so the shared world/input handling freezes while it is up.
+	bool terminalMenuOpen = authTerminal && authTerminal->IsMenuOpen();
+	if (authTerminal && (terminalMenuOpen
 		|| (!currentConversation && !PopupManager::GetInstance()->IsActive()))) {
 		authTerminal->Update(deltaTime);
 	}
-	bool isTerminalMenuOpen = authTerminal && authTerminal->IsMenuOpen();
-
-	static float escCooldown = 0.0f;
-	if (escCooldown > 0) escCooldown -= deltaTime;
-	if (wasTerminalMenuOpen && !isTerminalMenuOpen) escCooldown = 300.0f;
-
-	if (!isTerminalMenuOpen && inpMan->KeyPress(SettingsManager::GetInstance()->GetKeybind("OPEN_INVENTORY")) && escCooldown <= 0) {
-		if (inventoryMenu) inventoryMenu->Toggle();
-		escCooldown = 300.0f;
-	}
-
-	bool isGamePaused = this->isGamePaused || isTerminalMenuOpen;
-
-	if (PopupManager::GetInstance()->IsActive()) {
-		PopupManager::GetInstance()->Update(deltaTime, &this->uiCamera);
-		isGamePaused = true;
-	}
-
-	// Update PopUpMessage
-	if (popUpMessage) {
-		popUpMessage->Update(deltaTime);
-	}
-
-	if (currentConversation) {
-		isGamePaused = true;
-		currentConversation->Execute(deltaTime);
-		if (currentConversation->IsFinished()) {
-			currentConversation = nullptr;
-			// Clear before invoking: the callback may queue the next conversation.
-			if (activeNPC && activeNPC->GetOnDialogueEnd()) {
-				activeNPC->GetOnDialogueEnd()();
-			}
-			activeNPC = nullptr; // Reset
-
-			// Callback state-machine
-			if (onConversationEnd) {
-				auto callback = std::move(onConversationEnd);
-				onConversationEnd = nullptr;
-				callback();
-			}
-		}
-	}
-
-	for (auto& npc : mapNPCs) {
-		npc->Update(deltaTime);
-		if (!currentConversation && !isTerminalMenuOpen && npc->CanInteract() && inpMan->KeyPress(SettingsManager::GetInstance()->GetKeybind("INTERACT"))) {
-			npc->ClearLines();
-			auto onEndCallback = npc->TriggerInteract();
-
-			activeNPC = npc;
-			activeNPC->SetOnDialogueEnd(onEndCallback);
-
-			auto [sw, sh] = camera.GetScreenResolution();
-			currentConversation = std::make_shared<IConversation>(std::make_shared<DX9GF::FontSprite>(font.get()), sw, sh);
-			for (auto& line : npc->GetDialogueLines()) {
-				currentConversation->AddLine(line);
-			}
-			break;
-		}
-	}
+	terminalMenuOpen = authTerminal && authTerminal->IsMenuOpen();
 
 	if (trojanNPC) {
 		trojanNPC->Update(deltaTime);
-		if (!currentConversation && !isTerminalMenuOpen && trojanNPC->CanInteract()
-			&& inpMan->KeyPress(SettingsManager::GetInstance()->GetKeybind("INTERACT"))) {
+		if (!currentConversation && !terminalMenuOpen && trojanNPC->CanInteract()
+			&& inpMan->KeyPress(settings->GetKeybind("INTERACT"))) {
 			StartTrojanConversation();
 		}
 	}
 
 	if (sketchyGuy) {
 		sketchyGuy->Update(deltaTime);
-		// The scene check guards against a still-held INTERACT key re-opening the prompt on the
-		// same frame the buy popup pushed the pack-opening scene.
-		if (!currentConversation && !isTerminalMenuOpen
+		if (!currentConversation && !terminalMenuOpen
 			&& !PopupManager::GetInstance()->IsActive()
 			&& !(inventoryMenu && inventoryMenu->IsOpen())
 			&& game->GetSceneManager()->GetCurrentScene() == this
 			&& sketchyGuy->CanInteract()
-			&& inpMan->KeyPress(SettingsManager::GetInstance()->GetKeybind("INTERACT"))) {
+			&& inpMan->KeyPress(settings->GetKeybind("INTERACT"))) {
 			StartSketchyGuyInteraction();
 		}
 	}
-
-	for (auto& savePoint : savePoints) {
-		savePoint->Update(deltaTime);
-	}
-
-	for (auto& shopPoint : shopPoints) {
-		shopPoint->Update(deltaTime);
-	}
-
-	for (auto& healPoint : healingPoints) {
-		healPoint->Update(deltaTime);
-	}
-
-	for (auto& chest : treasureChests) {
-		chest->Update(deltaTime);
-		if (!currentConversation && chest->CanInteract() && inpMan->KeyPress(SettingsManager::GetInstance()->GetKeybind("INTERACT"))) {
-			auto given = chest->Open(player.get());
-			if (!given.empty()) {
-				std::wstring msg = L"You found: ";
-				for (auto& r : given) {
-					if (r.type == ChestRewardType::ITEM) {
-						auto* bp = ItemData::GetInstance()->GetItemBlueprint(r.itemID);
-						if (bp) {
-							msg += bp->GetName();
-							if (r.quantity > 1) msg += L" x" + std::to_wstring(r.quantity);
-							msg += L"  ";
-						}
-					}
-					else if (r.type == ChestRewardType::CARD) {
-						std::wstring wid(r.cardSaveID.begin(), r.cardSaveID.end());
-						msg += wid + L"  ";
-					}
-				}
-				auto [sw, sh] = camera.GetScreenResolution();
-				currentConversation = std::make_shared<IConversation>(
-					std::make_shared<DX9GF::FontSprite>(font.get()), sw, sh);
-				currentConversation->AddLine({ .name = L"Treasure Chest", .content = msg, .voiceClip = std::optional<std::string>("bleep20") });
-			}
-		}
-	}
-
-	if (inventoryMenu && inventoryMenu->IsOpen()) {
-		isGamePaused = true;
-		inventoryMenu->Update(deltaTime);
-	}
-
-	if (playerHUD && !isGamePaused) playerHUD->Update(deltaTime);
-
-	if (!isGamePaused) {
-		for (auto& enemy : mapEnemies) {
-			enemy->Update(deltaTime);
-		}
-		player->Update(deltaTime);
-		camera.Update();
-	}
-
-	this->uiCamera.Update();
-
-	transformManager->UpdateAll();
-	if (!isGamePaused) map->UpdateAreas(player->GetCollider().lock()->GetWorldX(), player->GetCollider().lock()->GetWorldY());
-
-	if (draggableManager && inventoryMenu && inventoryMenu->IsOpen() && inventoryMenu->GetCurrentTab() == Demo::InventoryMenu::Tab::DECK) {
-		draggableManager->Update(deltaTime);
-	}
-
-	if (inventoryMenu && inventoryMenu->IsPendingLeave()) {
-		auto sceMan = game->GetSceneManager();
-		sceMan->GoToScene(0);
-		auto audio = DX9GF::AudioManager::GetInstance();
-		audio->PlayBGM_Fade("bgm_sky", 0.9f, 1.5f);
-		return;
-	}
-	commandBuffer->Update(deltaTime);
 }
 
-void Demo::ThreadAlleyScene::DrawWorld(unsigned long long deltaTime)
+void Demo::ThreadAlleyScene::OnDrawWorld(std::vector<DepthNode>& depthNodes, unsigned long long deltaTime)
 {
-	auto gd = game->GetGraphicsDevice();
-	if (SUCCEEDED(gd->BeginDraw())) {
-		DrawCheckerBackground(gd, deltaTime);
-
-		map->Draw(camera);
-
-		struct DepthNode {
-			float y;
-			std::function<void()> drawCall;
-			bool operator<(const DepthNode& other) const { return y < other.y; }
-		};
-		std::vector<DepthNode> depthNodes;
-
-		for (auto& savePoint : savePoints) depthNodes.push_back({ savePoint->GetWorldY(), [&, savePoint]() { savePoint->Draw(camera, deltaTime); } });
-		for (auto& shopPoint : shopPoints) depthNodes.push_back({ shopPoint->GetWorldY(), [&, shopPoint]() { shopPoint->Draw(camera, deltaTime); } });
-		for (auto& healPoint : healingPoints) depthNodes.push_back({ healPoint->GetWorldY(), [&, healPoint]() { healPoint->Draw(camera, deltaTime); } });
-		for (auto& chest : treasureChests) depthNodes.push_back({ chest->GetWorldY(), [&, chest]() { chest->Draw(camera, deltaTime); } });
-		for (auto& enemy : mapEnemies) depthNodes.push_back({ enemy->GetWorldY(), [&, enemy]() { enemy->Draw(&camera, deltaTime); } });
-
-		for (auto& npc : mapNPCs) {
-			depthNodes.push_back({ npc->GetWorldY(), [&, npc]() { npc->Draw(camera, deltaTime); } });
-		}
-
-		if (authTerminal) depthNodes.push_back({ authTerminal->GetWorldY(), [&]() { authTerminal->Draw(camera, deltaTime); } });
-		if (trojanNPC) depthNodes.push_back({ trojanNPC->GetWorldY(), [&]() { trojanNPC->Draw(camera, deltaTime); } });
-		if (sketchyGuy) depthNodes.push_back({ sketchyGuy->GetWorldY(), [&]() { sketchyGuy->Draw(camera, deltaTime); } });
-		if (player) depthNodes.push_back({ player->GetWorldY(), [&]() { player->Draw(deltaTime); } });
-
-		std::sort(depthNodes.begin(), depthNodes.end());
-		for (auto& node : depthNodes) {
-			node.drawCall();
-		}
-
-		gd->EndDraw();
-	}
+	if (authTerminal) AddDepthNode(depthNodes, authTerminal->GetWorldY(), [&]() { authTerminal->Draw(camera, deltaTime); });
+	if (trojanNPC) AddDepthNode(depthNodes, trojanNPC->GetWorldY(), [&]() { trojanNPC->Draw(camera, deltaTime); });
+	if (sketchyGuy) AddDepthNode(depthNodes, sketchyGuy->GetWorldY(), [&]() { sketchyGuy->Draw(camera, deltaTime); });
 }
 
-void Demo::ThreadAlleyScene::DrawUI(unsigned long long deltaTime)
+void Demo::ThreadAlleyScene::OnDrawUI(unsigned long long deltaTime)
 {
-	CreateImGuiDebugFrame(player, game);
-	auto gd = game->GetGraphicsDevice();
-	if (SUCCEEDED(gd->BeginDraw())) {
-
-		for (auto& savePoint : savePoints) savePoint->DrawUI(&this->uiCamera, deltaTime);
-		for (auto& chest : treasureChests) chest->DrawUI(&this->uiCamera, deltaTime);
-		for (auto& healPoint : healingPoints) healPoint->DrawUI(&this->uiCamera, deltaTime);
-		for (auto& shopPoint : shopPoints) shopPoint->DrawUI(&this->uiCamera, deltaTime);
-
-		for (auto& npc : mapNPCs) {
-			npc->DrawUI(&this->uiCamera, deltaTime);
-		}
-
-		if (trojanNPC && trojanNPC->GetPhase() != Demo::TrojanNPC::Phase::Defeated) trojanNPC->DrawUI(&this->uiCamera, deltaTime);
-		if (sketchyGuy) sketchyGuy->DrawUI(&this->uiCamera, deltaTime);
-		if (playerHUD) playerHUD->Draw(gd, deltaTime);
-		if (inventoryMenu) inventoryMenu->Draw(gd, deltaTime);
-		if (draggableManager && inventoryMenu && inventoryMenu->IsOpen() && inventoryMenu->GetCurrentTab() == Demo::InventoryMenu::Tab::DECK) {
-			draggableManager->Draw(deltaTime);
-		}
-		if (inventoryMenu) inventoryMenu->DrawKeyboardReticle(gd, deltaTime);
-
-		// After the HUD and inventory so the password panel sits on top of them.
-		if (authTerminal) authTerminal->DrawUI(&this->uiCamera, deltaTime);
-
-		if (currentConversation) {
-			currentConversation->Draw(gd, &this->uiCamera, deltaTime);
-		}
-
-		QuestManager::GetInstance()->Draw(gd, &this->uiCamera, deltaTime);
-
-		if (drawBuffer) {
-			drawBuffer->Update(deltaTime);
-		}
-
-		PopupManager::GetInstance()->DrawUI(deltaTime, &this->uiCamera);
-
-		if (!(inventoryMenu && inventoryMenu->IsInKeyboardMode())) {
-			DX9GF::InputManager::GetInstance()->DrawCursor(&this->uiCamera, deltaTime);
-		}
-
-		if (popUpMessage) {
-			popUpMessage->Draw(deltaTime);
-		}
-
-		if (chapterTitleUI) {
-			chapterTitleUI->Draw(&this->uiCamera, deltaTime);
-		}
-		ImGui::Render();
-		ImGui_ImplDX9_RenderDrawData(ImGui::GetDrawData());
-		gd->EndDraw();
-	}
+	if (trojanNPC && trojanNPC->GetPhase() != Demo::TrojanNPC::Phase::Defeated) trojanNPC->DrawUI(&this->uiCamera, deltaTime);
+	if (sketchyGuy) sketchyGuy->DrawUI(&this->uiCamera, deltaTime);
+	if (authTerminal) authTerminal->DrawUI(&this->uiCamera, deltaTime);
 }
 
 std::string Demo::ThreadAlleyScene::GetSaveID() const
@@ -689,47 +324,17 @@ std::string Demo::ThreadAlleyScene::GetSaveID() const
 	return "ThreadAlleyScene";
 }
 
-void Demo::ThreadAlleyScene::GenerateSaveData(nlohmann::json& outData)
+void Demo::ThreadAlleyScene::OnGenerateSaveData(nlohmann::json& outData)
 {
-	player->GenerateSaveData(outData["player"]);
-	auto pos = camera.GetPosition();
-	outData["camera"] = {
-		{"x", pos.x},
-		{"y", pos.y},
-		{"zoom", camera.GetZoom()}
-	};
-
-	outData["hasSeenChapterIntro"] = hasSeenChapterIntro;
-
 	outData["authTerminal"] = {
 		{"password", authPassword},
 		{"solved", authTerminalSolved}
 	};
 	if (trojanNPC) outData["trojanNPC"] = { {"phase", static_cast<int>(trojanNPC->GetPhase())} };
-
-	nlohmann::json chestStates = nlohmann::json::array();
-	for (auto& c : treasureChests) chestStates.push_back(c->GetIsOpened());
-	outData["treasureChests"] = chestStates;
-
-	nlohmann::json enemiesState = nlohmann::json::object();
-	for (auto& enemy : mapEnemies) {
-		enemiesState[enemy->GetEnemyID()] = {
-			{"isDefeated", enemy->IsDefeated()},
-			{"respawnTimer", enemy->GetRespawnTimer()},
-			{ "eventType", static_cast<int>(enemy->GetEncounterData().eventType) }
-		};
-	}
-	outData["mapEnemies"] = enemiesState;
 }
 
-void Demo::ThreadAlleyScene::RestoreSaveData(const nlohmann::json& inData)
+void Demo::ThreadAlleyScene::OnRestoreSaveData(const nlohmann::json& inData)
 {
-	player->RestoreSaveData(inData["player"]);
-	camera.SetPosition(inData["camera"]["x"], inData["camera"]["y"]);
-	camera.SetZoom(inData["camera"]["zoom"]);
-
-	hasSeenChapterIntro = inData.value("hasSeenChapterIntro", false);
-
 	if (inData.contains("authTerminal")) {
 		authPassword = inData["authTerminal"].value("password", authPassword);
 		authTerminalSolved = inData["authTerminal"].value("solved", false);
@@ -755,39 +360,16 @@ void Demo::ThreadAlleyScene::RestoreSaveData(const nlohmann::json& inData)
 			QuestManager::GetInstance()->NotifyEvent("TROJAN_REVEALED", "", player.get());
 		}
 	}
-
-	if (inData.contains("treasureChests")) {
-		auto& arr = inData["treasureChests"];
-		for (size_t i = 0; i < treasureChests.size() && i < arr.size(); ++i)
-			treasureChests[i]->SetOpened(arr[i].get<bool>());
-	}
-
-	if (inData.contains("mapEnemies")) {
-		auto& enemiesState = inData["mapEnemies"];
-		for (auto& enemy : mapEnemies) {
-			std::string id = enemy->GetEnemyID();
-			if (enemiesState.contains(id)) {
-				bool def = enemiesState[id]["isDefeated"].get<bool>();
-				float timer = enemiesState[id]["respawnTimer"].get<float>();
-				EventType savedEvent = static_cast<EventType>(enemiesState[id].value("eventType", 0));
-
-				enemy->SetDefeatedState(def, timer);
-				enemy->SetEventState(savedEvent);
-			}
-		}
-	}
 }
 
 void Demo::ThreadAlleyScene::GiveTestItems()
 {
-
 }
 
 void Demo::ThreadAlleyScene::StartTrojanConversation()
 {
 	auto phase = trojanNPC->GetPhase();
 
-	// Coming back with the token in hand is what makes it drop the act.
 	if (phase == TrojanNPC::Phase::AwaitingToken && player->GetInventoryItems().HasItem(ITEM_AUTH_TOKEN)) {
 		player->GetInventoryItems().ConsumeItem(ITEM_AUTH_TOKEN);
 		trojanNPC->SetPhase(TrojanNPC::Phase::Revealed);
@@ -806,11 +388,10 @@ void Demo::ThreadAlleyScene::StartTrojanConversation()
 		QuestManager::GetInstance()->NotifyEvent("TROJAN_TALKED", "", player.get());
 		break;
 	case TrojanNPC::Phase::Revealed:
-		// Losing the fight leaves the NPC in Revealed, so talking again replays the taunt and rematches.
 		onConversationEnd = [this]() {
 			StartTrojanBattle();
 			QuestManager::GetInstance()->NotifyEvent("TROJAN_REVEALED", "", player.get());
-			};
+		};
 		break;
 	default:
 		onConversationEnd = nullptr;
@@ -836,7 +417,7 @@ void Demo::ThreadAlleyScene::StartTrojanBattle()
 		battleScene->SetCustomBGM("battle_boss");
 		battleScene->SetCustomBackgroundDraw([this](DX9GF::GraphicsDevice* gd, unsigned long long dt) {
 			DrawCheckerBackground(gd, dt);
-			});
+		});
 		battleScene->SetOnVictoryCallback([this]() {
 			this->commandBuffer->PushCommand(std::make_shared<DX9GF::CustomCommand>([this](std::function<void()> markFinished) {
 				this->trojanNPC->SetPhase(TrojanNPC::Phase::Defeated);
@@ -845,15 +426,15 @@ void Demo::ThreadAlleyScene::StartTrojanBattle()
 					this->popUpMessage->ShowMessage(L"(+) " + result.rewardMessage, 5.0f);
 				}
 				markFinished();
-				}));
-			});
+			}));
+		});
 
 		sceMan->InsertScene(sceMan->GetIndex() + 1, battleScene);
 		sceMan->GoToNext();
 
 		isTransitioning = false;
 		markFinished();
-		}));
+	}));
 
 	drawBuffer->PushCommand(std::make_shared<TransitionCommand>(game->GetGraphicsDevice(), &this->uiCamera, 1.f, false));
 }
@@ -862,7 +443,6 @@ void Demo::ThreadAlleyScene::StartSketchyGuyInteraction()
 {
 	auto* npcData = SketchyGuyGlobalData::GetInstance();
 
-	// First encounter: the "you didn't see me" conversation, then he's flagged as met.
 	if (!npcData->HasMet()) {
 		auto [sw, sh] = camera.GetScreenResolution();
 		currentConversation = std::make_shared<IConversation>(std::make_shared<DX9GF::FontSprite>(font.get()), sw, sh);
@@ -873,7 +453,6 @@ void Demo::ThreadAlleyScene::StartSketchyGuyInteraction()
 		return;
 	}
 
-	// Every later encounter: the buy prompt.
 	const int cost = npcData->PackCost();
 	std::vector<std::pair<std::wstring, std::function<void()>>> buttons = {
 		{ sketchyGuy->GetBuyConfirmLabel(cost), [this, cost]() {
@@ -911,16 +490,14 @@ void Demo::ThreadAlleyScene::DrawCheckerBackground(DX9GF::GraphicsDevice* gd, un
 	const float BASE_SCROLL_SPEED = 30.0f;
 	const float BLINK_PERIOD = 2000.0f;
 	const float ANIMATION_DURATION = 800.0f;
-	const int PADDING = 6; // Adjust this value to increase or decrease the extra squares generated off-screen
+	const int PADDING = 6;
 
-	// Update base scroll
 	bgBaseScrollX += (BASE_SCROLL_SPEED * deltaTime) / 1000.0f;
 	bgBaseScrollY += (BASE_SCROLL_SPEED * deltaTime) / 1000.0f;
 
 	if (bgBaseScrollX >= 2.0f * SQUARE_SIZE) bgBaseScrollX -= 2.0f * SQUARE_SIZE;
 	if (bgBaseScrollY >= 2.0f * SQUARE_SIZE) bgBaseScrollY -= 2.0f * SQUARE_SIZE;
 
-	// Update periodic blink and movement
 	bgPeriodTimer += deltaTime;
 	if (bgPeriodTimer >= BLINK_PERIOD) {
 		bgPeriodTimer = std::fmod(bgPeriodTimer, BLINK_PERIOD);
@@ -933,7 +510,6 @@ void Demo::ThreadAlleyScene::DrawCheckerBackground(DX9GF::GraphicsDevice* gd, un
 		blinkFactor = 1.0f - (bgPeriodTimer / 200.0f);
 	}
 
-	// Update easing for row shifting
 	if (bgEaseProgress < 1.0f) {
 		bgEaseProgress += deltaTime / ANIMATION_DURATION;
 		if (bgEaseProgress > 1.0f) bgEaseProgress = 1.0f;
@@ -941,7 +517,7 @@ void Demo::ThreadAlleyScene::DrawCheckerBackground(DX9GF::GraphicsDevice* gd, un
 
 	auto easeInOut = [](float t) {
 		return t < 0.5f ? 2.0f * t * t : -1.0f + (4.0f - 2.0f * t) * t;
-		};
+	};
 
 	float easedValue = easeInOut(bgEaseProgress) * SQUARE_SIZE;
 
@@ -986,4 +562,9 @@ void Demo::ThreadAlleyScene::DrawCheckerBackground(DX9GF::GraphicsDevice* gd, un
 		}
 	}
 	gd->SetAlphaBlending(false);
+}
+
+void Demo::ThreadAlleyScene::DrawBackground(DX9GF::GraphicsDevice* gd, unsigned long long deltaTime)
+{
+	DrawCheckerBackground(gd, deltaTime);
 }

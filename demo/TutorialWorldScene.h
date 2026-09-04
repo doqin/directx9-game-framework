@@ -1,71 +1,28 @@
-﻿#pragma once
-#include "DX9GF.h"
-#include "DX9GFExtras.h"
-#include "Game.h"
-#include "Player.h"
-#include "SavePoint.h"
-#include "InventoryMenu.h"
-#include "StrikeCard.h"
-#include "ShopPoint.h"
-#include "HealingPoint.h"
-#include "NPC.h"
-#include "IConversation.h"
-#include "TreasureChestNPC.h"
-#include "PopUpMessage.h"
-#include "CardShop.h"
-#include "ItemShop.h"
-#include "PlayerHUD.h"
-#include "MapEnemy.h"
-#include "ChapterTitleUI.h"
+#pragma once
+#include "WorldSceneBase.h"
+#include "SpamNPC.h"
 
 namespace Demo {
-	class TutorialWorldScene : public DX9GF::IScene, public DX9GF::ISaveable {
-		bool isGamePaused = false;
-		bool isTransitioning = false;
-		bool hasSeenChapterIntro = false;
-
-		Game* game;
-		std::shared_ptr<DX9GF::ColliderManager> colliderManager;
-		std::shared_ptr<DX9GF::TransformManager> transformManager;
-		std::shared_ptr<Demo::DraggableManager> draggableManager;
-		std::shared_ptr<InventoryMenu> inventoryMenu;
-		std::shared_ptr<PlayerHUD> playerHUD;
-		std::shared_ptr<DX9GF::SaveManager> saveManager;
-
-		std::vector<std::shared_ptr<SavePoint>> savePoints;
-		std::shared_ptr<ShopPoint> shopPoint_Card;
-		std::shared_ptr<ShopPoint> shopPoint_BSItem;
-		std::shared_ptr<HealingPoint> healingPoint;
-		std::shared_ptr<DX9GF::Font> font;
-		std::shared_ptr<Player> player;
-		std::shared_ptr<DX9GF::Map> map;
-		std::shared_ptr<DX9GF::CommandBuffer> drawBuffer;
-		std::shared_ptr<DX9GF::CommandBuffer> commandBuffer;
-		std::shared_ptr<PopUpMessage> popUpMessage;
-		std::shared_ptr<ChapterTitleUI> chapterTitleUI;
-
-		std::shared_ptr<IConversation> currentConversation;
-		std::shared_ptr<INPC> activeNPC = nullptr;
-
-		std::vector<std::shared_ptr<NPC>> mapNPCs;
-
-		std::vector<std::shared_ptr<TreasureChestNPC>> treasureChests;
-		std::vector<std::shared_ptr<MapEnemy>> mapEnemies;
+	class TutorialWorldScene : public WorldSceneBase {
 	public:
 		TutorialWorldScene(Game* game, std::shared_ptr<DX9GF::SaveManager> sm, UINT sw, UINT sh)
-			: IScene(sw, sh), game(game), saveManager(sm) {
+			: WorldSceneBase(game, sm, sw, sh) {
 		}
-		void Init() override;
-		void Update(unsigned long long deltaTime) override;
-		void DrawWorld(unsigned long long deltaTime) override;
-		void DrawUI(unsigned long long deltaTime) override;
-		void DrawBackground(DX9GF::GraphicsDevice* gd, unsigned long long deltaTime);
-
 		std::string GetSaveID() const override;
-		void GenerateSaveData(nlohmann::json& outData) override;
-		void RestoreSaveData(const nlohmann::json& inData) override;
-
 		void GiveTestItems();
-		std::shared_ptr<Player> GetPlayer() const { return player; }
+	protected:
+		void OnInit() override;
+		void OnUpdate(unsigned long long deltaTime) override;
+		void OnDrawWorld(std::vector<DepthNode>& depthNodes, unsigned long long deltaTime) override;
+		void OnDrawUI(unsigned long long deltaTime) override;
+		void OnGenerateSaveData(nlohmann::json& outData) override;
+		void OnRestoreSaveData(const nlohmann::json& inData) override;
+		void DrawBackground(DX9GF::GraphicsDevice* gd, unsigned long long deltaTime) override;
+
+	private:
+		bool spamBossDefeated = false;
+		std::shared_ptr<SpamNPC> spamNPC;
+		void StartSpamConversation();
+		void StartSpamBattle();
 	};
 }

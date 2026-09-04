@@ -376,7 +376,7 @@ void Demo::KeyeproEnemy::PatternShatterVolley(float baseDamage) {
 void Demo::KeyeproEnemy::PatternFanning(float projDamage)
 {
 	const int WAVE_COUNT = 15;
-	const int BULLET_COUNT = 30;
+	const int BULLET_COUNT = 25;
 	const float SPAWN_DISTANCE = 400.f;
 	const float SPREAD_ANGLE = 60.f * (3.14159265f / 180.f); // Convert degrees to radians
 	const float BASE_ANGLE = RNG::Range(0.f, 360.f) * (3.14159265f / 180.f);
