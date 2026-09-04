@@ -1874,8 +1874,8 @@ bool Demo::IBattleScene::EnemyAttackUpdate(unsigned long long deltaTime)
 		}
 		return false;
 	}
+	battlePlayer->Update(deltaTime);
 	if (!isAttackCountdownActive) {
-		battlePlayer->Update(deltaTime);
 
 		//spawn token logic
 		if (battleEventType == EventType::Gold && currentTurn == targetTokenTurn && tokensSpawnedThisTurn < maxTokensThisTurn) {
@@ -3302,7 +3302,7 @@ void Demo::IBattleScene::Update(unsigned long long deltaTime)
 				OnAllEnemiesDefeated();
 			}
 			else {
-				battlePlayer->SetLocalPosition(0, 0);
+				//battlePlayer->SetLocalPosition(0, 0);
 			}
 		}
 	}

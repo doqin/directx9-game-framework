@@ -11,6 +11,7 @@
 #include "KeyeproEnemy.h"
 #include "RNG.h"
 #include "TrojanEnemy.h"
+#include "SpamEnemy.h"
 namespace Demo {
     void CustomBattleScene::Init() {
         IBattleScene::Init(); // Initialize hand etc. using base class base init
@@ -70,6 +71,12 @@ namespace Demo {
 					enemy->SetOnRequestEnemyCard([this](std::shared_ptr<IEnemy> enemyCardOwner) { CreateEnemyCard(enemyCardOwner); });
 					enemies.push_back(enemy);
 				}
+				else if (enemyName == "SpamEnemy") {
+					auto enemy = std::make_shared<SpamEnemy>(transformManager, 200.0f);
+					enemy->Init(game->GetGraphicsDevice(), &camera);
+					enemy->SetOnRequestEnemyCard([this](std::shared_ptr<IEnemy> enemyCardOwner) { CreateEnemyCard(enemyCardOwner); });
+					enemies.push_back(enemy);
+				}
             }
         }
 
@@ -123,7 +130,13 @@ namespace Demo {
                 enemy->SetOnRequestEnemyCard([this](std::shared_ptr<IEnemy> enemyCardOwner) { CreateEnemyCard(enemyCardOwner); });
                 enemies.push_back(enemy);
             }
-            
+            else if (enemyName == "SpamEnemy") {
+                auto enemy = std::make_shared<SpamEnemy>(transformManager, 200.0f);
+                enemy->Init(game->GetGraphicsDevice(), &camera);
+                enemy->SetOnRequestEnemyCard([this](std::shared_ptr<IEnemy> enemyCardOwner) { CreateEnemyCard(enemyCardOwner); });
+                enemies.push_back(enemy);
+            }
+
         }
         transformManager->RebuildHierarchy();
         StartBattle();

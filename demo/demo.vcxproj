@@ -300,6 +300,8 @@
     <ClCompile Include="KeyeEnemy.cpp" />
     <ClCompile Include="OutroScene.cpp" />
     <ClCompile Include="KeyeproEnemy.cpp" />
+    <ClCompile Include="SpamEnemy.cpp" />
+    <ClCompile Include="SpamNPC.cpp" />
     <ClCompile Include="main.cpp" />
     <ClCompile Include="MainMenu.cpp" />
     <ClCompile Include="MimicEnemy.cpp" />
@@ -425,6 +427,8 @@
     <ClInclude Include="KeyeEnemy.h" />
     <ClInclude Include="OutroScene.h" />
     <ClInclude Include="KeyeproEnemy.h" />
+    <ClInclude Include="SpamEnemy.h" />
+    <ClInclude Include="SpamNPC.h" />
     <ClInclude Include="MainMenu.h" />
     <ClInclude Include="IEnemy.h" />
     <ClInclude Include="IExpressionCard.h" />
@@ -496,6 +500,8 @@
       <DeploymentContent>true</DeploymentContent>
     </None>
     <None Include="assets\placeholder-round-projectile.aseprite" />
+    <None Include="assets\spam.aseprite" />
+    <None Include="assets\spamprojectile.aseprite" />
     <None Include="assets\SecretPuzzle.tmx">
       <DeploymentContent>true</DeploymentContent>
     </None>
@@ -704,6 +710,12 @@
       <DeploymentContent>true</DeploymentContent>
     </Image>
     <Image Include="assets\spearprojectile.png">
+      <DeploymentContent>true</DeploymentContent>
+    </Image>
+    <Image Include="assets\spam-Sheet.png">
+      <DeploymentContent>true</DeploymentContent>
+    </Image>
+    <Image Include="assets\spamprojectile.png">
       <DeploymentContent>true</DeploymentContent>
     </Image>
     <Image Include="assets\TempTex.png">

@@ -11,6 +11,7 @@
 #include "EnemyFactory.h"
 #include "QuestManager.h"
 #include "MapBattleScene.h"
+#include "CustomBattleScene.h"
 #include "CardShop.h"
 #include "ItemShop.h"
 #include "backends/imgui_impl_dx9.h"
@@ -22,6 +23,7 @@ void Demo::TutorialWorldScene::OnInit()
 
 	SetChapterTitle(L"CHAPTER I: CLOUD CANOPY", L"< System Initialized >");
 	map->SetAreaUpdateHandler("trigger_p", [this](const DX9GF::Map::ObjectArea& area) {
+		if (!spamBossDefeated) return;   // locked until the Spam boss guarding it is beaten
 		CreatePortalTransition(3, -417.f, 144.f, "bgm_arcade", 0.2f);
 	});
 	map->SetAreaUpdateHandler("trigger_lab", [this](const DX9GF::Map::ObjectArea& area) {
@@ -207,9 +209,118 @@ void Demo::TutorialWorldScene::OnInit()
 
 	player->SetBaseSurface("default");
 
+	spamNPC = std::make_shared<SpamNPC>(transformManager, 776.f, -1144.f);
+	spamNPC->Init(game->GetGraphicsDevice(), &camera, player, colliderManager, font, drawBuffer);
+	spamNPC->AddLine(L"???", L"Hold it right there, valued customer!");
+	spamNPC->AddLine(L"SPAM", L"CONGRATULATIONS! You've been pre-selected to NOT use this portal today.");
+	spamNPC->AddLine(L"Player", L"...who are you?");
+	spamNPC->AddLine(L"SPAM", L"Me? I'm the offer you can't refuse. Unread mail that piled up until it woke up.");
+	spamNPC->AddLine(L"SPAM", L"This exit is a limited-time deal, and the price is beating me. Terms and conditions apply.");
+	spamNPC->AddLine(L"Player", L"Can't I just unsubscribe?");
+	spamNPC->AddLine(L"SPAM", L"Everybody clicks that link. Nobody escapes the list. Let's talk numbers, kid.");
+
 	transformManager->RebuildHierarchy();
 	this->GiveTestItems();
 	drawBuffer->PushCommand(std::make_shared<TransitionCommand>(game->GetGraphicsDevice(), &this->uiCamera, 1.f, false));
+}
+
+void Demo::TutorialWorldScene::OnUpdate(unsigned long long deltaTime)
+{
+	if (spamNPC) {
+		spamNPC->Update(deltaTime);
+		if (!currentConversation && spamNPC->CanInteract() &&
+			DX9GF::InputManager::GetInstance()->KeyPress(SettingsManager::GetInstance()->GetKeybind("INTERACT"))) {
+			StartSpamConversation();
+		}
+	}
+}
+
+void Demo::TutorialWorldScene::OnDrawWorld(std::vector<DepthNode>& depthNodes, unsigned long long deltaTime)
+{
+	if (spamNPC) AddDepthNode(depthNodes, spamNPC->GetWorldY(), [&]() { spamNPC->Draw(camera, deltaTime); });
+}
+
+void Demo::TutorialWorldScene::OnDrawUI(unsigned long long deltaTime)
+{
+	if (spamNPC && spamNPC->GetPhase() != Demo::SpamNPC::Phase::Defeated) spamNPC->DrawUI(&this->uiCamera, deltaTime);
+}
+
+void Demo::TutorialWorldScene::StartSpamConversation()
+{
+	auto [sw, sh] = camera.GetScreenResolution();
+	currentConversation = std::make_shared<IConversation>(std::make_shared<DX9GF::FontSprite>(font.get()), sw, sh);
+	for (auto& line : spamNPC->GetDialogueLines()) {
+		currentConversation->AddLine(line);
+	}
+
+	if (spamNPC->GetPhase() == SpamNPC::Phase::Waiting) {
+		onConversationEnd = [this]() { StartSpamBattle(); };
+	}
+}
+
+void Demo::TutorialWorldScene::StartSpamBattle()
+{
+	if (isTransitioning || spamBossDefeated) return;
+	isTransitioning = true;
+
+	std::map<std::string, int> forcedEnemyMap = { {"SpamEnemy", 100} };
+
+	auto demoGame = dynamic_cast<Demo::Game*>(this->game);
+	auto app = DX9GF::Application::GetInstance();
+	auto battleScene = new CustomBattleScene(demoGame, player, app->GetScreenWidth(), app->GetScreenHeight(), forcedEnemyMap);
+
+	battleScene->SetCustomBGM("battle_boss");
+	battleScene->SetOnVictoryCallback([this]() {
+		this->commandBuffer->PushCommand(std::make_shared<DX9GF::CustomCommand>([this](std::function<void()> markFinished) {
+			this->spamBossDefeated = true;
+			if (this->spamNPC) this->spamNPC->SetPhase(SpamNPC::Phase::Defeated);
+			if (this->popUpMessage) this->popUpMessage->ShowMessage(L"The portal hums to life.", 4.0f);
+			markFinished();
+		}));
+	});
+
+	battleScene->SetCustomBackgroundDraw([this](DX9GF::GraphicsDevice* gd, unsigned long long deltaTime) { DrawBackground(gd, deltaTime); });
+
+	auto sceMan = this->game->GetSceneManager();
+	sceMan->InsertScene(sceMan->GetIndex() + 1, battleScene);
+
+	commandBuffer->PushCommand(std::make_shared<DX9GF::CustomCommand>([this](std::function<void()> markFinished) {
+		this->isGamePaused = true;
+		markFinished();
+	}));
+
+	auto transitionInCommand = std::make_shared<TransitionCommand>(game->GetGraphicsDevice(), &this->uiCamera, 1.f, true);
+	drawBuffer->StackCommand(transitionInCommand);
+
+	commandBuffer->PushCommand(std::make_shared<DX9GF::CustomCommand>([sceMan, transitionInCommand, this](std::function<void()> markFinished) {
+		if (!transitionInCommand->IsFinished()) {
+			return;
+		}
+		sceMan->GoToNext();
+		markFinished();
+	}));
+
+	drawBuffer->PushCommand(std::make_shared<TransitionCommand>(game->GetGraphicsDevice(), &this->uiCamera, 1.f, false));
+
+	drawBuffer->PushCommand(std::make_shared<DX9GF::CustomCommand>([this](std::function<void()> markFinished) {
+		this->isGamePaused = false;
+		this->isTransitioning = false;
+		markFinished();
+	}));
+}
+
+void Demo::TutorialWorldScene::OnGenerateSaveData(nlohmann::json& outData)
+{
+	outData["spamBossDefeated"] = spamBossDefeated;
+	if (spamNPC) outData["spamNPC"] = { {"phase", static_cast<int>(spamNPC->GetPhase())} };
+}
+
+void Demo::TutorialWorldScene::OnRestoreSaveData(const nlohmann::json& inData)
+{
+	if (inData.contains("spamBossDefeated")) spamBossDefeated = inData["spamBossDefeated"].get<bool>();
+	if (inData.contains("spamNPC") && spamNPC) {
+		spamNPC->SetPhase(static_cast<SpamNPC::Phase>(inData["spamNPC"].value("phase", 0)));
+	}
 }
 
 std::string Demo::TutorialWorldScene::GetSaveID() const

@@ -63,6 +63,8 @@
     <ClCompile Include="KeyeEnemy.cpp" />
     <ClCompile Include="OutroScene.cpp" />
     <ClCompile Include="KeyeproEnemy.cpp" />
+    <ClCompile Include="SpamEnemy.cpp" />
+    <ClCompile Include="SpamNPC.cpp" />
     <ClCompile Include="main.cpp" />
     <ClCompile Include="MainMenu.cpp" />
     <ClCompile Include="MimicEnemy.cpp" />
@@ -180,6 +182,8 @@
     <ClInclude Include="KeyeEnemy.h" />
     <ClInclude Include="OutroScene.h" />
     <ClInclude Include="KeyeproEnemy.h" />
+    <ClInclude Include="SpamEnemy.h" />
+    <ClInclude Include="SpamNPC.h" />
     <ClInclude Include="MainMenu.h" />
     <ClInclude Include="IEnemy.h" />
     <ClInclude Include="IExpressionCard.h" />
@@ -356,6 +360,8 @@
     <Image Include="assets\bossshard-Sheet.png" />
     <Image Include="assets\bubble-Sheet.png" />
     <Image Include="assets\bubbleprojectile.png" />
+    <Image Include="assets\spam-Sheet.png" />
+    <Image Include="assets\spamprojectile.png" />
     <Image Include="assets\bugprojectile-Sheet.png" />
     <Image Include="assets\buytab.png" />
     <Image Include="assets\selltab.png" />
