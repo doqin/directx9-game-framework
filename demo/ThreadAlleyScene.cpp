@@ -307,9 +307,9 @@ void Demo::ThreadAlleyScene::OnUpdate(unsigned long long deltaTime)
 
 void Demo::ThreadAlleyScene::OnDrawWorld(std::vector<DepthNode>& depthNodes, unsigned long long deltaTime)
 {
-	if (authTerminal) AddDepthNode(depthNodes, authTerminal->GetWorldY(), [&]() { authTerminal->Draw(camera, deltaTime); });
-	if (trojanNPC) AddDepthNode(depthNodes, trojanNPC->GetWorldY(), [&]() { trojanNPC->Draw(camera, deltaTime); });
-	if (sketchyGuy) AddDepthNode(depthNodes, sketchyGuy->GetWorldY(), [&]() { sketchyGuy->Draw(camera, deltaTime); });
+	if (authTerminal) AddDepthNode(depthNodes, authTerminal->GetWorldY(), [&, deltaTime]() { authTerminal->Draw(camera, deltaTime); });
+	if (trojanNPC) AddDepthNode(depthNodes, trojanNPC->GetWorldY(), [&, deltaTime]() { trojanNPC->Draw(camera, deltaTime); });
+	if (sketchyGuy) AddDepthNode(depthNodes, sketchyGuy->GetWorldY(), [&, deltaTime]() { sketchyGuy->Draw(camera, deltaTime); });
 }
 
 void Demo::ThreadAlleyScene::OnDrawUI(unsigned long long deltaTime)

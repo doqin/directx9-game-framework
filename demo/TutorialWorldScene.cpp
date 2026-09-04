@@ -247,7 +247,7 @@ void Demo::TutorialWorldScene::OnUpdate(unsigned long long deltaTime)
 
 void Demo::TutorialWorldScene::OnDrawWorld(std::vector<DepthNode>& depthNodes, unsigned long long deltaTime)
 {
-	if (spamNPC) AddDepthNode(depthNodes, spamNPC->GetWorldY(), [&]() { spamNPC->Draw(camera, deltaTime); });
+	if (spamNPC) AddDepthNode(depthNodes, spamNPC->GetWorldY(), [&, deltaTime]() { spamNPC->Draw(camera, deltaTime); });
 }
 
 void Demo::TutorialWorldScene::OnDrawUI(unsigned long long deltaTime)

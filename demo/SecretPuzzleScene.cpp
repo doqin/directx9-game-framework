@@ -220,7 +220,7 @@ void Demo::SecretPuzzleScene::OnUpdate(unsigned long long deltaTime)
 
 void Demo::SecretPuzzleScene::OnDrawWorld(std::vector<DepthNode>& depthNodes, unsigned long long deltaTime)
 {
-	if (cupidNPC) AddDepthNode(depthNodes, cupidNPC->GetWorldY(), [&]() { cupidNPC->Draw(camera, deltaTime); });
+	if (cupidNPC) AddDepthNode(depthNodes, cupidNPC->GetWorldY(), [&, deltaTime]() { cupidNPC->Draw(camera, deltaTime); });
 }
 
 void Demo::SecretPuzzleScene::OnDrawUI(unsigned long long deltaTime)

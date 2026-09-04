@@ -412,19 +412,17 @@ void Demo::BossWorldScene::OnUpdate(unsigned long long deltaTime)
 void Demo::BossWorldScene::OnDrawWorld(std::vector<DepthNode>& depthNodes, unsigned long long deltaTime)
 {
 	if (!isBossDoorUnlocked) {
-		AddDepthNode(depthNodes, 0, [this, deltaTime]() {
-			gateSprite->Begin();
-			gateSprite->Draw(camera, deltaTime);
-			gateSprite->End();
-		});
+		gateSprite->Begin();
+		gateSprite->Draw(camera, deltaTime);
+		gateSprite->End();
 	}
 
 	for (auto& m : hackMachines) {
-		AddDepthNode(depthNodes, m->GetWorldY(), [&, m]() { m->Draw(camera, deltaTime); });
+		AddDepthNode(depthNodes, m->GetWorldY(), [&, m, deltaTime]() { m->Draw(camera, deltaTime); });
 	}
-	if (mainTerminal) AddDepthNode(depthNodes, mainTerminal->GetWorldY(), [&]() { mainTerminal->Draw(camera, deltaTime); });
-	if (keyeproNPC) AddDepthNode(depthNodes, keyeproNPC->GetWorldY(), [&]() { keyeproNPC->Draw(camera, deltaTime); });
-	if (rustyChest) AddDepthNode(depthNodes, rustyChest->GetWorldY(), [&]() { rustyChest->Draw(camera, deltaTime); });
+	if (mainTerminal) AddDepthNode(depthNodes, mainTerminal->GetWorldY(), [&, deltaTime]() { mainTerminal->Draw(camera, deltaTime); });
+	if (keyeproNPC) AddDepthNode(depthNodes, keyeproNPC->GetWorldY(), [&, deltaTime]() { keyeproNPC->Draw(camera, deltaTime); });
+	if (rustyChest) AddDepthNode(depthNodes, rustyChest->GetWorldY(), [&, deltaTime]() { rustyChest->Draw(camera, deltaTime); });
 }
 
 void Demo::BossWorldScene::OnDrawUI(unsigned long long deltaTime)
