@@ -67,7 +67,7 @@ void Demo::TrojanEnemy::StartAttack(std::shared_ptr<Player> player, std::vector<
 void Demo::TrojanEnemy::PatternTrojanBolt(float projDamage) {
 	const int WAVES = 30;
 	const int BULLET_PER_BURST = 5;
-	const float BURST_DELAY = 0.01f;
+	const float BURST_DELAY = 0.02f;
 	const float DELAY_BETWEEN_WAVES = 0.02f;
 	const float DISTANCE_FROM_PLAYER = 300.f;
 	for (int j = 0; j < WAVES; j++) {
@@ -164,7 +164,7 @@ void Demo::TrojanEnemy::PatternVirusSpread(float projDamage) {
 void Demo::TrojanEnemy::PatternFanning(float projDamage)
 {
 	const int WAVE_COUNT = 15;
-	const int BULLET_COUNT = 30;
+	const int BULLET_COUNT = 25;
 	const float SPAWN_DISTANCE = 400.f;
 	const float SPREAD_ANGLE = 60.f * (3.14159265f / 180.f); // Convert degrees to radians
 	const float BASE_ANGLE = RNG::Range(0.f, 360.f) * (3.14159265f / 180.f);

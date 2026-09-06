@@ -63,6 +63,8 @@
     <ClCompile Include="KeyeEnemy.cpp" />
     <ClCompile Include="OutroScene.cpp" />
     <ClCompile Include="KeyeproEnemy.cpp" />
+    <ClCompile Include="SpamEnemy.cpp" />
+    <ClCompile Include="SpamNPC.cpp" />
     <ClCompile Include="main.cpp" />
     <ClCompile Include="MainMenu.cpp" />
     <ClCompile Include="MimicEnemy.cpp" />
@@ -97,6 +99,8 @@
     <ClCompile Include="VirtualBattleState.cpp" />
     <ClCompile Include="WarlockEnemy.cpp" />
     <ClCompile Include="World1Scene.cpp" />
+    <ClCompile Include="LabInsideScene.cpp" />
+    <ClCompile Include="WorldSceneBase.cpp" />
     <ClCompile Include="TextButton.cpp" />
     <ClCompile Include="EnemyCard.cpp" />
     <ClCompile Include="IBlockCard.cpp" />
@@ -180,6 +184,8 @@
     <ClInclude Include="KeyeEnemy.h" />
     <ClInclude Include="OutroScene.h" />
     <ClInclude Include="KeyeproEnemy.h" />
+    <ClInclude Include="SpamEnemy.h" />
+    <ClInclude Include="SpamNPC.h" />
     <ClInclude Include="MainMenu.h" />
     <ClInclude Include="IEnemy.h" />
     <ClInclude Include="IExpressionCard.h" />
@@ -224,6 +230,8 @@
     <ClInclude Include="VirtualBattleState.h" />
     <ClInclude Include="WarlockEnemy.h" />
     <ClInclude Include="World1Scene.h" />
+    <ClInclude Include="LabInsideScene.h" />
+    <ClInclude Include="WorldSceneBase.h" />
     <ClInclude Include="TextButton.h" />
     <ClInclude Include="TuitionFeeEnemy.h" />
     <ClInclude Include="GearSlotUI.h" />
@@ -356,6 +364,8 @@
     <Image Include="assets\bossshard-Sheet.png" />
     <Image Include="assets\bubble-Sheet.png" />
     <Image Include="assets\bubbleprojectile.png" />
+    <Image Include="assets\spam-Sheet.png" />
+    <Image Include="assets\spamprojectile.png" />
     <Image Include="assets\bugprojectile-Sheet.png" />
     <Image Include="assets\buytab.png" />
     <Image Include="assets\selltab.png" />
@@ -420,6 +430,8 @@
     <Image Include="assets\XP.jpg" />
     <Image Include="assets\xprojectile.png" />
     <Image Include="assets\ui-pack.png" />
+    <Image Include="assets\lab.png" />
+    <Image Include="assets\labinside.png" />
     <Image Include="assets\flame-slot-Sheet.png" />
     <Image Include="assets\12x12-gold-token.png" />
   </ItemGroup>
@@ -446,5 +458,8 @@
     <None Include="assets\uiter.aseprite" />
     <None Include="wave1.bin" />
     <None Include="assets\XP.tsx" />
+    <None Include="assets\lab.tsx" />
+    <None Include="assets\labinside.tsx" />
+    <None Include="assets\labinside.tmx" />
   </ItemGroup>
 </Project>
