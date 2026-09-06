@@ -395,7 +395,6 @@ bool Demo::IEnemy::TakeIndirectDamage(float damage, DamageType type) {
 
 	if (type == DamageType::Poison) {
 		textColor = 0xFFba4aed; //purple
-		//TODO: find audio resource to replace this. Physical - Effect audio should be diff
 		DX9GF::AudioManager::GetInstance()->PlayRandom("take_dmg", 0.5f);
 	}
 	else if (type == DamageType::Burn) {

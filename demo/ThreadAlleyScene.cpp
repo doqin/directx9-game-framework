@@ -28,6 +28,9 @@ void Demo::ThreadAlleyScene::Init()
 	colliderManager = std::make_shared<DX9GF::ColliderManager>();
 
 	player = std::make_shared<Player>(transformManager, -544.5f, 128.5f);
+	auto gearTex = std::make_shared<DX9GF::Texture>(game->GetGraphicsDevice());
+	gearTex->LoadTexture(L"assets/12x12-gold-token.png"); //TODO: Change gears asset
+	player->InitGearAnim(gearTex);
 	camera.SetPosition(-544.5f, 128.5f);
 
 	player->Init(game->GetGraphicsDevice(), colliderManager.get(), &camera);

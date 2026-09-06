@@ -13,13 +13,14 @@ namespace Demo {
 	// them automatically share it, instead of needing to be manually copied around.
 	class PlayerGlobalData : public DX9GF::ISaveable {
 	private:
-		float maxHealth = 50.f;
+		float baseMaxHealth = 50.f;
 		float health = 50.f;
 		int gold = 100;
 		std::vector<std::string> deck;
 		std::vector<std::string> inventoryCards;
 		ItemInventory inventoryItems;
-
+		std::vector<int> inventoryGears;
+		int equippedGearID = -1;
 		PlayerGlobalData() { Reset(); }
 	public:
 		static PlayerGlobalData* GetInstance() {
@@ -30,10 +31,16 @@ namespace Demo {
 		void Reset();
 
 		float GetHealth() const { return health; }
-		float GetMaxHealth() const { return maxHealth; }
-		void SetHealth(float hp) { health = (std::min)(maxHealth, (std::max)(0.f, hp)); }
+		float GetMaxHealth() const;
+		void SetHealth(float hp) { health = (std::min)(GetMaxHealth(), (std::max)(0.f, hp)); }
 		bool IsDead() const { return health <= 0.f; }
 		float Heal(float value);
+
+		const std::vector<int>& GetInventoryGears() const { return inventoryGears; }
+		int GetEquippedGearID() const { return equippedGearID; }
+		void EquipGear(int gearID);
+		void UnequipGear();
+		void AddGear(int gearID) { inventoryGears.push_back(gearID); }
 
 		int GetGold() const { return gold; }
 		void SetGold(int amount) { gold = amount; }

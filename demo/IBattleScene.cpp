@@ -1,4 +1,4 @@
-#include "pch.h"
+﻿#include "pch.h"
 #include "IBattleScene.h"
 #include <algorithm>
 #include <array>
@@ -70,6 +70,13 @@ namespace {
 
 void Demo::IBattleScene::StartBattle()
 {
+	// Reset Gear
+	isGearUsedThisBattle = false;
+	int gearID = player->GetEquippedGearID();
+	if (gearID == 5) {
+		battlePlayer->AddModifier(Demo::ModifierType::BuffDefense, 3, 15.f, true, 0);
+	}
+
 	for (auto& card : drawPile) {
 		HidePileCard(card);
 		card->ResetUses();
@@ -210,6 +217,12 @@ void Demo::IBattleScene::OnAllEnemiesDefeated()
 		const float multiplier = 1.25f * static_cast<float>(initialEnemyCount - 1);
 		finalGold = static_cast<int>(std::round(finalGold * multiplier));
 	}
+
+	// Hook Gear 4 (Midas Chip)
+	if (player->GetEquippedGearID() == 4) {
+		finalGold = static_cast<int>(std::round(finalGold * 1.2f));
+	}
+
 	finalGold += pendingGoldTokenReward;
 	player->AddGold(finalGold);
 	popUpMessage->QueueMessage(&commandBuffer, L"You earned " + std::to_wstring(finalGold) + L" gold!", 1.5f);
@@ -490,6 +503,10 @@ void Demo::IBattleScene::MoveHandCardsToDiscardPile()
 		if (cardHand[i]->IsLocked()) {
 			continue;
 		}
+		if (cardHand[i]->IsRetained()) {
+			cardHand[i]->SetRetained(false);
+			continue;
+		}
 		HidePileCard(cardHand[i]);
 		cardHand[i]->OnDiscard();
 		discardPile.push_back(cardHand[i]);
@@ -682,7 +699,7 @@ std::vector<D3DXVECTOR2> Demo::IBattleScene::BuildEnemyGridSlots() const
 	auto bodyHeight = [this](size_t index) {
 		const auto& enemy = enemies[index];
 		return enemy ? (std::max)(1.f, enemy->GetBodyHeight()) : 1.f;
-	};
+		};
 	auto columnWidth = [this](const std::vector<size_t>& column) {
 		float widest = 0.f;
 		for (size_t index : column) {
@@ -690,7 +707,7 @@ std::vector<D3DXVECTOR2> Demo::IBattleScene::BuildEnemyGridSlots() const
 			widest = (std::max)(widest, enemy ? enemy->GetBodyWidth() : 0.f);
 		}
 		return widest;
-	};
+		};
 	// Distance from the first centre in a column to the last.
 	auto columnSpan = [&](const std::vector<size_t>& column) {
 		float span = 0.f;
@@ -698,17 +715,17 @@ std::vector<D3DXVECTOR2> Demo::IBattleScene::BuildEnemyGridSlots() const
 			span += (bodyHeight(column[k - 1]) + bodyHeight(column[k])) / 2.f + ENEMY_GRID_ROW_GAP;
 		}
 		return span;
-	};
+		};
 	// A tall enemy at either end of the column eats into the room the rest can use.
 	auto columnTop = [&](const std::vector<size_t>& column) {
 		return (std::max)(centreTop, -screenHeight / 2.f + bodyHeight(column.front()) / 2.f);
-	};
+		};
 	auto availableSpan = [&](const std::vector<size_t>& column) {
 		if (column.empty()) {
 			return 0.f;
 		}
 		return (std::max)(0.f, (bandBottom - bodyHeight(column.back()) / 2.f) - columnTop(column));
-	};
+		};
 
 	// Fill a column top-to-bottom until the next enemy would not fit, then start a new one to
 	// the left. Walking `enemies` in order keeps the assignment stable: appending an enemy
@@ -1085,14 +1102,17 @@ void Demo::IBattleScene::PlayerAttackUpdate(unsigned long long deltaTime)
 	}
 	const float buttonY = screenHeight / 2.f - 20 - attackButton->GetHeight();
 	const float sidePadding = 20.f;
-	const float leftX = -screenWidth / 2.f + sidePadding;
-	const float executeX = leftX + backButton->GetWidth() + sidePadding;
 
+	const float leftX = -screenWidth / 2.f + sidePadding;
+	const float gearX = leftX + backButton->GetWidth() + sidePadding;
+	const float executeX = gearX + gearButton->GetWidth() + sidePadding;
 	const float runInitX = executeX + executeButton->GetWidth() + sidePadding;
 
 	backButton->SetLocalPosition(leftX, buttonY);
+	gearButton->SetLocalPosition(gearX, buttonY);
 	executeButton->SetLocalPosition(executeX, buttonY);
 	runInitButton->SetLocalPosition(runInitX, buttonY);
+
 	const float pileButtonsX = LayOutPileButtons(screenWidth, buttonY);
 	enemyCardRemoveAreaX = runInitX + runInitButton->GetWidth() + sidePadding;
 	enemyCardRemoveAreaY = buttonY;
@@ -1124,6 +1144,16 @@ void Demo::IBattleScene::PlayerAttackUpdate(unsigned long long deltaTime)
 			// queuedToDraw guard: retreating would end the turn and discard the hand while cards
 			// from a mid-turn draw are still in flight, stranding them outside every pile.
 			if (usedEnergy == 0 && queuedToDraw.empty()) backButton->Update(deltaTime);
+
+			int eqID = player->GetEquippedGearID();
+			auto bp = eqID != -1 ? Demo::ItemData::GetInstance()->GetGearBlueprint(eqID) : nullptr;
+			if (!bp || bp->type == Demo::GearType::Passive || isGearUsedThisBattle) {
+				gearButton->SetState(Demo::IButton::ButtonState::DISABLED);
+			}
+			else {
+				gearButton->Update(deltaTime);
+			}
+
 			executeButton->Update(deltaTime);
 			runInitButton->Update(deltaTime);
 			drawPileButton->Update(deltaTime);
@@ -1324,6 +1354,7 @@ std::vector<Demo::KeyboardNavigator::Candidate> Demo::IBattleScene::CollectKeybo
 			if (usedEnergy == 0 && queuedToDraw.empty()) {
 				addButton(backButton);
 			}
+			addButton(gearButton);
 			addButton(executeButton);
 			addButton(runInitButton);
 			addButton(drawPileButton);
@@ -1334,7 +1365,7 @@ std::vector<Demo::KeyboardNavigator::Candidate> Demo::IBattleScene::CollectKeybo
 		// Hand cards, plus orphaned cards floating in space (e.g. a card whose drop onto the
 		// block was rejected for lack of energy) - block-parented cards are handled below.
 		for (auto& card : cardHand) {
-			if (card->IsLocked()) {
+			if (card->IsLocked() || card->IsRetained()) {
 				continue;
 			}
 
@@ -1443,6 +1474,33 @@ std::vector<Demo::KeyboardNavigator::Candidate> Demo::IBattleScene::CollectKeybo
 			if (currentPilePage < maxPilePage) {
 				addButton(btnPileNextPage);
 			}
+		}
+		break;
+	}
+	case State::PlayerUseGearTargeting: {
+		for (auto& card : cardHand) {
+			if (card->IsLocked()) continue;
+
+			auto statementCard = std::dynamic_pointer_cast<IStatementCard>(card);
+			if (!statementCard) continue;
+
+			auto parent = card->GetParent();
+			const bool inHand = parent.has_value() && parent.value().lock().get() == handContainer.get();
+			if (!inHand) continue;
+
+			candidates.push_back({
+							statementCard,
+							statementCard->GetWorldX(), statementCard->GetWorldY(),
+							(float)statementCard->GetWidth(), (float)statementCard->GetHeight(),
+							[this, statementCard]() {
+								statementCard->SetRetained(true);
+								this->isGearUsedThisBattle = true;
+								this->pickedUpCard.reset();
+								this->state = State::PlayerAttack;
+								this->popUpMessage->QueueMessage(&this->commandBuffer, L"Card retained!", 1.5f);
+								DX9GF::AudioManager::GetInstance()->PlayRandom("power_up", 0.5f);
+							}
+				});
 		}
 		break;
 	}
@@ -2153,9 +2211,27 @@ void Demo::IBattleScene::PlayerAttackDraw(unsigned long long deltaTime)
 
 	if (!mainBlockCard->IsExecuting() && !(initBlockCard && initBlockCard->IsExecuting()) && !isTransitioning) {
 		if (usedEnergy == 0 && queuedToDraw.empty()) backButton->Draw(game->GetGraphicsDevice(), deltaTime);
+		gearButton->Draw(game->GetGraphicsDevice(), deltaTime);
 		executeButton->Draw(game->GetGraphicsDevice(), deltaTime);
 		runInitButton->Draw(game->GetGraphicsDevice(), deltaTime);
 		DrawPileButtons(deltaTime);
+		//gear's button tooltip
+		if (gearButton->GetTrigger()->IsHovering(deltaTime)) {
+			int eqID = player->GetEquippedGearID();
+			if (eqID != -1) {
+				auto bp = Demo::ItemData::GetInstance()->GetGearBlueprint(eqID);
+				if (bp) {
+					std::wstring tooltipText = L"Use Gear: " + bp->name + L"\n" + bp->description;
+
+					if (isGearUsedThisBattle) tooltipText += L"\n(Already Used)";
+					else if (bp->type == Demo::GearType::Passive) tooltipText += L"\n(Passive)";
+
+					auto [screenX, screenY] = DX9GF::InputManager::GetInstance()->GetVirtualAbsoluteMousePos(&this->uiCamera);
+					std::wstring ttStr = tooltipText;
+					DrawTooltip(ttStr, screenX, screenY, game->GetGraphicsDevice());
+				}
+			}
+		}
 	}
 
 	DrawKeyboardPlacementUI(deltaTime);
@@ -3072,6 +3148,17 @@ void Demo::IBattleScene::Init()
 		});
 	runInitButton->SetSpriteScale(2.f, 2.f);
 
+	gearTex = std::make_shared<DX9GF::Texture>(game->GetGraphicsDevice());
+	gearTex->LoadTexture(L"assets/12x12-gold-token.png"); //TODO: Change gears asset
+
+	gearButton = std::make_shared<IconButton>(transformManager, 0, 0, 16.f * 2.f, 16.f * 2.f, uiSheetTex);
+	gearButton->SetSpriteRects(DX9GF::Utils::CreateRectsHorizontal(176, 448, 16, 16, 4));
+	gearButton->SetSpriteScale(2.f, 2.f);
+	gearButton->SetOnReleaseLeft([&](DX9GF::ITrigger* thisObj) {
+		this->OnGearButtonClicked();
+		});
+	gearButton->Init(&this->uiCamera);
+
 	// Pile buttons. Each group of three frames on the sheet is idle / hover / pressed.
 	drawPileButton = std::make_shared<IconButton>(transformManager, 0, 0, PILE_BUTTON_SIZE, PILE_BUTTON_SIZE, uiSheetTex);
 	drawPileButton->SetSpriteRects(DX9GF::Utils::CreateRectsHorizontal(192, 160, 16, 16, 3));
@@ -3430,6 +3517,9 @@ void Demo::IBattleScene::Update(unsigned long long deltaTime)
 	case State::EnemyAttack:
 		EnemyAttackUpdate(deltaTime);
 		break;
+	case State::PlayerUseGearTargeting:
+		PlayerUseGearTargetingUpdate(deltaTime);
+		break;
 	default:
 		throw std::runtime_error("Unexpected state");
 	}
@@ -3596,11 +3686,22 @@ void Demo::IBattleScene::DrawWorld(unsigned long long deltaTime)
 				enemy->Draw(gd, &camera, deltaTime);
 			}
 			break;
+		case State::PlayerUseGearTargeting:
 		case State::PlayerAttack:
 			for (auto& enemy : enemies) {
 				enemy->Draw(gd, &camera, deltaTime);
 			}
 			DrawProjectedDamage(deltaTime);
+
+			if (state == State::PlayerUseGearTargeting) {
+				auto app = DX9GF::Application::GetInstance();
+				float screenW = static_cast<float>(app->GetScreenWidth());
+				float screenH = static_cast<float>(app->GetScreenHeight());
+				gd->SetAlphaBlending(true);
+				gd->DrawRectangle(camera, -screenW / 2, -screenH / 2, screenW, screenH, D3DCOLOR_ARGB(150, 0, 0, 0), true);
+				gd->SetAlphaBlending(false);
+			}
+
 			draggableManager->Draw(deltaTime);
 			DrawKeyboardReticleWorld(deltaTime);
 			break;
@@ -3652,9 +3753,24 @@ void Demo::IBattleScene::DrawUI(unsigned long long deltaTime)
 			PlayerStandByDraw(deltaTime);
 			DrawModifierIcons(modifierIconOffsetX, modifierIconOffsetY, gd);
 			break;
+		case State::PlayerUseGearTargeting:
 		case State::PlayerAttack:
 			PlayerAttackDraw(deltaTime);
 			DrawModifierIcons(modifierIconOffsetX, modifierIconOffsetY, gd);
+
+			if (state == State::PlayerUseGearTargeting) {
+				fontSprite->Begin();
+				fontSprite->SetScale(1.5f, 1.5f);
+				fontSprite->SetColor(0xFF00FF00);
+				fontSprite->SetOutline(true, 0xFF000000, 3.f);
+				std::wstring msg = L"Select a card to Retain (Right-Click to Cancel)";
+				fontSprite->SetText(msg);
+				fontSprite->SetPosition(-fontSprite->GetWidth() / 2.0f, -screenH / 4.0f);
+				fontSprite->Draw(uiCamera, deltaTime);
+				fontSprite->End();
+				fontSprite->SetScale(1.0f, 1.0f);
+				fontSprite->SetOutline(false);
+			}
 			break;
 		case State::PlayerOpenItems:
 			PlayerOpenItemsDraw(deltaTime);
@@ -3824,4 +3940,105 @@ void Demo::IBattleScene::AddEnergyPieceToken() {
 		isFlawlessChallengeActive = false;
 		isFlawlessCompleted = true;
 	}
+}
+
+void Demo::IBattleScene::OnGearButtonClicked() {
+	if (isGearUsedThisBattle) return;
+	int gearID = player->GetEquippedGearID();
+	auto bp = Demo::ItemData::GetInstance()->GetGearBlueprint(gearID);
+	if (!bp || bp->type == Demo::GearType::Passive) return;
+
+	if (gearID == 1) { // Energy Cell
+		GainEnergyNow(1);
+		isGearUsedThisBattle = true;
+		DX9GF::AudioManager::GetInstance()->PlayRandom("power_up", 0.5f);
+		popUpMessage->QueueMessage(&commandBuffer, L"Gained 1 Energy!", 1.5f);
+
+	}
+	else if (gearID == 2) { // Data Extractor
+		if (drawPile.empty() && discardPile.empty()) {
+			popUpMessage->QueueMessage(&commandBuffer, L"No cards left to draw!", 1.5f);
+			DX9GF::AudioManager::GetInstance()->Play("error", false, 0.8f);
+			return;
+		}
+		DrawCardsNow(1);
+		isGearUsedThisBattle = true;
+		popUpMessage->QueueMessage(&commandBuffer, L"Drew 1 card!", 1.5f);
+
+	}
+	else if (gearID == 3) { // Memory Locker
+		bool hasValidCard = false;
+		for (auto& card : cardHand) {
+			auto statementCard = std::dynamic_pointer_cast<IStatementCard>(card);
+			if (statementCard && !card->IsLocked() && !card->IsRetained()) {
+				auto parent = card->GetParent();
+				if (parent.has_value() && parent.value().lock().get() == handContainer.get()) {
+					hasValidCard = true;
+					break;
+				}
+			}
+		}
+		if (!hasValidCard) {
+			popUpMessage->QueueMessage(&commandBuffer, L"No valid cards in hand to retain!", 1.5f);
+			DX9GF::AudioManager::GetInstance()->Play("error", false, 0.8f);
+			return;
+		}
+
+		state = State::PlayerUseGearTargeting;
+		DX9GF::AudioManager::GetInstance()->PlayRandom("btn_click", 0.5f);
+	}
+}
+
+void Demo::IBattleScene::PlayerUseGearTargetingUpdate(unsigned long long deltaTime) {
+	auto inpMan = DX9GF::InputManager::GetInstance();
+	auto sm = Demo::SettingsManager::GetInstance();
+
+	if (inpMan->MousePress(DX9GF::InputManager::MouseButton::Right) ||
+		inpMan->KeyPress(sm->GetKeybind("CANCEL")) ||
+		inpMan->KeyPress(sm->GetKeybind("BACK")) ||
+		inpMan->KeyPress(sm->GetKeybind("OPEN_INVENTORY"))) {
+
+		pickedUpCard.reset();
+		state = State::PlayerAttack;
+		popUpMessage->QueueMessage(&commandBuffer, L"Cancelled.", 1.0f);
+		return;
+	}
+
+	//hard-code mouse click handler, dirty hack. Pls dont do this
+	if (inpMan->MousePress(DX9GF::InputManager::MouseButton::Left)) {
+		auto [mouseXSc, mouseYSc] = inpMan->GetVirtualAbsoluteMousePos(&this->camera);
+		auto [mouseWX, mouseWY] = DX9GF::Utils::WindowToWorldCoords(this->camera, mouseXSc, mouseYSc);
+
+		for (auto& card : cardHand) {
+			if (card->IsLocked() || card->IsRetained()) continue;
+
+			auto draggableCard = std::dynamic_pointer_cast<Demo::IDraggable>(card);
+			auto statementCard = std::dynamic_pointer_cast<IStatementCard>(card);
+			if (!draggableCard || !statementCard) continue;
+
+			if (auto trigger = draggableCard->GetTrigger().lock()) {
+				float tx = trigger->GetWorldX() - trigger->GetOriginX();
+				float ty = trigger->GetWorldY() - trigger->GetOriginY();
+
+				if (mouseWX >= tx && mouseWX <= tx + trigger->GetWidth() &&
+					mouseWY >= ty && mouseWY <= ty + trigger->GetHeight()) {
+
+					statementCard->SetRetained(true);
+					this->isGearUsedThisBattle = true;
+					pickedUpCard.reset();
+					this->state = State::PlayerAttack;
+					this->popUpMessage->QueueMessage(&this->commandBuffer, L"Card retained for next turn!", 1.5f);
+					DX9GF::AudioManager::GetInstance()->PlayRandom("power_up", 0.5f);
+					return;
+				}
+			}
+		}
+	}
+
+	keyboardNavigator.Update(deltaTime, CollectKeyboardCandidates());
+
+	for (size_t i = 0; i < enemies.size(); ++i) {
+		enemies[i]->Update(deltaTime);
+	}
+	FlushPendingEnemies();
 }

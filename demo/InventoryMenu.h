@@ -12,6 +12,7 @@
 #include <string>
 #include <utility>
 #include "QuestManager.h"
+#include "GearSlotUI.h"
 
 namespace Demo {
 
@@ -24,7 +25,7 @@ namespace Demo {
 
 	class InventoryMenu {
 	public:
-		enum class Tab { ITEMS, DECK, QUEST };
+		enum class Tab { ITEMS, DECK, GEAR, QUEST };
 
 	private:
 		Game* game;
@@ -40,6 +41,7 @@ namespace Demo {
 		// UI Buttons
 		std::shared_ptr<IconButton> btnTabItems;
 		std::shared_ptr<IconButton> btnTabDeck;
+		std::shared_ptr<IconButton> btnTabGear;
 		std::shared_ptr<IconButton> btnTabQuest;
 		std::shared_ptr<IconButton> btnResume;
 		std::shared_ptr<IconButton> btnOptions;
@@ -58,6 +60,27 @@ namespace Demo {
 		bool isItemsDirty = true;
 		std::wstring hoverDescription = L"";
 
+		// Tab Gear
+		std::shared_ptr<DX9GF::Texture> uiPlayerTex;
+		std::shared_ptr<DX9GF::StaticSprite> uiPlayerSprite;
+		float gearAnimTimer = 0.0f;
+
+		std::shared_ptr<DX9GF::Texture> flameTex;
+		std::shared_ptr<DX9GF::Texture> gearTex;
+
+		std::shared_ptr<GearSlotUI> coreSlot;
+		std::vector<std::shared_ptr<GearSlotUI>> orbitSlots;
+
+		std::shared_ptr<DX9GF::AnimatedSprite> gearDroneAnim;
+		float orbitAngle = 0.0f;
+
+		// Tab Quests
+		std::vector<QuestButtonData> questButtons;
+		std::string selectedQuestId;
+		float questScrollY = 0.0f;
+		float questListTotalHeight = 0.0f;
+		bool isQuestsDirty = true;
+
 		// --- Card caching across toggles ------------------------------------------------
 		// Cards are built once and kept alive (hidden) between opens; the containers only
 		// restructure when the player's deck / inventory actually changed.
@@ -73,13 +96,6 @@ namespace Demo {
 		void SetCardsHidden(bool hidden);
 		std::shared_ptr<ICard> AcquireCard(const std::string& cardId);
 		bool ItemSignatureChanged();
-
-		// Tab Quests
-		std::vector<QuestButtonData> questButtons;
-		std::string selectedQuestId;
-		float questScrollY = 0.0f;
-		float questListTotalHeight = 0.0f;
-		bool isQuestsDirty = true;
 
 		std::shared_ptr<DX9GF::Texture> backBufferTexture;
 		std::shared_ptr<DX9GF::StaticSprite> backBufferSprite;

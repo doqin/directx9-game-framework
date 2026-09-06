@@ -74,12 +74,54 @@ namespace Demo
 		itemRegistry[12] = ConsumableItem(12, L"Authentication Token",
 			L"A one-time access credential, pulled from a terminal in the alley.",
 			{}, { 144, 0, 167, 35 });
+
+
+		//TODO: Update gear rects here. Default size is 12x12. Assets can be 9x9 max, but please import 12x12 rects
+		
+		//gearRegistry[0] = { 0, L"Titan Core", L"Grants 20 Max HP.",
+		//	{ {7,7,19,19},
+		//	{40,7,52,19},
+		//	{73,7,85,19},
+		//	{107,7,119,19},
+		//	{139,7,151,19},
+		//	{172,7,184,19},
+		//	{206,7,218,19},
+		//	{239,7,251,19} },
+		//	GearType::Passive, GearEffect::AddMaxHP, 20 };
+
+		gearRegistry[0] = { 0, L"Titan Core", L"Grants 20 Max HP.", //red core
+			{ {7,91,19,103} }, GearType::Passive, GearEffect::AddMaxHP, 20 };
+
+		gearRegistry[1] = { 1, L"Energy Cell", L"Active: Restore 1 Energy.", //energy cell
+			{ {7, 77, 19, 89} }, GearType::Active, GearEffect::AddEnergy, 1 };
+
+		gearRegistry[2] = { 2, L"Data Extractor", L"Active: Draw 1 card.", //.rar
+			{ {7, 21, 19, 33} }, GearType::Active, GearEffect::DrawCard, 1 };
+
+		gearRegistry[3] = { 3, L"Memory Locker", L"Active: Retain 1 hand card.", //lock
+			{ {7, 35, 19, 47} }, GearType::Active, GearEffect::RetainCard, 1 };
+
+		gearRegistry[4] = { 4, L"Midas Chip", L"Gain extra Gold on win.", //cpu chip
+			{ {7, 49, 19, 61} }, GearType::Passive, GearEffect::GoldBoost, 20 };
+
+		gearRegistry[5] = { 5, L"Aegis Plating", L"Start combat with 15 Armor in 3 turns.", //actully a white plate
+			{ {7, 63, 19, 75} }, GearType::Passive, GearEffect::StartArmor, 15 };
 	}
 
 	const ConsumableItem* ItemData::GetItemBlueprint(int id)
 	{
 		auto it = itemRegistry.find(id);
 		if (it != itemRegistry.end())
+		{
+			return &(it->second);
+		}
+		return nullptr;
+	}
+
+	const GearBlueprint* ItemData::GetGearBlueprint(int id)
+	{
+		auto it = gearRegistry.find(id);
+		if (it != gearRegistry.end())
 		{
 			return &(it->second);
 		}

@@ -23,6 +23,9 @@ void Demo::SecretPuzzleScene::Init()
 	transformManager = std::make_shared<DX9GF::TransformManager>();
 	colliderManager = std::make_shared<DX9GF::ColliderManager>();
 	player = std::make_shared<Player>(transformManager, -84 * 16, -39 * 16);
+	auto gearTex = std::make_shared<DX9GF::Texture>(game->GetGraphicsDevice());
+	gearTex->LoadTexture(L"assets/12x12-gold-token.png"); //TODO: Change gears asset
+	player->InitGearAnim(gearTex);
 	camera.SetPosition(248, 184);
 	player->Init(game->GetGraphicsDevice(), colliderManager.get(), &camera);
 	drawBuffer = std::make_shared<DX9GF::CommandBuffer>();

@@ -1,4 +1,4 @@
-#include "pch.h"
+﻿#include "pch.h"
 #include "Player.h"
 #include "resource.h"
 #include "DamageTextManager.h"
@@ -246,6 +246,24 @@ void Demo::Player::Update(unsigned long long deltaTime) {
 			cameraDeltaTime = 0.f;
 		}
 	}
+	int currentGear = GetEquippedGearID();
+	if (currentGear != lastEquippedGearID) {
+		lastEquippedGearID = currentGear;
+		if (currentGear != -1 && gearTex) {
+			auto bp = Demo::ItemData::GetInstance()->GetGearBlueprint(currentGear);
+			if (bp && !bp->frames.empty()) {
+				gearDroneAnim = std::make_shared<DX9GF::AnimatedSprite>(gearTex.get(), bp->frames);
+				gearDroneAnim->SetFrameRate(12);
+			}
+		}
+		else {
+			gearDroneAnim = nullptr;
+		}
+	}
+
+	if (gearDroneAnim) {
+		gearAnimTimer += deltaTime;
+	}
 	if (isInvincible) {
 		if (timeSinceTurnedInvincible > INVINCIBILITY_DURATION) {
 			isInvincible = false;
@@ -258,6 +276,38 @@ void Demo::Player::Update(unsigned long long deltaTime) {
 
 void Demo::Player::Draw(unsigned long long deltaTime) {
 	footprintEmitter->Draw(*camera, deltaTime);
+
+	bool isBehindPlayer = false;
+	float gearRenderX = 0.0f, gearRenderY = 0.0f;
+	const float gearScale = 0.75f;
+
+	if (gearDroneAnim && !IsDead()) {
+		auto [px, py] = GetWorldPosition();
+		float gearWidth = 12.0f * gearScale;
+		float gearHeight = 12.0f * gearScale;
+
+		const float radiusX = 25.0f;
+		const float radiusY = 6.0f;
+		const float orbitSpeed = 0.002f;
+		float angle = gearAnimTimer * orbitSpeed;
+
+		float targetCenterX = px + std::cos(angle) * radiusX;
+		float targetCenterY = py + 4.0f + std::sin(angle) * radiusY;
+
+		gearRenderX = targetCenterX - (gearWidth / 2.0f);
+		gearRenderY = targetCenterY - (gearHeight / 2.0f);
+
+		isBehindPlayer = std::sin(angle) < 0;
+	}
+
+	if (gearDroneAnim && !IsDead() && isBehindPlayer) {
+		gearDroneAnim->SetScale(gearScale, gearScale);
+		gearDroneAnim->SetPosition(gearRenderX, gearRenderY);
+		gearDroneAnim->Begin();
+		gearDroneAnim->Draw(*camera, deltaTime);
+		gearDroneAnim->End();
+	}
+
 	if (!isInvincible || static_cast<int>(timeSinceTurnedInvincible / BLINKING_DURATION) % 2) {
 		switch (state) {
 		case State::Down: {
@@ -400,6 +450,15 @@ void Demo::Player::Draw(unsigned long long deltaTime) {
 			break;
 		}
 	}
+
+	if (gearDroneAnim && !IsDead() && !isBehindPlayer) {
+		gearDroneAnim->SetScale(gearScale, gearScale);
+		gearDroneAnim->SetPosition(gearRenderX, gearRenderY);
+		gearDroneAnim->Begin();
+		gearDroneAnim->Draw(*camera, deltaTime);
+		gearDroneAnim->End();
+	}
+
 	collider->Draw(graphicsDevice, *camera);
 }
 
@@ -447,7 +506,6 @@ bool Demo::Player::TakeIndirectDamage(float damage, DamageType type) {
 	if (healthAfter < 0 && healthBefore > 0) DX9GF::AudioManager::GetInstance()->Play("player_dead", false, 0.3f);
 
 	if (damage > 0) {
-		//TODO: change audio resource here
 		if (type == DamageType::Poison) {
 			DX9GF::AudioManager::GetInstance()->PlayRandom("take_dmg", 0.4f);
 		}
@@ -492,4 +550,8 @@ void Demo::Player::SetFootprintsEnabled(bool enabled)
 {
 	this->footprintsEnabled = enabled;
 	footprintEmitter->SetEnabled(enabled);
+}
+
+void Demo::Player::InitGearAnim(std::shared_ptr<DX9GF::Texture> tex) {
+	this->gearTex = tex;
 }

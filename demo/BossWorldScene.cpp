@@ -28,7 +28,11 @@ void Demo::BossWorldScene::Init() {
 	transformManager = std::make_shared<DX9GF::TransformManager>();
 	colliderManager = std::make_shared<DX9GF::ColliderManager>();
 
-	player = std::make_shared<Player>(transformManager, 360.f, 190.f);
+	player = std::make_shared<Player>(transformManager, 360.f, 190.f);	
+	auto gearTex = std::make_shared<DX9GF::Texture>(game->GetGraphicsDevice());
+	gearTex->LoadTexture(L"assets/12x12-gold-token.png"); //TODO: Change gear assets
+	player->InitGearAnim(gearTex);
+
 	camera.SetPosition(360.f, 190.f);
 
 	player->Init(game->GetGraphicsDevice(), colliderManager.get(), &camera);

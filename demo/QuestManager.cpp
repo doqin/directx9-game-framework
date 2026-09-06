@@ -96,8 +96,8 @@ void Demo::QuestManager::Init(DX9GF::GraphicsDevice* gd, std::shared_ptr<DX9GF::
 	if (!btnToggle) {
 		btnToggle = std::make_shared<IconButton>(uiTransformManager, 0, 0,
 			static_cast<int>(ARROW_SIZE), static_cast<int>(ARROW_SIZE), uiTex, 3);
-		btnToggle->SetSpriteCoords(240, 96, 16, 16, 0); //TODO: Change this button
-		btnToggle->SetSpriteScale(ARROW_SIZE / 16.0f, ARROW_SIZE / 16.0f);
+		btnToggle->SetSpriteCoords(240, 336, 13, 16, 0);
+		btnToggle->SetSpriteScale(ARROW_SIZE / 13.0f, ARROW_SIZE / 13.0f);
 		btnToggle->SetOnReleaseLeft([this](DX9GF::ITrigger*) {
 			isExpanded = !isExpanded;
 			});

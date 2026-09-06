@@ -7,6 +7,30 @@ namespace Demo
 	// Registry key of the Authentication Token key item (see ItemData::LoadData).
 	constexpr int ITEM_AUTH_TOKEN = 12;
 
+	enum class GearType {
+		Passive,
+		Active
+	};
+
+	enum class GearEffect {
+		AddMaxHP,
+		AddEnergy,
+		DrawCard,
+		RetainCard,
+		GoldBoost,
+		StartArmor
+	};
+
+	struct GearBlueprint {
+		int id;
+		std::wstring name;
+		std::wstring description;
+		std::vector<RECT> frames;
+		GearType type;
+		GearEffect effect;
+		int effectValue;
+	};
+
 	enum class ModifierType {
 		HealHP,
 		BuffDamage,
@@ -64,6 +88,7 @@ namespace Demo
 	{
 	private:
 		std::unordered_map<int, ConsumableItem> itemRegistry;
+		std::unordered_map<int, GearBlueprint> gearRegistry;
 		ItemData() {}
 	public:
 		static ItemData* GetInstance()
@@ -74,6 +99,7 @@ namespace Demo
 
 		void LoadData();
 		const ConsumableItem* GetItemBlueprint(int id);
+		const GearBlueprint* GetGearBlueprint(int id);
 	};
 
 	struct ItemInventorySlot

@@ -54,6 +54,11 @@ namespace Demo {
 		std::shared_ptr<DX9GF::AnimatedSprite> walkingUp;
 		std::shared_ptr<DX9GF::AnimatedSprite> walkingRight;
 		std::shared_ptr<DX9GF::AnimatedSprite> walkingLeft;
+		// Gear Drone
+		std::shared_ptr<DX9GF::Texture> gearTex;
+		std::shared_ptr<DX9GF::AnimatedSprite> gearDroneAnim;
+		float gearAnimTimer = 0.0f;
+		int lastEquippedGearID = -2;
 		// Particles
 		const float FOOTPRINT_OFFSET = 3.f;
 		std::shared_ptr<DX9GF::Texture> footprintTexture;
@@ -111,6 +116,11 @@ namespace Demo {
 		void AddCardToInventory(const std::string& card) { PlayerGlobalData::GetInstance()->AddCardToInventory(card); }
 		bool RemoveCardFromInventory(const std::string& card) { return PlayerGlobalData::GetInstance()->RemoveCardFromInventory(card); }
 		void ClearInventory() { PlayerGlobalData::GetInstance()->ClearInventory(); }
+		int GetEquippedGearID() const { return PlayerGlobalData::GetInstance()->GetEquippedGearID(); }
+		const std::vector<int>& GetInventoryGears() const { return PlayerGlobalData::GetInstance()->GetInventoryGears(); }
+		void EquipGear(int id) { PlayerGlobalData::GetInstance()->EquipGear(id); }
+		void UnequipGear() { PlayerGlobalData::GetInstance()->UnequipGear(); }
+		void AddGear(int id) { PlayerGlobalData::GetInstance()->AddGear(id); }
 		virtual std::string GetSaveID() const override;
 		virtual void GenerateSaveData(nlohmann::json& outData) override;
 		virtual void RestoreSaveData(const nlohmann::json& inData) override;
@@ -125,6 +135,6 @@ namespace Demo {
 		}
 
 		bool TakeIndirectDamage(float damage, DamageType type) override;
-
+		void InitGearAnim(std::shared_ptr<DX9GF::Texture> tex);
 	};
 }
