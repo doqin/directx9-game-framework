@@ -154,7 +154,7 @@ namespace Demo {
 		void CollectProjectedSteps(VirtualBattleState& state) override {
 			CollectEffectOnTargets(state, ModifierType::Weak, 0.f, 2, 2);
 		}
-	};
+	};	
 
 	class StunCard : public MultiTargetCard {
 		std::shared_ptr<DX9GF::Texture> strikeTexture;

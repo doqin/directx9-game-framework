@@ -1,4 +1,4 @@
-#include "pch.h"
+﻿#include "pch.h"
 #include "Debug.h"
 #include "MapEnemy.h"
 #include "imgui.h"
@@ -68,6 +68,14 @@ void Demo::CreateImGuiDebugFrame(std::shared_ptr<Player> player, Game* game)
 	if (ImGui::Button("Give Item")) {
 		player->GetInventoryItems().AddItem(itemToGive, itemQuantity);
 	}
+
+	ImGui::Text("Give Player Gear");
+	static int gearToGive = 0;
+	ImGui::InputInt("Gear ID", &gearToGive);
+	if (ImGui::Button("Give Gear")) {
+		player->AddGear(gearToGive);
+	}
+
 	ImGui::Text("Toggleables");
 	if (ImGui::Button("Enable All")) {
 		MapEnemy::isDisabled = true;

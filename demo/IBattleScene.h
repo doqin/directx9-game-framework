@@ -27,7 +27,8 @@ namespace Demo {
 			PlayerAttack,
 			PlayerOpenItems,
 			PlayerViewPile,
-			EnemyAttack
+			EnemyAttack,
+			PlayerUseGearTargeting
 		};
 		enum class PileKind {
 			Draw,
@@ -147,7 +148,11 @@ namespace Demo {
 		std::shared_ptr<IconButton> runInitButton;
 		std::shared_ptr<IconButton> closeItemMenuButton;
 		std::shared_ptr<BattleMenu> battleMenu;
-
+		std::shared_ptr<DX9GF::Texture> gearTex;
+		std::shared_ptr<IconButton> gearButton;
+		bool isGearUsedThisBattle = false;
+		void OnGearButtonClicked();
+		void PlayerUseGearTargetingUpdate(unsigned long long deltaTime);
 		std::vector<std::shared_ptr<IconButton>> buffItems;
 		std::shared_ptr<TextIconButton> btnNextPage;
 		std::shared_ptr<TextIconButton> btnPrevPage;

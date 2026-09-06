@@ -112,6 +112,7 @@
     <ClCompile Include="FinisherCards.cpp" />
     <ClCompile Include="TestEnemy.cpp" />
     <ClCompile Include="TuitionFeeEnemy.cpp" />
+    <ClCompile Include="GearSlotUI.cpp" />
   </ItemGroup>
   <ItemGroup>
     <ClInclude Include="AdvancedCards.h" />
@@ -233,6 +234,7 @@
     <ClInclude Include="WorldSceneBase.h" />
     <ClInclude Include="TextButton.h" />
     <ClInclude Include="TuitionFeeEnemy.h" />
+    <ClInclude Include="GearSlotUI.h" />
   </ItemGroup>
   <ItemGroup>
     <ResourceCompile Include="demo.rc" />
@@ -430,6 +432,8 @@
     <Image Include="assets\ui-pack.png" />
     <Image Include="assets\lab.png" />
     <Image Include="assets\labinside.png" />
+    <Image Include="assets\flame-slot-Sheet.png" />
+    <Image Include="assets\12x12-gold-token.png" />
   </ItemGroup>
   <ItemGroup>
     <Font Include="assets\arcade-among-2-r46pv.ttf" />

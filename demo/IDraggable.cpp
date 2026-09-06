@@ -237,7 +237,7 @@ void Demo::IDraggable::Init(std::shared_ptr<DraggableManager> manager, DX9GF::Gr
 
 	trigger->SetOnHeldLeft([&](DX9GF::ITrigger* thisObj) {
 		if (auto card = dynamic_cast<Demo::ICard*>(this)) {
-			if (card->IsLocked()) {
+			if (card->IsLocked() || card->IsRetained()) {
 				DX9GF::AudioManager::GetInstance()->PlayRandom("error", 0.4f);
 				return;
 			}

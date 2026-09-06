@@ -228,6 +228,7 @@
     <ClCompile Include="DemonEyeEnemy.cpp" />
     <ClCompile Include="DrawUtils.cpp" />
     <ClCompile Include="EnemyFactory.cpp" />
+    <ClCompile Include="GearSlotUI.cpp" />
     <ClCompile Include="ICard.cpp" />
     <ClCompile Include="EnergyToken.cpp" />
     <ClCompile Include="GoldToken.cpp" />
@@ -376,6 +377,7 @@
     <ClInclude Include="DrawUtils.h" />
     <ClInclude Include="EncounterGenerator.h" />
     <ClInclude Include="EnergyToken.h" />
+    <ClInclude Include="GearSlotUI.h" />
     <ClInclude Include="GoldToken.h">
       <DeploymentContent>false</DeploymentContent>
     </ClInclude>
@@ -540,6 +542,9 @@
     </None>
   </ItemGroup>
   <ItemGroup>
+    <Image Include="assets\12x12-gold-token.png">
+      <DeploymentContent>true</DeploymentContent>
+    </Image>
     <Image Include="assets\All-borders.png">
       <DeploymentContent>true</DeploymentContent>
     </Image>
@@ -577,6 +582,9 @@
       <DeploymentContent>true</DeploymentContent>
     </Image>
     <Image Include="assets\labinside.png">
+      <DeploymentContent>true</DeploymentContent>
+    </Image>
+    <Image Include="assets\flame-slot-Sheet.png">
       <DeploymentContent>true</DeploymentContent>
     </Image>
     <Image Include="assets\selltab.png">

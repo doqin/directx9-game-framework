@@ -24,7 +24,6 @@
 void Demo::ThreadAlleyScene::OnInit()
 {
 	InitCore(-544.5f, 128.5f, L"./assets/ThreadAlley.tmx");
-
 	SetChapterTitle(L"CHAPTER II: THREAD ALLEY", L"< Data Transit Zone >");
 
 	map->SetAreaUpdateHandler("trigger_p", [this](const DX9GF::Map::ObjectArea& area) {

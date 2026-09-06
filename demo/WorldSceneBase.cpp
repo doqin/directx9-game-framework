@@ -29,6 +29,9 @@ void Demo::WorldSceneBase::InitCore(float playerX, float playerY, const wchar_t*
 	player = std::make_shared<Player>(transformManager, playerX, playerY);
 	camera.SetPosition(playerX, playerY);
 	player->Init(game->GetGraphicsDevice(), colliderManager.get(), &camera);
+	auto gearTex = std::make_shared<DX9GF::Texture>(game->GetGraphicsDevice());
+	gearTex->LoadTexture(L"assets/12x12-gold-token.png"); //TODO: Change gears asset
+	player->InitGearAnim(gearTex);
 	drawBuffer = std::make_shared<DX9GF::CommandBuffer>();
 	commandBuffer = std::make_shared<DX9GF::CommandBuffer>();
 	popUpMessage = std::make_shared<PopUpMessage>(transformManager, game);

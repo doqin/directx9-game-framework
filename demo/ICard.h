@@ -11,6 +11,7 @@ namespace Demo {
 		IBattleScene* battleScene = nullptr;
 		bool isLocked = false;
 		int lockedTurns = 0;
+		bool isRetained = false;
 		// Optional cap on how many times the card may execute in a single battle. Cards that
 		// leave this empty are unlimited; once a limited card runs out it is moved to the
 		// battle's nullified pile and never returns to the deck for the rest of the battle.
@@ -116,5 +117,7 @@ namespace Demo {
 			}
 		}
 		virtual void OnDiscard() {}
+		bool IsRetained() const { return isRetained; }
+		void SetRetained(bool retain) { isRetained = retain; }
 	};
 }
