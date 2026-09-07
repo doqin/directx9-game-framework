@@ -435,6 +435,13 @@ void Demo::WorldSceneBase::SpawnMapEnemy(float x, float y, std::string id,
 
 			battleScene->SetOnVictoryCallback([e, questEvent, questId, this]() {
 				e->SetDefeatedState(true, 180.f);
+
+				// Complete the tutorial quest the first time the player defeats an enemy.
+				auto firstEncounter = QuestManager::GetInstance()->NotifyEvent("FIRST_ENCOUNTER_DEFEATED", "", this->player.get());
+				if (firstEncounter.hasReward && this->popUpMessage) {
+					this->popUpMessage->ShowMessage(L"(+) " + firstEncounter.rewardMessage, 5.0f);
+				}
+
 				if (!questEvent.empty()) {
 					auto result = QuestManager::GetInstance()->NotifyEvent(questEvent, questId, this->player.get());
 					if (result.hasReward && this->popUpMessage) {
